@@ -13,12 +13,9 @@ from appsettings.settings import get_settings
 from computes.models import Compute
 from instances.jobs import CreateInstance
 from instances.models import Instance
+from instances.tests.create_page import BODY
 from operations.jobs import Context
 from operations.models import Operation, acquire
-
-BODY = {"name": "api-vm", "vcpu": 1, "vcpu_mode": "host-model", "memory": 512, "networks": "default", "mac": "",
-        "nwfilter": "", "storage": "default", "hdd_size": 1, "cache_mode": "none", "meta_prealloc": False,
-        "virtio": True, "qemu_ga": True, "video": "vga", "listener_addr": "0.0.0.0", "submission_key": "key-api00001"}
 
 
 class CreateJobTestCase(TransactionTestCase):

@@ -17,6 +17,7 @@ from vrtManager.util import render
 from libvirt import VIR_DOMAIN_PAUSED, VIR_DOMAIN_RUNNING
 from operations.models import Operation
 from vrtManager.util import OperationError
+import socket
 
 
 def vm_reader(vcpu=2, memory=1024, disk_gib=10, pending=None):
@@ -274,3 +275,20 @@ class DetailPageQuotaTests(TestCase):
             proxy.get_status.return_value = 5
             response = self.client.get(reverse("instances:instance", args=[vm.id]))
         self.assertEqual(response.status_code, 200)
+
+
+class QuotaWithDownHostTestCase(TestCase):
+    def test_vm_on_an_unreachable_host_makes_the_quota_unverified(self):
+        # its usage is unknown, so an increase is refused (fail closed), without an error page
+        sock = socket.socket()
+        sock.bind(("127.0.0.1", 0))
+        port = sock.getsockname()[1]
+        sock.close()
+        user = get_user_model().objects.create_user("quota_down", password="pw")
+        UserAttributes.objects.create(user=user, max_instances=5, max_cpus=8, max_memory=8192, max_disk_size=100)
+        compute = Compute.objects.create(name="down", hostname=f"127.0.0.1:{port}", login="", password="", type=1)
+        vm = Instance.objects.create(compute=compute, name="vm", uuid="55555555-5555-5555-5555-555555555555")
+        UserInstance.objects.create(user=user, instance=vm)
+        get_settings()  # app settings are normally loaded by middleware
+
+        self.assertEqual(check_user_quota(user, 1, 1, 128, 1), QUOTA_UNVERIFIED)

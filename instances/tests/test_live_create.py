@@ -1,7 +1,7 @@
 """Live checks of VM creation: the queued job defines the VM, and a failed
 one leaves no volumes behind.
 
-Runs only with TEST_LIBVIRT_HOST set (see instances/tests/livetest.py).
+Runs only with TEST_LIBVIRT_HOST set (see vrtManager/tests/livetest.py).
 """
 
 import os
@@ -19,8 +19,8 @@ from operations.models import Operation
 from operations.tests import fakes
 from operations.worker import Worker
 
-from . import livetest
-from .test_live_jobs import wait_for
+from vrtManager.tests import livetest
+from vrtManager.tests.livetest import wait_for
 
 P = livetest.PREFIX
 
@@ -214,4 +214,3 @@ class LiveCreateTestCase(TransactionTestCase):
         self.work()
         self.assertEqual(self.volumes(), set(), "a volume was left behind")
         self.assertFalse(self.domain_exists(P + "cr-api"))
-

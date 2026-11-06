@@ -15,7 +15,7 @@ class InstanceTabsTestCase(unittest.TestCase):
     @unittest.skipUnless(shutil.which("node"), "node is not installed")
     def test_instance_tabs_js(self):
         result = subprocess.run(
-            ["node", str(BASE / "webvirtcloud/tests/js/instance_tabs.test.js"), str(BASE / "static/js/instance_tabs.js")],
+            ["node", str(BASE / "instances/tests/js/instance_tabs.test.js"), str(BASE / "static/js/instance_tabs.js")],
             capture_output=True,
             text=True,
             timeout=60,

@@ -28,3 +28,9 @@ def render_create_page(testcase, data=None):
         else:
             response = testcase.client.post(url, {"create": "", **data})
     return compute, response
+
+
+# an API create request (CreateInstanceSerializer) that the job takes
+BODY = {"name": "api-vm", "vcpu": 1, "vcpu_mode": "host-model", "memory": 512, "networks": "default", "mac": "",
+        "nwfilter": "", "storage": "default", "hdd_size": 1, "cache_mode": "none", "meta_prealloc": False,
+        "virtio": True, "qemu_ga": True, "video": "vga", "listener_addr": "0.0.0.0", "submission_key": "key-api00001"}

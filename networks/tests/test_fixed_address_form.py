@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from lxml import html
-from networks.tests.driver import without_inactive_flag
+from vrtManager.tests.driver import without_inactive_flag
 
 NODE = """<node><network><name>lab</name><bridge name='virbr9'/>
   <ip address='192.0.2.1' netmask='255.255.255.0'><dhcp><range start='192.0.2.10' end='192.0.2.20'/></dhcp></ip>

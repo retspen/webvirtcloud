@@ -1,6 +1,6 @@
 """External snapshots go through libvirt's snapshot API; WebVirtCloud only
 checks preconditions and picks the flags. libvirt is mocked here; the live
-cases are in instances/tests/test_live_snapshots.py."""
+cases are in vrtManager/tests/test_live_snapshots.py."""
 
 import json
 import unittest
@@ -713,6 +713,7 @@ class PoolRefreshTestCase(unittest.TestCase):
                 # a stale pool still lists every file
                 p.get_volume_by_path = MagicMock()
                 self.assertEqual(getattr(p, action)("one"), [])
+
 
 class KindTestCase(unittest.TestCase):
     def test_internal_endpoints_refuse_external_names(self):

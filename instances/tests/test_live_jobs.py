@@ -1,13 +1,12 @@
 """Live checks for the instance jobs: the worker runs them against libvirt
 and recovery reads the same outcome back. Runs only with TEST_LIBVIRT_HOST
-set (see instances/tests/livetest.py). The migration needs a second host:
+set (see vrtManager/tests/livetest.py). The migration needs a second host:
 TEST_LIBVIRT_SSH_HOST (and _LOGIN), with TEST_LIBVIRT_MIGRATE_ADDRESS as its
 migration address. The ISO upload runs on both hosts: TCP writes through a
 libvirt stream, SSH through SFTP."""
 
 import os
 import subprocess
-import time
 import unittest
 
 import libvirt
@@ -27,18 +26,10 @@ from operations.models import Operation
 from operations.tests import fakes
 from operations.worker import Worker
 
-from . import livetest
+from vrtManager.tests import livetest
+from vrtManager.tests.livetest import wait_for
 
 P = livetest.PREFIX
-
-
-def wait_for(predicate, seconds):
-    end = time.monotonic() + seconds
-    while time.monotonic() < end:
-        if predicate():
-            return True
-        time.sleep(0.5)
-    return False
 
 
 class LiveJobsTestCase(TransactionTestCase):

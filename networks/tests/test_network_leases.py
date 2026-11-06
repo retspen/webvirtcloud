@@ -5,56 +5,24 @@ that cannot be read leave the rest of the page. Runs on a private libvirt
 test driver, which has no leases: they are given."""
 
 import tempfile
-from datetime import datetime, timezone
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import libvirt
 from computes.models import Compute
 from django.contrib.auth import get_user_model
-from django.test import SimpleTestCase, TestCase
+from django.test import TestCase
 from django.urls import reverse
 from instances.models import Instance
 from lxml import html
-from networks.tests.driver import without_inactive_flag
-from networks.tests.test_network_pages import NODE
-from vrtManager.network import wvmNetwork
-
-DUID = "00:01:00:01:2e:8b:3c:41:52:54:00:00:00:40"
-
-
-def lease(ip, mac=None, expiry=1793265489, hostname=None, clientid=None, family=0):
-    return {"iface": "virbr9", "expirytime": expiry, "type": family, "mac": mac, "ipaddr": ip, "prefix": 24,
-            "hostname": hostname, "clientid": clientid, "iaid": None}
-
-
-class LeasesTests(SimpleTestCase):
-    def network(self, leases, active=True):
-        net = wvmNetwork.__new__(wvmNetwork)
-        net.net = MagicMock(**{"isActive.return_value": active, "DHCPLeases.return_value": leases})
-        return net
-
-    def test_leases_by_address_ipv4_first(self):
-        net = self.network([lease("2001:db8:1::40", family=1, clientid=DUID, expiry=0),
-                            lease("192.0.2.100", "52:54:00:AA:00:01", hostname="db"),
-                            lease("192.0.2.9", "52:54:00:aa:00:02")])
-        ipv4_9, ipv4_100, ipv6 = net.get_leases()
-        self.assertEqual([str(ipv4_9["ip"]), str(ipv4_100["ip"]), str(ipv6["ip"])], ["192.0.2.9", "192.0.2.100", "2001:db8:1::40"])
-        self.assertEqual((ipv4_100["mac"], ipv4_100["hostname"], ipv4_100["expires"]),
-                         ("52:54:00:aa:00:01", "db", datetime.fromtimestamp(1793265489, timezone.utc)))
-        # an IPv6 lease: no MAC, its client's DUID; one that never ends
-        self.assertEqual((ipv6["mac"], ipv6["client_id"], ipv6["expires"]), ("", DUID, None))
-
-    def test_a_network_that_does_not_run_has_none(self):
-        net = self.network([lease("192.0.2.9")], active=False)
-        self.assertEqual(net.get_leases(), [])
-        net.net.DHCPLeases.assert_not_called()
+from vrtManager.tests.driver import without_inactive_flag
+from vrtManager.tests.fakes import DUID, NAT_NETWORK_NODE, lease
 
 
 class LeasesCardTests(TestCase):
     def setUp(self):
         node = tempfile.NamedTemporaryFile("w", suffix=".xml")
         self.addCleanup(node.close)
-        node.write(NODE)
+        node.write(NAT_NETWORK_NODE)
         node.flush()
         self.conn = libvirt.open(f"test://{node.name}")
         self.addCleanup(self.conn.close)

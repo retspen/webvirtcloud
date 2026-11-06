@@ -11,7 +11,6 @@ from django.contrib.messages import get_messages
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from instances.models import Instance
-from vrtManager.instance import PERSISTENT_XML, wvmInstance
 
 
 class ConsoleListenerTests(TestCase):
@@ -83,29 +82,3 @@ class ConsoleListenerTests(TestCase):
             response = self.client.get(reverse("instances:instance", args=[self.vm.id]))
         form = response.context["console_form"]
         self.assertTrue(form.fields["listen_on"].disabled)
-
-
-class ConsoleListensLocallyTests(TestCase):
-    """Only a binding the persistent XML pins to loopback (or a Unix socket) is local."""
-
-    def listens_locally(self, graphics):
-        proxy = wvmInstance.__new__(wvmInstance)  # no connection: only the XML is read
-        xml = f"<domain><devices>{graphics}</devices></domain>"
-        proxy._XMLDesc = lambda flags: xml if flags == PERSISTENT_XML else "<wrong-flags/>"
-        return proxy.console_listens_locally()
-
-    def test_cases(self):
-        cases = {
-            "<graphics type='vnc' listen='127.0.0.1'><listen type='address' address='127.0.0.1'/></graphics>": True,
-            "<graphics type='vnc'><listen type='address' address='::1'/></graphics>": True,
-            "<graphics type='vnc'><listen type='socket' socket='/run/vnc.sock'/></graphics>": True,
-            "": True,  # no console
-            "<graphics type='vnc' listen='0.0.0.0'><listen type='address' address='0.0.0.0'/></graphics>": False,
-            "<graphics type='vnc'><listen type='network' network='default'/></graphics>": False,
-            "<graphics type='vnc' autoport='yes'/>": False,  # the host default decides
-            "<graphics type='vnc'><listen type='address' address='localhost'/></graphics>": False,
-            "<graphics type='vnc' listen='127.0.0.1'><listen type='address' address='10.0.0.5'/></graphics>": False,
-        }
-        for graphics, expected in cases.items():
-            with self.subTest(graphics=graphics):
-                self.assertIs(self.listens_locally(graphics), expected)

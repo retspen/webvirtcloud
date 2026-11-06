@@ -23,6 +23,9 @@ from libvirt import (
 from vrtManager.connection import wvmConnect
 from vrtManager.hostdetails import wvmHostDetails
 from vrtManager.storage import wvmStorage, wvmStorages
+from unittest import TestCase as UnitTestCase
+from unittest.mock import patch
+from vrtManager.hostdetails import cpu_percent
 
 CAPABILITIES = """<capabilities><host><cpu><arch>x86_64</arch></cpu></host>
 <guest><os_type>hvm</os_type><arch name='x86_64'><emulator>/usr/bin/qemu-kvm</emulator>
@@ -270,3 +273,49 @@ class VolumesTestCase(unittest.TestCase):
         stg = self.storage([])
         stg.pool.storageVolLookupByName.return_value = volume("a.img", 4096, 0, "raw")
         self.assertEqual(stg.get_volume_details("a.img"), {"name": "a.img", "size": 4096, "allocation": 0, "type": "raw"})
+
+
+def host(*readings):
+    """A wvmHostDetails whose getCPUStats returns readings, (idle, busy) each."""
+    h = wvmHostDetails.__new__(wvmHostDetails)
+    h.wvm = MagicMock()
+    h.wvm.getCPUStats.side_effect = [
+        {"kernel": busy // 2, "user": busy - busy // 2, "idle": idle, "iowait": 0, "guest": busy // 3, "utilization": 99}
+        for idle, busy in readings
+    ]
+    return h
+
+
+class CpuPercentTestCase(UnitTestCase):
+    def test_busy_share_between_two_samples(self):
+        self.assertEqual(cpu_percent((100, 200), (130, 300)), 70.0)
+        self.assertEqual(cpu_percent((0, 0), (1, 3)), 66.7)
+
+    def test_samples_that_do_not_follow_on(self):
+        for before, after in (((100, 200), (100, 200)), ((100, 200), (50, 100)), ((100, 200), (200, 250))):
+            with self.subTest(before=before, after=after):
+                self.assertIsNone(cpu_percent(before, after))
+
+
+@patch("vrtManager.hostdetails.time")
+class CpuUsageTestCase(UnitTestCase):
+    def test_since_a_previous_sample_without_waiting(self, clock):
+        clock.time.return_value = 105.0
+        h = host((130, 70))
+        usage = h.get_cpu_usage(previous=(100, 100, 100.0))
+        clock.sleep.assert_not_called()
+        # total = kernel + user + idle + iowait; guest (inside user) and utilization are left out
+        self.assertEqual(usage, {"usage": 70.0, "sample": (130, 200, 105.0), "window": 5.0})
+
+    def test_over_one_second_without_a_sample(self, clock):
+        clock.time.side_effect = [10.0, 11.0]
+        h = host((100, 100), (110, 190))
+        self.assertEqual(h.get_cpu_usage(), {"usage": 90.0, "sample": (110, 300, 11.0), "window": 1.0})
+        clock.sleep.assert_called_once_with(1)
+
+    def test_over_one_second_after_the_host_restarted(self, clock):
+        clock.time.side_effect = [10.0, 11.0]
+        h = host((5, 5), (6, 9))
+        usage = h.get_cpu_usage(previous=(1000, 5000, 5.0))
+        clock.sleep.assert_called_once_with(1)
+        self.assertEqual((usage["usage"], usage["window"]), (80.0, 1.0))

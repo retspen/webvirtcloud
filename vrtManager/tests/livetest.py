@@ -10,6 +10,7 @@ changed.
 import os
 
 import libvirt
+import time
 
 PREFIX = "wvc-test-"
 POOL = "wvc-test"
@@ -125,3 +126,12 @@ def volume_exists(conn, path):
     pool = conn.storagePoolLookupByName(POOL)
     pool.refresh(0)
     return os.path.basename(path) in pool.listVolumes()
+
+
+def wait_for(predicate, seconds):
+    end = time.monotonic() + seconds
+    while time.monotonic() < end:
+        if predicate():
+            return True
+        time.sleep(0.5)
+    return False

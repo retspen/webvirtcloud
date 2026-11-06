@@ -5,7 +5,7 @@ before and after. The edit must show its effect, and once the nodes it is
 allowed to touch are removed from both sides, the rest of the definition
 must be identical: unknown elements, secrets and pending changes survive.
 On a running VM, edits of the persistent definition must leave the live
-one alone. Runs only with TEST_LIBVIRT_HOST set (see instances/tests/livetest.py).
+one alone. Runs only with TEST_LIBVIRT_HOST set (see vrtManager/tests/livetest.py).
 """
 
 import os
@@ -17,7 +17,7 @@ from lxml import etree
 from vrtManager.connection import connection_manager
 from vrtManager.instance import wvmInstance
 
-from . import livetest
+from vrtManager.tests import livetest
 
 P = livetest.PREFIX
 MAC = "52:54:00:aa:02:01"

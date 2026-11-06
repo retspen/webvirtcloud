@@ -1,5 +1,5 @@
 """Live checks for external snapshots on libvirt's own API. Runs only with
-TEST_LIBVIRT_HOST set (see instances/tests/livetest.py)."""
+TEST_LIBVIRT_HOST set (see vrtManager/tests/livetest.py)."""
 
 import os
 import unittest
@@ -11,7 +11,7 @@ from vrtManager import util
 from vrtManager.connection import connection_manager
 from vrtManager.instance import wvmInstance
 
-from . import livetest
+from vrtManager.tests import livetest
 
 P = livetest.PREFIX
 

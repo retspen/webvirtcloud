@@ -2,6 +2,7 @@ import unittest
 
 from lxml import etree
 from vrtManager.network import ip_networks, network_size
+from django.test import SimpleTestCase
 
 
 class TestNetworkSize(unittest.TestCase):
@@ -96,3 +97,20 @@ class TestIpNetworks(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AddressTests(SimpleTestCase):
+    def test_an_address_without_a_prefix_takes_libvirts(self):
+        tree = etree.fromstring("<network><ip address='192.0.2.1'/><ip address='10.1.2.3'/><ip family='ipv6' address='2001:db8::1'/></network>")
+        self.assertEqual([str(ip["subnet"]) for ip in ip_networks(tree)], ["192.0.2.0/24", "10.0.0.0/8", "2001:db8::/64"])
+
+    def test_every_way_libvirt_writes_an_address(self):
+        compact = "<network><ip address='192.0.2.1' netmask='255.255.255.0'/></network>"
+        static = ("<network><ip address='192.0.2.1' prefix='24'><dhcp><host mac='52:54:00:00:00:01' ip='192.0.2.5'/>"
+                  "</dhcp></ip><ip family='ipv6' address='2001:db8::1' prefix='64'/></network>")
+        (ip,) = ip_networks(etree.fromstring(compact))
+        self.assertEqual((ip["index"], ip["family"], str(ip["subnet"]), ip["dhcp"]), (0, "ipv4", "192.0.2.0/24", False))
+        v4, v6 = ip_networks(etree.fromstring(static))
+        # DHCP with fixed addresses only is DHCP too
+        self.assertEqual((v4["dhcp"], v4["range"], v4["hosts"][0]["ip"]), (True, None, "192.0.2.5"))
+        self.assertEqual((v6["index"], v6["family"], str(v6["subnet"])), (1, "ipv6", "2001:db8::/64"))

@@ -1,7 +1,7 @@
 """Live check that the NVRAM file a migrated VM leaves behind is removed,
 and kept when the destination sees the same directory.
 
-Runs only with TEST_LIBVIRT_HOST set (see instances/tests/livetest.py). The
+Runs only with TEST_LIBVIRT_HOST set (see vrtManager/tests/livetest.py). The
 deletion needs a second host: TEST_LIBVIRT_SSH_HOST (and _LOGIN).
 """
 
@@ -12,7 +12,7 @@ import libvirt
 from django.test import SimpleTestCase
 from lxml import etree
 
-from instances.tests import livetest
+from vrtManager.tests import livetest
 from vrtManager.connection import CONN_SSH, NVRAM_DIR, connection_manager, wvmConnect
 
 NAME = livetest.PREFIX + "nvram"

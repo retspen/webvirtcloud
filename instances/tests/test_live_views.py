@@ -15,7 +15,7 @@ from vrtManager.util import randomUUID
 
 from operations.models import Operation
 
-from . import livetest
+from vrtManager.tests import livetest
 from .test_create_instance import run
 from instances.models import Flavor, Instance
 from instances.utils import refr

@@ -10,9 +10,10 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from vrtManager.connection import wvmConnect
+from vrtManager.tests import livetest
 
 
-@unittest.skipUnless(os.environ.get("TEST_LIBVIRT_HOST"), "Set TEST_LIBVIRT_HOST to run the live libvirt tests")
+@unittest.skipUnless(livetest.enabled(), "Set TEST_LIBVIRT_HOST to run the live libvirt tests")
 class LiveInterfacesTestCase(TestCase):
     def hosts(self):
         yield "tcp", (

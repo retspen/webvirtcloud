@@ -1,0 +1,110 @@
+"""The host's node devices as vrtManager lists them: PCI devices by IOMMU
+group and USB devices, each with what the host has on it and the VMs
+that name it. Node device XML as libvirt 11.10 writes it; the connection
+is a mock, libvirt's test driver has no node devices."""
+
+from unittest.mock import MagicMock
+
+import libvirt
+from django.test import SimpleTestCase
+
+from vrtManager import util
+from vrtManager.connection import wvmConnect
+from vrtManager.nodedevs import hostdev_problems, node_devices, pci_address
+from vrtManager.tests.fakes import NODES, PCI_0A, USB_1_3, node, pci, vm
+
+PCI_01 = "<hostdev mode='subsystem' type='pci'><source><address domain='0x0000' bus='0x00' slot='0x01' function='0x0'/></source></hostdev>"
+
+
+USB_MODEL = "<hostdev mode='subsystem' type='usb'><source><vendor id='0x0627'/><product id='0x0001'/></source></hostdev>"
+
+
+def devices(nodes=NODES, domains=()):
+    conn = wvmConnect.__new__(wvmConnect)
+    conn.wvm = MagicMock(**{"listAllDevices.return_value": [node(*n) for n in nodes],
+                            "listAllDomains.return_value": list(domains)})
+    return node_devices(conn)
+
+
+class NodeDevicesTests(SimpleTestCase):
+    def test_pci_devices_by_group_with_what_the_host_has_on_them(self):
+        pci_devices, _ = devices()
+        self.assertEqual([(d["address"], d["group"]) for d in pci_devices],
+                         [("0000:00:02.0", 2), ("0000:00:03.0", 2), ("0000:00:06.0", 3), ("0000:00:0a.0", 4), ("0000:00:01.0", None)])
+        gpu, disk, nic, spare, _ = pci_devices
+        # a graphics card's primary node is the host's; its render node is not a resource of its own
+        self.assertEqual((gpu["resources"], disk["resources"], nic["resources"], spare["resources"]),
+                         (["/dev/dri/card0"], ["/dev/vda"], ["eth0"], []))
+        self.assertEqual((nic["kind"], nic["driver"], nic["ids"]), ("Network controller", "virtio-pci", "1af4:1000"))
+
+    def test_usb_devices_with_their_classes_hubs_and_same_models(self):
+        _, (hub, tablet_2, tablet_3) = devices()
+        self.assertEqual((hub["kinds"], hub["same_model"]), (["Hub"], False))
+        self.assertEqual((tablet_2["kinds"], tablet_2["same_model"], tablet_3["same_model"]), (["Human interface"], True, True))
+
+    def test_the_vms_that_name_a_device(self):
+        pci_devices, (_, tablet_2, tablet_3) = devices(domains=[vm("db-1", PCI_0A + USB_1_3), vm("kiosk-1", USB_MODEL)])
+        self.assertEqual([d["vms"] for d in pci_devices], [[], [], [], ["db-1"], []])
+        # by address: that device; by model only: any device of the model
+        self.assertEqual((tablet_3["vms"], tablet_3["by_model"]), (["db-1"], ["kiosk-1"]))
+        self.assertEqual((tablet_2["vms"], tablet_2["by_model"]), ([], ["kiosk-1"]))
+
+    def test_a_usb_controller_holds_the_usb_devices_below_it(self):
+        pci_devices, (hub, tablet_2, _) = devices(domains=[vm("kiosk-1", USB_1_3)])
+        controller = [d for d in pci_devices if d["address"] == "0000:00:01.0"][0]
+        # its root hub is no device of the host's; the tablets are, one given to a VM
+        self.assertEqual(controller["resources"], ["USB device 1/2 (QEMU Tablet)", "USB device 1/3 (QEMU Tablet)"])
+        self.assertEqual((hub["controller"], tablet_2["controller"]), ("0000:00:01.0", "0000:00:01.0"))
+
+    def test_a_usb_device_on_a_controller_given_to_a_vm_is_not_given_to_another(self):
+        pci_devices, usb_devices = devices(domains=[vm("db-1", PCI_01)])
+        reasons = [util.render(m["text"], m["values"], str) for m in hostdev_problems(
+            "kiosk-1", pci_devices, usb_devices, set(), [("0x0627", "0x0001", (1, 2))])]
+        self.assertIn("USB device 1/2 (QEMU Tablet) is on the PCI controller 0000:00:01.0, given to db-1", reasons)
+
+    def test_a_usb_device_is_named_as_libvirt_picks_one(self):
+        def named(hostdev):
+            _, (_, tablet_2, tablet_3) = devices(domains=[vm("v", hostdev)])
+            return [(d["vms"], d["by_model"]) for d in (tablet_2, tablet_3)]
+        # an address with other IDs: another device now at that address
+        other = USB_1_3.replace("0x0627", "0x046d")
+        address_only = "<hostdev mode='subsystem' type='usb'><source><address bus='1' device='2'/></source></hostdev>"
+        self.assertEqual(named(other), [([], []), ([], [])])
+        self.assertEqual(named(address_only), [(["v"], []), ([], [])])
+        self.assertEqual(named(USB_MODEL), [([], ["v"]), ([], ["v"])])
+
+    def test_a_pci_device_named_as_a_nic_or_only_for_the_next_start(self):
+        nic = ("<interface type='hostdev'><source><address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>"
+               "</source></interface>")
+        pci_devices, _ = devices(domains=[vm("nic-1", nic), vm("next-1", "", saved=PCI_0A)])
+        self.assertEqual({d["address"]: d["vms"] for d in pci_devices if d["vms"]},
+                         {"0000:00:06.0": ["nic-1"], "0000:00:0a.0": ["next-1"]})
+
+    def test_sr_iov_functions_and_unnamed_hardware(self):
+        vf = pci("0x0b", "", "0x020000", group=5)[1].replace(
+            "<product id='0x1000'></product>", "<product id='0x10ed'/>").replace(
+            "</capability></device>", "<capability type='phys_function'><address domain='0x0000' bus='0x00' slot='0x0a'"
+                                      " function='0x0'/></capability></capability></device>")
+        pf = NODES[8][1].replace("</capability></device>", "<capability type='virt_functions' maxCount='7'><address domain='0x0000'"
+                                 " bus='0x00' slot='0x0b' function='0x0'/></capability></capability></device>")
+        pci_devices, _ = devices(nodes=[("pci_0000_00_0a_0", pf), ("pci_0000_00_0b_0", vf)])
+        self.assertEqual([(d["physfn"], d["vfs"], d["product"]) for d in pci_devices],
+                         [("", 1, "Ethernet controller"), ("0000:00:0a.0", 0, "0x10ed")])
+
+    def test_a_device_gone_meanwhile_is_left_out_other_errors_are_raised(self):
+        for code, raised in ((libvirt.VIR_ERR_NO_NODE_DEVICE, False), (libvirt.VIR_ERR_OPERATION_FAILED, True)):
+            err = libvirt.libvirtError("gone")
+            err.get_error_code = lambda code=code: code
+            gone = node("pci_0000_00_0b_0", "")
+            gone.XMLDesc.side_effect = err
+            conn = wvmConnect.__new__(wvmConnect)
+            conn.wvm = MagicMock(**{"listAllDevices.return_value": [gone, node(*NODES[0])], "listAllDomains.return_value": []})
+            with self.subTest(code=code):
+                if raised:
+                    self.assertRaises(libvirt.libvirtError, node_devices, conn)
+                else:
+                    self.assertEqual([d["address"] for d in node_devices(conn)[0]], ["0000:00:06.0"])
+
+    def test_a_pci_address_from_libvirts_hex_or_numbers(self):
+        self.assertEqual(pci_address("0x0000", "0x00", "0x1f", "0x3"), pci_address(0, 0, 31, 3))
+        self.assertEqual(pci_address(0, 0, 31, 3), "0000:00:1f.3")

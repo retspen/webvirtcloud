@@ -7,6 +7,7 @@ import unittest
 from django.core.exceptions import ValidationError
 
 from computes.validators import validate_hostname, validate_login
+from django.test import TestCase
 
 
 class HostnameValidatorTestCase(unittest.TestCase):
@@ -46,3 +47,41 @@ class LoginValidatorTestCase(unittest.TestCase):
                     validate_login(value)
 
 
+class ComputeInputValidationTestCase(TestCase):
+    """hostname and login reach libvirt URIs and ssh unquoted; the form and
+    the API reject values that would inject a URI parameter or an ssh option."""
+
+    def test_form_rejects_injecting_hostname(self):
+        from computes.forms import SshComputeForm
+
+        form = SshComputeForm(
+            data={"name": "c", "hostname": "192.0.2.1/system?command=/evil", "login": "root", "type": 2}
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("hostname", form.errors)
+
+    def test_api_rejects_injecting_hostname_and_login(self):
+        from computes.api.serializers import ComputeSerializer
+
+        for field, data in (
+            ("hostname", {"name": "c", "hostname": "192.0.2.1/system?command=/evil&a=", "login": "root", "type": 2}),
+            ("login", {"name": "c", "hostname": "192.0.2.1", "login": "-oProxyCommand=x", "type": 2}),
+        ):
+            with self.subTest(field=field):
+                serializer = ComputeSerializer(data=data)
+                self.assertFalse(serializer.is_valid())
+                self.assertIn(field, serializer.errors)
+
+    def test_api_accepts_valid_values(self):
+        from computes.api.serializers import ComputeSerializer
+
+        serializer = ComputeSerializer(
+            data={"name": "c", "hostname": "host.example.com", "login": "root", "type": 2}
+        )
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+
+    def test_api_accepts_empty_login_for_tcp(self):
+        from computes.api.serializers import ComputeSerializer
+
+        serializer = ComputeSerializer(data={"name": "c", "hostname": "192.0.2.1", "login": "", "type": 1})
+        self.assertTrue(serializer.is_valid(), serializer.errors)

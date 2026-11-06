@@ -14,33 +14,8 @@ from instances.models import Instance
 from logs.models import Logs
 from libvirt import libvirtError
 from lxml import etree
-from vrtManager.create import PCIE_ROOT_PORTS, wvmCreate
 
-DOM_CAPS = {"domain": "kvm", "os_support": "no", "cpu_modes": ["host-model"], "cpu_custom_models": [],
-            "disk_bus": ["virtio", "sata", "scsi"]}
 NO_SLOT = libvirtError("internal error: No more available PCI slots")
-
-
-def defined_controllers(machine):
-    conn = wvmCreate.__new__(wvmCreate)
-    conn.wvm = MagicMock()
-    with patch.object(wvmCreate, "get_capabilities", return_value={"features": []}), \
-            patch.object(wvmCreate, "get_dom_capabilities", return_value=DOM_CAPS):
-        conn.create_instance(name="vm-1", memory=512, vcpu=1, vcpu_mode="host-model",
-                             uuid="00000000-0000-4000-8000-0000000000c2", arch="x86_64", machine=machine,
-                             firmware="BIOS", volumes=[], networks="default", nwfilter="", virtio=True,
-                             listener_addr="0.0.0.0", add_cdrom="None", add_input="None")
-    domain = etree.fromstring(conn.wvm.defineXML.call_args.args[0])
-    return [c.get("model") for c in domain.findall("devices/controller[@type='pci']")]
-
-
-class NewVmPortsTests(SimpleTestCase):
-    def test_a_new_q35_vm_has_spare_root_ports(self):
-        # libvirt puts the VM's devices into these and adds none: the rest are free
-        self.assertEqual(defined_controllers("pc-q35-rhel9.8.0"), ["pcie-root"] + ["pcie-root-port"] * PCIE_ROOT_PORTS)
-
-    def test_a_pc_vm_has_none_its_pci_bus_has_slots(self):
-        self.assertEqual(defined_controllers("pc-i440fx-rhel7.6.0"), [])
 
 
 class NoPciSlotTests(TestCase):

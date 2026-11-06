@@ -17,7 +17,7 @@ from computes.models import Compute
 from console import tokens
 from console.tests.test_socketiod_child import consoles, console, start_socketiod, socketio
 from instances.models import Instance
-from instances.tests import livetest
+from vrtManager.tests import livetest
 
 P = livetest.PREFIX
 

@@ -9,6 +9,7 @@ from django.test import SimpleTestCase
 from lxml import etree
 from vrtManager.connection import wvmConnect
 from vrtManager.create import wvmCreate
+from vrtManager.create import PCIE_ROOT_PORTS
 
 FULL = """<domainCapabilities><os supported='yes'>
   <enum name='firmware'><value>efi</value></enum>
@@ -124,3 +125,59 @@ class DefinitionTests(SimpleTestCase):
         tpm = defined("UEFI Secure Boot", tpm_model="tpm-crb").find("devices/tpm")
         self.assertEqual((tpm.get("model"), tpm.find("backend").get("type"), tpm.find("backend").get("version")),
                          ("tpm-crb", "emulator", "2.0"))
+
+
+CPU_DOM_CAPS = {"domain": "kvm", "os_support": "no", "cpu_modes": ["host-passthrough", "maximum", "host-model", "custom"],
+            "cpu_custom_models": ["Skylake-Server-noTSX-IBRS", "SandyBridge-IBRS"]}
+
+
+def defined_cpu(vcpu_mode):
+    conn = wvmCreate.__new__(wvmCreate)
+    conn.wvm = MagicMock()
+    with patch.object(wvmCreate, "get_capabilities", return_value={"features": []}), \
+            patch.object(wvmCreate, "get_dom_capabilities", return_value=CPU_DOM_CAPS):
+        conn.create_instance(name="vm-1", memory=512, vcpu=1, vcpu_mode=vcpu_mode,
+                             uuid="00000000-0000-4000-8000-0000000000c1", arch="x86_64", machine="q35",
+                             firmware="BIOS", volumes=[], networks="", nwfilter="", virtio=True, listener_addr="0.0.0.0",
+                             add_cdrom="None", add_input="None")
+    return etree.fromstring(conn.wvm.defineXML.call_args.args[0]).find("cpu")
+
+
+class CpuModeTests(SimpleTestCase):
+    def test_a_mode_is_written_as_the_mode(self):
+        for mode in ("host-model", "host-passthrough", "maximum"):
+            with self.subTest(mode=mode):
+                cpu = defined_cpu(mode)
+                self.assertEqual((dict(cpu.attrib), len(cpu)), ({"mode": mode}, 0))
+
+    def test_a_named_model_is_that_model_checked_by_libvirt(self):
+        # a name longer than 20 characters too
+        cpu = defined_cpu("Skylake-Server-noTSX-IBRS")
+        self.assertEqual(dict(cpu.attrib), {"mode": "custom", "match": "exact"})  # no check='none'
+        self.assertEqual((cpu.findtext("model"), cpu.find("model").get("fallback")), ("Skylake-Server-noTSX-IBRS", "forbid"))
+
+
+PORTS_DOM_CAPS = {"domain": "kvm", "os_support": "no", "cpu_modes": ["host-model"], "cpu_custom_models": [],
+            "disk_bus": ["virtio", "sata", "scsi"]}
+
+
+def defined_controllers(machine):
+    conn = wvmCreate.__new__(wvmCreate)
+    conn.wvm = MagicMock()
+    with patch.object(wvmCreate, "get_capabilities", return_value={"features": []}), \
+            patch.object(wvmCreate, "get_dom_capabilities", return_value=PORTS_DOM_CAPS):
+        conn.create_instance(name="vm-1", memory=512, vcpu=1, vcpu_mode="host-model",
+                             uuid="00000000-0000-4000-8000-0000000000c2", arch="x86_64", machine=machine,
+                             firmware="BIOS", volumes=[], networks="default", nwfilter="", virtio=True,
+                             listener_addr="0.0.0.0", add_cdrom="None", add_input="None")
+    domain = etree.fromstring(conn.wvm.defineXML.call_args.args[0])
+    return [c.get("model") for c in domain.findall("devices/controller[@type='pci']")]
+
+
+class NewVmPortsTests(SimpleTestCase):
+    def test_a_new_q35_vm_has_spare_root_ports(self):
+        # libvirt puts the VM's devices into these and adds none: the rest are free
+        self.assertEqual(defined_controllers("pc-q35-rhel9.8.0"), ["pcie-root"] + ["pcie-root-port"] * PCIE_ROOT_PORTS)
+
+    def test_a_pc_vm_has_none_its_pci_bus_has_slots(self):
+        self.assertEqual(defined_controllers("pc-i440fx-rhel7.6.0"), [])

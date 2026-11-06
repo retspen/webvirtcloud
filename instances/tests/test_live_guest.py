@@ -6,7 +6,7 @@ with qemu-guest-agent enabled.
 The tests boot wvc-test VMs from qcow2 overlays in the test pool, so the
 image itself is only read. They are skipped while a running VM uses the
 image, since its content would change under the overlays. Runs only with TEST_LIBVIRT_HOST set as well (see
-instances/tests/livetest.py).
+vrtManager/tests/livetest.py).
 """
 
 import json
@@ -26,7 +26,7 @@ from vrtManager.connection import connection_manager
 
 from operations.models import Operation
 
-from . import livetest
+from vrtManager.tests import livetest
 from .test_create_instance import run
 from instances.models import Instance
 from instances.utils import refr
