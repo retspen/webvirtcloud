@@ -70,6 +70,10 @@ class MigrateJobTestCase(TransactionTestCase):
         dom.isActive.return_value = False
         with patch("instances.jobs._domain", side_effect=[dom, None]):  # source, destination
             self.assertEqual(MigrateInstance().reconcile(op).state, Operation.FAILED)
+        op.cancel_requested = True  # recovery sent the cancel: libvirt aborted it
+        with patch("instances.jobs._domain", side_effect=[dom, None]):
+            self.assertEqual(MigrateInstance().reconcile(op).state, Operation.CANCELLED)
+        op.cancel_requested = False
         dom.isActive.return_value = True
         dom.jobInfo.return_value = [2] + [0] * 11  # VIR_DOMAIN_JOB_UNBOUNDED
         with patch("instances.jobs._domain", side_effect=[dom, dom]):
