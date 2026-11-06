@@ -6,7 +6,7 @@ import unittest
 
 from django.core.exceptions import ValidationError
 
-from computes.validators import validate_hostname, validate_login, validate_name
+from computes.validators import validate_hostname, validate_login
 
 
 class HostnameValidatorTestCase(unittest.TestCase):
@@ -46,8 +46,3 @@ class LoginValidatorTestCase(unittest.TestCase):
                     validate_login(value)
 
 
-class NameValidatorTestCase(unittest.TestCase):
-    def test_checks_the_value(self):
-        validate_name("good-name_1.2")
-        with self.assertRaises(ValidationError):
-            validate_name("bad name!")

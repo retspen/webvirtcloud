@@ -326,11 +326,6 @@ class wvmNetwork(wvmConnect):
     def get_network_mac(self):
         return self.tree.xpath("string(mac/@address)")
 
-    def get_network_forward(self):
-        """Its forward mode (None: isolated) and the device it forwards through."""
-        forward = self.tree.find("forward")
-        return [forward.get("mode"), forward.get("dev")] if forward is not None else [None, None]
-
     def _ip(self, index):
         """The saved <ip> of that index, and what ip_networks tells of it."""
         tree = self.config()

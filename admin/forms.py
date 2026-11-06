@@ -119,10 +119,6 @@ class UserForm(UniqueEmailMixin, forms.ModelForm):
     def permission_rows(self):
         return permission_rows(self["user_permissions"])
 
-    def identity_has_errors(self):
-        return any(self.has_error(name) for name in ("username", "password", "first_name", "last_name", "email"))
-
-
 class UserCreateForm(UserForm):
     password = forms.CharField(widget=forms.PasswordInput)
 

@@ -7,7 +7,6 @@ from django.utils.translation import gettext_lazy as _
 # one or more dot-separated RFC 1123 labels, optional trailing dot
 _hostname = re.compile(r"[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\.?")
 _login = re.compile(r"[A-Za-z0-9._][A-Za-z0-9._-]*")
-_name = re.compile(r"[A-Za-z0-9._-]+")
 
 
 def validate_hostname(value):
@@ -35,11 +34,6 @@ def validate_login(value):
         raise ValidationError(
             _("The login may contain only letters, digits, '.', '_' and '-', and may not start with '-'")
         )
-
-
-def validate_name(value):
-    if not _name.fullmatch(value):
-        raise ValidationError(_("The name must not contain any special characters"))
 
 
 def validate_migration_address(value):

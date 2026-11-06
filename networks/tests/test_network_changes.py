@@ -65,7 +65,7 @@ class NetworkChangeTests(SimpleTestCase):
         # the running one for its addresses, the saved one for its limits and the XML editor
         net = self.network()
         with patch.object(net.net, "XMLDesc", wraps=net.net.XMLDesc) as xml:
-            net.get_ip_networks(), net.get_network_forward(), net.get_network_mac(), net.get_qos()
+            net.get_ip_networks(), net.get_network_mac(), net.get_qos()
             net.get_bridge_device(), net.get_mode(), net.saved_xml
         self.assertEqual(xml.call_count, 2)
 

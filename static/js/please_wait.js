@@ -6,13 +6,6 @@ function showPleaseWaitDialog() {
     pleaseModal.show();
     backgroundJobRunning = true;
 }
-function hidePleaseWaitDialog() {
-    var pleaseModal = new bootstrap.Modal(document.getElementById('pleaseWaitDialog'), {
-        keyboard: false
-    })
-    pleaseModal.hide();
-    backgroundJobRunning = false;
-}
 // a form marked data-please-wait shows the dialog while it is sent
 document.addEventListener("submit", function (event) {
     if (event.target.matches("form[data-please-wait]")) showPleaseWaitDialog();

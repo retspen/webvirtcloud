@@ -60,27 +60,6 @@ def get_rbd_storage_data(stg):
 
 
 class wvmCreate(wvmConnect):
-    def get_storages_images(self):
-        """
-        Function return all images on all storages
-        """
-        images = []
-        storages = self.get_storages(only_actives=True)
-        for storage in storages:
-            stg = self.get_storage(storage)
-            with contextlib.suppress(Exception):
-                stg.refresh(0)
-            images.extend(img for img in stg.listVolumes() if not img.lower().endswith(".iso"))
-        return images
-
-    def get_os_type(self):
-        """Get guest os type"""
-        return util.get_xml_path(self.get_cap_xml(), "/capabilities/guest/os_type")
-
-    def get_host_arch(self):
-        """Get host architecture"""
-        return util.get_xml_path(self.get_cap_xml(), "/capabilities/host/cpu/arch")
-
     def create_volume(self, storage, name, size, image_format, metadata=False, disk_owner_uid=0, disk_owner_gid=0):
         size = int(size) * 1073741824
         stg = self.get_storage(storage)

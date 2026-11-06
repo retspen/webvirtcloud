@@ -253,15 +253,6 @@ class wvmStorage(wvmConnect):
 
         return util.get_xml_path(self._XMLDesc(0), func=hosts)
 
-    def get_pretty_allocation(self):
-        return util.pretty_bytes(self.get_allocation())
-
-    def get_pretty_available(self):
-        return util.pretty_bytes(self.get_available())
-
-    def get_pretty_capacity(self):
-        return util.pretty_bytes(self.get_capacity())
-
     def get_volumes(self):
         return self.pool.listVolumes()
 

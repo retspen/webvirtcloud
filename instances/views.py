@@ -46,8 +46,7 @@ from libvirt import (VIR_DOMAIN_PAUSED,
                      VIR_ERR_NO_DOMAIN,
                      VIR_ERR_NO_SUPPORT,
                      libvirtError)
-from logs.audit import audit, audit_vm, changed_fields, failed_vm
-from logs.audit import snapshot as audit_snapshot
+from logs.audit import audit, audit_vm, failed_vm
 from operations import claims, jobs
 from operations.utils import HOST_BUSY, busy_message, summary
 from webvirtcloud.middleware import error_text, same_origin_referer
@@ -2640,27 +2639,6 @@ def flavor_create(request):
         request,
         "common/form.html",
         {"form": form, "title": _("Create Flavor")},
-    )
-
-
-@superuser_only
-def flavor_update(request, pk):
-    flavor = get_object_or_404(Flavor, pk=pk)
-    subject, before = f"Flavor {flavor.label}", audit_snapshot(flavor)
-    form = FlavorForm(request.POST or None, instance=flavor)
-    if form.is_valid():
-        with audit(request, None, subject, "change") as entry:
-            form.save()
-            fields = changed_fields(before, audit_snapshot(flavor))
-            entry.action = "change " + ", ".join(fields)
-            entry.skip = not fields
-        messages.success(request, _("Flavor Updated"))
-        return get_safe_redirect(request, default=reverse("instances:index"))
-
-    return render(
-        request,
-        "common/form.html",
-        {"form": form, "title": _("Update Flavor")},
     )
 
 

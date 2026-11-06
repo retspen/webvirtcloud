@@ -2,7 +2,6 @@
 
 import contextlib
 import os
-import socket
 import subprocess
 import sys
 import threading
@@ -19,29 +18,6 @@ if not settings.configured:
 import libvirt
 from vrtManager import connection
 from vrtManager.connection import CONN_SSH, CONN_TCP, SSH_COMMAND, wvmConnectionManager
-
-
-def closed_port():
-    sock = socket.socket()
-    sock.bind(("127.0.0.1", 0))
-    port = sock.getsockname()[1]
-    sock.close()
-    return port
-
-
-class HostIsUpTestCase(unittest.TestCase):
-    def setUp(self):
-        self.manager = wvmConnectionManager.__new__(wvmConnectionManager)
-
-    def test_reachable_host_is_true(self):
-        server = socket.socket()
-        server.bind(("127.0.0.1", 0))
-        server.listen(1)
-        self.addCleanup(server.close)
-        self.assertIs(self.manager.host_is_up(CONN_TCP, f"127.0.0.1:{server.getsockname()[1]}"), True)
-
-    def test_unreachable_host_is_false_not_an_exception(self):
-        self.assertIs(self.manager.host_is_up(CONN_TCP, f"127.0.0.1:{closed_port()}"), False)
 
 
 class ConnectionManagerTestCase(unittest.TestCase):

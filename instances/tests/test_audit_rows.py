@@ -54,8 +54,6 @@ class FlavorRowTests(TestCase):
         data = {"label": "tiny-a", "memory": 512, "vcpu": 1, "disk": 10}
         self.client.post(reverse("instances:flavor_create"), data)
         flavor = Flavor.objects.get(label="tiny-a")
-        self.client.post(reverse("instances:flavor_update", args=[flavor.pk]), {**data, "vcpu": 2})
-        self.client.post(reverse("instances:flavor_update", args=[flavor.pk]), {**data, "vcpu": 2})  # no change
         self.client.post(reverse("instances:flavor_delete", args=[flavor.pk]))
         self.assertFalse(Flavor.objects.filter(label="tiny-a").exists())
 
@@ -71,6 +69,6 @@ class FlavorRowTests(TestCase):
         self.assertFalse(Flavor.objects.filter(label="huge-a").exists())
 
         self.assertEqual([m for m, _ in rows()], [
-            "Flavor tiny-a: add", "Flavor tiny-a: change vcpu", "Flavor tiny-a: delete",
+            "Flavor tiny-a: add", "Flavor tiny-a: delete",
             "Flavor huge-a: add", "Flavor huge-a: change vcpu", "Flavor huge-a: change memory", "Flavor huge-a: delete",
         ])
