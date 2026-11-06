@@ -1,4 +1,5 @@
 from computes.models import Compute
+from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.functional import cached_property
@@ -11,7 +12,6 @@ from libvirt import (
 from operations import claims
 from operations.models import Claim
 from vrtManager.instance import PERSISTENT_XML, wvmInstance
-from webvirtcloud.settings import QEMU_CONSOLE_LISTENER_ADDRESSES
 
 
 class Flavor(models.Model):
@@ -466,7 +466,7 @@ class CreateInstance(models.Model):
         max_length=16, error_messages={"required": _("Please select a video driver")}
     )
     listener_addr = models.CharField(
-        max_length=20, choices=QEMU_CONSOLE_LISTENER_ADDRESSES
+        max_length=20, choices=settings.QEMU_CONSOLE_LISTENER_ADDRESSES
     )
 
     class Meta:

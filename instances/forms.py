@@ -3,7 +3,6 @@ import re
 from django import forms
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
-from webvirtcloud.settings import QEMU_CONSOLE_LISTENER_ADDRESSES, QEMU_KEYMAPS
 
 from .models import CreateInstance, Flavor
 from .utils import nic_macs
@@ -62,11 +61,11 @@ class ConsoleForm(forms.Form):
         if "pty" in (instance.config_console_type, self.data.get("console_type")):
             del self.fields["password_action"], self.fields["password"]
             return
-        keymap_choices = [("auto", _("Auto"))] + list((c, c) for c in QEMU_KEYMAPS)
+        keymap_choices = [("auto", _("Auto"))] + list((c, c) for c in settings.QEMU_KEYMAPS)
         # Only administrators choose the listen address: beyond localhost the
         # console is reachable from the network. A disabled field ignores
         # posted values.
-        listeners = list(QEMU_CONSOLE_LISTENER_ADDRESSES)
+        listeners = list(settings.QEMU_CONSOLE_LISTENER_ADDRESSES)
         # an address set elsewhere (the XML editor) is offered, so a save keeps it
         if listener and listener not in dict(listeners):
             listeners.append((listener, listener))
