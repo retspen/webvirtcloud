@@ -200,7 +200,7 @@ if __name__ == "__main__":
     options.verbose = options.verbose or options.debug
 
     # nginx ends TLS: novncd speaks plain websockets on the loopback
-    WebSocketProxy(
+    server = WebSocketProxy(
         RequestHandlerClass=ConsoleProxyHandler,
         listen_host=options.host,
         listen_port=options.port,
@@ -212,4 +212,10 @@ if __name__ == "__main__":
         # a ping while the VM's screen stays the same: nginx, and a proxy on
         # the way, end a websocket that sends nothing for 60 seconds
         heartbeat=30,
-    ).start_server()
+    )
+    try:
+        server.start_server()
+    except SystemExit as stop:
+        # websockify ends with status 0 when it cannot listen (the port is
+        # taken): systemd's Restart=on-failure would not start it again
+        raise SystemExit(stop.code or 1) from None
