@@ -161,9 +161,9 @@ else:
             "NAME": Path.joinpath(BASE_DIR, "db.sqlite3"),
             # IMMEDIATE takes the write lock when a transaction starts, so a
             # check-then-write cannot interleave with another process; timeout
-            # is how long a writer waits for that lock (seconds). WAL is set
-            # per connection by the operations app.
-            "OPTIONS": {"transaction_mode": "IMMEDIATE", "timeout": 20},
+            # is how long a writer waits for that lock (seconds). WAL lets the
+            # worker and gunicorn read while one of them writes.
+            "OPTIONS": {"transaction_mode": "IMMEDIATE", "timeout": 20, "init_command": "PRAGMA journal_mode=WAL"},
             # A file, not shared-cache memory: test threads and worker processes
             # open the same database, and shared-cache locks ignore the timeout.
             "TEST": {"NAME": os.getenv("WEBVIRTCLOUD_TEST_DB") or Path.joinpath(BASE_DIR, "test_db.sqlite3")},
