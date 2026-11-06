@@ -98,8 +98,8 @@ class AccountsTestCase(TestCase):
             reverse("accounts:change_password"),
             {
                 "old_password": "wrongpass",
-                "new_password1": "newpw",
-                "new_password2": "newpw",
+                "new_password1": "Wvc-changed-9",
+                "new_password2": "Wvc-changed-9",
             },
         )
         self.assertEqual(response.status_code, 200)
@@ -108,15 +108,15 @@ class AccountsTestCase(TestCase):
             reverse("accounts:change_password"),
             {
                 "old_password": "test",
-                "new_password1": "newpw",
-                "new_password2": "newpw",
+                "new_password1": "Wvc-changed-9",
+                "new_password2": "Wvc-changed-9",
             },
         )
         self.assertRedirects(response, reverse("accounts:profile"))
 
         self.client.logout()
 
-        logged_in = self.client.login(request=RequestFactory().get("/"), username="test", password="newpw")
+        logged_in = self.client.login(request=RequestFactory().get("/"), username="test", password="Wvc-changed-9")
         self.assertTrue(logged_in)
 
     def test_user_instance_create_update_delete(self):
