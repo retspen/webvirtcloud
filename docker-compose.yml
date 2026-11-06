@@ -39,7 +39,7 @@ services:
       - webvirtcloud-ssh:/var/www/.ssh
       # Persistent TLS client certificates for TLS computes (.pki/libvirt)
       - webvirtcloud-pki:/var/www/.pki
-      # Daily backups of both (manage.py backup)
+      # Daily backups of the database, keys and certificates (manage.py backup)
       - webvirtcloud-backups:/srv/webvirtcloud/backups
 
 volumes:

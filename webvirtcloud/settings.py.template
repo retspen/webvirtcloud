@@ -320,7 +320,7 @@ QEMU_CONSOLE_LISTENER_ADDRESSES = (
     ("0.0.0.0", _("All interfaces")),
 )
 
-# List taken from http://qemu.weilnetz.de/qemu-doc.html#sec_005finvocation
+# the keymaps of QEMU's -k option
 QEMU_KEYMAPS = [
     "ar",
     "da",

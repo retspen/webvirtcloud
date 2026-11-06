@@ -14,7 +14,7 @@ def password_change_middleware_check(app_configs, **kwargs):
         return [
             Error(
                 "ForcePasswordChangeMiddleware must follow AuthenticationMiddleware.",
-                hint=f"Add '{required}' to MIDDLEWARE in webvirtcloud/settings.py; see README.md.",
+                hint=f"Add '{required}' to MIDDLEWARE in webvirtcloud/settings.py, as settings.py.template does.",
                 id="accounts.E001",
             )
         ]
@@ -31,7 +31,7 @@ def login_required_middleware_check(app_configs, **kwargs):
             Error(
                 "MIDDLEWARE must use Django's LoginRequiredMiddleware.",
                 hint=f"In webvirtcloud/settings.py replace '{old}' with '{required}' "
-                "and delete LOGIN_REQUIRED_IGNORE_VIEW_NAMES; see README.md.",
+                "and delete LOGIN_REQUIRED_IGNORE_VIEW_NAMES, as settings.py.template does.",
                 id="accounts.E002",
             )
         ]
