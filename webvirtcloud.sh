@@ -355,10 +355,8 @@ set_hosts () {
 
 restart_nginx () {
   echo "* Setting Nginx to start on boot and starting Nginx."
-  log "systemctl enable nginx.service"
-  #systemctl enable nginx.service
-  log "systemctl restart nginx.service"
-  #systemctl restart nginx.service
+  # nginx is not enabled on RHEL and openSUSE, and Debian's runs the default site until a reload
+  nginx -t && systemctl enable nginx.service && systemctl restart nginx.service || exit 1
 }
 
 
