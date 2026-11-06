@@ -6,11 +6,6 @@ info and capabilities are read once per object."""
 import unittest
 from unittest.mock import MagicMock
 
-from django.conf import settings
-
-if not settings.configured:
-    settings.configure(MAC_OUI="52:54:10")
-
 from libvirt import libvirtError
 from vrtManager.instance import wvmInstance
 

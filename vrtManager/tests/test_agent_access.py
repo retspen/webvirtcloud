@@ -9,11 +9,6 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch
 
-from django.conf import settings
-
-if not settings.configured:
-    settings.configure(MAC_OUI="52:54:10")
-
 from libvirt import libvirtError
 from vrtManager import instance as module
 from vrtManager.instance import wvmInstance

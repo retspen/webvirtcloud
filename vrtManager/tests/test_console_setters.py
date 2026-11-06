@@ -1,11 +1,6 @@
 import unittest
 from unittest.mock import MagicMock
 
-from django.conf import settings
-
-if not settings.configured:
-    settings.configure(MAC_OUI="52:54:10")
-
 from lxml import etree
 from vrtManager.instance import PERSISTENT_XML, wvmInstance
 

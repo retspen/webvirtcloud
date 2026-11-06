@@ -6,11 +6,6 @@ import json
 import unittest
 from unittest.mock import MagicMock
 
-from django.conf import settings
-
-if not settings.configured:
-    settings.configure(MAC_OUI="52:54:10")
-
 import pycdlib
 from libvirt import VIR_ERR_NO_STORAGE_VOL, libvirtError
 from vrtManager.connection import wvmConnect

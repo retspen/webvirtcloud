@@ -3,11 +3,6 @@
 import unittest
 from unittest.mock import Mock
 
-from django.conf import settings
-
-if not settings.configured:
-    settings.configure(MAC_OUI="52:54:10")
-
 from vrtManager.connection import wvmConnect
 from vrtManager.network import wvmNetwork
 

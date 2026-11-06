@@ -1,9 +1,5 @@
 import unittest
 
-from django.conf import settings
-
-if not settings.configured:
-    settings.configure(MAC_OUI="52:54:10")
 
 from vrtManager.util import (
     get_xml_path,
@@ -80,7 +76,6 @@ class TestVrtManagerUtil(unittest.TestCase):
         for vol_format in (None, "", "none", "unknown", "iso"):
             self.assertEqual(vol_driver_type(vol_format), "raw")
         self.assertEqual(vol_driver_type("linux-lvm", "disk"), "raw")  # a partition
-
 
 
 class OperationErrorTestCase(unittest.TestCase):

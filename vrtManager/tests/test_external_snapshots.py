@@ -7,11 +7,6 @@ import unittest
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-from django.conf import settings
-
-if not settings.configured:
-    settings.configure(MAC_OUI="52:54:10")
-
 import libvirt
 from libvirt import libvirtError
 from vrtManager import instance as instance_module

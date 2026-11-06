@@ -9,11 +9,7 @@ import time
 import unittest
 from unittest.mock import MagicMock, patch
 
-from django.conf import settings
 from django.core.signals import request_finished, request_started
-
-if not settings.configured:
-    settings.configure(MAC_OUI="52:54:10")
 
 import libvirt
 from vrtManager import connection
@@ -42,7 +38,6 @@ class ConnectionManagerTestCase(unittest.TestCase):
                 self.manager.get_connection("fast", "u", "p", CONN_TCP)
             self.assertLess(time.monotonic() - started, 1.0)
             slow.join()
-
 
 
 def alive_connection():

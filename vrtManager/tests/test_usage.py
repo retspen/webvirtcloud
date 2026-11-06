@@ -7,11 +7,6 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from django.conf import settings
-
-if not settings.configured:
-    settings.configure(MAC_OUI="52:54:10")
-
 from vrtManager.instance import USAGE_MAX_WINDOW, wvmInstance
 
 XML = """<domain><devices>
