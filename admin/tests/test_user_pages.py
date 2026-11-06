@@ -2,7 +2,7 @@
 user form says what its fields mean, and a password set by an administrator
 can be one the user must change."""
 
-from accounts.models import UserAttributes
+from accounts.models import ApiToken, UserAttributes
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
 from django.test import TestCase
@@ -139,6 +139,15 @@ class UserPagesTests(TestCase):
         self.client.force_login(self.admin)
         self.client.post(url, {"password1": "New-pw-4567y", "password2": "New-pw-4567y"})
         self.assertFalse(UserAttributes.objects.get(user=self.alice).must_change_password)
+
+    def test_a_password_set_by_an_administrator_ends_the_users_api_tokens(self):
+        # a reset closes a taken-over account: a stolen token must not outlive it
+        ApiToken.objects.create(self.alice, expiry=None, name="script")
+        ApiToken.objects.create(self.admin, expiry=None, name="mine")
+        url = reverse("admin:user_update_password", args=[self.alice.pk])
+        self.client.post(url, {"password1": "New-pw-4567x", "password2": "New-pw-4567x"})
+        self.assertFalse(ApiToken.objects.filter(user=self.alice).exists())
+        self.assertTrue(ApiToken.objects.filter(user=self.admin).exists())
 
     def test_a_user_without_a_password_cannot_be_made_to_change_it(self):
         # the change form asks for the old password: one they never had

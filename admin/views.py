@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from accounts.models import Instance, UserAttributes, UserInstance
+from accounts.models import ApiToken, Instance, UserAttributes, UserInstance
 from appsettings.settings import app_settings
 from django.conf import settings
 from django.contrib import messages
@@ -208,6 +208,8 @@ def user_update_password(request, pk):
                 user = form.save()
                 UserAttributes.objects.update_or_create(
                     user=user, defaults={"must_change_password": form.cleaned_data["must_change_password"]})
+                # a reset closes a taken-over account: its tokens would outlive the old password
+                ApiToken.objects.filter(user=user).delete()
             update_session_auth_hash(request, user)  # Important!
             messages.success(
                 request, _("Password changed for %(user)s") % {"user": user.username}

@@ -913,16 +913,16 @@ msgstr "Sonuç"
 msgid "IP"
 msgstr "IP"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:286 instances/states.py:19
+#: admin/templates/admin/logs.html:56 admin/views.py:288 instances/states.py:19
 #: instances/views.py:419 instances/views.py:421 logs/views.py:17
 msgid "Unknown"
 msgstr "Bilinmeyen"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:286 logs/views.py:17
+#: admin/templates/admin/logs.html:56 admin/views.py:288 logs/views.py:17
 msgid "Done"
 msgstr "Tamamlandı"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:286 logs/views.py:17
+#: admin/templates/admin/logs.html:56 admin/views.py:288 logs/views.py:17
 #: operations/templates/operations/job.html:107
 msgid "Failed"
 msgstr "Başarısız"
@@ -1106,6 +1106,10 @@ msgstr "Engeli Kaldır"
 msgid "How the user signs in."
 msgstr "Kullanıcının nasıl oturum açtığı."
 
+#: admin/templates/admin/user_password_form.html:19
+msgid "Changing it deletes the user's API tokens."
+msgstr "Değiştirmek kullanıcının API token'larını siler."
+
 #: admin/templates/admin/user_password_form.html:22
 msgid "Signs in with the password set here."
 msgstr "Burada belirlenen parolayla oturum açar."
@@ -1138,27 +1142,27 @@ msgstr "Kullanıcı Oluştur"
 msgid "Update User"
 msgstr "Kullanıcı Güncelle"
 
-#: admin/views.py:213
+#: admin/views.py:215
 #, python-format
 msgid "Password changed for %(user)s"
 msgstr "%(user)s parolası değiştirildi"
 
-#: admin/views.py:237
+#: admin/views.py:239
 msgid "Their access to VMs, SSH keys and settings go; the VMs themselves stay."
 msgstr ""
 "Sanal makinelere erişimi, SSH anahtarları ve ayarları silinir; sanal "
 "makinelerin kendisi kalır."
 
-#: admin/views.py:335
+#: admin/views.py:337
 msgid "deleted user"
 msgstr "silinmiş kullanıcı"
 
-#: admin/views.py:346
+#: admin/views.py:348
 #, python-format
 msgid "Removed VM %(name)s deleted"
 msgstr "Kaldırılan sanal makine %(name)s silindi"
 
-#: admin/views.py:353
+#: admin/views.py:355
 msgid "Its owners no longer get the VM back if its UUID shows up again."
 msgstr ""
 "UUID'si yeniden görünse bile sahipleri sanal makineyi artık geri almaz."

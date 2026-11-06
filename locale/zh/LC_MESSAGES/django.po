@@ -893,16 +893,16 @@ msgstr "结果"
 msgid "IP"
 msgstr "IP"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:286 instances/states.py:19
+#: admin/templates/admin/logs.html:56 admin/views.py:288 instances/states.py:19
 #: instances/views.py:419 instances/views.py:421 logs/views.py:17
 msgid "Unknown"
 msgstr "未知"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:286 logs/views.py:17
+#: admin/templates/admin/logs.html:56 admin/views.py:288 logs/views.py:17
 msgid "Done"
 msgstr "完成"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:286 logs/views.py:17
+#: admin/templates/admin/logs.html:56 admin/views.py:288 logs/views.py:17
 #: operations/templates/operations/job.html:107
 msgid "Failed"
 msgstr "失败"
@@ -1079,6 +1079,10 @@ msgstr "解除禁用"
 msgid "How the user signs in."
 msgstr "用户的登录方式。"
 
+#: admin/templates/admin/user_password_form.html:19
+msgid "Changing it deletes the user's API tokens."
+msgstr "更改密码会删除该用户的 API 令牌。"
+
 #: admin/templates/admin/user_password_form.html:22
 msgid "Signs in with the password set here."
 msgstr "使用此处设置的密码登录。"
@@ -1111,25 +1115,25 @@ msgstr "创建用户"
 msgid "Update User"
 msgstr "更新用户"
 
-#: admin/views.py:213
+#: admin/views.py:215
 #, python-format
 msgid "Password changed for %(user)s"
 msgstr "已为 %(user)s 修改密码"
 
-#: admin/views.py:237
+#: admin/views.py:239
 msgid "Their access to VMs, SSH keys and settings go; the VMs themselves stay."
 msgstr "其对虚拟机、SSH 密钥和设置的访问将被移除；虚拟机本身保留。"
 
-#: admin/views.py:335
+#: admin/views.py:337
 msgid "deleted user"
 msgstr "已删除的用户"
 
-#: admin/views.py:346
+#: admin/views.py:348
 #, python-format
 msgid "Removed VM %(name)s deleted"
 msgstr "已删除已移除的虚拟机 %(name)s"
 
-#: admin/views.py:353
+#: admin/views.py:355
 msgid "Its owners no longer get the VM back if its UUID shows up again."
 msgstr "若其 UUID 再次出现，其所有者将不再恢复对该虚拟机的所有权。"
 
