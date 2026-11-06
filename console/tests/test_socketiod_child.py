@@ -13,9 +13,13 @@ import time
 import unittest
 from pathlib import Path
 
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection
-from django.test import TransactionTestCase
+from django.test import Client, TransactionTestCase
 
 from accounts.models import UserInstance
 from computes.models import Compute
@@ -23,6 +27,7 @@ from console import tokens
 from instances.models import Instance
 
 try:
+    import requests
     import socketio
 except ImportError:  # pragma: no cover
     socketio = None
@@ -84,9 +89,19 @@ def start_socketiod(test):
     test.fail("socketiod did not listen within 20 s")
 
 
-def console(port, token):
-    """A connected client and what it receives until the server disconnects it."""
-    client = socketio.Client(reconnection=False)
+def session_key(user):
+    """The session cookie value of user signed in, as the console page's browser has it."""
+    browser = Client()
+    browser.force_login(user)
+    return browser.cookies[settings.SESSION_COOKIE_NAME].value
+
+
+def console(port, token, session_key):
+    """A connected client, signed in with session_key as a browser would be,
+    and what it receives until the server disconnects it."""
+    browser = requests.Session()  # sends the cookie with each request, not only the first
+    browser.cookies.set(settings.SESSION_COOKIE_NAME, session_key)
+    client = socketio.Client(reconnection=False, http_session=browser)
     received = {"output": [], "taken_over": [], "gone": threading.Event()}
     client.on("pty_output", lambda data: received["output"].append(data["output"]))
     client.on("taken_over", lambda data: received["taken_over"].append(data["by"]))
@@ -103,6 +118,7 @@ class SocketiodProcessTestCase(TransactionTestCase):
     def setUp(self):
         compute = Compute.objects.create(name="local", hostname="localhost", login="", password="", type=4)
         user = get_user_model().objects.create_user("serial-owner", password="pw")
+        self.session_key = session_key(user)
         self.tokens = {}
         for n, name in enumerate(("vm-a", "vm-b"), 1):
             vm = Instance.objects.create(compute=compute, name=name, uuid=f"22222222-0000-0000-0000-00000000000{n}")
@@ -110,8 +126,8 @@ class SocketiodProcessTestCase(TransactionTestCase):
             self.tokens[name] = tokens.sign(compute.id, vm.uuid, user.id, "pty")
         self.server, self.port = start_socketiod(self)
 
-    def console(self, token):
-        return console(self.port, token)
+    def console(self, token, session_key=None):
+        return console(self.port, token, self.session_key if session_key is None else session_key)
 
     def test_each_client_gets_its_own_console(self):
         sessions = {name: self.console(token) for name, token in self.tokens.items()}
@@ -137,3 +153,15 @@ class SocketiodProcessTestCase(TransactionTestCase):
             with self.subTest(token=token), self.assertRaises(socketio.exceptions.ConnectionError):
                 self.console(token)
         self.assertEqual(consoles(self.server.pid), [])
+
+    def test_a_request_without_a_session_is_refused_before_it_takes_a_thread(self):
+        # Engine.IO would hold the connection (and a thread) before connect() checks the token
+        handshake = "http://127.0.0.1:%d/socket.io/?EIO=4&transport=polling" % self.port
+        name = settings.SESSION_COOKIE_NAME
+        for cookie in ("", f"{name}=not-a-session"):
+            with self.subTest(cookie=cookie), self.assertRaises(HTTPError) as refusal:
+                urlopen(Request(handshake, headers={"Cookie": cookie}), timeout=10)
+            self.assertEqual(refusal.exception.code, 403)
+        self.assertEqual(urlopen(Request(handshake, headers={"Cookie": f"{name}={self.session_key}"}), timeout=10).status, 200)
+        with self.assertRaises(socketio.exceptions.ConnectionError):  # a valid token is no use without the session
+            self.console(self.tokens["vm-a"], session_key="not-a-session")

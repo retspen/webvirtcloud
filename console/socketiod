@@ -31,7 +31,7 @@ from gunicorn.app.base import BaseApplication  # noqa: E402
 from django import db  # noqa: E402
 from django.conf import settings  # noqa: E402
 
-from console.tokens import authorize  # noqa: E402
+from console.tokens import authorize, session_user_id  # noqa: E402
 
 CONSOLECALLBACK = os.path.join(ROOT_PATH, "conf", "daemon", "consolecallback")
 LOG_FD = os.dup(2)  # this daemon's stderr: a worker logs there on its fd 3
@@ -202,6 +202,23 @@ def disconnect(sid, reason=None):
     stop(sid)
 
 
+def signed_in_only(app):
+    """Engine.IO holds a connection, and one of the threads, from its first
+    request; Socket.IO's connect() checks the token only after that. A request
+    without a signed-in session is refused before it takes a thread: without
+    this, anyone could hold every thread and no console would open."""
+    def wsgi(environ, start_response):
+        try:
+            signed_in = session_user_id(environ.get("HTTP_COOKIE")) is not None
+        finally:
+            db.close_old_connections()
+        if not signed_in:
+            start_response("403 Forbidden", [("Content-Type", "text/plain")])
+            return [b"Sign in to open a serial console\n"]
+        return app(environ, start_response)
+    return wsgi
+
+
 class Server(BaseApplication):
     """gunicorn with one worker (the sessions live in it); a thread per connection."""
 
@@ -217,7 +234,7 @@ class Server(BaseApplication):
         self.cfg.set("control_socket_disable", True)
 
     def load(self):
-        return socketio.WSGIApp(sio)
+        return signed_in_only(socketio.WSGIApp(sio))
 
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ from vrtManager.connection import connection_manager
 from accounts.models import UserInstance
 from computes.models import Compute
 from console import tokens
-from console.tests.test_socketiod_child import consoles, console, start_socketiod, socketio
+from console.tests.test_socketiod_child import consoles, console, session_key, start_socketiod, socketio
 from instances.models import Instance
 from vrtManager.tests import livetest
 
@@ -65,22 +65,22 @@ class LiveSerialConsoleTestCase(TransactionTestCase):
 
     def admin_token(self, token):
         host, uuid, _user, _type = tokens.SIGNER.unsign(token).split(":")
-        admin, _ = get_user_model().objects.get_or_create(username="serial-live-admin", is_superuser=True)
-        return tokens.sign(host, uuid, admin.id, "pty")
+        self.admin, _ = get_user_model().objects.get_or_create(username="serial-live-admin", is_superuser=True)
+        return tokens.sign(host, uuid, self.admin.id, "pty")
 
     def test_the_console_of_a_running_vm_opens_once(self):
         for args in self.hosts:
             with self.subTest(host=args[0], type=args[3]):
                 token, dom = self.token(*args)
-                client, received = console(self.port, token)
+                client, received = console(self.port, token, session_key(self.user))
                 deadline = time.monotonic() + 30
                 while "SeaBIOS" not in "".join(received["output"]) and time.monotonic() < deadline:
                     time.sleep(0.2)
                 self.assertIn("SeaBIOS", "".join(received["output"]))
                 # one client per VM; a superuser takes a console left open over
                 with self.assertRaises(socketio.exceptions.ConnectionError):
-                    console(self.port, token)
-                admin_client, admin_received = console(self.port, self.admin_token(token))
+                    console(self.port, token, session_key(self.user))
+                admin_client, admin_received = console(self.port, self.admin_token(token), session_key(self.admin))
                 wait_for(lambda: received["taken_over"])
                 self.assertEqual(received["taken_over"], ["serial-live-admin"])
                 client.disconnect()
