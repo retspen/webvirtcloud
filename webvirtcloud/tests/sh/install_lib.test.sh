@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Unit tests for conf/install-lib.sh. Run: bash conf/test_install_lib.sh
+# Unit tests for conf/install-lib.sh, run by webvirtcloud/tests/test_install_lib.py:
+# bash webvirtcloud/tests/sh/install_lib.test.sh conf/install-lib.sh
 set -u
-here="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=/dev/null
-. "$here/install-lib.sh"
+. "$1"
 
 fail=0
 check() { if eval "$2"; then echo "ok - $1"; else echo "NOT ok - $1"; fail=1; fi; }
