@@ -335,3 +335,22 @@ class OwnerRightsReturnTestCase(TestCase):
             with self.subTest(next_url):
                 response = self.client.post(f"{update}?next={next_url}", {"is_change": True})
                 self.assertRedirects(response, back, fetch_redirect_response=False)
+
+
+class UserInstanceDeleteTestCase(TestCase):
+    def test_open_redirect_prevented_in_user_instance_delete(self):
+        User = get_user_model()
+        admin = User.objects.create_superuser(username="sec_acc_admin", email="admin@example.com", password="password")
+        user = User.objects.create_user(username="sec_acc_user", password="password")
+        compute = Compute.objects.create(name="acc-comp", hostname="127.0.0.1", login="root", type=1)
+        instance = Instance.objects.create(compute=compute, name="acc-vm", uuid="99999999-9999-9999-9999-999999999999")
+        user_inst = UserInstance.objects.create(instance=instance, user=user)
+        self.client.force_login(admin)
+        url = reverse("accounts:user_instance_delete", args=[user_inst.id])
+
+        # Attempt external malicious redirect
+        res = self.client.post(f"{url}?next=https://malicious-attacker.com")
+        self.assertEqual(res.status_code, 302)
+        # Should redirect to safe internal URL (user account page), NOT external site
+        self.assertNotIn("malicious-attacker.com", res.url)
+        self.assertEqual(res.url, reverse("accounts:account", args=[user.id]))
