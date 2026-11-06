@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-05 15:43+0000\n"
+"POT-Creation-Date: 2026-11-06 20:48+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -159,13 +159,13 @@ msgid "User Profile"
 msgstr "用户资料"
 
 #: accounts/templates/account.html:17 accounts/templates/profile.html:18
-#: admin/forms.py:73 admin/templates/admin/user_list.html:24
+#: admin/forms.py:74 admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:30
 msgid "Superuser"
 msgstr "超级用户"
 
 #: accounts/templates/account.html:19 accounts/templates/profile.html:20
-#: admin/forms.py:73 admin/templates/admin/user_list.html:24
+#: admin/forms.py:74 admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:32
 msgid "Template editor"
 msgstr "模板编辑者"
@@ -198,7 +198,7 @@ msgid "User sections"
 msgstr "用户页面导航"
 
 #: accounts/templates/account.html:44 accounts/templates/account.html:52
-#: admin/forms.py:185 computes/templates/computes/list.html:30
+#: admin/forms.py:188 computes/templates/computes/list.html:30
 #: computes/templates/computes/list.html:57 computes/templates/overview.html:46
 msgid "VMs"
 msgstr "虚拟机"
@@ -641,29 +641,29 @@ msgstr "OTP 二维码已通过邮件发送给用户 %(user)s"
 msgid "User email not set, failed to send QR code"
 msgstr "未设置用户邮箱，无法发送二维码"
 
-#: admin/forms.py:20
+#: admin/forms.py:21
 msgid "Change their own password on their profile page"
 msgstr "在个人资料页修改自己的密码"
 
-#: admin/forms.py:21
+#: admin/forms.py:22
 msgid ""
 "Clone the VMs they may change and the templates they may view, within their "
 "quota"
 msgstr "在配额范围内克隆其可修改的虚拟机和可查看的模板"
 
-#: admin/forms.py:22
+#: admin/forms.py:23
 msgid "Open a console without the VM's console password"
 msgstr "无需虚拟机的控制台密码即可打开控制台"
 
-#: admin/forms.py:23
+#: admin/forms.py:24
 msgid "Take, revert and delete snapshots of the VMs they may change"
 msgstr "为其可修改的虚拟机创建、恢复和删除快照"
 
-#: admin/forms.py:24
+#: admin/forms.py:25
 msgid "See every VM and host in the lists, read-only"
 msgstr "在列表中查看所有虚拟机和主机（只读）"
 
-#: admin/forms.py:73 admin/templates/admin/logs.html:39
+#: admin/forms.py:74 admin/templates/admin/logs.html:39
 #: admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:34
 #: computes/templates/computes/instances.html:46
@@ -675,23 +675,23 @@ msgstr "在列表中查看所有虚拟机和主机（只读）"
 msgid "User"
 msgstr "用户"
 
-#: admin/forms.py:80 admin/templates/admin/group_form.html:30
+#: admin/forms.py:81 admin/templates/admin/group_form.html:30
 msgid "Permissions"
 msgstr "权限"
 
-#: admin/forms.py:87 admin/templates/admin/group_list.html:6
+#: admin/forms.py:88 admin/templates/admin/group_list.html:6
 #: admin/templates/admin/group_list.html:8
 #: admin/templates/admin/group_list.html:24
 #: admin/templates/admin/user_form.html:123 templates/navbar.html:33
 msgid "Groups"
 msgstr "用户组"
 
-#: admin/forms.py:139
+#: admin/forms.py:142
 #, python-format
 msgid "NEW_USER_DEFAULT_INSTANCES: %(name)s is not exactly one VM"
 msgstr "NEW_USER_DEFAULT_INSTANCES：%(name)s 不是唯一的一台虚拟机"
 
-#: admin/forms.py:186 computes/templates/computes/list.html:58
+#: admin/forms.py:189 computes/templates/computes/list.html:58
 #: computes/templates/overview.html:58 instances/forms.py:14
 #: instances/templates/allinstances_index_grouped.html:16
 #: instances/templates/allinstances_index_nongrouped.html:14
@@ -701,7 +701,7 @@ msgstr "NEW_USER_DEFAULT_INSTANCES：%(name)s 不是唯一的一台虚拟机"
 msgid "vCPUs"
 msgstr "vCPU"
 
-#: admin/forms.py:187 computes/templates/computes/instances.html:49
+#: admin/forms.py:190 computes/templates/computes/instances.html:49
 #: computes/templates/computes/list.html:59 computes/templates/overview.html:66
 #: computes/templates/overview.html:150
 #: instances/templates/allinstances_index_grouped.html:17
@@ -713,34 +713,34 @@ msgstr "vCPU"
 msgid "Memory"
 msgstr "内存"
 
-#: admin/forms.py:188 instances/models.py:235
+#: admin/forms.py:191 instances/models.py:235
 #: instances/templates/create_instance_w2.html:118
 #: instances/templates/instances/settings_tab.html:25
 #: instances/templates/instances/stats_tab.html:51
 msgid "Disk"
 msgstr "磁盘"
 
-#: admin/forms.py:198
+#: admin/forms.py:201
 msgid "No limit"
 msgstr "不限"
 
-#: admin/forms.py:214
+#: admin/forms.py:217
 msgid "Enter a limit or choose No limit."
 msgstr "请输入限制值，或选择“不限”。"
 
-#: admin/forms.py:226
+#: admin/forms.py:229
 msgid "The user must change it at their next login"
 msgstr "用户必须在下次登录时修改密码"
 
-#: admin/forms.py:232
+#: admin/forms.py:235
 msgid "With a password"
 msgstr "使用密码"
 
-#: admin/forms.py:232
+#: admin/forms.py:235
 msgid "Without a password"
 msgstr "不使用密码"
 
-#: admin/forms.py:238
+#: admin/forms.py:241
 msgid "A user without a password cannot be made to change it"
 msgstr "没有密码的用户无法被要求修改密码"
 
@@ -2507,20 +2507,20 @@ msgstr "已被 %%(name)s 接管"
 msgid "Connected. If the VM shows nothing, press Enter."
 msgstr "已连接。如果虚拟机没有显示任何内容，请按 Enter。"
 
-#: console/views.py:43
+#: console/views.py:48
 msgid ""
 "User does not have permission to access console or host/instance not exist"
 msgstr "用户无权访问控制台，或主机/虚拟机不存在"
 
-#: console/views.py:69
+#: console/views.py:78
 msgid "Fail to get console. Please check the console configuration of your VM."
 msgstr "无法获取控制台。请检查虚拟机的控制台配置。"
 
-#: console/views.py:71
+#: console/views.py:80
 msgid "The VM is not running: start it to open its console."
 msgstr "虚拟机未运行：请启动它以打开控制台。"
 
-#: console/views.py:74
+#: console/views.py:83
 msgid ""
 "This console listens only on its host, which the panel reaches over TCP or "
 "TLS. Let the console listen on all interfaces in the VM's console settings, "
@@ -2528,13 +2528,13 @@ msgid ""
 msgstr ""
 "此控制台只在其主机上监听，而面板通过 TCP 或 TLS 连接该主机。请在虚拟机的控制台设置中让控制台监听所有接口，或将该主机添加为 SSH 主机。"
 
-#: console/views.py:80
+#: console/views.py:89
 msgid ""
 "Serial console is disabled on this server. Please switch VM graphics to VNC "
 "or ask an administrator."
 msgstr "此服务器已禁用串行控制台。请将虚拟机图形切换为 VNC，或联系管理员。"
 
-#: console/views.py:85
+#: console/views.py:94
 #, python-format
 msgid ""
 "Console type '%(type)s' is not supported. Please switch the VM graphics to "
@@ -2751,7 +2751,7 @@ msgstr "无法解冻客户机的文件系统（%(error)s）；请用以下命令
 msgid "Clone VM"
 msgstr "克隆虚拟机"
 
-#: instances/jobs.py:562 instances/jobs.py:569 instances/jobs.py:844
+#: instances/jobs.py:562 instances/jobs.py:569 instances/jobs.py:847
 msgid "Copying disks"
 msgstr "正在复制磁盘"
 
@@ -2766,7 +2766,7 @@ msgid ""
 "(%(thaw)s); thaw them with: virsh domfsthaw %(vm)s"
 msgstr "复制失败：%(error)s。无法解冻客户机的文件系统（%(thaw)s）；请用以下命令解冻：virsh domfsthaw %(vm)s"
 
-#: instances/jobs.py:635 instances/jobs.py:719
+#: instances/jobs.py:635 instances/jobs.py:722
 msgid "The copy failed"
 msgstr "复制失败"
 
@@ -2777,209 +2777,217 @@ msgid ""
 "resolve this job: %(volumes)s"
 msgstr "虚拟机已不在运行该任务的计算节点上；请检查这些卷，然后处理此任务：%(volumes)s"
 
-#: instances/jobs.py:695
+#: instances/jobs.py:698
 #, python-format
 msgid ""
 "A volume of the clone was being created; check these volumes, then resolve "
 "this job: %(volumes)s"
 msgstr "克隆的一个卷正在创建中；请检查这些卷，然后处理此任务：%(volumes)s"
 
-#: instances/jobs.py:699
+#: instances/jobs.py:702
 msgid "The job stopped before the copy started"
 msgstr "任务在复制开始前停止"
 
-#: instances/jobs.py:706
+#: instances/jobs.py:709
 msgid "libvirt is still copying the disks"
 msgstr "libvirt 仍在复制磁盘"
 
-#: instances/jobs.py:709
+#: instances/jobs.py:712
 #, python-format
 msgid ""
 "Another backup runs on the VM; check these volumes, then resolve this job: "
 "%(volumes)s"
 msgstr "虚拟机上正在运行另一个备份；请检查这些卷，然后处理此任务：%(volumes)s"
 
-#: instances/jobs.py:714
+#: instances/jobs.py:717
 #, python-format
 msgid ""
 "libvirt has no result of the copy; check these volumes, then resolve this "
 "job: %(volumes)s"
 msgstr "libvirt 没有复制的结果；请检查这些卷，然后处理此任务：%(volumes)s"
 
-#: instances/jobs.py:726
+#: instances/jobs.py:729
 #, python-format
 msgid ""
 "The disks were copied, but the clone could not be defined: %(error)s; check "
 "these volumes, then resolve this job: %(volumes)s"
 msgstr "磁盘已复制，但无法定义克隆：%(error)s；请检查这些卷，然后处理此任务：%(volumes)s"
 
-#: instances/jobs.py:749 instances/templates/create_instance_w1.html:60
+#: instances/jobs.py:752 instances/templates/create_instance_w1.html:60
 #: instances/templates/create_instance_w2.html:356
 msgid "Create VM"
 msgstr "创建虚拟机"
 
-#: instances/jobs.py:773 instances/jobs.py:818 instances/views.py:2463
+#: instances/jobs.py:776 instances/jobs.py:821 instances/views.py:2463
 msgid "A virtual machine with this name already exists"
 msgstr "同名虚拟机已存在"
 
-#: instances/jobs.py:775 instances/jobs.py:815
+#: instances/jobs.py:778 instances/jobs.py:818
 msgid "There is an instance with same name. Remove it and try again!"
 msgstr "已存在同名虚拟机。请删除后重试！"
 
-#: instances/jobs.py:778
+#: instances/jobs.py:781
 msgid "First you need to create or select an image"
 msgstr "请先创建或选择一个镜像"
 
-#: instances/jobs.py:780
+#: instances/jobs.py:783
 msgid "Choose one disk source: a new disk, existing volumes or a template"
 msgstr "请选择一种磁盘来源：新磁盘、现有卷或模板"
 
-#: instances/jobs.py:782
+#: instances/jobs.py:785
 msgid "Image has already exist. Please check volumes or change instance name"
 msgstr "镜像已存在。请检查卷或更改虚拟机名称"
 
-#: instances/jobs.py:784
+#: instances/jobs.py:787
 msgid "Invalid cache mode"
 msgstr "无效的缓存模式"
 
-#: instances/jobs.py:786
+#: instances/jobs.py:789
 #, python-format
 msgid "This host offers no CPU mode or model %(mode)s"
 msgstr "此主机不提供 CPU 模式或型号 %(mode)s"
 
-#: instances/jobs.py:788
+#: instances/jobs.py:791
 #, python-format
 msgid "A CD-ROM cannot use the %(bus)s bus"
 msgstr "CD-ROM 不能使用 %(bus)s 总线"
 
-#: instances/jobs.py:791
+#: instances/jobs.py:794
 msgid "The cloud-init seed is read from a CD-ROM: choose its bus"
 msgstr "cloud-init 种子从 CD-ROM 读取：请选择其总线"
 
-#: instances/jobs.py:794
+#: instances/jobs.py:797
 msgid "The cloud-init seed needs a directory storage pool for the disk"
 msgstr "cloud-init 种子需要为磁盘使用目录类型的存储池"
 
-#: instances/jobs.py:800
+#: instances/jobs.py:803
 #, python-format
 msgid "This host offers no firmware %(firmware)s"
 msgstr "此主机不提供固件 %(firmware)s"
 
-#: instances/jobs.py:802 vrtManager/instance.py:3011
+#: instances/jobs.py:805 vrtManager/instance.py:3015
 msgid "This host offers no TPM 2.0: install swtpm on it"
 msgstr "此主机不提供 TPM 2.0：请在主机上安装 swtpm"
 
-#: instances/jobs.py:863
+#: instances/jobs.py:866
 msgid "Writing the cloud-init seed"
 msgstr "正在写入 cloud-init 种子"
 
-#: instances/jobs.py:870
+#: instances/jobs.py:873
 msgid "Defining the VM"
 msgstr "正在定义虚拟机"
 
-#: instances/jobs.py:903
+#: instances/jobs.py:906
+#, python-format
+#| msgid "The panel failed unexpectedly; its log has the details."
+msgid ""
+"The panel failed unexpectedly; its log has the details. Remove these volumes "
+"by hand: %(volumes)s"
+msgstr "面板发生意外错误；详细信息见面板日志。请手动删除这些卷：%(volumes)s"
+
+#: instances/jobs.py:910
 #, python-format
 msgid "%(error)s. Remove these volumes by hand: %(volumes)s"
 msgstr "%(error)s。请手动删除这些卷：%(volumes)s"
 
-#: instances/jobs.py:928
+#: instances/jobs.py:935
 #, python-format
 msgid "The instance is already on %(compute)s"
 msgstr "虚拟机已在 %(compute)s 上"
 
-#: instances/jobs.py:930
+#: instances/jobs.py:937
 #, python-format
 msgid "%(compute)s is not reachable"
 msgstr "无法连接 %(compute)s"
 
-#: instances/jobs.py:932
+#: instances/jobs.py:939
 #, python-format
 msgid "%(compute)s is the VM's own host under another name"
 msgstr "%(compute)s 是该虚拟机所在主机的另一个名称"
 
-#: instances/jobs.py:966
+#: instances/jobs.py:973
 #, python-format
 msgid ""
 "The VM migrated, but autostart could not be set on the destination: %(error)s"
 msgstr "虚拟机已迁移，但无法在目标主机上设置自动启动：%(error)s"
 
-#: instances/jobs.py:972
+#: instances/jobs.py:979
 #, python-format
 msgid "The VM migrated, but its NVRAM file stays on the source: %(error)s"
 msgstr "虚拟机已迁移，但其 NVRAM 文件仍留在源主机上：%(error)s"
 
-#: instances/jobs.py:979
+#: instances/jobs.py:986
 msgid "Migrate VM"
 msgstr "迁移虚拟机"
 
-#: instances/jobs.py:1026
+#: instances/jobs.py:1033
 msgid "Migrating the VM"
 msgstr "正在迁移虚拟机"
 
-#: instances/jobs.py:1073
+#: instances/jobs.py:1080
 msgid "libvirt is still migrating the VM"
 msgstr "libvirt 仍在迁移虚拟机"
 
-#: instances/jobs.py:1084
+#: instances/jobs.py:1091
 msgid "The VM stayed on the source host"
 msgstr "虚拟机留在了源主机上"
 
-#: instances/jobs.py:1086
+#: instances/jobs.py:1093
 msgid ""
 "The VM is on both computes or on neither; check them, then resolve this job."
 msgstr "虚拟机同时位于两个计算节点上，或都不在；请检查后处理此任务。"
 
-#: instances/jobs.py:1134
+#: instances/jobs.py:1141
 msgid "Move disk"
 msgstr "移动磁盘"
 
-#: instances/jobs.py:1141
+#: instances/jobs.py:1148
 msgid "Choose a disk of the VM"
 msgstr "请选择虚拟机的一个磁盘"
 
-#: instances/jobs.py:1165
+#: instances/jobs.py:1172
 msgid "Copying the disk"
 msgstr "正在复制磁盘"
 
-#: instances/jobs.py:1208
+#: instances/jobs.py:1215
 #, python-format
 msgid "Another block job runs on %(dev)s; check the VM"
 msgstr "%(dev)s 上正在运行另一个块任务；请检查虚拟机"
 
-#: instances/jobs.py:1214
+#: instances/jobs.py:1221
 #, python-format
 msgid "The disk stayed in %(path)s; remove %(dest)s if it is there"
 msgstr "磁盘仍在 %(path)s；如果 %(dest)s 存在，请将其删除"
 
-#: instances/jobs.py:1216
+#: instances/jobs.py:1223
 #, python-format
 msgid "The definitions of %(dev)s name %(paths)s; check the VM"
 msgstr "%(dev)s 的定义指向 %(paths)s；请检查虚拟机"
 
-#: instances/jobs.py:1223
+#: instances/jobs.py:1230
 #, python-format
 msgid "Disk %(path)s was kept: a disk file that stays needs it"
 msgstr "磁盘 %(path)s 已保留：某个保留的磁盘文件依赖它"
 
-#: instances/jobs.py:1224
+#: instances/jobs.py:1231
 #, python-format
 msgid "The VM is removed, but disk %(path)s was not deleted: %(err)s"
 msgstr "虚拟机已删除，但磁盘 %(path)s 未被删除：%(err)s"
 
-#: instances/jobs.py:1225
+#: instances/jobs.py:1232
 #, python-format
 msgid "Disk %(path)s is used by another VM and was kept"
 msgstr "磁盘 %(path)s 正被另一台虚拟机使用，已保留"
 
-#: instances/jobs.py:1279
+#: instances/jobs.py:1286
 msgid "Delete VM"
 msgstr "删除虚拟机"
 
-#: instances/jobs.py:1309
+#: instances/jobs.py:1316
 msgid "Deleting the VM"
 msgstr "正在删除虚拟机"
 
-#: instances/jobs.py:1321
+#: instances/jobs.py:1328
 msgid "The VM was not deleted; it may have been shut off"
 msgstr "虚拟机未被删除；它可能已被关闭"
 
@@ -5931,7 +5939,7 @@ msgstr "请选择网络接口和 QoS 方向"
 msgid "QoS rates must be whole numbers"
 msgstr "QoS 速率必须为整数"
 
-#: instances/views.py:2197 networks/views.py:229
+#: instances/views.py:2197 networks/views.py:230
 #, python-format
 msgid "%(qos_dir)s QoS is set"
 msgstr "%(qos_dir)s QoS 已设置"
@@ -5942,7 +5950,7 @@ msgid ""
 "%(qos_dir)s QoS is set. A running VM gets it after it is powered off and on."
 msgstr "%(qos_dir)s QoS 已设置。运行中的虚拟机需关机再开机后才能生效。"
 
-#: instances/views.py:2224 networks/views.py:255
+#: instances/views.py:2224 networks/views.py:256
 #, python-format
 msgid "%(qos_dir)s QoS is deleted"
 msgstr "%(qos_dir)s QoS 已删除"
@@ -6119,7 +6127,7 @@ msgid "A new bridge over a device of the host; VMs can join it."
 msgstr "在主机设备上新建网桥；虚拟机可以加入。"
 
 #: interfaces/templates/create_iface_block.html:30
-#: interfaces/templates/create_iface_block.html:75 interfaces/views.py:31
+#: interfaces/templates/create_iface_block.html:75 interfaces/views.py:32
 msgid "Ethernet"
 msgstr "以太网"
 
@@ -6343,19 +6351,19 @@ msgstr "链路 %(link)s"
 msgid "Link unknown"
 msgstr "链路未知"
 
-#: interfaces/views.py:30
+#: interfaces/views.py:31
 msgid "Bridges"
 msgstr "网桥"
 
-#: interfaces/views.py:30
+#: interfaces/views.py:31
 msgid "Bonds"
 msgstr "绑定"
 
-#: interfaces/views.py:31
+#: interfaces/views.py:32
 msgid "VLANs"
 msgstr "VLAN"
 
-#: interfaces/views.py:45
+#: interfaces/views.py:46
 #, python-format
 msgid "The network devices of this host could not be read: %(error)s"
 msgstr "无法读取此主机的网络设备：%(error)s"
@@ -6880,40 +6888,40 @@ msgstr "SR-IOV"
 msgid "VMs get a virtual function of the host's network card."
 msgstr "虚拟机获得主机网卡的一个虚拟功能。"
 
-#: networks/views.py:166
+#: networks/views.py:167
 msgid "The fixed address is unchanged"
 msgstr "固定地址未更改"
 
-#: networks/views.py:168
+#: networks/views.py:169
 #, python-format
 msgid "The fixed address %(address)s is set"
 msgstr "已设置固定地址 %(address)s"
 
-#: networks/views.py:177
+#: networks/views.py:178
 #, python-format
 msgid "The fixed address %(address)s is deleted"
 msgstr "已删除固定地址 %(address)s"
 
-#: networks/views.py:185
+#: networks/views.py:186
 msgid "The DHCP range is changed"
 msgstr "DHCP 范围已更改"
 
-#: networks/views.py:202
+#: networks/views.py:203
 msgid "Network XML is changed. Stop and start network to activate new config."
 msgstr "网络 XML 已更改。请停止并启动网络以应用新配置。"
 
-#: networks/views.py:207
+#: networks/views.py:208
 msgid "Network XML is changed."
 msgstr "网络 XML 已更改。"
 
-#: networks/views.py:222
+#: networks/views.py:223
 #, python-format
 msgid ""
 "%(qos_dir)s QoS is updated. Network XML is changed. Stop and start network to"
 " activate new config"
 msgstr "%(qos_dir)s QoS 已更新。网络 XML 已更改。请停止并启动网络以应用新配置"
 
-#: networks/views.py:247
+#: networks/views.py:248
 #, python-format
 msgid ""
 "%(qos_dir)s QoS is deleted. Network XML is changed. Stop and start network to"
@@ -7421,64 +7429,68 @@ msgstr "取消失败（HTTP %(status)s）。"
 msgid "Cancel failed: the server could not be reached."
 msgstr "取消失败：无法连接到服务器。"
 
-#: operations/utils.py:54
+#: operations/utils.py:55
 msgid "The host of this virtual machine cannot be reached right now."
 msgstr "当前无法连接此虚拟机所在的主机。"
 
-#: operations/utils.py:55
+#: operations/utils.py:56
 msgid ""
 "The host of this virtual machine is busy with other requests right now: try "
 "again in a moment."
 msgstr "此虚拟机所在的主机正忙于处理其他请求：请稍后重试。"
 
-#: operations/utils.py:57
+#: operations/utils.py:58
 msgid "You may no longer do this."
 msgstr "您已无权执行此操作。"
 
-#: operations/utils.py:58
+#: operations/utils.py:59
 msgid "The virtual machine is no longer in the panel."
 msgstr "该虚拟机已不在面板中。"
 
-#: operations/utils.py:169
+#: operations/utils.py:127
+msgid "The panel failed unexpectedly; its log has the details."
+msgstr "面板发生意外错误；详细信息见面板日志。"
+
+#: operations/utils.py:191
 msgid ""
 "A short operation is in progress on this resource; try again in a moment."
 msgstr "此资源上正在进行一项短时操作，请稍后重试。"
 
-#: operations/utils.py:172
+#: operations/utils.py:194
 #, python-format
 msgid ""
 "%(label)s is %(state)s on this resource (started by %(user)s, %(since)s ago);"
 " see the Jobs page."
 msgstr "此资源上的%(label)s%(state)s（由 %(user)s 于 %(since)s前发起），请查看任务页面。"
 
-#: operations/utils.py:174
+#: operations/utils.py:196
 #, python-format
 msgid "%(label)s is %(state)s on this resource (since %(since)s)."
 msgstr "此资源上的%(label)s%(state)s（自 %(since)s起）。"
 
-#: operations/worker.py:42
+#: operations/worker.py:43
 msgid ""
 "libvirt's merge finished copying but never completed (for example after a "
 "libvirtd restart); check the VM before resolving"
 msgstr "libvirt 的合并已完成复制但从未结束（例如 libvirtd 重启后）；处理前请检查虚拟机"
 
-#: operations/worker.py:44
+#: operations/worker.py:45
 msgid ""
 "The worker that ran this job stopped responding; an administrator must make "
 "sure it is no longer running, then resolve this job"
 msgstr "运行此任务的工作进程已停止响应；管理员必须确认它已不再运行，然后处理此任务"
 
-#: operations/worker.py:46
+#: operations/worker.py:47
 msgid "Waiting for recovery"
 msgstr "等待恢复"
 
-#: operations/worker.py:48
+#: operations/worker.py:49
 msgid ""
 "Recovery could not read the job's state for an hour; check the VM, then "
 "resolve this job"
 msgstr "恢复在一小时内无法读取任务状态；请检查虚拟机，然后处理此任务"
 
-#: operations/worker.py:473
+#: operations/worker.py:474
 msgid "The worker stopped before the job changed anything"
 msgstr "工作进程在任务做出任何更改之前停止"
 
@@ -8016,12 +8028,12 @@ msgstr "上传会话繁忙，请重试。"
 msgid "ISO image already exists"
 msgstr "ISO 镜像已存在"
 
-#: storages/views.py:178
+#: storages/views.py:179
 #, python-format
 msgid "Volume: %(vol)s is deleted."
 msgstr "卷 %(vol)s 已删除。"
 
-#: storages/views.py:196
+#: storages/views.py:197
 #, python-format
 msgid "Image file %(name)s is created successfully"
 msgstr "镜像文件 %(name)s 创建成功"
@@ -8736,57 +8748,57 @@ msgstr "此虚拟机上仍有快照任务在运行；请在其结束后重试"
 msgid "Shut the VM down to revert to an internal snapshot"
 msgstr "请关闭虚拟机后再还原到内部快照"
 
-#: vrtManager/instance.py:2403
+#: vrtManager/instance.py:2407
 msgid "Cannot clone a VM whose NVRAM is not a file"
 msgstr "NVRAM 不是文件的虚拟机无法克隆"
 
-#: vrtManager/instance.py:2471
+#: vrtManager/instance.py:2475
 #, python-format
 msgid "Clone failed (%(err)s); remove these copies by hand: %(path)s"
 msgstr "克隆失败（%(err)s）；请手动删除这些副本：%(path)s"
 
-#: vrtManager/instance.py:2481
+#: vrtManager/instance.py:2485
 msgid "Shut the VM down before cloning it"
 msgstr "请先关闭虚拟机再克隆"
 
-#: vrtManager/instance.py:2535
+#: vrtManager/instance.py:2539
 #, python-format
 msgid "Clone failed (%(err)s); remove these copies by hand: %(leftovers)s"
 msgstr "克隆失败（%(err)s）；请手动删除这些副本：%(leftovers)s"
 
-#: vrtManager/instance.py:2546
+#: vrtManager/instance.py:2550
 msgid "Live clone needs libvirt 11.10 or later; shut the VM down to clone it"
 msgstr "在线克隆需要 libvirt 11.10 或更高版本；请关闭虚拟机后再克隆"
 
-#: vrtManager/instance.py:2549
+#: vrtManager/instance.py:2553
 msgid "A VM with a TPM is cloned only shut down"
 msgstr "带 TPM 的虚拟机只能在关机时克隆"
 
-#: vrtManager/instance.py:2552
+#: vrtManager/instance.py:2556
 #, python-format
 msgid "Disk %(dev)s is not a local file; shut the VM down to clone it"
 msgstr "磁盘 %(dev)s 不是本地文件；请关闭虚拟机后再克隆"
 
-#: vrtManager/instance.py:2554
+#: vrtManager/instance.py:2558
 #, python-format
 msgid "Disk %(dev)s is shareable; shut the VM down to clone it"
 msgstr "磁盘 %(dev)s 是可共享的；请关闭虚拟机后再克隆"
 
-#: vrtManager/instance.py:2559
+#: vrtManager/instance.py:2563
 #, python-format
 msgid "Disk %(dev)s changes at the next start; shut the VM down to clone it"
 msgstr "磁盘 %(dev)s 在下次启动时会改变；请关闭虚拟机后再克隆"
 
-#: vrtManager/instance.py:2561
+#: vrtManager/instance.py:2565
 msgid "Another job is running on the VM; clone it when that ends"
 msgstr "虚拟机上有另一个任务正在运行；请在其结束后再克隆"
 
-#: vrtManager/instance.py:2574
+#: vrtManager/instance.py:2578
 #, python-format
 msgid "Volume %(name)s already exists in storage pool %(pool)s"
 msgstr "卷 %(name)s 已存在于存储池 %(pool)s 中"
 
-#: vrtManager/instance.py:2593
+#: vrtManager/instance.py:2597
 #, python-format
 msgid ""
 "Storage pool %(pool)s has %(free).1f GiB free; the clone needs %(size).1f GiB"
@@ -8795,92 +8807,92 @@ msgstr ""
 "存储池 %(pool)s 可用 %(free).1f GiB；克隆需要 %(size).1f GiB（复制的磁盘，再加其 %(percent)g%%，至少"
 " %(minimum)g GiB）"
 
-#: vrtManager/instance.py:2732
+#: vrtManager/instance.py:2736
 msgid "A network interface that is a host device is removed in the XML editor"
 msgstr "作为主机设备的网络接口需在 XML 编辑器中删除"
 
-#: vrtManager/instance.py:2748
+#: vrtManager/instance.py:2752
 #, python-format
 msgid "No network interface with MAC %(old_mac)s"
 msgstr "没有 MAC 为 %(old_mac)s 的网络接口"
 
-#: vrtManager/instance.py:2751
+#: vrtManager/instance.py:2755
 msgid "A network interface that is a host device is changed in the XML editor"
 msgstr "作为主机设备的网络接口需在 XML 编辑器中修改"
 
-#: vrtManager/instance.py:2842
+#: vrtManager/instance.py:2846
 msgid ""
 "A VM changes its PCI devices while it runs, or is shut off without a saved "
 "state"
 msgstr "虚拟机只能在运行时或无保存的状态的关机时更改其 PCI 设备"
 
-#: vrtManager/instance.py:2854
+#: vrtManager/instance.py:2858
 #, python-format
 msgid "%(err)s; whether the VM has PCI device %(address)s now is not known"
 msgstr "%(err)s；虚拟机现在是否有 PCI 设备 %(address)s 未知"
 
-#: vrtManager/instance.py:2856
+#: vrtManager/instance.py:2860
 #, python-format
 msgid ""
 "%(err)s; PCI device %(address)s: the VM is not running, its next start has it"
 msgstr "%(err)s；PCI 设备 %(address)s：虚拟机未运行，下次启动时有它"
 
-#: vrtManager/instance.py:2858
+#: vrtManager/instance.py:2862
 #, python-format
 msgid ""
 "%(err)s; PCI device %(address)s: the VM is not running, its next start does "
 "not have it"
 msgstr "%(err)s；PCI 设备 %(address)s：虚拟机未运行，下次启动时没有它"
 
-#: vrtManager/instance.py:2859
+#: vrtManager/instance.py:2863
 #, python-format
 msgid ""
 "%(err)s; PCI device %(address)s: the running VM has it, its next start has it"
 msgstr "%(err)s；PCI 设备 %(address)s：运行中的虚拟机有它，下次启动时有它"
 
-#: vrtManager/instance.py:2861
+#: vrtManager/instance.py:2865
 #, python-format
 msgid ""
 "%(err)s; PCI device %(address)s: the running VM has it, its next start does "
 "not have it"
 msgstr "%(err)s；PCI 设备 %(address)s：运行中的虚拟机有它，下次启动时没有它"
 
-#: vrtManager/instance.py:2863
+#: vrtManager/instance.py:2867
 #, python-format
 msgid ""
 "%(err)s; PCI device %(address)s: the running VM does not have it, its next "
 "start has it"
 msgstr "%(err)s；PCI 设备 %(address)s：运行中的虚拟机没有它，下次启动时有它"
 
-#: vrtManager/instance.py:2865
+#: vrtManager/instance.py:2869
 #, python-format
 msgid ""
 "%(err)s; PCI device %(address)s: the running VM does not have it, its next "
 "start does not have it"
 msgstr "%(err)s；PCI 设备 %(address)s：运行中的虚拟机没有它，下次启动时没有它"
 
-#: vrtManager/instance.py:2899
+#: vrtManager/instance.py:2903
 #, python-format
 msgid "The VM has no PCI device %(address)s"
 msgstr "虚拟机没有 PCI 设备 %(address)s"
 
-#: vrtManager/instance.py:2917
+#: vrtManager/instance.py:2921
 msgid "The VM has no USB controller"
 msgstr "虚拟机没有 USB 控制器"
 
-#: vrtManager/instance.py:2936
+#: vrtManager/instance.py:2940
 msgid "The VM has no such USB device"
 msgstr "虚拟机没有此 USB 设备"
 
-#: vrtManager/instance.py:2977
+#: vrtManager/instance.py:2981
 msgid "The VM has its own RNG device: change it in the XML editor"
 msgstr "虚拟机有自己的 RNG 设备：请在 XML 编辑器中修改"
 
-#: vrtManager/instance.py:3004
+#: vrtManager/instance.py:3008
 msgid "The VM has its own TPM: change it in the XML editor"
 msgstr "虚拟机有自己的 TPM：请在 XML 编辑器中修改"
 
-#: vrtManager/instance.py:3023
+#: vrtManager/instance.py:3027
 #, python-format
 msgid "Unknown crash action %(action)s"
 msgstr "未知的崩溃操作 %(action)s"

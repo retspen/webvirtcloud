@@ -31,7 +31,7 @@ from instances import utils
 from instances.models import Instance
 from logs.audit import write
 from operations import claims
-from operations.utils import safe_text, say
+from operations.utils import REPORTED, safe_text, say
 from operations.jobs import Cancelled, Kind, Outcome, Plan, register
 from operations.models import Claim, Operation
 
@@ -666,7 +666,10 @@ class CloneInstance(Kind):
             except libvirtError as err:
                 thawed = say(THAW_FAILED, error=err, vm=op.resource_label.rpartition("/")[2])
         outcome = self._live_outcome(proxy, op)
-        outcome.error += thawed
+        if thawed and outcome.state == Operation.SUCCEEDED:  # a warning of the clone, as when the job made it
+            outcome.result["warning"] = [*outcome.result.get("warning", []), *thawed]
+        else:
+            outcome.error += thawed
         return outcome
 
     def _live_outcome(self, proxy, op):
@@ -899,6 +902,10 @@ class CreateInstance(Kind):
                     conn.delete_volume(path)
                 except libvirtError:
                     leftovers.append(path)
+            if leftovers and not isinstance(err, REPORTED):  # a fault of the panel is not shown as it is
+                raise util.OperationError(_("The panel failed unexpectedly; its log has the details. "
+                                            "Remove these volumes by hand: %(volumes)s"),
+                                          volumes=", ".join(leftovers)) from err
             if leftovers:
                 raise util.OperationError(_("%(error)s. Remove these volumes by hand: %(volumes)s"),
                                           error=err, volumes=", ".join(leftovers)) from err

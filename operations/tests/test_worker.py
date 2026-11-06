@@ -21,7 +21,7 @@ from operations.utils import words
 from operations import jobs
 from operations.models import Claim, Operation, WorkerLease
 from operations.tests import fakes
-from operations.worker import Worker, data_dir, host_identity, housekeeping
+from operations.worker import Worker, data_dir, host_identity, housekeeping, traceback_of
 from vrtManager.util import ConnectionFailed
 
 
@@ -250,11 +250,24 @@ class WorkerTestCase(TransactionTestCase):
 
     def test_a_job_thread_that_raised_before_its_effects_fails(self):
         op = self.submit("test.noop", {}, "key-00000001")
-        with patch("operations.jobs.Context", side_effect=RuntimeError("no context")):
+        with patch("operations.jobs.Context", side_effect=RuntimeError("no context")), \
+                self.assertLogs("operations.worker", "WARNING") as logs:
             self.start()
             self.assertTrue(wait_for(lambda: state(op) == Operation.FAILED))
-        self.assertIn("no context", words(Operation.objects.get(pk=op.pk).error))
+        # a fault of the panel: users read that, the log has the exception with its traceback
+        self.assertEqual(words(Operation.objects.get(pk=op.pk).error), "The panel failed unexpectedly; its log has the details.")
+        self.assertTrue(any("no context" in line and "Traceback" in line for line in logs.output))
         self.assertFalse(Claim.objects.filter(operation=op).exists())
+
+    def test_a_traceback_in_the_log_has_no_secret(self):
+        # as the message: the exception's text is written again at its end
+        try:
+            raise RuntimeError("password=review-dummy-secret")
+        except RuntimeError as err:
+            trace = traceback_of(err)
+        self.assertIn("Traceback", trace)
+        self.assertIn("password=***", trace)
+        self.assertNotIn("review-dummy-secret", trace)
 
     def test_a_database_error_skips_a_tick(self):
         directory = tempfile.TemporaryDirectory()

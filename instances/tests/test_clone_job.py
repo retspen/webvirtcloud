@@ -621,6 +621,16 @@ class LiveCloneJobTestCase(TransactionTestCase):
         self.proxy.resize_mem.assert_not_called()
         self.proxy.start.assert_called_once_with()
 
+    def test_a_thaw_that_fails_in_the_recovery_of_a_made_clone_is_a_warning_of_the_clone(self):
+        # the job panel shows a succeeded job's warning; an error of it was not shown
+        self.proxy.get_status.return_value = 1
+        self.proxy.fs_thaw.side_effect = libvirt_error(libvirt.VIR_ERR_AGENT_UNRESPONSIVE)
+        self.proxy.backup_result.return_value = None
+        self.proxy.backup_targets.return_value = {"/other/x.qcow2"}
+        outcome, _op = self.recovered(defined=True, frozen=True)
+        self.assertEqual((outcome.state, outcome.error), (Operation.SUCCEEDED, []))
+        self.assertIn("virsh domfsthaw", words(outcome.result["warning"]))
+
     def test_recovery_of_a_defined_clone_succeeds(self):
         self.proxy.backup_result.return_value = None  # libvirtd restarted after the clone was defined
         self.proxy.backup_targets.return_value = {"/other/x.qcow2"}  # checked after it

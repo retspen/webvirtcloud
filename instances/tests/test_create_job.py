@@ -16,6 +16,8 @@ from instances.models import Instance
 from instances.tests.create_page import BODY
 from operations.jobs import Context
 from operations.models import Operation, acquire
+from operations.utils import traceback_of
+from vrtManager.util import OperationError
 
 
 class CreateJobTestCase(TransactionTestCase):
@@ -99,6 +101,22 @@ class CreateJobTestCase(TransactionTestCase):
         response = self.client.post(url, {**BODY, "memory": 1024}, content_type="application/json")
         self.assertEqual(response.status_code, 409)
         self.assertEqual(Operation.objects.count(), 1)
+
+    def test_a_fault_of_the_panel_with_volumes_left_is_not_shown_as_it_is(self):
+        # its text names nothing users can act on; the volumes to remove are
+        self.client.post(f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/", BODY,
+                         content_type="application/json")
+        op = Operation.objects.get()
+        acquire("wvc-test:1:a", "wvc-test")
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker="wvc-test:1:a")
+        op.refresh_from_db()
+        self.conn.create_instance.side_effect = RuntimeError("no such bus")
+        self.conn.delete_volume.side_effect = libvirt.libvirtError("volume is busy")
+        with self.assertRaises(OperationError) as raised:
+            CreateInstance().run(op, Context(op, SimpleNamespace(identity="wvc-test:1:a")))
+        self.assertEqual(str(raised.exception), "The panel failed unexpectedly; its log has the details. "
+                         "Remove these volumes by hand: /srv/default/api-vm.qcow2")
+        self.assertIn("RuntimeError: no such bus", traceback_of(raised.exception))
 
     @patch("instances.jobs.wvmConnect")
     def test_a_create_that_left_nothing_failed(self, conn):

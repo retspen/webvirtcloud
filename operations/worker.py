@@ -28,6 +28,7 @@ from logs.models import Logs
 
 from . import claims, jobs, utils
 from .models import Claim, LeaseLost, Operation, acquire, fenced, renew
+from .utils import job_error, traceback_of
 
 logger = logging.getLogger(__name__)
 
@@ -220,8 +221,8 @@ class Worker:
                 self.progress_asked.pop(op_id, None)
                 if (err := future.exception()) is not None:
                     # execute raised before it could finish the job itself
-                    logger.error("job %s ended unfinished: %s", op_id, utils.safe_text(err))
-                    self.recovery.inspect_now(op_id, utils.public_error(err))
+                    logger.error("job %s ended unfinished: %s%s", op_id, utils.safe_text(err), traceback_of(err))
+                    self.recovery.inspect_now(op_id, job_error(err))
 
     def _concurrency(self):
         return self.fixed_concurrency or utils.concurrency()
@@ -357,13 +358,13 @@ def execute(worker, op_id):
     except jobs.Cancelled:
         jobs.finish(op, jobs.Outcome(Operation.CANCELLED), worker=worker)
     except Exception as err:
-        logger.warning("job %s %s raised: %s", op.pk, op.kind, utils.safe_text(err))
+        logger.warning("job %s %s raised: %s%s", op.pk, op.kind, utils.safe_text(err), traceback_of(err))
         try:
             # jobs have no request: the error users see never names a host
             if ctx.effects_started:
-                worker.recovery.inspect_now(op.pk, error=utils.public_error(err))
+                worker.recovery.inspect_now(op.pk, error=job_error(err))
             else:
-                jobs.finish(op, jobs.Outcome(Operation.FAILED, error=utils.public_error(err)), worker=worker)
+                jobs.finish(op, jobs.Outcome(Operation.FAILED, error=job_error(err)), worker=worker)
         except LeaseLost:
             pass
     finally:
@@ -478,13 +479,13 @@ class Scheduler:
                 now = time.monotonic()
                 if now - self.failing_since.setdefault(op_id, now) >= RECOVERY_LIMIT:
                     self._finish(op, jobs.Outcome(Operation.UNCERTAIN, error=self._error(
-                        op_id, [*utils.public_error(err), *utils.say(UNREACHABLE)])))
+                        op_id, [*job_error(err), *utils.say(UNREACHABLE)])))
                     return
                 n = self.attempts.get(op_id, 0)
                 self.attempts[op_id] = n + 1
                 self.next_try[op_id] = now + BACKOFF[min(n, len(BACKOFF) - 1)]
                 self._phase(op_id, WAITING)
-                logger.warning("recovery of job %s waits: %s", op_id, utils.safe_text(err))
+                logger.warning("recovery of job %s waits: %s%s", op_id, utils.safe_text(err), traceback_of(err))
                 return
             self.failing_since.pop(op_id, None)
             if outcome.state == Operation.RUNNING:
@@ -507,7 +508,7 @@ class Scheduler:
         except LeaseLost:
             self._done(op_id)
         except Exception as err:
-            logger.error("recovery of job %s failed: %s", op_id, utils.safe_text(err))
+            logger.error("recovery of job %s failed: %s%s", op_id, utils.safe_text(err), traceback_of(err))
             self.next_try[op_id] = time.monotonic() + BACKOFF[-1]
         finally:
             self.inflight.discard(op_id)

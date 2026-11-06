@@ -7,6 +7,7 @@ the Settings page. The worker reads them itself (the settings middleware only
 runs in gunicorn)."""
 
 import re
+import traceback
 
 import libvirt
 from django.core.exceptions import PermissionDenied
@@ -119,6 +120,27 @@ def public_error(exception):
 
 def public_error_text(exception):
     return words(public_error(exception))
+
+
+# not libvirt's error or a refusal (whose text is for users) but a fault of
+# the panel: its text (a SQL error, a KeyError's key) tells users nothing
+UNEXPECTED = gettext_noop("The panel failed unexpectedly; its log has the details.")
+REPORTED = (libvirtError, PermissionDenied, Http404, ValueError)
+
+
+def traceback_of(err):
+    """A fault of the panel, also one a reported error wraps, goes to the log
+    with its traceback, without secrets as the message (exc_info would write
+    them); a reported error says enough."""
+    fault = err.__cause__ if isinstance(err, REPORTED) else err
+    if fault is None or isinstance(fault, REPORTED):
+        return ""
+    return "\n" + safe_text("".join(traceback.format_exception(err)))
+
+
+def job_error(err):
+    """What users read of a job's exception."""
+    return public_error(err) if isinstance(err, REPORTED) else say(UNEXPECTED)
 
 
 def check_params(params):
