@@ -16,7 +16,7 @@ def nwfilters(request, compute_id):
     """The host's network filters; one created, cloned or deleted, after
     which the list is read again."""
     compute = get_object_or_404(Compute, pk=compute_id)
-    nwfilters_all = []
+    nwfilters_all = None  # not read: the page shows no list
 
     try:
         conn = wvmNWFilters(compute.hostname, compute.login, compute.password, compute.type)

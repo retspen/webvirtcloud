@@ -16,6 +16,7 @@ from admin.decorators import superuser_only
 def interfaces(request, compute_id):
     """The host's interfaces, and a new one where its libvirt can define them."""
     compute = get_object_or_404(Compute, pk=compute_id)
+    ifaces_all = None  # not read: the page shows no list
 
     try:
         conn = wvmInterfaces(compute.hostname, compute.login, compute.password, compute.type)

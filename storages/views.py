@@ -71,6 +71,7 @@ def storages(request, compute_id):
     form = AddStgPool()
     # the new pool dialog's type: its radio cards tell the ISO pool from another directory
     pool_kind = request.POST.get("pool_kind", "dir")
+    storages = None  # not read: the page shows no list
 
     try:
         conn = wvmStorages(

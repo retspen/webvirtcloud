@@ -12,7 +12,7 @@
 {% block content %}
     {% include "computes/host_nav.html" with section="nwfilters" %}
 
-    {% if not nwfilters %}
+    {% if nwfilters is None %}{# not read: the error above says why #}{% elif not nwfilters %}
         <div class="alert alert-warning shadow-sm">
             {% bs_icon 'exclamation-triangle' %} {% trans "This host has no network filters." %}
         </div>

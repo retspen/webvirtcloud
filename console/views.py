@@ -2,6 +2,7 @@
 
 import functools
 import json
+import logging
 from pathlib import Path
 
 from appsettings.settings import app_settings
@@ -12,9 +13,13 @@ from django.utils.translation import gettext_lazy as _
 from instances.models import Instance
 from instances.utils import can_open_console
 from libvirt import libvirtError
+from operations.utils import safe_text
 from vrtManager.connection import CONN_TCP, CONN_TLS
 from vrtManager.instance import wvmInstance
 from vrtManager.util import is_loopback
+from webvirtcloud.middleware import error_text
+
+logger = logging.getLogger(__name__)
 
 # one file a layout, written by dev/console_layout.py
 LAYOUTS_DIR = Path(__file__).resolve().parent / "layouts"
@@ -60,7 +65,11 @@ def console(request, compute_id, uuid):
         unreachable = instance.compute.type in (CONN_TCP, CONN_TLS) and bool(
             conn.get_console_socket() or is_loopback(conn.get_console_listener_addr())
         )
-    except (libvirtError, ValueError, IndexError):
+    except libvirtError as err:
+        # the host or the VM could not be read: the page says that, not to check the console settings
+        logger.warning("Console of %s on %s: %s", instance.name, instance.compute.name, safe_text(err))
+        return render(request, "console-error.html", {"instance": instance, "console_error": error_text(request, err)})
+    except (ValueError, IndexError):
         running = unreachable = False
         console_type = None
         console_passwd = None

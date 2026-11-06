@@ -15,7 +15,7 @@
     {% include "computes/host_nav.html" with section="interfaces" %}
 
     {% if changeable is False %}{% include 'interfaces_unchangeable.html' %}{% endif %}
-    {% if not ifaces_all %}
+    {% if ifaces_all is None %}{# not read: the error above says why #}{% elif not ifaces_all %}
         <div class="alert alert-warning shadow-sm">
             {% bs_icon 'exclamation-triangle' %} {% trans "libvirt lists no interfaces of this host." %}
         </div>

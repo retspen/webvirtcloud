@@ -42,6 +42,7 @@ def networks(request, compute_id):
     form = AddNetPool()
     # the new network dialog's mode: the one sent back after a refusal
     net_mode = request.POST.get("forward", "nat")
+    networks = None  # not read: the page shows no list
 
     try:
         conn = wvmNetworks(

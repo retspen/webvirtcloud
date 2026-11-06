@@ -15,7 +15,7 @@
         </div>
     </div>
 
-    {% if not storages %}
+    {% if storages is None %}{# not read: the error above says why #}{% elif not storages %}
         <div class="alert alert-warning shadow-sm">
             {% bs_icon 'exclamation-triangle' %} {% trans "This host has no storage pools." %}
         </div>

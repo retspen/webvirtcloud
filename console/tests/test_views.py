@@ -14,7 +14,7 @@ from django.conf import settings
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from instances.models import Instance
-from libvirt import libvirtError
+from vrtManager.util import ConnectionFailed
 from lxml import html
 
 
@@ -323,16 +323,26 @@ class ConsoleViewsTestCase(TestCase):
                 self.assertEqual("This console listens only on its host" in response.content.decode(), refused)
 
     @patch("console.views.wvmInstance")
-    def test_console_libvirt_error_fallback(self, mock_wvm):
-        mock_wvm.side_effect = libvirtError("Connection to libvirtd failed")
+    def test_a_host_that_cannot_be_reached_is_named_as_the_cause_and_logged(self, mock_wvm):
+        # not "check the console configuration of your VM": the VM was never read
+        mock_wvm.side_effect = ConnectionFailed("Connection Failed: %(host)s did not answer within 5 s", host="192.0.2.10")
+        for user, shown in ((self.admin_user, "Connection Failed: 192.0.2.10 did not answer within 5 s"),
+                            (self.alice, "The host of this virtual machine cannot be reached right now.")):
+            with self.subTest(user.username):
+                self.client.force_login(user)
+                with self.assertLogs("console.views", "WARNING") as logs:
+                    response = self.client.get(self.url)
+                self.assertTemplateUsed(response, "console-error.html")
+                self.assertEqual(str(response.context["console_error"]), shown)
+                self.assertIn("Console of vm-alpha on", logs.output[0])
+                self.assertIn("192.0.2.10 did not answer", logs.output[0])
 
+    @patch("console.views.wvmInstance")
+    def test_a_vm_without_a_readable_console_points_to_its_console_settings(self, mock_wvm):
+        mock_wvm.return_value.get_console_type.side_effect = IndexError
         self.client.force_login(self.admin_user)
-        url = self.url
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "console-error.html")
-        self.assertIsNotNone(response.context["console_error"])
+        response = self.client.get(self.url)
+        self.assertIn("check the console configuration", str(response.context["console_error"]))
 
     def test_an_unknown_vm_gives_the_superuser_an_error_page(self):
         self.client.force_login(self.admin_user)

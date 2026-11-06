@@ -11,7 +11,7 @@
 {% block content %}
     {% include "computes/host_nav.html" with section="networks" %}
 
-    {% if not networks %}
+    {% if networks is None %}{# not read: the error above says why #}{% elif not networks %}
         <div class="alert alert-warning shadow-sm">
             {% bs_icon 'exclamation-triangle' %} {% trans "This host has no networks." %}
         </div>

@@ -19,7 +19,7 @@ def secrets(request, compute_id):
     given a value or deleted, after which the list is read again. A value is
     never shown or logged."""
     compute = get_object_or_404(Compute, pk=compute_id)
-    secrets_all = []
+    secrets_all = None  # not read: the page shows no list
 
     try:
         conn = wvmSecrets(compute.hostname, compute.login, compute.password, compute.type)

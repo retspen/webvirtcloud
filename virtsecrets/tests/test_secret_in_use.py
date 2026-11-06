@@ -41,4 +41,4 @@ class SecretInUsePageTests(TestCase):
                                                                 "ephemeral": False, "private": False}]
             conn.return_value.get_users.side_effect = libvirt.libvirtError("connection reset")
             response = self.client.get(self.url)
-        self.assertEqual(response.context["secrets_all"], [])
+        self.assertIsNone(response.context["secrets_all"])
