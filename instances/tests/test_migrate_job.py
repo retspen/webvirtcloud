@@ -100,6 +100,27 @@ class MigrateJobTestCase(TransactionTestCase):
             MigrateInstance().reconcile(op)
         dom.destroy.assert_not_called()
 
+    def test_recovery_of_a_moved_vm_sets_its_autostart_and_removes_the_source_nvram(self):
+        self.vm.proxy.get_autostart.return_value = True
+        self.vm.proxy.get_nvram.return_value = "/var/lib/libvirt/qemu/nvram/mig-vm_VARS.fd"
+        op = self.queue()
+        ctx = self.start(op)
+        self.dest_conn.moveto.side_effect = OSError("the worker stops here")
+        with self.assertRaises(OSError):
+            get_kind(op.kind).run(op, ctx)
+        dom = MagicMock()
+        with patch("instances.jobs._domain", side_effect=[None, dom]), patch("instances.jobs._connect") as connect:
+            outcome = MigrateInstance().reconcile(op)
+        self.assertEqual((outcome.state, outcome.result), (Operation.SUCCEEDED, {}))
+        dom.setAutostart.assert_called_once_with(1)
+        connect.return_value.remove_nvram.assert_called_once_with(
+            "/var/lib/libvirt/qemu/nvram/mig-vm_VARS.fd", connect.return_value)
+        dom.setAutostart.side_effect = libvirtError("refused")
+        with patch("instances.jobs._domain", side_effect=[None, dom]), patch("instances.jobs._connect"):
+            outcome = MigrateInstance().reconcile(op)
+        self.assertEqual(outcome.state, Operation.SUCCEEDED)
+        self.assertIn("autostart could not be set", outcome.result["warning"][0]["text"])
+
     def test_a_copy_claims_its_volume_on_both_computes(self):
         Instance.proxy.get_disk_devices.return_value = [
             {"dev": "vda", "storage": "default", "image": "mig-vm.qcow2", "path": "/i/mig-vm.qcow2"},

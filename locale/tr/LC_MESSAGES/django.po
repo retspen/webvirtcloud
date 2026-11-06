@@ -3018,53 +3018,65 @@ msgstr "%(compute)s sunucusuna ulaşılamıyor"
 msgid "%(compute)s is the VM's own host under another name"
 msgstr "%(compute)s, sanal makinenin kendi sunucusunun başka bir adı"
 
-#: instances/jobs.py:947
+#: instances/jobs.py:963
+#, python-format
+msgid ""
+"The VM migrated, but autostart could not be set on the destination: %(error)s"
+msgstr ""
+"Sanal makine taşındı, ancak hedefte otomatik başlatma ayarlanamadı: %(error)s"
+
+#: instances/jobs.py:969
+#, python-format
+msgid "The VM migrated, but its NVRAM file stays on the source: %(error)s"
+msgstr "Sanal makine taşındı, ancak NVRAM dosyası kaynakta kaldı: %(error)s"
+
+#: instances/jobs.py:976
 msgid "Migrate VM"
 msgstr "Sanal makineyi taşı"
 
-#: instances/jobs.py:991
+#: instances/jobs.py:1023
 msgid "Migrating the VM"
 msgstr "Sanal makine taşınıyor"
 
-#: instances/jobs.py:1038
+#: instances/jobs.py:1070
 msgid "libvirt is still migrating the VM"
 msgstr "libvirt sanal makineyi hâlâ taşıyor"
 
-#: instances/jobs.py:1045
+#: instances/jobs.py:1079
 msgid "The VM stayed on the source host"
 msgstr "Sanal makine kaynak sunucuda kaldı"
 
-#: instances/jobs.py:1047
+#: instances/jobs.py:1081
 msgid ""
 "The VM is on both computes or on neither; check them, then resolve this job."
 msgstr ""
 "Sanal makine ya iki sunucuda da var ya da hiçbirinde yok; kontrol edin, sonra"
 " bu işi çözün."
 
-#: instances/jobs.py:1095
+#: instances/jobs.py:1129
 msgid "Move disk"
 msgstr "Diski taşı"
 
-#: instances/jobs.py:1102
+#: instances/jobs.py:1136
 msgid "Choose a disk of the VM"
 msgstr "Sanal makinenin bir diskini seçin"
 
-#: instances/jobs.py:1126
+#: instances/jobs.py:1160
 msgid "Copying the disk"
 msgstr "Disk kopyalanıyor"
 
-#: instances/jobs.py:1169
+#: instances/jobs.py:1203
 #, python-format
 msgid "Another block job runs on %(dev)s; check the VM"
 msgstr ""
 "%(dev)s üzerinde başka bir blok işi çalışıyor; sanal makineyi kontrol edin"
 
-#: instances/jobs.py:1175
+#: instances/jobs.py:1209
 #, python-format
 msgid "The disk stayed in %(path)s; remove %(dest)s if it is there"
 msgstr "Disk %(path)s içinde kaldı; varsa %(dest)s dosyasını silin"
 
-#: instances/jobs.py:1177
+#: instances/jobs.py:1211
 #, python-format
 msgid "The definitions of %(dev)s name %(paths)s; check the VM"
 msgstr "%(dev)s tanımları %(paths)s gösteriyor; sanal makineyi kontrol edin"

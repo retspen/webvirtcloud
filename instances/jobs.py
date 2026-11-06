@@ -930,11 +930,15 @@ def migration_target(instance, target_pk):
     return target
 
 
+def _connect(compute_pk):
+    c = Compute.objects.get(pk=compute_pk)
+    return wvmConnect(c.hostname, c.login, c.password, c.type)
+
+
 def _domain(compute_pk, uuid):
     """The VM on the compute, or None when it has none there."""
-    c = Compute.objects.get(pk=compute_pk)
     try:
-        return wvmConnect(c.hostname, c.login, c.password, c.type).wvm.lookupByUUIDString(uuid)
+        return _connect(compute_pk).wvm.lookupByUUIDString(uuid)
     except libvirtError as err:
         if err.get_error_code() != VIR_ERR_NO_DOMAIN:
             raise  # unreachable: recovery waits and retries
@@ -945,6 +949,25 @@ def _shut_off_again(op, dom):
     """A shut-off VM the migration started paused, left running by a job that stopped."""
     if op.intent.get("shut_off") and dom.isActive():
         dom.destroy()
+
+
+def _moved(op, dest):
+    """What migrate_instance does once libvirt moved the VM, for a job that
+    stopped before it: autostart is per host, and the source keeps the
+    NVRAM file. The job's result, with a warning for a step that failed."""
+    notes = []
+    if op.intent.get("autostart"):
+        try:
+            dest.setAutostart(1)
+        except libvirtError as err:
+            notes += say(_("The VM migrated, but autostart could not be set on the destination: %(error)s"),
+                         error=err)
+    if nvram := op.intent.get("nvram"):
+        try:
+            _connect(op.intent["compute"]).remove_nvram(nvram, _connect(op.params["target"]))
+        except libvirtError as err:
+            notes += say(_("The VM migrated, but its NVRAM file stays on the source: %(error)s"), error=err)
+    return {"warning": notes} if notes else {}
 
 
 @register
@@ -993,8 +1016,10 @@ class MigrateInstance(Kind):
     def run(self, op, ctx):
         p = op.params
         instance = _instance(p["instance"])
-        # a shut-off VM may migrate started paused (migrate_running): recovery shuts it off again
-        ctx.record_intent(shut_off=instance.proxy.get_status() == 5)
+        # a shut-off VM may migrate started paused (migrate_running): recovery shuts it off again;
+        # it also does what migrate_instance does after the move (_moved)
+        proxy = instance.proxy
+        ctx.record_intent(shut_off=proxy.get_status() == 5, autostart=proxy.get_autostart(), nvram=proxy.get_nvram())
         ctx.set_phase(gettext_noop("Migrating the VM"))
         try:
             utils.migrate_instance(Compute.objects.get(pk=p["target"]), instance, op.user,
@@ -1048,7 +1073,7 @@ class MigrateInstance(Kind):
             if instance is not None:  # the job stopped before it moved the record
                 utils.record_migration(instance, Compute.objects.get(pk=op.params["target"]))
             _shut_off_again(op, dest)
-            return Outcome(Operation.SUCCEEDED)
+            return Outcome(Operation.SUCCEEDED, result=_moved(op, dest))
         if source is not None and dest is None:
             _shut_off_again(op, source)
             return Outcome(Operation.FAILED, error=say(_("The VM stayed on the source host")))
