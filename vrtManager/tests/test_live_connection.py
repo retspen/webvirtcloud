@@ -1,6 +1,6 @@
 """Live checks of bounded connection opens against real libvirt.
 
-Runs only with TEST_LIBVIRT_HOST set (a TCP compute, see instances/tests/livetest.py);
+Runs only with TEST_LIBVIRT_HOST set (a TCP compute, see vrtManager/tests/livetest.py);
 TEST_LIBVIRT_SSH_HOST/_LOGIN add a reachable ssh compute. 192.0.2.1 is
 TEST-NET-1: SYN packets to it are dropped, as for a host that went away
 without a trace.
@@ -34,6 +34,7 @@ import unittest
 
 import libvirt
 from vrtManager.connection import CONN_SSH, CONN_TCP, CONNECT_TIMEOUT, connection_manager
+from vrtManager.tests import livetest
 
 UNREACHABLE = "192.0.2.1"
 KEEPALIVE_DEATH = 45  # keepalive (5, 5) closes a silent connection after ~30 s
@@ -118,7 +119,7 @@ class Relay:
             sock.close()
 
 
-@unittest.skipUnless(os.environ.get("TEST_LIBVIRT_HOST"), "Set TEST_LIBVIRT_HOST to run the live libvirt tests")
+@unittest.skipUnless(livetest.enabled(), "Set TEST_LIBVIRT_HOST to run the live libvirt tests")
 class LiveBoundedOpenTestCase(unittest.TestCase):
     def setUp(self):
         self.host = os.environ["TEST_LIBVIRT_HOST"]

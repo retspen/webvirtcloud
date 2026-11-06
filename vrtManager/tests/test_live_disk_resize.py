@@ -2,7 +2,7 @@
 
 QEMU holds a running domain's image, so the size goes through blockResize;
 the guest and the volume must both see it, and the persistent definition
-stays as it was. Runs only with TEST_LIBVIRT_HOST set (see instances/tests/livetest.py).
+stays as it was. Runs only with TEST_LIBVIRT_HOST set (see vrtManager/tests/livetest.py).
 """
 
 import os
@@ -13,7 +13,7 @@ from django.test import SimpleTestCase
 from vrtManager.connection import connection_manager
 from vrtManager.instance import wvmInstance
 
-from . import livetest
+from vrtManager.tests import livetest
 
 P = livetest.PREFIX
 PERSISTENT = libvirt.VIR_DOMAIN_XML_INACTIVE | libvirt.VIR_DOMAIN_XML_SECURE

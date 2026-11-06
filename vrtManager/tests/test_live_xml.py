@@ -2,7 +2,7 @@
 
 Every edit that redefines the domain must start from the persistent
 definition with secrets (VIR_DOMAIN_XML_INACTIVE | VIR_DOMAIN_XML_SECURE).
-Runs only with TEST_LIBVIRT_HOST set (see instances/tests/livetest.py).
+Runs only with TEST_LIBVIRT_HOST set (see vrtManager/tests/livetest.py).
 """
 
 import os
@@ -14,7 +14,7 @@ from lxml import etree
 from vrtManager.connection import connection_manager
 from vrtManager.instance import wvmInstance
 
-from . import livetest
+from vrtManager.tests import livetest
 
 P = livetest.PREFIX
 MAC = "52:54:00:aa:01:01"

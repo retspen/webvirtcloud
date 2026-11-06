@@ -14,26 +14,15 @@ from django.test import TestCase
 from django.urls import reverse
 from instances.models import Instance
 from lxml import html
-from networks.tests.driver import without_inactive_flag
-
-NODE = """<node>
-  <network><name>lab</name><forward mode='nat'/><bridge name='virbr9'/>
-    <ip address='192.0.2.1' netmask='255.255.255.0'><dhcp><range start='192.0.2.10' end='192.0.2.20'/>
-      <host mac='52:54:00:00:00:31' name='web' ip='192.0.2.31'/></dhcp></ip>
-    <ip family='ipv6' address='2001:db8:1::1' prefix='64'><dhcp><host id='0:1:0:1' ip='2001:db8:1::31'/></dhcp></ip>
-  </network>
-  <network><name>lan</name><forward mode='bridge'/><bridge name='br0'/></network>
-  <network><name>direct</name><forward mode='bridge'><interface dev='eth0'/></forward></network>
-  <domain type='test'><name>web</name><memory>1024</memory><os><type>hvm</type></os>
-    <devices><interface type='network'><source network='lab'/></interface></devices></domain>
-</node>"""
+from vrtManager.tests.driver import without_inactive_flag
+from vrtManager.tests.fakes import NAT_NETWORK_NODE
 
 
 class NetworkPageTests(TestCase):
     def setUp(self):
         node = tempfile.NamedTemporaryFile("w", suffix=".xml")
         self.addCleanup(node.close)
-        node.write(NODE)
+        node.write(NAT_NETWORK_NODE)
         node.flush()
         self.conn = libvirt.open(f"test://{node.name}")
         self.addCleanup(self.conn.close)

@@ -2,43 +2,12 @@
 model, checked by libvirt before the start. That the host offers it is
 checked when the job is submitted (test_create_job)."""
 
-from unittest.mock import MagicMock, patch
 
 from appsettings.models import AppSettings
 from appsettings.settings import get_settings
-from django.test import SimpleTestCase, TestCase
+from django.test import TestCase
 from instances.tests.create_page import render_create_page
-from lxml import etree, html
-from vrtManager.create import wvmCreate
-
-DOM_CAPS = {"domain": "kvm", "os_support": "no", "cpu_modes": ["host-passthrough", "maximum", "host-model", "custom"],
-            "cpu_custom_models": ["Skylake-Server-noTSX-IBRS", "SandyBridge-IBRS"]}
-
-
-def defined_cpu(vcpu_mode):
-    conn = wvmCreate.__new__(wvmCreate)
-    conn.wvm = MagicMock()
-    with patch.object(wvmCreate, "get_capabilities", return_value={"features": []}), \
-            patch.object(wvmCreate, "get_dom_capabilities", return_value=DOM_CAPS):
-        conn.create_instance(name="vm-1", memory=512, vcpu=1, vcpu_mode=vcpu_mode,
-                             uuid="00000000-0000-4000-8000-0000000000c1", arch="x86_64", machine="q35",
-                             firmware="BIOS", volumes=[], networks="", nwfilter="", virtio=True, listener_addr="0.0.0.0",
-                             add_cdrom="None", add_input="None")
-    return etree.fromstring(conn.wvm.defineXML.call_args.args[0]).find("cpu")
-
-
-class CpuModeTests(SimpleTestCase):
-    def test_a_mode_is_written_as_the_mode(self):
-        for mode in ("host-model", "host-passthrough", "maximum"):
-            with self.subTest(mode=mode):
-                cpu = defined_cpu(mode)
-                self.assertEqual((dict(cpu.attrib), len(cpu)), ({"mode": mode}, 0))
-
-    def test_a_named_model_is_that_model_checked_by_libvirt(self):
-        # a name longer than 20 characters too
-        cpu = defined_cpu("Skylake-Server-noTSX-IBRS")
-        self.assertEqual(dict(cpu.attrib), {"mode": "custom", "match": "exact"})  # no check='none'
-        self.assertEqual((cpu.findtext("model"), cpu.find("model").get("fallback")), ("Skylake-Server-noTSX-IBRS", "forbid"))
+from lxml import html
 
 
 class CpuModeSelectTests(TestCase):

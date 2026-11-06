@@ -3,7 +3,7 @@
 Each test asserts the safe behavior. Known unfixed cases are marked
 expectedFailure; a fix turns them into unexpected successes, which fail
 the run until the marker is removed. Runs only with
-TEST_LIBVIRT_HOST set (see instances/tests/livetest.py).
+TEST_LIBVIRT_HOST set (see vrtManager/tests/livetest.py).
 """
 
 import os
@@ -19,7 +19,7 @@ from django.test import TestCase
 from django.urls import reverse
 from vrtManager.connection import connection_manager
 
-from . import livetest
+from vrtManager.tests import livetest
 from instances.jobs import DeleteInstance
 from instances.models import Instance
 from operations.jobs import Context
@@ -671,4 +671,3 @@ class LiveDataLossTestCase(TestCase):
         inbound = etree.fromstring(dom.XMLDesc(libvirt.VIR_DOMAIN_XML_INACTIVE)).find("devices/interface/bandwidth/inbound")
         self.assertEqual((inbound.get("average"), inbound.get("peak")), ("1000", "600"))
         self.assertEqual(dom.XMLDesc(0), live)
-

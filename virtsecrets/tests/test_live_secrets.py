@@ -10,7 +10,7 @@ from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
-from instances.tests import livetest
+from vrtManager.tests import livetest
 from vrtManager.connection import connection_manager
 
 P = livetest.PREFIX

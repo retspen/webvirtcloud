@@ -1,4 +1,4 @@
-"""libvirt's test driver for the network tests."""
+"""libvirt's test driver as the network tests need it."""
 
 from unittest.mock import patch
 

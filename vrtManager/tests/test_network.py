@@ -1,19 +1,20 @@
-"""A network's addresses are read from its XML however libvirt writes it, each
-<ip> by its own index; a page reads each definition once; a change starts
-from the saved definition, so two in a row keep each other; a fixed address
-is found by the address it had and checked against its subnet; the XML
-editor defines only this network; a network that does not start is not left
-defined. Runs on a private libvirt test driver: "test:///default" is shared
-by the whole process."""
+"""wvmNetwork: a change starts from the saved definition, so two in a row
+keep each other; a fixed address is found by the address it had; the XML
+editor defines only this network; a network that does not start is not
+left defined; the DHCP leases are read. Runs on a private libvirt test
+driver: "test:///default" is shared by the whole process."""
 
 import tempfile
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import libvirt
 from django.test import SimpleTestCase
-from networks.tests.driver import without_inactive_flag
 from lxml import etree
-from vrtManager.network import ip_networks, network_size, wvmNetwork, wvmNetworks
+
+from vrtManager.network import network_size, wvmNetwork, wvmNetworks
+from vrtManager.tests.driver import without_inactive_flag
+from vrtManager.tests.fakes import DUID, lease
 from vrtManager.util import OperationError
 
 NODE = """<node>
@@ -23,23 +24,6 @@ NODE = """<node>
       <host name='paul' ip='192.0.2.30'/><host mac='52:54:00:00:00:31' ip='192.0.2.31'/></dhcp></ip>
   </network>
 </node>"""
-
-
-class AddressTests(SimpleTestCase):
-    def test_an_address_without_a_prefix_takes_libvirts(self):
-        tree = etree.fromstring("<network><ip address='192.0.2.1'/><ip address='10.1.2.3'/><ip family='ipv6' address='2001:db8::1'/></network>")
-        self.assertEqual([str(ip["subnet"]) for ip in ip_networks(tree)], ["192.0.2.0/24", "10.0.0.0/8", "2001:db8::/64"])
-
-    def test_every_way_libvirt_writes_an_address(self):
-        compact = "<network><ip address='192.0.2.1' netmask='255.255.255.0'/></network>"
-        static = ("<network><ip address='192.0.2.1' prefix='24'><dhcp><host mac='52:54:00:00:00:01' ip='192.0.2.5'/>"
-                  "</dhcp></ip><ip family='ipv6' address='2001:db8::1' prefix='64'/></network>")
-        (ip,) = ip_networks(etree.fromstring(compact))
-        self.assertEqual((ip["index"], ip["family"], str(ip["subnet"]), ip["dhcp"]), (0, "ipv4", "192.0.2.0/24", False))
-        v4, v6 = ip_networks(etree.fromstring(static))
-        # DHCP with fixed addresses only is DHCP too
-        self.assertEqual((v4["dhcp"], v4["range"], v4["hosts"][0]["ip"]), (True, None, "192.0.2.5"))
-        self.assertEqual((v6["index"], v6["family"], str(v6["subnet"])), (1, "ipv6", "2001:db8::/64"))
 
 
 class NetworkChangeTests(SimpleTestCase):
@@ -182,3 +166,26 @@ class NetworkChangeTests(SimpleTestCase):
                 wvmNetworks("localhost", "", "", 4).create_network(
                     "n1", "nat", True, gateway, mask, dhcp, False, None, None, None, "", False)
         self.assertNotIn("n1", self.conn.listDefinedNetworks() + self.conn.listNetworks())
+
+
+class LeasesTests(SimpleTestCase):
+    def network(self, leases, active=True):
+        net = wvmNetwork.__new__(wvmNetwork)
+        net.net = MagicMock(**{"isActive.return_value": active, "DHCPLeases.return_value": leases})
+        return net
+
+    def test_leases_by_address_ipv4_first(self):
+        net = self.network([lease("2001:db8:1::40", family=1, clientid=DUID, expiry=0),
+                            lease("192.0.2.100", "52:54:00:AA:00:01", hostname="db"),
+                            lease("192.0.2.9", "52:54:00:aa:00:02")])
+        ipv4_9, ipv4_100, ipv6 = net.get_leases()
+        self.assertEqual([str(ipv4_9["ip"]), str(ipv4_100["ip"]), str(ipv6["ip"])], ["192.0.2.9", "192.0.2.100", "2001:db8:1::40"])
+        self.assertEqual((ipv4_100["mac"], ipv4_100["hostname"], ipv4_100["expires"]),
+                         ("52:54:00:aa:00:01", "db", datetime.fromtimestamp(1793265489, timezone.utc)))
+        # an IPv6 lease: no MAC, its client's DUID; one that never ends
+        self.assertEqual((ipv6["mac"], ipv6["client_id"], ipv6["expires"]), ("", DUID, None))
+
+    def test_a_network_that_does_not_run_has_none(self):
+        net = self.network([lease("192.0.2.9")], active=False)
+        self.assertEqual(net.get_leases(), [])
+        net.net.DHCPLeases.assert_not_called()

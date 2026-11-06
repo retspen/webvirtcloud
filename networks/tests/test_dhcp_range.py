@@ -12,7 +12,7 @@ from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
 from django.test import TestCase
-from networks.tests.driver import without_inactive_flag
+from vrtManager.tests.driver import without_inactive_flag
 from django.urls import reverse
 from lxml import etree
 

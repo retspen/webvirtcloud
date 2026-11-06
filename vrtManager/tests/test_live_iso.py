@@ -9,7 +9,7 @@ from lxml import etree
 from vrtManager.connection import connection_manager
 from vrtManager.instance import wvmInstance
 
-from . import livetest
+from vrtManager.tests import livetest
 
 P = livetest.PREFIX
 CDROMS = (

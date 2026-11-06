@@ -16,7 +16,7 @@ from operations.jobs import Context
 from operations.models import Operation, acquire
 from vrtManager.util import OperationError
 
-from instances.tests.test_create_job import BODY
+from instances.tests.create_page import BODY
 
 SEED = "/srv/default/cidata-x.iso"
 

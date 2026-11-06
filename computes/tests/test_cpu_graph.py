@@ -6,8 +6,7 @@ import json
 import shutil
 import subprocess
 import unittest
-from unittest import TestCase as UnitTestCase
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import PropertyMock, patch
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -19,58 +18,11 @@ from lxml import html
 
 from computes.models import Compute
 from computes.views import CPU_SAMPLE_MAX_AGE, CPU_SAMPLE_SIGNER
-from vrtManager.hostdetails import cpu_percent, wvmHostDetails
 from vrtManager.util import ConnectionFailed
 
 # the page script runs after the shared chart helpers
 CHARTS_JS = settings.BASE_DIR / "static" / "js" / "charts.js"
 TOPOLOGY = {"nodes": 1, "sockets": 1, "cores": 2, "threads": 1, "mhz": 2400, "cpus": 2}
-
-
-def host(*readings):
-    """A wvmHostDetails whose getCPUStats returns readings, (idle, busy) each."""
-    h = wvmHostDetails.__new__(wvmHostDetails)
-    h.wvm = MagicMock()
-    h.wvm.getCPUStats.side_effect = [
-        {"kernel": busy // 2, "user": busy - busy // 2, "idle": idle, "iowait": 0, "guest": busy // 3, "utilization": 99}
-        for idle, busy in readings
-    ]
-    return h
-
-
-class CpuPercentTestCase(UnitTestCase):
-    def test_busy_share_between_two_samples(self):
-        self.assertEqual(cpu_percent((100, 200), (130, 300)), 70.0)
-        self.assertEqual(cpu_percent((0, 0), (1, 3)), 66.7)
-
-    def test_samples_that_do_not_follow_on(self):
-        for before, after in (((100, 200), (100, 200)), ((100, 200), (50, 100)), ((100, 200), (200, 250))):
-            with self.subTest(before=before, after=after):
-                self.assertIsNone(cpu_percent(before, after))
-
-
-@patch("vrtManager.hostdetails.time")
-class CpuUsageTestCase(UnitTestCase):
-    def test_since_a_previous_sample_without_waiting(self, clock):
-        clock.time.return_value = 105.0
-        h = host((130, 70))
-        usage = h.get_cpu_usage(previous=(100, 100, 100.0))
-        clock.sleep.assert_not_called()
-        # total = kernel + user + idle + iowait; guest (inside user) and utilization are left out
-        self.assertEqual(usage, {"usage": 70.0, "sample": (130, 200, 105.0), "window": 5.0})
-
-    def test_over_one_second_without_a_sample(self, clock):
-        clock.time.side_effect = [10.0, 11.0]
-        h = host((100, 100), (110, 190))
-        self.assertEqual(h.get_cpu_usage(), {"usage": 90.0, "sample": (110, 300, 11.0), "window": 1.0})
-        clock.sleep.assert_called_once_with(1)
-
-    def test_over_one_second_after_the_host_restarted(self, clock):
-        clock.time.side_effect = [10.0, 11.0]
-        h = host((5, 5), (6, 9))
-        usage = h.get_cpu_usage(previous=(1000, 5000, 5.0))
-        clock.sleep.assert_called_once_with(1)
-        self.assertEqual((usage["usage"], usage["window"]), (80.0, 1.0))
 
 
 class GraphTestCase(TestCase):

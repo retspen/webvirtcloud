@@ -8,7 +8,7 @@ import libvirt
 from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.test import TestCase
-from networks.tests.driver import without_inactive_flag
+from vrtManager.tests.driver import without_inactive_flag
 from django.urls import NoReverseMatch, URLPattern, URLResolver, get_resolver, reverse
 from instances.models import Flavor, Instance
 from lxml import html

@@ -19,7 +19,7 @@ from django.urls import reverse
 from lxml import etree
 from vrtManager.connection import connection_manager
 
-from . import livetest
+from vrtManager.tests import livetest
 from instances.models import Instance
 from instances.utils import refr
 
