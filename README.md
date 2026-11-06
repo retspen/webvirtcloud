@@ -580,7 +580,8 @@ git checkout master && git pull &&
 docker compose build &&
 docker compose stop -t 95 &&
 docker compose run --rm --no-deps -T --entrypoint /srv/webvirtcloud/venv/bin/python3 webvirtcloud \
-  -c "import sqlite3,sys,tempfile; t=tempfile.mktemp(); sqlite3.connect('data/db.sqlite3').backup(sqlite3.connect(t)); sys.stdout.buffer.write(open(t,'rb').read())" > "$b/db.sqlite3" &&
+  -c "import sqlite3,sys,tempfile; t=tempfile.mktemp(); sqlite3.connect('data/db.sqlite3').backup(sqlite3.connect(t)); sys.stdout.buffer.write(open(t,'rb').read())" > "$b/db.sqlite3.part" &&
+mv "$b/db.sqlite3.part" "$b/db.sqlite3" &&
 docker compose up -d
 ```
 
@@ -611,7 +612,8 @@ Move the `environment=` values of that config into `/etc/default/webvirtcloud` (
    cd /srv/webvirtcloud &&
    ! systemctl is-active --quiet webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker &&
    mkdir -m 700 "$b" &&
-   venv/bin/python3 -c "import sqlite3,sys; sqlite3.connect('db.sqlite3').backup(sqlite3.connect(sys.argv[1]))" "$b/db.sqlite3" &&
+   venv/bin/python3 -c "import sqlite3,sys; sqlite3.connect('db.sqlite3').backup(sqlite3.connect(sys.argv[1]))" "$b/db.sqlite3.part" &&
+   mv "$b/db.sqlite3.part" "$b/db.sqlite3" &&
    cp -p webvirtcloud/settings.py /etc/nginx/conf.d/webvirtcloud.conf "$b"/ &&
    { [ ! -f /etc/default/webvirtcloud ] || cp -p /etc/default/webvirtcloud "$b"/; } &&
    git rev-parse HEAD > "$b/commit" &&
