@@ -167,8 +167,8 @@ class RevertTests(TestCase):
     def test_the_compute_is_held_only_for_a_revert_with_host_devices(self):
         compute = f"compute:{self.instance.compute_id}"
         self.snapshot(by_model())
-        self.assertEqual(self.kind.plan(None, self.params).claims[compute], "exclusive")
+        self.assertEqual(self.kind.plan(MagicMock(is_superuser=True), self.params).claims[compute], "exclusive")
         self.snapshot("")
-        self.assertEqual(self.kind.plan(None, self.params).claims[compute], "shared")
+        self.assertEqual(self.kind.plan(MagicMock(is_superuser=True), self.params).claims[compute], "shared")
         self.precheck()  # no host device: the host's devices are not read
         self.proxy.wvm.listAllDevices.assert_not_called()

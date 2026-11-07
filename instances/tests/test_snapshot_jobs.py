@@ -1,14 +1,17 @@
 """Snapshot create and revert run as jobs: the page queues them, the worker calls libvirt."""
 
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 from vrtManager.util import OperationError
 from django.contrib.auth import get_user_model
 from django.test import TransactionTestCase
 from django.urls import reverse
 
+from accounts.models import UserAttributes, UserInstance
 from appsettings.settings import get_settings
+from django.contrib.auth.models import Permission
+from django.contrib.messages import get_messages
 from computes.models import Compute
 from instances.jobs import CreateSnapshot, RevertSnapshot
 from instances.models import Instance
@@ -30,6 +33,10 @@ class SnapshotJobsTestCase(TransactionTestCase):
         self.proxy._snapshot.return_value.getXMLDesc.return_value = "<domainsnapshot><domain/></domainsnapshot>"
         self.proxy.instance.isActive.return_value = False
         self.proxy.instance.hasCurrentSnapshot.return_value = 0
+        # the quota's reads of the user's VMs
+        reads = patch("instances.utils.wvmInstance")
+        self.vm_reads = reads.start().return_value
+        self.addCleanup(reads.stop)
 
     def queue_and_run(self, view, data):
         """Post the form; nothing runs in the request; then run the job as the worker does."""
@@ -94,6 +101,49 @@ class SnapshotJobsTestCase(TransactionTestCase):
         op, result = self.queue_and_run("revert_external_snapshot", {"name": "a"})
         self.assertEqual((op.kind, result), ("snapshot.revert", {"left_behind": ["/pool/a.one"]}))
         self.proxy.revert_external_snapshot.assert_called_once_with("a")
+
+    def test_a_revert_that_would_exceed_the_owner_s_quota_is_refused(self):
+        # snapshot at 4 vCPUs, shrunk to 2, the 2 given to another VM: reverting gives 6 of 4
+        owner = get_user_model().objects.create_user("snap_owner", password="pw")
+        owner.user_permissions.add(Permission.objects.get(codename="snapshot_instances"))
+        UserAttributes.objects.update_or_create(user=owner, defaults={"max_cpus": 4, "max_memory": 2048,
+                                                                      "max_instances": -1, "max_disk_size": -1})
+        UserInstance.objects.create(user=owner, instance=self.instance, is_change=True)
+        for proxy in (self.proxy, self.vm_reads):  # the VM now: 2 vCPUs, 1 GiB, running and at its next start
+            proxy.get_vcpu.return_value, proxy.get_memory.return_value = 2, 1024
+            proxy.get_disk_devices.return_value = []
+        other = Instance.objects.create(compute=self.instance.compute, name="snap-other", uuid="21212121-3434-5656-7878-909090909091")
+        UserInstance.objects.create(user=owner, instance=other, is_change=True)
+        patch.object(Compute, "status", new_callable=PropertyMock, return_value=True).start()
+        self.addCleanup(patch.stopall)
+        for vcpu, memory, admitted in ((4, 1024, False), (2, 2048, False), (2, 1024, True)):
+            with self.subTest(vcpu=vcpu, memory=memory):
+                self.client.force_login(owner)  # a new session: no messages of the last one
+                self.proxy._snapshot.return_value.getXMLDesc.return_value = (
+                    f"<domainsnapshot><domain><vcpu>{vcpu}</vcpu><memory>{memory * 1024}</memory></domain></domainsnapshot>")
+                response = self.client.post(reverse("instances:revert_snapshot", args=[self.instance.pk]),
+                                            {"name": "a", "submission_key": f"key-snap{vcpu}{memory}"})
+                self.assertEqual(Operation.objects.exists(), admitted)
+                shown = " ".join(str(m) for m in get_messages(response.wsgi_request))
+                self.assertEqual("cannot revert to snapshot a" in shown, not admitted, shown)
+                self.client.logout()
+        # the admitted revert holds the owner's quota until it ends: no resize or other revert
+        # passes the check meanwhile (its own check in the worker and its revert are one step)
+        op = Operation.objects.get()
+        self.assertIn((f"quota:user:{owner.pk}", "exclusive"), set(Claim.objects.filter(operation=op).values_list("resource", "mode")))
+        # the worker checks again: the VM may have been shrunk while it was queued (2 -> 1 vCPU, used elsewhere)
+        self.proxy.get_vcpu.return_value = 1
+        with self.assertRaisesMessage(OperationError, "cannot revert to snapshot a"):
+            RevertSnapshot().precheck(op, None)
+        # an old snapshot may record only the VM's UUID: refused, not a server error
+        Operation.objects.all().delete()
+        Claim.objects.all().delete()
+        self.proxy._snapshot.return_value.getXMLDesc.return_value = "<domainsnapshot><domain><uuid>x</uuid></domain></domainsnapshot>"
+        self.client.force_login(owner)
+        response = self.client.post(reverse("instances:revert_snapshot", args=[self.instance.pk]),
+                                    {"name": "a", "submission_key": "key-snapold1"})
+        self.assertFalse(Operation.objects.exists())
+        self.assertIn("does not record the VM's vCPUs and memory", " ".join(str(m) for m in get_messages(response.wsgi_request)))
 
     def test_a_revert_libvirt_cannot_do_is_refused_before_effects(self):
         self.proxy.check_external_revert.side_effect = OperationError("taken by an older version")

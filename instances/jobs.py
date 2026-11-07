@@ -434,6 +434,28 @@ def _snapshot_definitions(proxy, params):
     return any(definition.xpath(HOST_DEVICES) for definition in definitions), definitions
 
 
+def _revert_quota(user, instance, proxy, params):
+    """A revert gives the VM the vCPUs and memory it had then: what that adds
+    to what it has now (running or at its next start) must fit the user's
+    quota, as a resize must."""
+    if user.is_superuser or instance.is_template:
+        return
+    sizes = [(d.findtext("vcpu"), d.findtext("memory")) for d in _snapshot_definitions(proxy, params)[1]]
+    if not sizes or any(None in size for size in sizes):  # an old snapshot may record only the VM's UUID
+        raise util.OperationError(_("Snapshot %(name)s does not record the VM's vCPUs and memory: "
+                                    "the quota cannot be checked."), name=params["name"])
+    with proxy.cached_reads():
+        cpus = max(int(vcpu) for vcpu, _memory in sizes) - max(proxy.get_vcpu(), proxy.get_vcpu(config=True))
+        memory = (max(int(memory) // 1024 for _vcpu, memory in sizes)
+                  - max(proxy.get_memory(), proxy.get_memory(config=True)))
+    quota = utils.check_user_quota(user, 0, cpus, memory, 0)
+    if quota == utils.QUOTA_UNVERIFIED:
+        raise util.OperationError(utils.QUOTA_UNVERIFIED_TEXT)
+    if quota:
+        raise util.OperationError(_("%(quota)s: cannot revert to snapshot %(name)s."),
+                                  quota=utils.quota_message(quota), name=params["name"])
+
+
 @register
 class RevertSnapshot(Kind):
     name = "snapshot.revert"
@@ -445,13 +467,21 @@ class RevertSnapshot(Kind):
                 "external": bool(raw.get("external"))}
 
     def validate(self, user, params):
-        _proxy(_authorized(user, params["instance"]))._snapshot(params["name"], params["external"])
+        instance = _authorized(user, params["instance"])
+        proxy = _proxy(instance)
+        proxy._snapshot(params["name"], params["external"])
+        _revert_quota(user, instance, proxy, params)
 
     def plan(self, user, params):
         plan = _vm_plan(params)
+        instance = _instance(params["instance"])
         # a revert that gives the VM host devices holds the whole compute: no other VM takes them meanwhile
-        if _snapshot_definitions(_proxy(_instance(params["instance"])), params)[0]:
+        if _snapshot_definitions(_proxy(instance), params)[0]:
             plan.claims[claims.compute_key(plan.intent["compute"])] = Claim.EXCLUSIVE
+        # the user's quota until it ends: the worker's check and the revert are one step to other
+        # increases (a resize, another revert), as a resize's check and change are
+        if not user.is_superuser and not instance.is_template:
+            plan.claims[claims.quota_key(user.pk)] = Claim.EXCLUSIVE
         return plan
 
     def precheck(self, op, ctx):
@@ -460,6 +490,8 @@ class RevertSnapshot(Kind):
             proxy.check_external_revert(op.params["name"])
         else:
             proxy.check_internal_revert()
+        # again: a resize while it was queued may have used the quota
+        _revert_quota(op.user, _instance(op.params["instance"]), proxy, op.params)
         # a revert gives the VM the host devices it had then: not one given since to another VM
         has_hostdevs, definitions = _snapshot_definitions(proxy, op.params)
         if has_hostdevs:
