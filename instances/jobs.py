@@ -226,7 +226,7 @@ def _finish_clone(op, clone, warning):
     except libvirtError as err:
         notes += say(_("The clone is made, but not as asked: %(error)s"), error=err)
         write(op.username, c.name, op.intent["name"], f"VM {op.intent['name']}: resize or start the clone: "
-              f"{safe_text(err)}", False, uuid=op.intent["uuid"])
+              f"{safe_text(err)}", False, op.client_ip, op.intent["uuid"])
     return {"warning": notes} if notes else {}
 
 
@@ -972,7 +972,7 @@ def _moved(op, dest):
     target = Compute.objects.get(pk=op.params["target"]).name
 
     def failed(action, err):  # as migrate_instance logs its later steps
-        write(op.username, source, name, f"VM {name}: {action}: {safe_text(err)}", False, uuid=op.intent["uuid"])
+        write(op.username, source, name, f"VM {name}: {action}: {safe_text(err)}", False, op.client_ip, op.intent["uuid"])
 
     if op.intent.get("autostart"):
         try:
@@ -1043,7 +1043,7 @@ class MigrateInstance(Kind):
         ctx.set_phase(gettext_noop("Migrating the VM"))
         try:
             utils.migrate_instance(Compute.objects.get(pk=p["target"]), instance, op.user,
-                                   disk_pools=p["disk_pools"],
+                                   disk_pools=p["disk_pools"], ip=op.client_ip,
                                    on_moved=lambda: ctx.record_intent(outcome_logged=True),
                                    **{k: p[k] for k in MIGRATE_OPTIONS})
         except Exception as err:
@@ -1276,7 +1276,7 @@ def _removed(op, recovering=False):
                 continue
             notes += say(DISK_NOT_DELETED, path=path, err=err)
             write(op.username, compute.name, op.intent["name"], f"VM {op.intent['name']}: delete volume {path}: "
-                  f"{safe_text(err)}", False, uuid=op.intent["uuid"])
+                  f"{safe_text(err)}", False, op.client_ip, op.intent["uuid"])
             try:
                 while (path := conn.backing_path(path)) and path not in kept:
                     kept.add(path)
@@ -1284,7 +1284,7 @@ def _removed(op, recovering=False):
                 kept.update(op.intent["to_delete"])  # the files it needs are unknown: none of the rest goes
         else:
             write(op.username, compute.name, op.intent["name"], f"VM {op.intent['name']}: delete volume {path}",
-                  True, uuid=op.intent["uuid"])
+                  True, op.client_ip, op.intent["uuid"])
     for path in op.intent["shared"]:
         notes += say(DISK_SHARED, path=path)
     return {"open": reverse("instances:index"), **({"warning": notes} if notes else {})}

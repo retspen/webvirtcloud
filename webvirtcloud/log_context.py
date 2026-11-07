@@ -5,6 +5,9 @@ import contextvars
 import logging
 
 current_request = contextvars.ContextVar("current_request", default=None)
+# the client address while a request is handled, reset when it is answered
+# (current_request stays for Django's log line): the Logs rows of the jobs it submits
+request_ip = contextvars.ContextVar("request_ip", default=None)
 
 
 class RequestFilter(logging.Filter):

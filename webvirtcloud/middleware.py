@@ -13,6 +13,7 @@ from operations import claims, jobs
 from operations.utils import busy_message, public_error_text, said, summary, words
 
 from vrtManager.util import ConnectionFailed, InUse
+from webvirtcloud import log_context
 from webvirtcloud.log_context import current_request
 
 API_PREFIX = "/api/"
@@ -83,7 +84,11 @@ class RequestIdMiddleware:
         request.client_ip = request_ip(request)
         # not reset after the response: Django logs a 4xx or 5xx answer after the middleware returns
         current_request.set(request)
-        response = self.get_response(request)
+        token = log_context.request_ip.set(request.client_ip)
+        try:
+            response = self.get_response(request)
+        finally:
+            log_context.request_ip.reset(token)
         response["X-Request-ID"] = request.request_id
         return response
 

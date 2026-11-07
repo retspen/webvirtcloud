@@ -14,6 +14,7 @@ from operations import claims, jobs
 from operations.jobs import Outcome
 from operations.models import Claim, LeaseLost, Operation, WorkerLease, acquire
 from operations.tests import fakes
+from webvirtcloud.log_context import request_ip
 
 KEY = "key-00000001"
 
@@ -111,6 +112,34 @@ class CancelFinishResolveTestCase(TransactionTestCase):
         self.assertIsNone(Logs.objects.latest("pk").success)
         jobs.resolve(op.pk, self.admin, Operation.FAILED, "checked")
         self.assertIs(Logs.objects.latest("pk").success, False)
+
+    def test_a_job_s_rows_name_who_did_each_step_and_from_where(self):
+        def from_ip(ip):  # as the middleware sets it while it handles a request
+            token = request_ip.set(ip)
+            self.addCleanup(request_ip.reset, token)
+
+        def last_row():
+            row = Logs.objects.latest("pk")
+            return row.user, row.ip, row.message
+
+        from_ip("192.0.2.7")
+        op = jobs.submit("test.noop", self.user, {}, KEY)
+        queued = jobs.submit("test.noop", self.user, {"uuid": "u2"}, "key-00000002")
+        running = jobs.submit("test.scripted", self.user, {"uuid": "u3"}, "key-00000003")
+        Operation.objects.filter(pk=running.pk).update(state=Operation.RUNNING)
+        request_ip.set(None)  # the worker
+        jobs.finish(op, Outcome(Operation.SUCCEEDED))
+        self.assertEqual(last_row(), ("svc2", "192.0.2.7", "No-op succeeded"))
+        from_ip("198.51.100.9")  # an administrator cancels the user's jobs
+        jobs.cancel(queued.pk, self.admin)
+        self.assertEqual(last_row(), ("svc_admin", "198.51.100.9", "No-op cancelled"))
+        jobs.cancel(running.pk, self.admin)
+        self.assertEqual(last_row(), ("svc_admin", "198.51.100.9", "No-op cancelling"))
+
+    def test_a_submission_after_a_request_does_not_take_its_address(self):
+        # the middleware keeps the request for Django's log line, not its address
+        self.client.get("/accounts/login/")
+        self.assertIsNone(jobs.submit("test.noop", self.user, {}, KEY).client_ip)
 
     def test_cancel_decides_from_the_current_state(self):
         op = jobs.submit("test.scripted", self.user, {}, KEY)

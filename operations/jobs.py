@@ -17,6 +17,7 @@ from django.utils.translation import gettext, gettext_noop
 
 from logs.audit import write
 from vrtManager.util import OperationError
+from webvirtcloud.log_context import request_ip
 
 from . import claims, utils
 from .models import Claim, LeaseLost, Operation, fenced
@@ -108,7 +109,8 @@ class Kind:
 
     def log_entry(self, op, state):
         """(host, instance, instance UUID, message) of the Logs row written
-        with each end of the job (in the same transaction); its host, instance
+        with each end of the job (in the same transaction) and with a cancel
+        asked while it runs (state CANCELLING); its host, instance
         and UUID also go on the row of a resolution. None: no row."""
         return None
 
@@ -174,7 +176,7 @@ def submit(kind_name, user, raw_params, submission_key):
     op = Operation(
         kind=kind.name, user=user, username=user.username, submission_key=submission_key,
         resource=plan.resource, resource_label=plan.label[:255], params=params, intent=plan.intent,
-        time_limit=kind.time_limit,
+        time_limit=kind.time_limit, client_ip=_client_ip(),
     )
     if kind.runs_in_request:
         now = timezone.now()
@@ -197,11 +199,14 @@ def cancel(op_id, user):
             Operation.objects.filter(pk=op.pk).update(state=Operation.CANCELLED, finished_at=timezone.now())
             Claim.objects.filter(operation=op).delete()
             if (entry := _entry(op, Operation.CANCELLED)) is not None:
-                _log(op.username, *entry, None)
+                _log(user.username, *entry, None, _client_ip())  # an administrator may cancel another's job
         elif op.state == Operation.RUNNING:
             if not get_kind(op.kind).cancellable:
                 raise OperationError(gettext_noop("This job cannot be cancelled once it has started"))
             Operation.objects.filter(pk=op.pk).update(state=Operation.CANCELLING, cancel_requested=True)
+            # who asked; the job's end row comes when it stops
+            if (entry := _entry(op, Operation.CANCELLING)) is not None:
+                _log(user.username, *entry, None, _client_ip())
         elif op.state != Operation.CANCELLING:
             raise OperationError(gettext_noop("The job has already ended"))
     op.refresh_from_db()
@@ -220,8 +225,13 @@ def _entry(op, state):
         return None
 
 
-def _log(user, host, instance, uuid, message, success):
-    write(str(user), str(host), str(instance), utils.safe_text(message), success, uuid=str(uuid))
+def _log(user, host, instance, uuid, message, success, ip=None):
+    write(str(user), str(host), str(instance), utils.safe_text(message), success, ip, str(uuid))
+
+
+def _client_ip():
+    """The address of the web request this runs in; None in the worker."""
+    return request_ip.get()
 
 
 def finish(op, outcome, *, worker=None):
@@ -241,7 +251,8 @@ def finish(op, outcome, *, worker=None):
         if outcome.state != Operation.UNCERTAIN:
             Claim.objects.filter(operation=op).delete()
         if (entry := _entry(op, outcome.state)) is not None:
-            _log(op.username, *entry, {Operation.SUCCEEDED: True, Operation.FAILED: False}.get(outcome.state))
+            _log(op.username, *entry, {Operation.SUCCEEDED: True, Operation.FAILED: False}.get(outcome.state),
+                 op.client_ip)
     logger.info("job %s %s: %s", op.pk, op.kind, outcome.state)
     op.refresh_from_db()
     return True
@@ -267,7 +278,7 @@ def resolve(op_id, user, outcome_state, note):
         entry = _entry(op, outcome_state)
         host, instance, uuid = entry[:3] if entry is not None else ("-", op.resource_label, op.intent.get("uuid", ""))
         _log(user.username, host, instance, uuid, f"Job {op.pk} resolved as {outcome_state}: {note}",
-             outcome_state == Operation.SUCCEEDED)
+             outcome_state == Operation.SUCCEEDED, _client_ip())
     op.refresh_from_db()
     return op
 

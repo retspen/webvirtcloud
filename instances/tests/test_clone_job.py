@@ -152,6 +152,9 @@ class CloneJobTestCase(TransactionTestCase):
         # the job succeeded: Logs has the step that failed too
         self.assertTrue(Logs.objects.filter(instance_uuid=op.intent["uuid"], success=False,
                                             message="VM copy: resize or start the clone: no memory").exists())
+        # the worker writes them with the address the form came from
+        self.assertEqual(set(Logs.objects.filter(instance_uuid=op.intent["uuid"]).values_list("ip", flat=True)),
+                         {"127.0.0.1"})
 
     def queued(self):
         self.client.post(reverse("instances:clone", args=[self.source.pk]),

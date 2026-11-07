@@ -214,6 +214,7 @@ def migrate_instance(
     compress=False,
     delete_source=False,
     disk_pools=None,
+    ip=None,
     on_moved=None,
 ):
     """Migrates instance to new_compute and logs the outcome (the mode
@@ -226,7 +227,7 @@ def migrate_instance(
 
     def log(action, error=None):
         message = f"VM {instance.name}: {action}" + (f": {reason(error, user)}" if error is not None else "")
-        write(user.username, source.name, instance.name, message, error is None, uuid=instance.uuid)
+        write(user.username, source.name, instance.name, message, error is None, ip, instance.uuid)
 
     conn_migrate = None
     try:
