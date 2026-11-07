@@ -2,7 +2,7 @@
 
 import contextlib
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 from uuid import uuid4
 
 import libvirt
@@ -71,7 +71,7 @@ class CloneJobTestCase(TransactionTestCase):
         Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker="wvc-test:1:a")
         op.refresh_from_db()
         CloneInstance().run(op, Context(op, SimpleNamespace(identity="wvc-test:1:a")))
-        self.proxy.clone_instance.assert_called_once_with(op.intent["clone"], op.intent["uuid"])
+        self.proxy.clone_instance.assert_called_once_with(op.intent["clone"], op.intent["uuid"], on_nvram=ANY)
         clone = Instance.objects.get(uuid=op.intent["uuid"])
         self.assertTrue(UserInstance.objects.filter(instance=clone, user=self.admin).exists())
 
@@ -178,7 +178,8 @@ class CloneJobTestCase(TransactionTestCase):
 
     @patch("instances.jobs.wvmConnect")
     def test_recovery(self, conn):
-        op = Operation(user=self.admin, intent={"compute": self.compute.pk, "uuid": "abababab-0000-1111-2222-333333333333",
+        op = Operation(user=self.admin, params={"instance": self.source.pk},
+                       intent={"compute": self.compute.pk, "uuid": "abababab-0000-1111-2222-333333333333",
                                                 "name": "copy", "clone": {"name": "copy", "disk-vda": "copy.qcow2"}})
         recovered = CloneInstance().reconcile(op)
         self.assertEqual(recovered.state, Operation.SUCCEEDED)  # the VM is defined
@@ -195,7 +196,8 @@ class CloneJobTestCase(TransactionTestCase):
     @patch("instances.jobs.wvmConnect")
     def test_recovery_gives_a_defined_shut_off_clone_the_size_asked(self, conn):
         conn.return_value.wvm.lookupByUUIDString.return_value.state.return_value = [libvirt.VIR_DOMAIN_SHUTOFF, 0]
-        op = Operation(user=self.admin, intent={"compute": self.compute.pk, "uuid": "abababab-0000-1111-2222-333333333333",
+        op = Operation(user=self.admin, params={"instance": self.source.pk},
+                       intent={"compute": self.compute.pk, "uuid": "abababab-0000-1111-2222-333333333333",
                                                 "name": "copy", "clone": {"name": "copy", "disk-vda": "copy.qcow2",
                                                                           "vcpu": 4, "memory": None, "start": True}})
         recovered = CloneInstance().reconcile(op)
@@ -206,13 +208,35 @@ class CloneJobTestCase(TransactionTestCase):
 
     @patch("instances.jobs.wvmConnect")
     def test_a_clone_that_left_nothing_failed(self, conn):
-        op = Operation(user=self.admin, intent={"compute": self.compute.pk, "uuid": "abababab-0000-1111-2222-333333333333",
+        op = Operation(user=self.admin, params={"instance": self.source.pk},
+                       intent={"compute": self.compute.pk, "uuid": "abababab-0000-1111-2222-333333333333",
                                                 "name": "copy", "clone": {"name": "copy", "disk-vda": "copy.qcow2"}})
         missing = libvirt.libvirtError("no domain")
         missing.err = (libvirt.VIR_ERR_NO_DOMAIN, libvirt.VIR_FROM_QEMU, "no domain")
         conn.return_value.wvm.lookupByUUIDString.side_effect = missing
         conn.return_value.wvm.listAllStoragePools.return_value = [pool(["other.qcow2"])]
         self.assertEqual(CloneInstance().reconcile(op).state, Operation.FAILED)
+
+    @patch("instances.jobs.wvmInstances")
+    @patch("instances.jobs.wvmConnect")
+    def test_a_clone_not_defined_leaves_no_copy_of_the_uefi_variables(self, conn, hosts):
+        """define_clone copies them just before it defines the clone; the job records the copy it made."""
+        op = Operation(user=self.admin, params={"instance": self.source.pk},
+                       intent={"compute": self.compute.pk, "uuid": "abababab-0000-1111-2222-333333333333",
+                               "name": "copy", "clone": {"name": "copy", "disk-vda": "copy.qcow2"}})
+        missing = libvirt.libvirtError("no domain")
+        missing.err = (libvirt.VIR_ERR_NO_DOMAIN, libvirt.VIR_FROM_QEMU, "no domain")
+        conn.return_value.wvm.lookupByUUIDString.side_effect = missing
+        conn.return_value.wvm.listAllStoragePools.return_value = []
+        CloneInstance().reconcile(op)  # no copy recorded: nothing of the job to remove
+        hosts.return_value.delete_nvram.assert_not_called()
+        op.intent["nvram_copy"] = "/var/lib/libvirt/qemu/nvram/copy_VARS.fd"
+        self.assertEqual(CloneInstance().reconcile(op).state, Operation.FAILED)
+        hosts.return_value.delete_nvram.assert_called_once_with("copy_VARS.fd")
+        op.intent["nvram_copy"] = "/pool/copy_VARS.fd"  # in a storage pool
+        CloneInstance().reconcile(op)
+        hosts.return_value.wvm.storageVolLookupByPath.assert_called_once_with("/pool/copy_VARS.fd")
+        hosts.return_value.wvm.storageVolLookupByPath.return_value.delete.assert_called_once_with(0)
 
 
 def libvirt_error(code):
@@ -297,7 +321,7 @@ class LiveCloneJobTestCase(TransactionTestCase):
         op = self.op()
         CloneInstance().precheck(op, None)
         self.run_job(op)
-        self.proxy.clone_instance.assert_called_once_with(op.intent["clone"], op.intent["uuid"])
+        self.proxy.clone_instance.assert_called_once_with(op.intent["clone"], op.intent["uuid"], on_nvram=ANY)
         self.proxy.live_clone_targets.assert_not_called()
         self.assertFalse(Operation.objects.get(pk=op.pk).intent["live"])
 

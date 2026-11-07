@@ -18,7 +18,7 @@ from libvirt import (VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE, VIR_DOMAIN_JOB_NONE,
                      VIR_ERR_NO_STORAGE_VOL, libvirtError)
 from lxml import etree
 from vrtManager import util
-from vrtManager.connection import wvmConnect
+from vrtManager.connection import NVRAM_DIR, wvmConnect
 from vrtManager.create import cpu_choices, wvmCreate
 from vrtManager.instance import HOST_DEVICES, check_snapshot_name, wvmInstance, wvmInstances
 from vrtManager.nodedevs import check_hostdevs
@@ -246,6 +246,26 @@ def _recovered_clone(op):
     if _domain(op.intent["compute"], op.intent["uuid"]).state()[0] != VIR_DOMAIN_SHUTOFF:
         return {}
     return _finish_clone(op, op.intent["clone"], [])
+
+
+def _remove_clone_nvram(op):
+    """The copy of the VM's UEFI variables a shut-off clone made just before
+    it defines the clone (define_clone), left by a worker that stopped
+    between the two: the clone was not defined, and no VM has it."""
+    if not (path := op.intent.get("nvram_copy")):
+        return
+    c = Compute.objects.get(pk=op.intent["compute"])
+    host = wvmInstances(c.hostname, c.login, c.password, c.type)
+    try:
+        if os.path.dirname(path) == NVRAM_DIR:  # a volume only of a pool there, which may be none
+            host.delete_nvram(os.path.basename(path))
+        else:
+            host.wvm.storageVolLookupByPath(path).delete(0)
+    except libvirtError as err:
+        if err.get_error_code() != VIR_ERR_NO_STORAGE_VOL:
+            raise  # unreachable: recovery waits and retries
+    finally:
+        host.close()
 
 
 def _clone_made(op, result):
@@ -607,7 +627,7 @@ class CloneInstance(Kind):
         if status == 5:
             ctx.record_intent(live=False)
             ctx.set_phase(gettext_noop("Copying disks"))
-            proxy.clone_instance(clone, uuid)
+            proxy.clone_instance(clone, uuid, on_nvram=lambda path: ctx.record_intent(nvram_copy=path))
             return _clone_made(op, _finish_clone(op, clone, ""))
         if status not in (1, 3):
             raise util.OperationError(CLONE_STATE_REFUSED)
@@ -699,6 +719,8 @@ class CloneInstance(Kind):
             outcome = vm_outcome(op, owner=True, volumes=disks)
             if outcome.state == Operation.SUCCEEDED:
                 outcome.result = {**outcome.result, **_recovered_clone(op), "open": _clone_page(op)}
+            else:
+                _remove_clone_nvram(op)
             return outcome
         proxy = _recovery_proxy(op)
         if proxy is None:

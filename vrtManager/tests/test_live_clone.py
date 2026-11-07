@@ -321,7 +321,7 @@ class DefineCloneTestCase(unittest.TestCase):
         p.define_clone = MagicMock(return_value=UUID)
         self.assertEqual(p.clone_instance(FORM, UUID), UUID)
         p.pool.createXMLFrom.assert_called_once()
-        p.define_clone.assert_called_once_with(FORM, UUID, {"vda": "/pool/copy-vda.qcow2"})
+        p.define_clone.assert_called_once_with(FORM, UUID, {"vda": "/pool/copy-vda.qcow2"}, None)
 
     def test_clone_instance_checks_the_macs_before_copying(self):
         p = proxy()
@@ -414,12 +414,15 @@ class LiveCloneTestCase(SimpleTestCase):
         vm = wvmInstance(*self.args, None, uuid=dom.UUIDString())
         source = vm.get_nvram()
 
+        made = []
         uuid = vm.clone_instance(
-            {"name": P + "clone-uefi-copy", "disk-vda": P + "clone-uefi-copy-a.qcow2", "disk_owner_uid": 0, "disk_owner_gid": 0}, "abababab-0000-1111-2222-333333333333"
+            {"name": P + "clone-uefi-copy", "disk-vda": P + "clone-uefi-copy-a.qcow2", "disk_owner_uid": 0, "disk_owner_gid": 0}, "abababab-0000-1111-2222-333333333333",
+            on_nvram=made.append,
         )
 
         clone = self.conn.lookupByUUIDString(uuid)
         path = ElementTree.fromstring(clone.XMLDesc(libvirt.VIR_DOMAIN_XML_INACTIVE)).findtext("os/nvram")
+        self.assertEqual(made, [path])  # the job records it: recovery removes it if the clone is not defined
         self.assertEqual(path, os.path.join(os.path.dirname(source), P + "clone-uefi-copy_VARS.fd"))
         with vm._nvram_pool() as pool:
             copy = pool.storageVolLookupByName(os.path.basename(path))

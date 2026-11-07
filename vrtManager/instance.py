@@ -2449,11 +2449,11 @@ class wvmInstance(wvmConnect):
                       </target>
                     </volume>"""
 
-    def define_clone(self, clone_data, uuid, paths):
+    def define_clone(self, clone_data, uuid, paths, on_nvram=None):
         """Defines the clone with each copied disk's source set from paths
-        ({dev: new path}) and its own copy of the VM's UEFI variables (NVRAM).
-        The NVRAM copy is removed if the definition fails. Returns the
-        clone's UUID."""
+        ({dev: new path}) and its own copy of the VM's UEFI variables (NVRAM),
+        whose path on_nvram is given once made. The NVRAM copy is removed if
+        the definition fails. Returns the clone's UUID."""
         tree, disks = self._clone_definition(clone_data, uuid)
         for source, dev in disks:
             source.set("file" if source.get("file") else "dev" if source.get("dev") else "name", paths[dev])
@@ -2485,6 +2485,8 @@ class wvmInstance(wvmConnect):
                 if target.find(tag) is not None:
                     copy_target.append(target.find(tag))
             copy = pool.createXMLFrom(etree.tostring(volume).decode(), original, 0)
+            if on_nvram is not None:
+                on_nvram(copy.path())
             if nvram_source is not None:
                 nvram_source.set("file", copy.path())
             else:
@@ -2500,10 +2502,11 @@ class wvmInstance(wvmConnect):
                     ) from err
                 raise
 
-    def clone_instance(self, clone_data, uuid):
-        """Copy a shut-off VM, with its disks and UEFI variables (NVRAM).
-        Inputs are checked before anything is allocated, and on failure only
-        the volumes this call created are removed. Returns the clone's UUID."""
+    def clone_instance(self, clone_data, uuid, on_nvram=None):
+        """Copy a shut-off VM, with its disks and UEFI variables (NVRAM; see
+        define_clone for on_nvram). Inputs are checked before anything is
+        allocated, and on failure only the volumes this call created are
+        removed. Returns the clone's UUID."""
         if self.get_status() != 5:
             # A running guest keeps writing while its disks are copied.
             raise util.OperationError(gettext_noop("Shut the VM down before cloning it"))
@@ -2551,7 +2554,7 @@ class wvmInstance(wvmConnect):
                     created.append(new_path)
                     paths[dev] = new_path
 
-            return self.define_clone(clone_data, uuid, paths)
+            return self.define_clone(clone_data, uuid, paths, on_nvram)
         except Exception as err:
             leftovers = []
             for path in reversed(created):
