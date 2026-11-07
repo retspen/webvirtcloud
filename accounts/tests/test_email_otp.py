@@ -10,6 +10,8 @@ from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
+from logs.models import Logs
+
 URL = reverse("accounts:email_otp")
 
 
@@ -35,6 +37,9 @@ class EmailOTPTests(TestCase):
         self.enroll()
         self.post("OTP.User@Example.com")  # addresses match case-insensitively
         self.assertEqual([m.to for m in mail.outbox], [["otp.user@example.com"]])
+        # the requester is anonymous: the row does not make it the user
+        self.assertEqual(list(Logs.objects.values_list("user", "message", "success", "ip")),
+                         [("", "User otp-user: mail OTP QR code (lost OTP)", True, "127.0.0.1")])
 
     def test_an_unenrolled_user_gets_no_mail_and_no_device(self):
         self.post("otp.user@example.com")
@@ -63,6 +68,7 @@ class EmailOTPTests(TestCase):
         self.enroll()
         with self.assertLogs("accounts.views", level="ERROR"):
             self.post("otp.user@example.com")
+        self.assertIs(Logs.objects.get(message__startswith="User otp-user: mail OTP QR code (lost OTP):").success, False)
 
 
 @override_settings(OTP_ENABLED=False)

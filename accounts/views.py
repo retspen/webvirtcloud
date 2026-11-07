@@ -222,6 +222,8 @@ def change_password(request):
                 logging.getLogger(__name__).warning("Could not remove the generated admin password file")
         messages.success(request, _("Password Changed"))
         return redirect("accounts:profile")
+    if form.has_error("old_password", "password_incorrect"):  # someone at an open session guessing it
+        failed(request, None, f"User {request.user.username}", "change password", "wrong old password")
 
     return render(request, "accounts/change_password_form.html", {"form": form, "must_change": must_change})
 
@@ -329,7 +331,9 @@ def email_otp(request):
             device = get_existing_totp_device(user)
             if device is not None:
                 try:
-                    send_email_with_otp(request, user)
+                    # the row's user is the requester: anonymous
+                    with audit(request, None, f"User {user.username}", "mail OTP QR code (lost OTP)"):
+                        send_email_with_otp(request, user)
                 except Exception:
                     logging.getLogger(__name__).exception("Could not mail the OTP QR code to user %s", user.pk)
 

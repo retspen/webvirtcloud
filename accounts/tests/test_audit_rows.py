@@ -25,6 +25,16 @@ class OwnAccountRowTests(TestCase):
         self.assertEqual(rows(), [("User bob: change email", True), ("User bob: change password", True)])
         self.assertFalse(Logs.objects.filter(message__contains="pass-").exists())
 
+    def test_a_wrong_old_password_is_a_failed_row(self):
+        # someone at an open session guessing the password
+        self.client.post(reverse("accounts:change_password"), {
+            "old_password": "guess-2026", "new_password1": "Bob-new-pass-1", "new_password2": "Bob-new-pass-1"})
+        self.client.get(reverse("accounts:change_password"))
+        self.client.post(reverse("accounts:change_password"), {  # none given: not a guess
+            "new_password1": "Bob-new-pass-1", "new_password2": "Bob-new-pass-1"})
+        self.assertEqual(rows(), [("User bob: change password: wrong old password", False)])
+        self.assertFalse(Logs.objects.filter(message__contains="pass-").exists())
+
     def test_the_first_login_password_change(self):
         self.bob.user_permissions.clear()
         UserAttributes.objects.update_or_create(user=self.bob, defaults={"must_change_password": True})
