@@ -424,10 +424,16 @@ class wvmInstances(wvmConnect):
     def copy_nvram(self, conn):
         """Copies the UEFI variables file of the shut-off VM of conn (on the
         source) from libvirt's NVRAM directory there to the same path here,
-        unless both hosts share that directory. Returns the copy's name."""
+        unless both hosts share that directory. Returns the copy's name. A
+        file elsewhere is refused: it would stay behind, and the VM start
+        here from the firmware's template."""
         path = conn.get_nvram()
-        if not path or os.path.dirname(path) != NVRAM_DIR:
+        if not path:
             return None
+        if os.path.dirname(path) != NVRAM_DIR:
+            raise util.OperationError(gettext_noop(
+                "The NVRAM file %(path)s is not in libvirt's NVRAM directory %(dir)s and cannot be copied"),
+                path=path, dir=NVRAM_DIR)
         name = os.path.basename(path)
         with conn._nvram_pool() as source, self._nvram_pool() as target:
             vol = self._find_volume(source, name)

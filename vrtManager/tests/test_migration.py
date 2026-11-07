@@ -296,6 +296,12 @@ class NvramCopyTestCase(unittest.TestCase):
         copy.upload.assert_called_once_with(self.dest.wvm.newStream.return_value, 0, 4, 0)
         self.assertEqual(self.host.defined, ["<domain><name>vm</name></domain>"])
 
+    def test_a_file_outside_libvirt_s_directory_stops_the_move(self):
+        self.source.nvram = "/srv/vms/vm_VARS.fd"
+        with self.assertRaisesRegex(util.OperationError, "/srv/vms/vm_VARS.fd is not in libvirt's NVRAM directory"):
+            self.move()
+        self.assertEqual(self.host.defined, [])
+
     def test_a_failed_download_aborts_its_stream(self):
         stream = self.source.wvm.newStream.return_value
         stream.recvAll.side_effect = libvirt.libvirtError("download failed")
