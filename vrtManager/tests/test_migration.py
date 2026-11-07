@@ -246,6 +246,18 @@ class DestinationDisksTestCase(unittest.TestCase):
         with self.assertRaisesRegex(util.OperationError, "vdb \\(dir disk, cannot be checked\\)"):
             self.migrate(FakeHost(), xml, state=5)
 
+    def test_a_volume_of_a_host_s_own_lvm_or_disk_pool_is_missing(self):
+        # another host's logical volume of the same name is other data
+        for pool_type in ("logical", "disk"):
+            with self.subTest(pool_type=pool_type):
+                host = FakeHost(volumes={"/dev/vg/vm"}, pool_types={"/dev/vg/vm": pool_type})
+                xml = with_disks("<disk type='block' device='disk'><source dev='/dev/vg/vm'/><target dev='vda'/></disk>")
+                with self.assertRaisesRegex(util.OperationError, "vda \\(/dev/vg/vm\\)"):
+                    self.migrate(host, xml)
+        host = FakeHost(volumes={"/dev/sdz"}, pool_types={"/dev/sdz": "iscsi"})
+        xml = with_disks("<disk type='block' device='disk'><source dev='/dev/sdz'/><target dev='vda'/></disk>")
+        self.assertEqual(len(self.migrate(host, xml).instance.calls), 1)
+
     def test_a_volume_of_an_inactive_pool_is_missing(self):
         host = FakeHost(volumes={"v"}, inactive_pools={"p"})
         xml = with_disks("<disk type='volume' device='disk'><source pool='p' volume='v'/><target dev='vdc'/></disk>")

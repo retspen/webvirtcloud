@@ -88,8 +88,12 @@ def no_volume():
 
 
 class FakeVolume:
-    def __init__(self, backing):
+    def __init__(self, backing, pool_type="dir"):
         self.backing = backing
+        self.pool_type = pool_type
+
+    def storagePoolLookupByVolume(self):
+        return MagicMock(XMLDesc=lambda flags: f"<pool type='{self.pool_type}'/>")
 
     def XMLDesc(self, flags=0):
         if self.backing is None:
@@ -121,7 +125,7 @@ class FakeHost:
     """The destination's libvirt connection. volumes: the paths its pools
     list; unlisted: files its pools show after a refresh."""
 
-    def __init__(self, existing=(), volumes=(), unlisted=(), backing=None, inactive_pools=()):
+    def __init__(self, existing=(), volumes=(), unlisted=(), backing=None, inactive_pools=(), pool_types=None):
         self.existing = set(existing)
         self.defined = []
         self.new = []
@@ -129,12 +133,13 @@ class FakeHost:
         self.unlisted = set(unlisted)
         self.backing = backing or {}  # path: the path of its backing file
         self.inactive_pools = set(inactive_pools)
+        self.pool_types = pool_types or {}  # path: the type of its volume's pool, dir if not named
         self.refreshes = 0
 
     def storageVolLookupByPath(self, path):
         if path not in self.volumes:
             raise no_volume()
-        return FakeVolume(self.backing.get(path))
+        return FakeVolume(self.backing.get(path), self.pool_types.get(path, "dir"))
 
     def storagePoolLookupByName(self, name):
         return FakePool(self, active=name not in self.inactive_pools)

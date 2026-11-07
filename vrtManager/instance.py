@@ -454,6 +454,8 @@ class wvmInstances(wvmConnect):
         them), CD-ROM images, block devices and pool volumes. Network disks
         (RBD, iSCSI, ...) are reached the same way from every host and are not
         checked; other types (dir, nvme, ...) cannot be and count as missing.
+        A volume of an LVM or disk pool here counts as missing too: such
+        storage is each host's own, and one of the same name is other data.
         Pools are refreshed before a disk counts as missing, as a file another
         host made on shared storage is listed after that."""
         disks = {}
@@ -483,7 +485,8 @@ class wvmInstances(wvmConnect):
                     continue
                 checked.add(key)
                 volume = self.find_volume(*key)
-                if volume is None:
+                if volume is None or ElementTree.fromstring(
+                        volume.storagePoolLookupByVolume().XMLDesc(0)).get("type") in ("logical", "disk"):
                     unseen.append((target, key))
                     continue
                 backing = ElementTree.fromstring(volume.XMLDesc(0)).findtext("backingStore/path")
