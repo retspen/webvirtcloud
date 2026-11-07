@@ -290,6 +290,17 @@ class DefineCloneTestCase(unittest.TestCase):
         self.assertEqual(tree.find("devices/interface/mac").get("address"), "52:54:00:00:00:02")
         p.vol.storagePoolLookupByVolume.return_value.createXMLFrom.assert_not_called()
 
+    def test_the_clone_s_tpm_is_new(self):
+        state = "<tpm model='tpm-crb'><backend type='emulator' version='2.0'><source type='dir' path='/srv/tpm/src'/></backend></tpm>"
+        p = proxy(domain(extra=state))
+        tree, _disks = p._clone_definition(FORM, UUID)
+        self.assertEqual(tree.xpath("devices/tpm/backend/source"), [])
+        for backend in ("<backend type='passthrough'><device path='/dev/tpm0'/></backend>",
+                        "<backend type='external'><source type='unix' path='/run/tpm.sock'/></backend>"):
+            with self.subTest(backend=backend):
+                with self.assertRaisesRegex(util.OperationError, "external TPM is not cloned"):
+                    proxy(domain(extra=f"<tpm model='tpm-crb'>{backend}</tpm>"))._clone_definition(FORM, UUID)
+
     def test_a_missing_mac_is_refused(self):
         p = proxy()
         p._defineXML = MagicMock()

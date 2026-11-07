@@ -2399,6 +2399,14 @@ class wvmInstance(wvmConnect):
                 raise ValueError("Cannot clone a disk without a supported source and destination")
             disks.append((source, dev))
 
+        # the clone gets a new, empty TPM (the clone form says so): an emulated
+        # one without the VM's state path; a host's or another process's would be shared
+        for backend in tree.xpath("devices/tpm/backend"):
+            if backend.get("type") != "emulator":
+                raise util.OperationError(gettext_noop("A VM with a host's or an external TPM is not cloned; remove it first"))
+            for source in backend.findall("source"):
+                backend.remove(source)
+
         # a host device is one VM's: the clone gets none (the clone form says so)
         for hostdev in tree.findall("devices/hostdev"):
             hostdev.getparent().remove(hostdev)

@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-07 20:44+0000\n"
+"POT-Creation-Date: 2026-11-07 20:45+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -3036,7 +3036,7 @@ msgstr "cloud-init tohumu, disk için bir dizin depolama havuzu gerektirir"
 msgid "This host offers no firmware %(firmware)s"
 msgstr "Bu sunucu %(firmware)s firmware'ini sunmuyor"
 
-#: instances/jobs.py:852 vrtManager/instance.py:3049
+#: instances/jobs.py:852 vrtManager/instance.py:3057
 msgid "This host offers no TPM 2.0: install swtpm on it"
 msgstr "Bu sunucu TPM 2.0 sunmuyor: üzerine swtpm kurun"
 
@@ -9371,59 +9371,65 @@ msgstr ""
 msgid "Shut the VM down to revert to an internal snapshot"
 msgstr "Dahili bir anlık görüntüye geri dönmek için sanal makineyi kapatın"
 
-#: vrtManager/instance.py:2420
+#: vrtManager/instance.py:2406
+msgid "A VM with a host's or an external TPM is not cloned; remove it first"
+msgstr ""
+"Ana makinenin ya da harici bir TPM'i olan sanal makine klonlanmaz; önce onu "
+"kaldırın"
+
+#: vrtManager/instance.py:2428
 msgid "Cannot clone a VM whose NVRAM is not a file"
 msgstr "NVRAM'i dosya olmayan bir sanal makine klonlanamaz"
 
-#: vrtManager/instance.py:2488
+#: vrtManager/instance.py:2496
 #, python-format
 msgid "Clone failed (%(err)s); remove these copies by hand: %(path)s"
 msgstr ""
 "Klonlama başarısız oldu (%(err)s); bu kopyaları elle kaldırın: %(path)s"
 
-#: vrtManager/instance.py:2498
+#: vrtManager/instance.py:2506
 msgid "Shut the VM down before cloning it"
 msgstr "Klonlamadan önce sanal makineyi kapatın"
 
-#: vrtManager/instance.py:2552
+#: vrtManager/instance.py:2560
 #, python-format
 msgid "Clone failed (%(err)s); remove these copies by hand: %(leftovers)s"
 msgstr ""
 "Klonlama başarısız oldu (%(err)s); bu kopyaları elle kaldırın: %(leftovers)s"
 
-#: vrtManager/instance.py:2563
+#: vrtManager/instance.py:2571
 msgid "Live clone needs libvirt 11.10 or later; shut the VM down to clone it"
 msgstr ""
 "Canlı klonlama libvirt 11.10 veya sonrasını gerektirir; klonlamak için sanal "
 "makineyi kapatın"
 
-#: vrtManager/instance.py:2566
+#: vrtManager/instance.py:2574
 msgid "A VM with a TPM is cloned only shut down"
 msgstr "TPM'i olan bir sanal makine yalnızca kapalıyken klonlanır"
 
-#: vrtManager/instance.py:2569
+#: vrtManager/instance.py:2577
 #, python-format
 msgid "Disk %(dev)s is not a local file; shut the VM down to clone it"
 msgstr ""
 "Disk %(dev)s yerel bir dosya değil; klonlamak için sanal makineyi kapatın"
 
-#: vrtManager/instance.py:2571
+#: vrtManager/instance.py:2579
 #, python-format
 msgid "Disk %(dev)s is shareable; shut the VM down to clone it"
 msgstr "Disk %(dev)s paylaşılabilir; klonlamak için sanal makineyi kapatın"
 
-#: vrtManager/instance.py:2576
+#: vrtManager/instance.py:2584
 #, python-format
 msgid "Disk %(dev)s changes at the next start; shut the VM down to clone it"
 msgstr ""
 "Disk %(dev)s sonraki başlatmada değişiyor; klonlamak için sanal makineyi "
 "kapatın"
 
-#: vrtManager/instance.py:2578
+#: vrtManager/instance.py:2586
 msgid "Another job is running on the VM; clone it when that ends"
 msgstr "Sanal makinede başka bir iş çalışıyor; o bittiğinde klonlayın"
 
-#: vrtManager/instance.py:2604
+#: vrtManager/instance.py:2612
 #, python-format
 msgid ""
 "Storage pool %(pool)s has %(free).1f GiB free; the clone needs %(size).1f GiB"
@@ -9433,25 +9439,25 @@ msgstr ""
 "gerektiriyor (kopyalanan diskler, artı bunların %%%(percent)g kadarı, en az "
 "%(minimum)g GiB)"
 
-#: vrtManager/instance.py:2621
+#: vrtManager/instance.py:2629
 #, python-format
 msgid "Volume %(name)s already exists in storage pool %(pool)s"
 msgstr "%(name)s birimi %(pool)s depolama havuzunda zaten var"
 
-#: vrtManager/instance.py:2766
+#: vrtManager/instance.py:2774
 msgid "A network interface that is a host device is removed in the XML editor"
 msgstr "Sunucu aygıtı olan bir ağ arabirimi XML düzenleyicide kaldırılır"
 
-#: vrtManager/instance.py:2782
+#: vrtManager/instance.py:2790
 #, python-format
 msgid "No network interface with MAC %(old_mac)s"
 msgstr "MAC adresi %(old_mac)s olan ağ arabirimi yok"
 
-#: vrtManager/instance.py:2785
+#: vrtManager/instance.py:2793
 msgid "A network interface that is a host device is changed in the XML editor"
 msgstr "Sunucu aygıtı olan bir ağ arabirimi XML düzenleyicide değiştirilir"
 
-#: vrtManager/instance.py:2876
+#: vrtManager/instance.py:2884
 msgid ""
 "A VM changes its PCI devices while it runs, or is shut off without a saved "
 "state"
@@ -9459,14 +9465,14 @@ msgstr ""
 "Sanal makine PCI aygıtlarını çalışırken veya kaydedilmiş durumu olmadan "
 "kapalıyken değiştirir"
 
-#: vrtManager/instance.py:2888
+#: vrtManager/instance.py:2896
 #, python-format
 msgid "%(err)s; whether the VM has PCI device %(address)s now is not known"
 msgstr ""
 "%(err)s; sanal makinede şu anda %(address)s PCI aygıtının olup olmadığı "
 "bilinmiyor"
 
-#: vrtManager/instance.py:2890
+#: vrtManager/instance.py:2898
 #, python-format
 msgid ""
 "%(err)s; PCI device %(address)s: the VM is not running, its next start has it"
@@ -9474,7 +9480,7 @@ msgstr ""
 "%(err)s; PCI aygıtı %(address)s: sanal makine çalışmıyor, sonraki başlatmada "
 "var"
 
-#: vrtManager/instance.py:2892
+#: vrtManager/instance.py:2900
 #, python-format
 msgid ""
 "%(err)s; PCI device %(address)s: the VM is not running, its next start does "
@@ -9483,7 +9489,7 @@ msgstr ""
 "%(err)s; PCI aygıtı %(address)s: sanal makine çalışmıyor, sonraki başlatmada "
 "yok"
 
-#: vrtManager/instance.py:2893
+#: vrtManager/instance.py:2901
 #, python-format
 msgid ""
 "%(err)s; PCI device %(address)s: the running VM has it, its next start has it"
@@ -9491,7 +9497,7 @@ msgstr ""
 "%(err)s; PCI aygıtı %(address)s: çalışan sanal makinede var, sonraki "
 "başlatmada var"
 
-#: vrtManager/instance.py:2895
+#: vrtManager/instance.py:2903
 #, python-format
 msgid ""
 "%(err)s; PCI device %(address)s: the running VM has it, its next start does "
@@ -9500,7 +9506,7 @@ msgstr ""
 "%(err)s; PCI aygıtı %(address)s: çalışan sanal makinede var, sonraki "
 "başlatmada yok"
 
-#: vrtManager/instance.py:2897
+#: vrtManager/instance.py:2905
 #, python-format
 msgid ""
 "%(err)s; PCI device %(address)s: the running VM does not have it, its next "
@@ -9509,7 +9515,7 @@ msgstr ""
 "%(err)s; PCI aygıtı %(address)s: çalışan sanal makinede yok, sonraki "
 "başlatmada var"
 
-#: vrtManager/instance.py:2899
+#: vrtManager/instance.py:2907
 #, python-format
 msgid ""
 "%(err)s; PCI device %(address)s: the running VM does not have it, its next "
@@ -9518,34 +9524,34 @@ msgstr ""
 "%(err)s; PCI aygıtı %(address)s: çalışan sanal makinede yok, sonraki "
 "başlatmada yok"
 
-#: vrtManager/instance.py:2933
+#: vrtManager/instance.py:2941
 #, python-format
 msgid "The VM has no PCI device %(address)s"
 msgstr "Sanal makinede %(address)s PCI aygıtı yok"
 
-#: vrtManager/instance.py:2951
+#: vrtManager/instance.py:2959
 msgid "The VM has no USB controller"
 msgstr "Sanal makinede USB denetleyicisi yok"
 
-#: vrtManager/instance.py:2970
+#: vrtManager/instance.py:2978
 msgid "The VM has no such USB device"
 msgstr "Sanal makinede böyle bir USB aygıtı yok"
 
-#: vrtManager/instance.py:2984
+#: vrtManager/instance.py:2992
 #, python-format
 msgid "The VM has no network interface %(mac)s"
 msgstr "Sanal makinede %(mac)s ağ arabirimi yok"
 
-#: vrtManager/instance.py:3015
+#: vrtManager/instance.py:3023
 msgid "The VM has its own RNG device: change it in the XML editor"
 msgstr ""
 "Sanal makinenin kendi RNG aygıtı var: bunu XML düzenleyicide değiştirin"
 
-#: vrtManager/instance.py:3042
+#: vrtManager/instance.py:3050
 msgid "The VM has its own TPM: change it in the XML editor"
 msgstr "Sanal makinenin kendi TPM'i var: bunu XML düzenleyicide değiştirin"
 
-#: vrtManager/instance.py:3061
+#: vrtManager/instance.py:3069
 #, python-format
 msgid "Unknown crash action %(action)s"
 msgstr "Bilinmeyen çökme eylemi %(action)s"
