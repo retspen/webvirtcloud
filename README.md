@@ -795,6 +795,7 @@ What an update from an older version changes for operators and users:
 - LDAP login's packages are in `conf/requirements-ldap.txt` and no longer installed by default, nor their build headers by the installer; the Docker image keeps them. An existing virtualenv keeps them, but only installing that file updates them (see [LDAP](#ldap)).
 - The themes ship compiled; picking one on the Settings page only saves its name, and the "Theme SASS Path" setting is gone. Browsers revalidate static files on each load: files cached before the update can stay until a hard reload (Ctrl+F5) of each page; an external caching proxy may need a purge.
 - The panel backs itself up every day ([Backups](#backups)); in Docker into a new volume, `webvirtcloud-backups`.
+- The Docker image is built on Ubuntu 26.04 LTS (Python 3.14, libvirt 12) instead of 24.04; `docker compose up -d --build` rebuilds it.
 - New passwords must pass Django's password validators: at least 8 characters, not a common password, not only digits, not like the user's name or e-mail. Existing passwords keep working.
 - In Docker, the TLS client certificates of TLS computes are kept in a new volume, `webvirtcloud-pki` (`/var/www/.pki`), and backed up; put them there once ([Adding a Compute Node](#adding-a-compute-node), step 2).
 - The SQLite database must be on a local file system (WAL). Outside compose, stop the Docker container with `docker stop -t 95` so the worker can finish running jobs.
