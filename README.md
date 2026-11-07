@@ -273,7 +273,23 @@ A compute node is a KVM host the panel manages over libvirt.
    docker compose exec -u www-data webvirtcloud ssh root@<compute-node-ip> true   # no password or prompt: ready
    ```
 
-   For TLS connections, put the CA certificate and the panel's client certificate and key in the panel user's `~/.pki/libvirt/` as `cacert.pem`, `clientcert.pem` and `clientkey.pem`, readable only by that user: `$H/.pki/libvirt/` with the installer; in Docker `/var/www/.pki/libvirt/` (the `webvirtcloud-pki` volume), owned by `www-data`.
+   For TCP connections, the bootstrap script makes libvirt ask for a SASL login. Create it on the compute node and enter it, with its password, on the Computes page (`saslpasswd2` is in `sasl2-bin` on Debian / Ubuntu and in `cyrus-sasl` on the RHEL family):
+
+   ```bash
+   sudo saslpasswd2 -a libvirt <login>   # asks for its password
+   ```
+
+   For TLS connections, put the CA certificate and the panel's client certificate and key in the panel user's `~/.pki/libvirt/` as `cacert.pem`, `clientcert.pem` and `clientkey.pem`, readable only by that user: `$H/.pki/libvirt/` with the installer; in Docker `/var/www/.pki/libvirt/` (the `webvirtcloud-pki` volume), owned by `www-data`. On the compute node, install the same CA certificate and a server certificate whose subjectAltName is the address the panel uses, then let libvirt listen for TLS:
+
+   ```bash
+   sudo install -D -m 644 cacert.pem /etc/pki/CA/cacert.pem
+   sudo install -D -m 644 servercert.pem /etc/pki/libvirt/servercert.pem
+   sudo install -D -m 600 serverkey.pem /etc/pki/libvirt/private/serverkey.pem
+   # RHEL family 10 (the modular daemons: the bootstrap enabled virtproxyd-tcp.socket):
+   sudo systemctl stop virtproxyd.service; sudo systemctl enable --now virtproxyd-tls.socket
+   # the other systems (libvirtd):
+   sudo systemctl stop libvirtd.service; sudo systemctl enable --now libvirtd-tls.socket && sudo systemctl start libvirtd.service
+   ```
 
 3. Install or update the `gstfsd` daemon on the compute node (the bootstrap script does this too). It sets the root password and SSH key of a shut-off VM:
 
