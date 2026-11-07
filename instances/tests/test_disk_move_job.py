@@ -58,7 +58,7 @@ class MoveDiskJobTestCase(TransactionTestCase):
         self.proxy.move_disk.assert_not_called()  # nothing ran in the request
         ctx = self.start(op)
         get_kind(op.kind).precheck(op, ctx)
-        with patch("instances.jobs.wvmConnect") as hosts:
+        with patch("instances.utils.wvmConnect") as hosts:
             hosts.return_value.paths_in_use.return_value = set()
             result = get_kind(op.kind).run(op, ctx)
         self.proxy.move_disk.assert_called_once()
@@ -79,7 +79,7 @@ class MoveDiskJobTestCase(TransactionTestCase):
                 volume = self.proxy.disk_move_plan.return_value["volume"]
                 volume.delete.reset_mock()
                 volume.delete.side_effect = libvirtError("busy") if problem == "delete fails" else None
-                with patch("instances.jobs.wvmConnect") as hosts:
+                with patch("instances.utils.wvmConnect") as hosts:
                     reads = [here, other] if not isinstance(problem, libvirtError) else [here, problem]
                     hosts.return_value.paths_in_use.side_effect = reads
                     result = get_kind(op.kind).run(op, ctx)
@@ -135,13 +135,13 @@ class MoveDiskJobTestCase(TransactionTestCase):
 
 class UsedAnywhereTestCase(TransactionTestCase):
     def test_a_host_that_does_not_answer_counts_as_using_the_file(self):
-        from instances import jobs
+        from instances import utils
 
         Compute.objects.create(name="stuck", hostname="192.0.2.62", login="root", password="", type=1)
         stuck = threading.Event()
         self.addCleanup(stuck.set)
-        with patch("instances.jobs.wvmConnect") as hosts, patch.object(jobs, "USED_CHECK_WAIT", 0.2):
+        with patch("instances.utils.wvmConnect") as hosts, patch.object(utils, "USED_CHECK_WAIT", 0.2):
             hosts.return_value.paths_in_use.side_effect = lambda: stuck.wait(10) and set()
             started = time.monotonic()
-            self.assertTrue(jobs._used_anywhere(OLD))
+            self.assertTrue(utils.used_anywhere(OLD))
         self.assertLess(time.monotonic() - started, 2)

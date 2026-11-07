@@ -135,7 +135,7 @@ class DiskCopyTestCase(unittest.TestCase):
         dest = destination(Pool("default", IMAGES), Pool("fast", FAST))
         mode, copied = migrate(dest, source, {"vda": "fast", "vdb": "default"})
         self.assertEqual(mode, "live, disks copied: vda to fast, vdb to default")
-        self.assertEqual(copied, [f"{IMAGES}/vm.qcow2", f"{IMAGES}/data.raw"])
+        self.assertEqual(copied, [(f"{IMAGES}/vm.qcow2", f"{FAST}/vm.qcow2"), (f"{IMAGES}/data.raw", f"{IMAGES}/data.raw")])
         params, flags = source.instance.migrate3.call_args.args[1:]
         self.assertEqual(params[libvirt.VIR_MIGRATE_PARAM_MIGRATE_DISKS], ["vda", "vdb"])
         self.assertEqual(params[libvirt.VIR_MIGRATE_PARAM_URI], "tcp://192.0.2.9")

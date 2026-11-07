@@ -2,6 +2,7 @@ import os
 import random
 import re
 import string
+import threading
 from collections import namedtuple
 
 from accounts.models import UserInstance, UserAttributes
@@ -68,6 +69,35 @@ def paths_used_on_other_computes(compute, own):
             raise ConnectionFailed(gettext_noop("The disk files cannot be checked on %(host)s: %(err)s"),
                                    host=other.name, err=err) from err
     return used & set(own)
+
+
+USED_CHECK_WAIT = 60  # seconds a disk move or a migration waits for the computes to tell whether its old file is used
+
+
+def used_anywhere(path, skip=None):
+    """Whether a VM or volume of any compute uses path (paths_in_use), as
+    shared storage holds it for every host that mounts it; a compute that
+    cannot be read might, and so might one that does not answer within
+    USED_CHECK_WAIT: libvirt has no call timeout, and a stuck host would
+    hold the job for as long as it is stuck. skip: a compute not asked."""
+    computes = list(Compute.objects.exclude(pk=skip))
+    answer = []
+
+    def check():
+        for c in computes:
+            try:
+                if path in wvmConnect(c.hostname, c.login, c.password, c.type).paths_in_use():
+                    answer.append(True)
+                    return
+            except libvirtError:
+                answer.append(True)
+                return
+        answer.append(False)
+
+    thread = threading.Thread(target=check, daemon=True)
+    thread.start()
+    thread.join(USED_CHECK_WAIT)
+    return answer[0] if answer else True
 
 
 def disk_gib(disks):
@@ -225,8 +255,9 @@ def migrate_instance(
     used, or the error), then each later step that failed in a row of its
     own; on_moved is called once the outcome's row is written. disk_pools:
     {target: pool} of the disks copied into pools of new_compute (moveto's
-    pools); their source files go with delete_source unless another VM or
-    volume uses them, and are named in the log otherwise. Returns the mode."""
+    pools); their source files go with delete_source unless a VM or volume
+    of any compute may use them (used_anywhere), and are named in the log
+    otherwise. Returns the mode."""
     source, target = instance.compute, migration_target(new_compute)
 
     def log(action, error=None):
@@ -285,16 +316,12 @@ def migrate_instance(
             if conn_new is not None:
                 conn_new.close()
 
-    in_use = set()
-    if copied and delete_source:
-        try:
-            in_use = instance.proxy.paths_in_use()
-        except libvirtError as error:
-            log("check the source copies before deleting them", error)
-            delete_source = False
-    for path in copied:
-        if not delete_source or path in in_use:
-            log(f"keep the source copy {path}" + (": another VM or volume uses it" if path in in_use else ""))
+    for path, copy in copied:
+        # shared storage: a VM or volume of any compute may use it; the destination's
+        # VM uses the copy, another file when it has the same path there
+        used = delete_source and used_anywhere(path, skip=new_compute.pk if copy == path else None)
+        if not delete_source or used:
+            log(f"keep the source copy {path}" + (": a VM or volume of a compute may use it" if used else ""))
             continue
         try:
             instance.proxy.get_volume_by_path(path).delete(0)

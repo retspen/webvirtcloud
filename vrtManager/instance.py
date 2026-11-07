@@ -129,7 +129,8 @@ class wvmInstances(wvmConnect):
         destination's own hostname. pools: {target: pool here} of the disks
         libvirt copies into those pools during the migration (disk_copies);
         the other disks must be on storage both hosts share. Returns the mode
-        and options used, for the log, and the paths of the copied disks."""
+        and options used, for the log, and each copied disk's path and the
+        path of its copy here."""
         state = conn.get_status()
         if state == 5:
             mode = ["offline"]
@@ -203,7 +204,7 @@ class wvmInstances(wvmConnect):
             self.move_definition(dom, conn)
         else:
             dom.migrate(self.wvm, flags, None, uri, 0)
-        return ", ".join(mode), [copy["path"] for copy in copies]
+        return ", ".join(mode), [(copy["path"], copy["dest"]) for copy in copies]
 
     def migrate_running(self, conn, state, flags, uri, copies):
         """Migrates the VM of conn as a running VM, which carries its TPM

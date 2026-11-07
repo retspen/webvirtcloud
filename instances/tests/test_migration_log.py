@@ -34,18 +34,21 @@ class MigrationLogTests(TestCase):
             self.proxy.remove_nvram.side_effect = remove_nvram
         else:
             self.proxy.remove_nvram.return_value = remove_nvram
-        self.proxy.paths_in_use.return_value = set(in_use)
         if delete_fails:
             self.proxy.get_volume_by_path.return_value.delete.side_effect = delete_fails
         with patch.object(Compute, "status", True), \
              patch("instances.utils.wvmInstances") as instances, \
              patch("instances.utils.wvmInstance"), \
+             patch("instances.utils.wvmConnect") as hosts, \
              patch.object(Instance, "proxy", self.proxy), \
              patch.object(Instance, "autostart", False):
+            hosts.return_value.paths_in_use.return_value = set(in_use)
             if isinstance(outcome, Exception):
                 instances.return_value.moveto.side_effect = outcome
             else:
-                instances.return_value.moveto.return_value = (outcome, list(copied))
+                # each copy at the same path on the destination, unless a pair names its own
+                pairs = [item if isinstance(item, tuple) else (item, item) for item in copied]
+                instances.return_value.moveto.return_value = (outcome, pairs)
             return migrate_instance(self.dest, self.vm, self.admin, **request)
 
     def test_the_nvram_file_left_on_the_source_is_removed(self):
@@ -128,6 +131,17 @@ class MigrationLogTests(TestCase):
         self.vm.refresh_from_db()
         self.assertEqual(self.vm.compute, self.dest)
 
+    def test_the_destination_is_asked_only_when_its_copy_has_another_path(self):
+        """Its VM uses the copy: at the same path there, that is another file."""
+        path = "/var/lib/libvirt/images/vm.qcow2"
+        with patch("instances.utils.used_anywhere", return_value=False) as used:
+            self.migrate("live, disks copied: vda", copied=[path], live=True, delete_source=True)
+            self.assertEqual(used.call_args.kwargs, {"skip": self.dest.pk})
+            self.vm.compute = self.source
+            self.vm.save()
+            self.migrate("live, disks copied: vda", copied=[(path, "/srv/fast/vm.qcow2")], live=True, delete_source=True)
+            self.assertEqual(used.call_args.kwargs, {"skip": None})
+
     def test_a_source_copy_another_vm_or_volume_uses_stays(self):
         disks = ["/var/lib/libvirt/images/vm.qcow2", "/var/lib/libvirt/images/base.qcow2"]
         self.migrate("live, disks copied: vda, vdb", copied=disks, in_use={disks[1]}, live=True,
@@ -135,5 +149,5 @@ class MigrationLogTests(TestCase):
         self.proxy.get_volume_by_path.assert_called_once_with(disks[0])
         self.assertEqual(rows()[-2:], [
             ("VM vm: delete the source copy /var/lib/libvirt/images/vm.qcow2", True),
-            ("VM vm: keep the source copy /var/lib/libvirt/images/base.qcow2: another VM or volume uses it", True),
+            ("VM vm: keep the source copy /var/lib/libvirt/images/base.qcow2: a VM or volume of a compute may use it", True),
         ])
