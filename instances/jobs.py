@@ -197,6 +197,9 @@ def clone_data(user, instance, fields):
                                   quota=utils.quota_message(quota_msg), clone_name=data["name"])
     if check_instance:
         raise util.OperationError(_("Instance '%(clone_name)s' already exists!"), clone_name=data["name"])
+    if len(data["name"]) > 64:  # as a new VM's: the panel's records hold 120
+        raise util.OperationError(_("Instance name '%(clone_name)s' is longer than 64 characters"),
+                                  clone_name=data["name"])
     if not re.match(r"^[a-zA-Z0-9-]+$", data["name"]):
         raise util.OperationError(_("Instance name '%(clone_name)s' contains invalid characters!"),
                                   clone_name=data["name"])

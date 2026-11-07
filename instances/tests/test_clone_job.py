@@ -334,6 +334,12 @@ class LiveCloneJobTestCase(TransactionTestCase):
                 self.assertTrue(intent["live"])
                 op.delete()
 
+    def test_a_name_longer_than_a_new_vm_s_is_refused(self):
+        name = "c" * 65
+        with self.assertRaisesMessage(OperationError, "is longer than 64 characters"):
+            CloneInstance().plan(self.admin, {"instance": self.source.pk, "fields": {
+                "name": name, "disk-vda": "copy.qcow2", "clone-net-mac-0": "52:54:00:00:00:01"}})
+
     def test_another_state_is_refused(self):
         self.proxy.get_status.return_value = 4  # shutting down
         with self.assertRaisesMessage(OperationError, "The VM must be running, paused or shut off to be cloned"):
