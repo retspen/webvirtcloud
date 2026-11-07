@@ -536,12 +536,15 @@ THAW_FAILED = _("The guest's file systems could not be thawed (%(error)s); thaw 
 
 
 def _check_clone_state(proxy, data):
-    """A shut-off VM is copied as it is; a running or paused one only when a
-    live clone can work; other states are refused."""
+    """A shut-off VM is copied as it is, into names its pools do not have; a
+    running or paused one only when a live clone can work; other states are
+    refused."""
     status = proxy.get_status()
     if status in (1, 3):
         proxy.live_clone_targets(data, **_snapshot_free_space())
-    elif status != 5:
+    elif status == 5:
+        proxy.check_clone_volumes(data)
+    else:
         raise util.OperationError(CLONE_STATE_REFUSED)
 
 

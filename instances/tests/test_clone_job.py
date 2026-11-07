@@ -301,6 +301,15 @@ class LiveCloneJobTestCase(TransactionTestCase):
         self.proxy.live_clone_targets.assert_not_called()
         self.assertFalse(Operation.objects.get(pk=op.pk).intent["live"])
 
+    def test_a_shut_off_copy_into_a_volume_name_in_use_is_refused_before_it_begins(self):
+        """libvirt would refuse it after the job began: the job would end uncertain."""
+        self.proxy.get_status.return_value = 5
+        op = self.op()
+        self.proxy.check_clone_volumes.side_effect = OperationError("Volume copy.qcow2 already exists in storage pool default")
+        with self.assertRaisesMessage(OperationError, "Volume copy.qcow2 already exists"):
+            CloneInstance().precheck(op, None)
+        self.proxy.check_clone_volumes.assert_called_once_with(op.intent["clone"])
+
     def test_a_name_taken_since_the_job_was_queued_stops_it(self):
         op = self.op()
         other = Compute.objects.create(name="live-d", hostname="192.0.2.33", login="root", password="", type=1)

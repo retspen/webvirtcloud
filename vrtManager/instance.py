@@ -2582,13 +2582,7 @@ class wvmInstance(wvmConnect):
             vol = self.get_volume_by_path(source.get("file"))
             pool = vol.storagePoolLookupByVolume()
             name = clone_data["disk-" + dev]
-            try:
-                pool.storageVolLookupByName(name)
-            except libvirtError as err:
-                if err.get_error_code() != VIR_ERR_NO_STORAGE_VOL:
-                    raise
-            else:
-                raise util.OperationError(gettext_noop("Volume %(name)s already exists in storage pool %(pool)s"), name=name, pool=pool.name())
+            self._refuse_taken(pool, name)
             capacity = vol.info()[1]
             pools[pool.name()] = pool
             copied[pool.name()] = copied.get(pool.name(), 0) + capacity
@@ -2611,6 +2605,29 @@ class wvmInstance(wvmConnect):
                     "plus %(percent)g%% of them, at least %(minimum)g GiB)"),
                     pool=name, free=free / 1024**3, size=needed / 1024**3, percent=free_percent, minimum=free_min_gib)
         return targets
+
+    @staticmethod
+    def _refuse_taken(pool, name):
+        """A copy never takes a volume's name in its pool: libvirt would
+        refuse it only after the clone began. The pool is refreshed first,
+        so its free space is current too."""
+        pool.refresh(0)
+        try:
+            pool.storageVolLookupByName(name)
+        except libvirtError as err:
+            if err.get_error_code() != VIR_ERR_NO_STORAGE_VOL:
+                raise
+        else:
+            raise util.OperationError(gettext_noop("Volume %(name)s already exists in storage pool %(pool)s"),
+                                      name=name, pool=pool.name())
+
+    def check_clone_volumes(self, clone_data):
+        """Refuses a shut-off clone whose copy of a disk would take a name its
+        pool has already, before anything is allocated (see clone_instance)."""
+        _tree, disks = self._clone_definition(clone_data, "")
+        for source, dev in disks:
+            vol = self.get_volume_by_path(source.get("file") or source.get("dev") or source.get("name"))
+            self._refuse_taken(vol.storagePoolLookupByVolume(), clone_data["disk-" + dev])
 
     def create_clone_target(self, target, owner_uid, owner_gid):
         """An empty volume for a copied disk; libvirt refuses one that exists.

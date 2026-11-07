@@ -129,6 +129,19 @@ class LiveCloneTargetsTestCase(unittest.TestCase):
     def test_an_existing_target_volume_is_refused(self):
         self.refused(proxy(existing=True), "copy-vda.qcow2 already exists in storage pool default")
 
+    def test_the_pool_is_refreshed_before_its_names_and_free_space_are_read(self):
+        p = proxy()
+        p.live_clone_targets(FORM, 10, 5)
+        calls = [call[0] for call in p.pool.method_calls]
+        self.assertLess(calls.index("refresh"), calls.index("storageVolLookupByName"))
+        self.assertLess(calls.index("refresh"), calls.index("info"))
+
+    def test_a_shut_off_clone_into_an_existing_name_is_refused_before_it_begins(self):
+        p = proxy(existing=True)
+        with self.assertRaisesRegex(util.OperationError, "copy-vda.qcow2 already exists in storage pool default"):
+            p.check_clone_volumes(FORM)
+        proxy().check_clone_volumes(FORM)  # a free name
+
     def test_a_lookup_error_other_than_missing_is_raised(self):
         p = proxy()
         p.pool.storageVolLookupByName.side_effect = error(libvirt.VIR_ERR_INTERNAL_ERROR)
