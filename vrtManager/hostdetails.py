@@ -2,12 +2,17 @@ import time
 
 from libvirt import (
     libvirtError,
+    VIR_CONNECT_GET_ALL_DOMAINS_STATS_NOWAIT,
     VIR_DOMAIN_BLOCKED,
     VIR_DOMAIN_PAUSED,
     VIR_DOMAIN_RUNNING,
     VIR_DOMAIN_SHUTOFF,
+    VIR_DOMAIN_STATS_BALLOON,
+    VIR_DOMAIN_STATS_STATE,
+    VIR_DOMAIN_STATS_VCPU,
     VIR_NODE_CPU_STATS_ALL_CPUS,
 )
+from lxml import etree
 
 from vrtManager.connection import wvmConnect
 from vrtManager.util import get_xml_path
@@ -111,14 +116,29 @@ class wvmHostDetails(wvmConnect):
         vcpus = {"all": 0, "running": 0}
         assigned = {"all": 0, "running": 0}
         vms = {"running": 0, "paused": 0, "shutoff": 0, "other": 0}
-        # the VM lists' read: the states in one call, each VM's XML once
-        for (state, _max_memory, memory, vcpu), _title in self.get_domain_rows().values():
+        for state, memory, vcpu in self._domain_sizes():
             for share in ("all",) if state == VIR_DOMAIN_SHUTOFF else ("all", "running"):
                 vcpus[share] += vcpu
                 assigned[share] += memory * 1024
             vms[VM_STATES.get(state, "other")] += 1
         return {"cpus": self.host_info[2], "memory": self.host_info[1] * 1048576,
                 "vcpus": vcpus, "assigned": assigned, "vms": vms}
+
+    def _domain_sizes(self):
+        """Each VM's state, memory (KiB) and vCPUs, in one call: not its XML,
+        one round trip a VM. A running VM busy with a job (a migration, a
+        hung QEMU) is not waited for: its sizes come from its XML."""
+        flags = VIR_DOMAIN_STATS_STATE | VIR_DOMAIN_STATS_BALLOON | VIR_DOMAIN_STATS_VCPU
+        for dom, stats in self.wvm.getAllDomainStats(flags, VIR_CONNECT_GET_ALL_DOMAINS_STATS_NOWAIT):
+            memory, vcpu = stats.get("balloon.current"), stats.get("vcpu.current")
+            if memory is None or vcpu is None:
+                try:
+                    doc = etree.fromstring(dom.XMLDesc(0))
+                except libvirtError:
+                    continue  # gone meanwhile
+                memory, vcpu = int(doc.findtext("currentMemory")), doc.find("vcpu")
+                vcpu = int(vcpu.get("current", vcpu.text))
+            yield stats["state.state"], memory, vcpu
 
     def get_cpu_topology(self):
         """

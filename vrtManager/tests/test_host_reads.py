@@ -158,19 +158,24 @@ class CapacityTestCase(unittest.TestCase):
         conn = connection(wvmHostDetails)
         gib = 1024 ** 3
         kib = gib // 1024
-        # get_domain_rows: info (state, max memory KiB, memory KiB, vCPUs) and title
-        conn.get_domain_rows = MagicMock(return_value={
-            "u-web": ([VIR_DOMAIN_RUNNING, 8 * kib, 4 * kib, 4], ""),
-            "u-db": ([VIR_DOMAIN_PAUSED, 2 * kib, 2 * kib, 2], ""),
-            "u-old": ([VIR_DOMAIN_SHUTOFF, 8 * kib, 8 * kib, 8], ""),
-        })
+        busy = MagicMock(**{"XMLDesc.return_value": f"<domain><currentMemory>{kib}</currentMemory>"
+                                                      "<vcpu current='1'>4</vcpu></domain>"})
+        idle = MagicMock()
+        # one call for every VM; a VM busy with a job has only its state: its XML gives the rest
+        conn.wvm.getAllDomainStats = MagicMock(return_value=[
+            (idle, {"state.state": VIR_DOMAIN_RUNNING, "balloon.current": 4 * kib, "vcpu.current": 4}),
+            (idle, {"state.state": VIR_DOMAIN_PAUSED, "balloon.current": 2 * kib, "vcpu.current": 2}),
+            (idle, {"state.state": VIR_DOMAIN_SHUTOFF, "balloon.current": 8 * kib, "vcpu.current": 8}),
+            (busy, {"state.state": VIR_DOMAIN_RUNNING}),
+        ])
         self.assertEqual(conn.get_capacity(), {
             "cpus": 4, "memory": 2 * gib,
-            "vcpus": {"all": 14, "running": 6},
-            "assigned": {"all": 14 * gib, "running": 6 * gib},
-            "vms": {"running": 1, "paused": 1, "shutoff": 1, "other": 0},
+            "vcpus": {"all": 15, "running": 7},
+            "assigned": {"all": 15 * gib, "running": 7 * gib},
+            "vms": {"running": 2, "paused": 1, "shutoff": 1, "other": 0},
         })
-        conn.get_domain_rows.assert_called_once_with()
+        self.assertEqual(conn.wvm.getAllDomainStats.call_count, 1)
+        idle.XMLDesc.assert_not_called()
 
 
 class CpuTopologyTestCase(unittest.TestCase):
