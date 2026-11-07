@@ -1,3 +1,4 @@
+from passlib.hash import sha512_crypt
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
@@ -45,9 +46,10 @@ class SetRootPassTestCase(TestCase):
         self.assertEqual(compute, self.compute)
         self.assertEqual(data["action"], "password")
         self.assertEqual(data["vname"], "renamed-on-host")
-        # SHA-512 crypt with a random salt, not the old fixed one
+        # SHA-512 crypt with a random salt, not the old fixed one, which the guest's crypt(3) checks
         self.assertTrue(data["passwd"].startswith("$6$"))
         self.assertFalse(data["passwd"].startswith("$6$kgPoiREy$"))
+        self.assertTrue(sha512_crypt.verify("newSecretPassword123", data["passwd"]))
 
     def test_set_root_pass_get_not_allowed(self):
         response = self.client.get(reverse("instances:rootpasswd", args=[self.instance.id]))

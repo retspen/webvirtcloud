@@ -7,16 +7,9 @@ import os
 import re
 import secrets
 import socket
-import sys
 import subprocess
 import time
 from ipaddress import ip_address
-
-# the stdlib crypt is deprecated from Python 3.11 and gone in 3.13: crypt_r is the same module
-if sys.version_info >= (3, 11):
-    import crypt_r as crypt
-else:
-    import crypt
 
 from accounts.models import UserInstance, UserSSHKey
 from admin.decorators import superuser_only
@@ -42,6 +35,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy, gettext_noop
 from django.views.decorators.http import require_POST
 from django.views.decorators.debug import sensitive_post_parameters
+from passlib.hash import sha512_crypt
 from libvirt import (VIR_DOMAIN_PAUSED,
                      VIR_DOMAIN_RUNNING,
                      VIR_DOMAIN_SHUTOFF,
@@ -1076,7 +1070,7 @@ def set_root_pass(request, pk):
     if request.method == "POST":
         passwd = request.POST.get("passwd", None)
         if passwd:
-            passwd_hash = crypt.crypt(passwd, crypt.mksalt(crypt.METHOD_SHA512))
+            passwd_hash = sha512_crypt.hash(passwd)
             # gstfsd opens the domain by name: send the host's current one.
             data = {"action": "password", "passwd": passwd_hash, "vname": instance.proxy.instance.name()}
 
