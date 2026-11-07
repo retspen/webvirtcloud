@@ -1078,13 +1078,11 @@ class MigrateInstance(Kind):
                                    on_moved=lambda: ctx.record_intent(outcome_logged=True),
                                    **{k: p[k] for k in MIGRATE_OPTIONS})
         except Exception as err:
-            # migrate_instance wrote the error's Logs row; recovery may still find the VM moved
+            # migrate_instance wrote the error's Logs row; recovery reads where the VM is,
+            # also after a cancel: a migration may end with an error and the VM moved
             ctx.record_intent(failure_logged=True)
             if not isinstance(err, libvirtError):
                 raise
-            op.refresh_from_db(fields=["cancel_requested"])
-            if op.cancel_requested:
-                raise Cancelled from None
             # a superuser's job: libvirt's words, which a host the source cannot
             # reach for the migration would hide behind "cannot be reached";
             # ours keep their text and values

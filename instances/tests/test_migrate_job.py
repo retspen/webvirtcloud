@@ -13,9 +13,10 @@ from instances.jobs import MigrateInstance
 from instances.models import Instance
 from logs.models import Logs
 from libvirt import VIR_DOMAIN_XML_INACTIVE, VIR_ERR_SYSTEM_ERROR, VIR_FROM_RPC, libvirtError
-from operations.jobs import Cancelled, Context, get_kind
+from operations.jobs import Context, get_kind
 from operations.models import Claim, Operation, acquire
 from operations.utils import public_error_text
+from vrtManager.util import OperationError
 
 UUID = "31313131-4242-5353-6464-757575757575"
 
@@ -197,15 +198,22 @@ class MigrateJobTestCase(TransactionTestCase):
                              {"compute_id": alias.pk, "submission_key": "key-mig00002"})
         self.assertFalse(Operation.objects.exists())
 
-    def test_a_cancelled_migration_ends_cancelled_and_the_vm_stays(self):
+    def test_a_cancelled_migration_is_ended_by_where_recovery_finds_the_vm(self):
+        """libvirt may fail a migration it finished: a cancel alone does not tell."""
         op = self.queue(live_migrate="true")
         ctx = self.start(op)
         self.dest_conn.moveto.side_effect = libvirtError("operation aborted: migration out: canceled by client")
         Operation.objects.filter(pk=op.pk).update(cancel_requested=True)
-        with self.assertRaises(Cancelled):
+        with self.assertRaises(OperationError):
             get_kind(op.kind).run(op, ctx)
+        op.refresh_from_db()
+        dom = MagicMock(**{"isActive.return_value": True, "jobInfo.return_value": [0] * 12})
+        with patch("instances.jobs._domain", side_effect=[dom, None]):  # source, destination
+            self.assertEqual(MigrateInstance().reconcile(op).state, Operation.CANCELLED)
+        with patch("instances.jobs._domain", side_effect=[None, dom]):
+            self.assertEqual(MigrateInstance().reconcile(op).state, Operation.SUCCEEDED)
         self.vm.refresh_from_db()
-        self.assertEqual(self.vm.compute, self.source)
+        self.assertEqual(self.vm.compute, self.dest)
 
     def test_a_failed_migration_says_what_libvirt_said(self):
         # libvirt reports the source host's failure to reach the destination's migration
