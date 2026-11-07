@@ -250,12 +250,13 @@ def migrate_instance(
     disk_pools=None,
     ip=None,
     on_moved=None,
+    on_copy=None,
 ):
     """Migrates instance to new_compute and logs the outcome (the mode
     used, or the error), then each later step that failed in a row of its
     own; on_moved is called once the outcome's row is written. disk_pools:
     {target: pool} of the disks copied into pools of new_compute (moveto's
-    pools); their source files go with delete_source unless a VM or volume
+    pools), on_copy as moveto's; their source files go with delete_source unless a VM or volume
     of any compute may use them (used_anywhere), and are named in the log
     otherwise. Returns the mode."""
     source, target = instance.compute, migration_target(new_compute)
@@ -285,6 +286,7 @@ def migrate_instance(
             compress,
             uri=new_compute.migration_uri,
             pools=disk_pools,
+            on_copy=on_copy,
         )
     except Exception as error:
         log(f"migrate to {target}", error)

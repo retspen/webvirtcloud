@@ -1,5 +1,6 @@
 """A migration runs as a job: the page queues it, the worker migrates."""
 
+from functools import partial
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -12,10 +13,11 @@ from computes.models import Compute
 from instances.jobs import MigrateInstance
 from instances.models import Instance
 from logs.models import Logs
-from libvirt import VIR_DOMAIN_XML_INACTIVE, VIR_ERR_SYSTEM_ERROR, VIR_FROM_RPC, libvirtError
+from libvirt import VIR_DOMAIN_XML_INACTIVE, VIR_ERR_NO_DOMAIN, VIR_ERR_SYSTEM_ERROR, VIR_FROM_RPC, libvirtError
 from operations.jobs import Context, get_kind
 from operations.models import Claim, Operation, acquire
 from operations.utils import public_error_text
+from vrtManager.instance import wvmInstances
 from vrtManager.util import OperationError
 
 UUID = "31313131-4242-5353-6464-757575757575"
@@ -84,6 +86,32 @@ class MigrateJobTestCase(TransactionTestCase):
             self.assertEqual(MigrateInstance().reconcile(op).state, Operation.SUCCEEDED)
         self.vm.refresh_from_db()
         self.assertEqual(self.vm.compute, self.dest)
+
+    def test_recovery_removes_the_copies_of_a_migration_that_stopped(self):
+        op = Operation(params={"instance": self.vm.pk, "target": self.dest.pk}, resource_label="mig-src/mig-vm",
+                       intent={"compute": self.source.pk, "uuid": UUID,
+                               "copies": [{"pool": "fast", "dest": "/srv/fast/mig-vm.qcow2"}]})
+        dom = MagicMock(**{"isActive.return_value": True, "jobInfo.return_value": [0] * 12})
+        with patch("instances.jobs.wvmInstances") as hosts:
+            dest = hosts.return_value
+            with patch("instances.jobs._domain", side_effect=[dom, None]):  # source, destination
+                self.assertEqual(MigrateInstance().reconcile(op).state, Operation.FAILED)
+            uuid, copies, _error = dest.remove_partial_copies.call_args.args
+            self.assertEqual((uuid, copies), (UUID, [{"pool": dest.wvm.storagePoolLookupByName.return_value,
+                                                       "dest": "/srv/fast/mig-vm.qcow2"}]))
+            dest.wvm.storagePoolLookupByName.assert_called_once_with("fast")
+            # a copy that cannot go is logged; the job ends as it would
+            pool = dest.wvm.storagePoolLookupByName.return_value
+            pool.storageVolLookupByName.return_value.delete.side_effect = libvirtError("busy")
+            dest.wvm.lookupByUUIDString.side_effect = libvirtError("Domain not found")
+            dest.wvm.lookupByUUIDString.side_effect.err = (VIR_ERR_NO_DOMAIN,)
+            dest._find_volume, dest.delete_nvram = wvmInstances._find_volume, lambda name: None
+            dest.remove_partial_copies = partial(wvmInstances.remove_partial_copies, dest)
+            with patch("instances.jobs._domain", side_effect=[dom, None]):
+                self.assertEqual(MigrateInstance().reconcile(op).state, Operation.FAILED)
+        self.assertEqual(Logs.objects.latest("id").message, "VM mig-vm: remove the partial disk copies on mig-dst: "
+                                                            "the migration stopped; remove the partial disk copies "
+                                                            "from the destination host: /srv/fast/mig-vm.qcow2")
 
     def test_recovery_shuts_off_a_shut_off_vm_the_migration_left_started(self):
         self.vm.proxy.get_status.return_value = 5

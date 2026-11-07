@@ -116,7 +116,7 @@ def _rate(before, after, seconds, scale=1):
 
 class wvmInstances(wvmConnect):
     def moveto(self, conn, name, live, unsafe, offline, autoconverge=False, compress=False, uri=None,
-               pools=None):
+               pools=None, on_copy=None):
         """Migrates the VM of conn (a wvmInstance on the source) here.
 
         The mode follows the VM's state, read once: a running VM migrates
@@ -128,9 +128,10 @@ class wvmInstances(wvmConnect):
         (tcp://address) on the destination; None lets libvirt use the
         destination's own hostname. pools: {target: pool here} of the disks
         libvirt copies into those pools during the migration (disk_copies);
-        the other disks must be on storage both hosts share. Returns the mode
-        and options used, for the log, and each copied disk's path and the
-        path of its copy here."""
+        the other disks must be on storage both hosts share. on_copy is
+        called with the copies ({pool, dest}: a pool here and its path) before
+        libvirt makes them. Returns the mode and options used, for the log,
+        and each copied disk's path and the path of its copy here."""
         state = conn.get_status()
         if state == 5:
             mode = ["offline"]
@@ -193,6 +194,8 @@ class wvmInstances(wvmConnect):
         # the TPM state is a file of the source host: a live migration carries it
         tpm_state = etree.fromstring(definitions[0]).xpath("devices/tpm/backend[@type='emulator']")
         if copies or (state == 5 and tpm_state):
+            if copies and on_copy is not None:
+                on_copy([{"pool": copy["pool"].name(), "dest": copy["dest"]} for copy in copies])
             note = self.migrate_running(conn, state, flags, uri, copies)
             if note:
                 mode.append(note)

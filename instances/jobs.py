@@ -20,7 +20,7 @@ from lxml import etree
 from vrtManager import util
 from vrtManager.connection import wvmConnect
 from vrtManager.create import cpu_choices, wvmCreate
-from vrtManager.instance import HOST_DEVICES, check_snapshot_name, wvmInstance
+from vrtManager.instance import HOST_DEVICES, check_snapshot_name, wvmInstance, wvmInstances
 from vrtManager.nodedevs import check_hostdevs
 
 from accounts.models import UserInstance, UserSSHKey
@@ -994,6 +994,25 @@ def _shut_off_again(op, dom):
         dom.destroy()
 
 
+def _remove_copies(op):
+    """The disk copies a migration that stopped made on the destination,
+    which has no VM of it: they would take the space and refuse the next
+    try (a copy never replaces a file). One that cannot go is logged."""
+    if not op.intent.get("copies"):
+        return
+    target = Compute.objects.get(pk=op.params["target"])
+    dest = wvmInstances(target.hostname, target.login, target.password, target.type)
+    try:
+        copies = [{"pool": dest.wvm.storagePoolLookupByName(c["pool"]), "dest": c["dest"]} for c in op.intent["copies"]]
+        dest.remove_partial_copies(op.intent["uuid"], copies, util.OperationError("the migration stopped"))
+    except (libvirtError, util.OperationError) as err:
+        source, _sep, name = op.resource_label.rpartition("/")
+        write(op.username, source, name, f"VM {name}: remove the partial disk copies on {target.name}: "
+              f"{safe_text(err)}", False, op.client_ip, op.intent["uuid"])
+    finally:
+        dest.close()
+
+
 def _moved(op, dest):
     """What migrate_instance does once libvirt moved the VM, for a job that
     stopped before it: autostart is per host, and the source keeps the
@@ -1076,6 +1095,7 @@ class MigrateInstance(Kind):
             utils.migrate_instance(Compute.objects.get(pk=p["target"]), instance, op.user,
                                    disk_pools=p["disk_pools"], ip=op.client_ip,
                                    on_moved=lambda: ctx.record_intent(outcome_logged=True),
+                                   on_copy=lambda copies: ctx.record_intent(copies=copies),
                                    **{k: p[k] for k in MIGRATE_OPTIONS})
         except Exception as err:
             # migrate_instance wrote the error's Logs row; recovery reads where the VM is,
@@ -1128,6 +1148,7 @@ class MigrateInstance(Kind):
             return Outcome(Operation.SUCCEEDED, result=_moved(op, dest))
         if source is not None and dest is None:
             _shut_off_again(op, source)
+            _remove_copies(op)
             if op.cancel_requested:
                 return Outcome(Operation.CANCELLED)
             return Outcome(Operation.FAILED, error=say(_("The VM stayed on the source host")))

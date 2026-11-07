@@ -269,6 +269,14 @@ class DiskCopyTestCase(unittest.TestCase):
             raise libvirt.libvirtError(message)
         source.instance.migrate3.side_effect = migrate3
 
+    def test_the_copies_are_told_before_libvirt_makes_them(self):
+        """A job records them: recovery removes them after a worker that stopped."""
+        source, pool = Source(1, domain(disk(f"{IMAGES}/vm.qcow2"))), Pool("fast", FAST)
+        told = []
+        source.instance.migrate3.side_effect = lambda *args: self.assertEqual(told, [[{"pool": "fast", "dest": f"{FAST}/vm.qcow2"}]])
+        migrate(destination(pool), source, {"vda": "fast"}, on_copy=told.append)
+        source.instance.migrate3.assert_called_once()
+
     def test_a_failed_migration_removes_the_partial_copies(self):
         source, pool = Source(1, domain(disk(f"{IMAGES}/vm.qcow2"))), Pool("fast", FAST)
         self.fail_after_copying(source, pool, "operation aborted: canceled by client")
