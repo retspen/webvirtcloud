@@ -122,10 +122,9 @@
             } else if (disk_name.lastIndexOf('.') > -1 && disk_dot_suffix.length <= 7) {
                 disk_dot.pop();
                 image = new_vname + "-" + disk_dot.join('-') + "." + disk_dot_suffix;
-            } else if (new_vname != disk_name) {
-                image = new_vname;
             } else {
-                image = new_vname + '-clone';
+                // a volume of an LVM pool has no extension: two of them keep their names apart
+                image = new_vname + "-" + disk_name;
             }
             input.value = image;
         });
