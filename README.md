@@ -1,5 +1,5 @@
 # WebVirtCloud
-###### Python >=3.10 & Django 5.2 LTS (tested on Python 3.10 – 3.13)
+###### Python >=3.10 & Django 5.2 LTS (tested on Python 3.10 – 3.14)
 
 WebVirtCloud is a **web visualization and management layer** for **libvirt**-based virtualization infrastructure.
 
@@ -65,7 +65,7 @@ WebVirtCloud and `virt-manager`/`virsh` can manage the same libvirt host **concu
 
 ## Installation
 
-The installer supports Ubuntu 22.04 / 24.04 / 26.04, Debian 12 / 13, RHEL / Rocky Linux / AlmaLinux / Oracle Linux 10, openEuler 24.03 LTS, openSUSE Leap 15.x / Tumbleweed and SLES 15; the panel runs on a virtual machine, a physical host or a KVM host itself and needs Python 3.10 or newer. CI tests Python 3.10–3.13 on Ubuntu (sqlite, and PostgreSQL on 3.12) and the Docker image; the distro installs are not tested in CI. Pick one of the three ways below, then do the [first login](#first-login).
+The installer supports Ubuntu 22.04 / 24.04 / 26.04, Debian 12 / 13, RHEL / Rocky Linux / AlmaLinux / Oracle Linux 10, openEuler 24.03 LTS, openSUSE Leap 15.x / Tumbleweed and SLES 15; the panel runs on a virtual machine, a physical host or a KVM host itself and needs Python 3.10 or newer. CI tests Python 3.10–3.14 on Ubuntu (sqlite, and PostgreSQL on 3.12) and the Docker image; the distro installs are not tested in CI. Pick one of the three ways below, then do the [first login](#first-login).
 
 ### Installer
 

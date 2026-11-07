@@ -1,11 +1,23 @@
 """manage.py test --parallel on the SQLite database in WAL mode."""
 
 import contextlib
+import multiprocessing
 import os
 import secrets
 
 from django.db import connections
 from django.test.runner import DiscoverRunner
+
+# Python 3.14 starts processes with forkserver on Linux, which Django 5.2's
+# parallel runner does not support (a worker imports the tests before
+# django.setup(), and --parallel without a number falls back to one process):
+# fork there, as up to 3.13; macOS keeps spawn. Set on import: the command
+# resolves --parallel while it parses.
+if (
+    multiprocessing.get_start_method(allow_none=True) is None
+    and multiprocessing.get_all_start_methods()[0] == "forkserver"
+):
+    multiprocessing.set_start_method("fork")
 
 
 def remove_wal_files(name):
