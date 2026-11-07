@@ -248,10 +248,11 @@ class wvmInstances(wvmConnect):
     @staticmethod
     def moved_disks(xml, copies):
         """xml with each copied disk's source at its path here; a disk is
-        found by its target and its source path before the copy."""
+        found by its source path before the copy, as the next start's
+        definition may name it with another target (a changed bus)."""
         tree = etree.fromstring(xml)
         sources = [(source, copy["dest"]) for copy in copies for source in tree.xpath(
-            "devices/disk[target/@dev=$target]/source[@file=$path]", target=copy["target"], path=copy["path"])]
+            "devices/disk/source[@file=$path]", path=copy["path"])]
         for source, dest in sources:
             source.set("file", dest)
         return etree.tostring(tree, encoding="unicode")
@@ -367,9 +368,12 @@ class wvmInstances(wvmConnect):
                     "%(target)s (%(path)s): pool %(pool)s of the destination host already has a file %(file)s"),
                     **disk, pool=name, file=file))
                 continue
-            if any(copy["dest"] == f"{directory}/{file}" for copy in copies):
+            # one file, one copy: the definitions name a disk's copy by its path
+            other = next((copy for copy in copies if copy["dest"] == f"{directory}/{file}"
+                          or copy["path"] == row["path"]), None)
+            if other is not None:
                 problems.append(util.message(gettext_noop("%(target)s (%(path)s): another disk is copied to %(dest)s"),
-                                             **disk, dest=f"{directory}/{file}"))
+                                             **disk, dest=other["dest"]))
                 continue
             copies.append({"target": row["target"], "path": row["path"], "dest": f"{directory}/{file}",
                            "pool": pool})

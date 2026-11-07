@@ -231,6 +231,13 @@ class DiskCopyTestCase(unittest.TestCase):
         self.assertIn(f'<source file="{FAST}/vm.qcow2"/><target dev="vda"/>', dest_xml)
         self.assertIn('<source file="/srv/slow/vm.qcow2"/><target dev="vdb"/>', dest_xml)
 
+    def test_the_next_start_names_the_copy_under_another_target_too(self):
+        """A bus change waiting for the next start renames the disk there."""
+        source = Source(1, domain(disk(f"{IMAGES}/vm.qcow2")), inactive=domain(disk(f"{IMAGES}/vm.qcow2", "sda")))
+        migrate(destination(Pool("default", IMAGES), Pool("fast", FAST)), source, {"vda": "fast"})
+        params = source.instance.migrate3.call_args.args[1]
+        self.assertIn(f'<source file="{FAST}/vm.qcow2"/><target dev="sda"/>', params[libvirt.VIR_MIGRATE_PARAM_PERSIST_XML])
+
     def test_a_disk_only_the_next_start_has_must_be_shared_too(self):
         """It is neither copied nor moved: a file of its name on the
         destination would be another VM's, used at the next start."""
@@ -239,6 +246,14 @@ class DiskCopyTestCase(unittest.TestCase):
         with self.assertRaisesRegex(util.OperationError, f"vda \\({IMAGES}/next.qcow2\\) of the next start: "
                                                          "the destination host does not share it"):
             migrate(destination(Pool("default", IMAGES)), source, {"vda": "default"})
+        source.instance.migrate3.assert_not_called()
+
+    def test_one_file_two_disks_use_is_copied_once(self):
+        xml = domain(disk(f"{IMAGES}/data.raw", "vda", fmt="raw"), disk(f"{IMAGES}/data.raw", "vdb", fmt="raw"))
+        source = Source(1, xml, pools=(IMAGES,))
+        dest = destination(Pool("fast", FAST), Pool("slow", "/srv/slow"))
+        with self.assertRaisesRegex(util.OperationError, f"vdb \\({IMAGES}/data.raw\\): another disk is copied to {FAST}/data.raw"):
+            migrate(dest, source, {"vda": "fast", "vdb": "slow"})
         source.instance.migrate3.assert_not_called()
 
     def test_two_copies_never_go_to_one_file(self):
