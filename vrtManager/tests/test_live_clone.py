@@ -290,6 +290,12 @@ class DefineCloneTestCase(unittest.TestCase):
         self.assertEqual(tree.find("devices/interface/mac").get("address"), "52:54:00:00:00:02")
         p.vol.storagePoolLookupByVolume.return_value.createXMLFrom.assert_not_called()
 
+    def test_the_smbios_uuid_is_the_clone_s(self):
+        sysinfo = "<sysinfo type='smbios'><system><entry name='uuid'>u</entry></system></sysinfo>"
+        p = proxy(domain().replace("<devices>", sysinfo + "<devices>"))
+        tree, _disks = p._clone_definition(FORM, UUID)
+        self.assertEqual(tree.xpath("string(sysinfo/system/entry[@name='uuid'])"), UUID)
+
     def test_the_clone_s_tpm_is_new(self):
         state = "<tpm model='tpm-crb'><backend type='emulator' version='2.0'><source type='dir' path='/srv/tpm/src'/></backend></tpm>"
         p = proxy(domain(extra=state))

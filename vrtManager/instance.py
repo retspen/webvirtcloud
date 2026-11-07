@@ -2374,6 +2374,9 @@ class wvmInstance(wvmConnect):
         if uuid_el is None:
             uuid_el = etree.SubElement(tree, "uuid")
         uuid_el.text = uuid
+        # libvirt refuses an SMBIOS UUID other than the domain's
+        for entry in tree.xpath("sysinfo/system/entry[@name='uuid']"):
+            entry.text = uuid
         self._set_options(
             tree,
             {
