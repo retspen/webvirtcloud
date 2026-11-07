@@ -16,7 +16,7 @@ libvirt-python>=9.0.0
 lxml>=6.1
 openpyxl==3.1.5
 paramiko==5.1.0
-psycopg[binary]==3.3.6
+psycopg[binary]==3.3.8
 pycdlib==1.22.0
 python-engineio==4.15.1
 python-socketio==5.18.1
