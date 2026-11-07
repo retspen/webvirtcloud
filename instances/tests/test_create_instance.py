@@ -162,6 +162,11 @@ class CreateInstanceViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         conn.get_firmwares.assert_called_once_with("x86_64", "q35")
+        # a fresh host: what to do, not that the user defined nothing
+        self.assertContains(response, "This host has no running storage pool for the VM&#x27;s disks: add or start one on its Storage page.")
+        conn.get_storages.return_value = ["default"]
+        response = self.client.get(reverse("instances:create_instance", args=[compute.id, "x86_64", "q35"]))
+        self.assertContains(response, "This host has no network for the VM: add one on its Networks page.")
 
 
 class NicMacsTestCase(SimpleTestCase):

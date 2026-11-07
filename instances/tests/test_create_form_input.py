@@ -61,7 +61,7 @@ class CreateFormInputTests(TestCase):
             _, response = render_create_page(self)
         self.assertIsNone(response.context["vm_form"])
         self.assertEqual(html.fromstring(response.content).xpath("//button[@name='create']"), [])
-        self.assertTrue(any("storage pools" in str(m) for m in response.context["messages"]))
+        self.assertTrue(any("no running storage pool" in str(m) for m in response.context["messages"]))
 
     def test_a_host_that_cannot_be_read_is_a_message(self):
         import libvirt

@@ -44,7 +44,12 @@
                         </div>
                     </a>
                     {% empty %}
-                    <p>{% trans "No compute is reachable." %}</p>
+                    {% url 'computes' as computes_url %}
+                    {% if computes %}
+                    <p>{% blocktrans %}No compute is reachable: see the <a href="{{ computes_url }}">Computes</a> page.{% endblocktrans %}</p>
+                    {% else %}
+                    <p>{% blocktrans %}There is no compute yet: add the first host on the <a href="{{ computes_url }}">Computes</a> page.{% endblocktrans %}</p>
+                    {% endif %}
                     {% endfor %}
                 </div>
             </div>

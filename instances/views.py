@@ -2581,9 +2581,9 @@ def create_instance(request, compute_id, arch, machine):
         tpm_support = bool(conn.get_tpm_model(arch, machine))
 
         if not storages:
-            raise util.OperationError(_("You haven't defined any storage pools"))
+            raise util.OperationError(_("This host has no running storage pool for the VM's disks: add or start one on its Storage page."))
         if not networks:
-            raise util.OperationError(_("You haven't defined any network pools"))
+            raise util.OperationError(_("This host has no network for the VM: add one on its Networks page."))
 
         vm_form = NewVMForm(initial={
             # a default this host does not offer is no choice: the select asks for one

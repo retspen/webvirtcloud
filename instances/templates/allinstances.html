@@ -63,11 +63,13 @@
         {% else %}
             {% include 'allinstances_index_nongrouped.html' %}
         {% endif %}
+        {% if instances %}
         {# table_filter.js shows it while no row matches #}
         <div id="no-match" class="text-center text-body-secondary py-4" hidden>
             {% trans "No VM matches the search and the state." %}
             <button type="button" class="btn btn-link" id="clear-filters">{% trans "Clear the filters" %}</button>
         </div>
+        {% endif %}
     </div>
     <div class="modal fade" id="find-address" tabindex="-1" aria-labelledby="find-address-title" aria-hidden="true"
          data-url="{% url 'instances:find_address' %}" data-failed="{% trans "The search did not go through. Try again." %}"

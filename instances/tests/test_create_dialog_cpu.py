@@ -142,9 +142,19 @@ class CreateDialogHostsTestCase(TestCase):
     def test_only_reachable_computes_are_listed(self):
         dialog = self.dialog({"cd2"})
         self.assertEqual([e.text for e in dialog.xpath(".//a/div/div[1]")], ["cd2"])
-        self.assertNotIn("No compute is reachable.", dialog.text_content())
+        self.assertNotIn("No compute is reachable", dialog.text_content())
 
     def test_no_reachable_compute_is_said(self):
         dialog = self.dialog(set())
-        self.assertEqual(dialog.xpath(".//a"), [])
-        self.assertIn("No compute is reachable.", dialog.text_content())
+        self.assertEqual(dialog.xpath(".//a[contains(@class, 'list-group-item')]"), [])
+        self.assertIn("No compute is reachable: see the Computes page.", dialog.text_content())
+
+    def test_a_panel_without_computes_says_to_add_one(self):
+        # the first visit: the dialog and the list lead to the Computes page, and no filter is said to hide VMs
+        Compute.objects.all().delete()
+        response = self.client.get(reverse("instances:index"))
+        dialog = html.fromstring(response.content).get_element_by_id("AddInstance")
+        self.assertIn("There is no compute yet: add the first host on the Computes page.", dialog.text_content())
+        self.assertEqual(dialog.xpath(".//p/a/@href"), [reverse("computes")])
+        self.assertContains(response, "There are no VMs here yet.")
+        self.assertNotContains(response, "No VM matches the search")
