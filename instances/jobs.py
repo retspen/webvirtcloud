@@ -205,6 +205,14 @@ def clone_data(user, instance, fields):
                                   clone_name=data["name"])
     if invalid_macs:
         raise util.OperationError(_("Instance MAC '%(clone_mac)s' invalid format!"), clone_mac=", ".join(invalid_macs))
+    # two NICs of one address on a network take each other's traffic
+    taken = {net["mac"].lower() for net in instance.config_networks}
+    for key, value in data.items():
+        if key.startswith("clone-net-mac-"):
+            mac = value.lower() if ":" in value else ":".join(value[i:i + 2] for i in range(0, 12, 2)).lower()
+            if mac in taken:
+                raise util.OperationError(_("MAC address %(mac)s is the VM's or another NIC's of the clone"), mac=mac)
+            taken.add(mac)
     if invalid_disks:
         raise util.OperationError(_("Disk name '%(disk_name)s' contains invalid characters!"),
                                   disk_name=", ".join(str(v) for v in invalid_disks))

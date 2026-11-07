@@ -340,6 +340,15 @@ class LiveCloneJobTestCase(TransactionTestCase):
             CloneInstance().plan(self.admin, {"instance": self.source.pk, "fields": {
                 "name": name, "disk-vda": "copy.qcow2", "clone-net-mac-0": "52:54:00:00:00:01"}})
 
+    def test_a_mac_of_the_vm_or_of_another_nic_of_the_clone_is_refused(self):
+        for macs in (["52:54:00:AA:BB:CC"], ["52:54:00:00:00:01", "525400000001"]):
+            with self.subTest(macs=macs):
+                self.proxy.get_net_devices.return_value = [{"mac": "52:54:00:aa:bb:cc"}, {"mac": "52:54:00:aa:bb:cd"}]
+                fields = {"name": "copy", "disk-vda": "copy.qcow2", "clone-net-mac-1": "52:54:00:00:00:09",
+                          **{f"clone-net-mac-{n}": mac for n, mac in enumerate(macs)}}
+                with self.assertRaisesMessage(OperationError, "is the VM's or another NIC's of the clone"):
+                    CloneInstance().plan(self.admin, {"instance": self.source.pk, "fields": fields})
+
     def test_another_state_is_refused(self):
         self.proxy.get_status.return_value = 4  # shutting down
         with self.assertRaisesMessage(OperationError, "The VM must be running, paused or shut off to be cloned"):
