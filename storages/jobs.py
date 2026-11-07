@@ -55,8 +55,10 @@ class CloneVolume(Kind):
         if op.user is None or not op.user.is_active or not op.user.is_superuser:
             raise PermissionDenied
         # a volume made outside the panel since the job was queued may have taken the name
-        if op.intent["target"] in _storage(op.params)[1].get_volumes():
+        stg = _storage(op.params)[1]
+        if op.intent["target"] in stg.get_volumes():
             raise util.OperationError(gettext_noop("Name of volume already in use"))
+        stg.refuse_running_copy(op.params["image"])  # the VM may have started since
 
     def plan(self, user, params):
         compute, stg = _storage(params)
@@ -65,6 +67,7 @@ class CloneVolume(Kind):
             raise util.OperationError(gettext_noop("The pool has no volume named %(name)s"), name=params["image"])
         if is_iso(params["image"]):
             raise util.OperationError(gettext_noop("An ISO image is not cloned"))
+        stg.refuse_running_copy(params["image"])
         target = stg.clone_name(params["name"], params["format"] or stg.get_volume_format_type(params["image"]))
         if target in volumes:
             raise util.OperationError(gettext_noop("Name of volume already in use"))

@@ -351,6 +351,16 @@ class wvmStorage(wvmConnect):
             return f"{target_file}.{vol_fmt}"
         return f"{target_file}.{file_suffix}" if file_suffix else target_file
 
+    def refuse_running_copy(self, name):
+        """A volume a running guest writes is not copied: the copy would mix
+        instants."""
+        path, pool = self.get_volume(name).path(), self.pool.name()
+        # a disk names it by its path (an RBD image by pool/image) or by its pool and name
+        uses = "devices/disk/source[@file=$p or @dev=$p or @name=$p or (@pool=$pool and @volume=$v)]"
+        if vms := self.domains_using(lambda domain: domain.xpath(uses, p=path, pool=pool, v=name), running_only=True):
+            raise util.OperationError(gettext_noop("The running VMs %(vms)s use volume %(name)s; shut them down to copy it"),
+                                      vms=", ".join(vms), name=name)
+
     def clone_volume(
         self,
         name,

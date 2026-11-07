@@ -13,6 +13,7 @@ from operations.jobs import Context
 from operations.models import Claim, Operation, acquire
 from libvirt import libvirtError
 from storages.jobs import CloneVolume
+from vrtManager import util
 
 
 class VolumeCloneJobTestCase(TransactionTestCase):
@@ -64,6 +65,12 @@ class VolumeCloneJobTestCase(TransactionTestCase):
                 response = self.client.post(url, {"cln_volume": "1", "image": image, "name": "copy",
                                                   "submission_key": key}, follow=True)
                 self.assertContains(response, why)
+        # a running guest's disk would be copied while it writes
+        self.stg.get_volumes.return_value = ["base.qcow2"]
+        self.stg.refuse_running_copy.side_effect = util.OperationError("The running VMs vm use volume base.qcow2")
+        response = self.client.post(url, {"cln_volume": "1", "image": "base.qcow2", "name": "copy",
+                                          "submission_key": "key-vol00004"}, follow=True)
+        self.assertContains(response, "The running VMs vm use volume base.qcow2")
         self.assertFalse(Operation.objects.exists())
 
     def test_recovery(self):

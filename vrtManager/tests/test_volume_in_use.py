@@ -132,3 +132,24 @@ class DeleteVolumeTestCase(unittest.TestCase):
         conn, vols = storage([domain("u1", ["/pool/other.qcow2"])], [volume("/pool/disk.qcow2")])
         conn.del_volume("disk.qcow2")
         vols["disk.qcow2"].delete.assert_called_once_with(0)
+
+
+class RunningCopyTestCase(unittest.TestCase):
+    """A running guest's disk is not copied: the copy would mix instants."""
+
+    def test_each_way_a_disk_names_the_volume_refuses_its_copy(self):
+        for source in ("file='/pool/disk.qcow2'", "dev='/pool/disk.qcow2'", "protocol='rbd' name='/pool/disk.qcow2'",
+                       "pool='pool' volume='disk.qcow2'"):
+            with self.subTest(source=source):
+                dom = MagicMock(**{"name.return_value": "vm"})
+                dom.XMLDesc.return_value = f"<domain><devices><disk device='disk'><source {source}/></disk></devices></domain>"
+                conn, _ = storage([dom], [volume("/pool/disk.qcow2")])
+                conn.pool.name.return_value = "pool"
+                with self.assertRaisesRegex(util.OperationError, "The running VMs vm use volume disk.qcow2"):
+                    conn.refuse_running_copy("disk.qcow2")
+                conn.wvm.listAllDomains.assert_called_once_with(libvirt.VIR_CONNECT_LIST_DOMAINS_ACTIVE)
+
+    def test_another_disk_does_not(self):
+        conn, _ = storage([domain("u1", ["/pool/other.qcow2"])], [volume("/pool/disk.qcow2")])
+        conn.pool.name.return_value = "pool"
+        conn.refuse_running_copy("disk.qcow2")
