@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from instances.models import InstanceTombstone
+from logs.models import Logs
 
 UUID = "00000000-0000-4000-8000-000000000001"
 
@@ -57,3 +58,6 @@ class TombstoneTests(TestCase):
         self.assertRedirects(response, reverse("admin:tombstone_list"))
         self.assertContains(response, "Removed VM ts-vm deleted")
         self.assertFalse(InstanceTombstone.objects.exists())
+        # the VM's history (found by UUID) has it
+        self.assertEqual(list(Logs.objects.filter(message__startswith="Removed VM").values_list("host", "instance", "instance_uuid")),
+                         [("ts-host", "ts-vm", UUID)])

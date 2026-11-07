@@ -225,6 +225,8 @@ def _finish_clone(op, clone, warning):
             proxy.start()
     except libvirtError as err:
         notes += say(_("The clone is made, but not as asked: %(error)s"), error=err)
+        write(op.username, c.name, op.intent["name"], f"VM {op.intent['name']}: resize or start the clone: "
+              f"{safe_text(err)}", False, uuid=op.intent["uuid"])
     return {"warning": notes} if notes else {}
 
 
@@ -966,17 +968,25 @@ def _moved(op, dest):
     stopped before it: autostart is per host, and the source keeps the
     NVRAM file. The job's result, with a warning for a step that failed."""
     notes = []
+    source, _sep, name = op.resource_label.rpartition("/")
+    target = Compute.objects.get(pk=op.params["target"]).name
+
+    def failed(action, err):  # as migrate_instance logs its later steps
+        write(op.username, source, name, f"VM {name}: {action}: {safe_text(err)}", False, uuid=op.intent["uuid"])
+
     if op.intent.get("autostart"):
         try:
             dest.setAutostart(1)
         except libvirtError as err:
             notes += say(_("The VM migrated, but autostart could not be set on the destination: %(error)s"),
                          error=err)
+            failed(f"restore autostart on {target}", err)
     if nvram := op.intent.get("nvram"):
         try:
             _connect(op.intent["compute"]).remove_nvram(nvram, _connect(op.params["target"]))
         except libvirtError as err:
             notes += say(_("The VM migrated, but its NVRAM file stays on the source: %(error)s"), error=err)
+            failed(f"remove NVRAM file {nvram} on the source", err)
     return {"warning": notes} if notes else {}
 
 
@@ -1034,8 +1044,13 @@ class MigrateInstance(Kind):
         try:
             utils.migrate_instance(Compute.objects.get(pk=p["target"]), instance, op.user,
                                    disk_pools=p["disk_pools"],
+                                   on_moved=lambda: ctx.record_intent(outcome_logged=True),
                                    **{k: p[k] for k in MIGRATE_OPTIONS})
-        except libvirtError as err:
+        except Exception as err:
+            # migrate_instance wrote the error's Logs row; recovery may still find the VM moved
+            ctx.record_intent(failure_logged=True)
+            if not isinstance(err, libvirtError):
+                raise
             op.refresh_from_db(fields=["cancel_requested"])
             if op.cancel_requested:
                 raise Cancelled from None
@@ -1045,15 +1060,13 @@ class MigrateInstance(Kind):
             if isinstance(err, util.OperationError):
                 raise
             raise util.OperationError(str(err)) from err
-        finally:
-            # migrate_instance wrote the outcome's Logs row (log_entry)
-            ctx.record_intent(outcome_logged=True)
         return {}
 
     def log_entry(self, op, state):
         """A row for an end migrate_instance did not log: refused before it
-        ran, cancelled while queued, or ended by recovery."""
-        if op.intent.get("outcome_logged"):
+        ran, cancelled while queued, or ended by recovery other than the
+        failure migrate_instance logged."""
+        if op.intent.get("outcome_logged") or (op.intent.get("failure_logged") and state == Operation.FAILED):
             return None
         target = Compute.objects.filter(pk=op.params["target"]).values_list("name", flat=True).first()
         return _log(op, state, f"migrate to {target}")

@@ -343,7 +343,8 @@ def tombstone_list(request):
 def tombstone_delete(request, pk):
     tombstone = get_object_or_404(InstanceTombstone, pk=pk)
     if request.method == "POST":
-        with audit(request, None, f"Removed VM {tombstone.name} ({tombstone.uuid})", "delete"):
+        with audit(request, tombstone.host or None, f"Removed VM {tombstone.name} ({tombstone.uuid})", "delete",
+                   instance=tombstone.name, uuid=tombstone.uuid):
             tombstone.delete()
         messages.success(request, _("Removed VM %(name)s deleted") % {"name": tombstone.name})
         return redirect("admin:tombstone_list")

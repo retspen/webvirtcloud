@@ -17,6 +17,7 @@ from appsettings.settings import get_settings
 from computes.models import Compute
 from instances.jobs import CloneInstance
 from instances.models import Instance
+from logs.models import Logs
 from operations.utils import words
 from operations.jobs import Cancelled, Context
 from vrtManager.util import ConnectionFailed, OperationError
@@ -148,6 +149,9 @@ class CloneJobTestCase(TransactionTestCase):
         op, result = self.clone_with(**{"clone-start": "true"})
         self.assertTrue(Instance.objects.filter(uuid=op.intent["uuid"]).exists())
         self.assertIn("The clone is made, but not as asked", words(result["warning"]))
+        # the job succeeded: Logs has the step that failed too
+        self.assertTrue(Logs.objects.filter(instance_uuid=op.intent["uuid"], success=False,
+                                            message="VM copy: resize or start the clone: no memory").exists())
 
     def queued(self):
         self.client.post(reverse("instances:clone", args=[self.source.pk]),

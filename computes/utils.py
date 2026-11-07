@@ -212,7 +212,7 @@ def refresh_instance_database(compute):
                 #    ownership is restored.
                 expired = InstanceTombstone.objects.filter(removed__lt=cutoff)
                 for t in expired:
-                    write("-", "-", "", f"VM {t.name} ({t.uuid}): removed record expired", True)
+                    write("-", t.host or "-", t.name, f"VM {t.name} ({t.uuid}): removed record expired", True, uuid=t.uuid)
                 expired.delete()
                 for uuid, name in host_domains.items():
                     if uuid not in db_uuids:

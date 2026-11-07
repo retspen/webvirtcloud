@@ -110,6 +110,18 @@ class DeviceEditsTestCase(unittest.TestCase):
         self.assertEqual(model.attrib, {"type": "vga' heads='9"})
         p._defineXML.assert_called_once()
 
+    def test_a_device_the_vm_does_not_have_is_refused(self):
+        # a stale form: no change, and the audit row says it failed
+        p = proxy()
+        p._definitions = lambda: [(PERSISTENT_XML, VIR_DOMAIN_AFFECT_CONFIG)]
+        with self.assertRaisesRegex(util.OperationError, "no network interface 52:54:10:00:00:09"):
+            p.set_link_state("52:54:10:00:00:09", "down")
+        p._XMLDesc = lambda flags: PERSISTENT.replace("<video><model type='vga'/></video>", "")
+        with self.assertRaisesRegex(util.OperationError, "no video card"):
+            p.set_video_model("virtio")
+        p.instance.updateDeviceFlags.assert_not_called()
+        p._defineXML.assert_not_called()
+
     def test_qos_changes_go_through_define_xml(self):
         for change in (
             lambda p: p.set_qos("52:54:10:00:00:01", "outbound", 1, 2, 3),

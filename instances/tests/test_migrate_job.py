@@ -11,6 +11,7 @@ from appsettings.settings import get_settings
 from computes.models import Compute
 from instances.jobs import MigrateInstance
 from instances.models import Instance
+from logs.models import Logs
 from libvirt import VIR_DOMAIN_XML_INACTIVE, VIR_ERR_SYSTEM_ERROR, VIR_FROM_RPC, libvirtError
 from operations.jobs import Cancelled, Context, get_kind
 from operations.models import Claim, Operation, acquire
@@ -124,6 +125,8 @@ class MigrateJobTestCase(TransactionTestCase):
             outcome = MigrateInstance().reconcile(op)
         self.assertEqual(outcome.state, Operation.SUCCEEDED)
         self.assertIn("autostart could not be set", outcome.result["warning"][0]["text"])
+        self.assertTrue(Logs.objects.filter(instance_uuid=UUID, success=False,
+                                            message="VM mig-vm: restore autostart on mig-dst: refused").exists())
 
     def test_a_copy_claims_its_volume_on_both_computes(self):
         Instance.proxy.get_disk_devices.return_value = [
@@ -261,8 +264,6 @@ class MigrateJobTestCase(TransactionTestCase):
         proxy.return_value.instance.abortJob.assert_not_called()
 
     def test_each_end_of_a_migration_leaves_one_logs_row(self):
-        from logs.models import Logs
-
         op = self.queue(live_migrate="true")
         ctx = self.start(op)
         get_kind(op.kind).run(op, ctx)  # migrate_instance writes its row
@@ -274,6 +275,29 @@ class MigrateJobTestCase(TransactionTestCase):
                            resource_label="mig-src/mig-vm")
         self.assertEqual(MigrateInstance().log_entry(queued, Operation.CANCELLED),
                          ("mig-src", "mig-vm", UUID, "VM mig-vm: migrate to mig-dst (cancelled)"))
+
+    def test_a_failed_migration_recovery_finds_moved_has_a_row_of_that_end(self):
+        op = self.queue(live_migrate="true")
+        ctx = self.start(op)
+        self.dest_conn.moveto.side_effect = libvirtError("connection reset while migrating")
+        with self.assertRaises(Exception):
+            get_kind(op.kind).run(op, ctx)  # migrate_instance writes the failed row
+        op.refresh_from_db()
+        self.assertIsNone(MigrateInstance().log_entry(op, Operation.FAILED))  # that row is the end
+        for state, message in ((Operation.SUCCEEDED, "VM mig-vm: migrate to mig-dst"),
+                               (Operation.UNCERTAIN, "VM mig-vm: migrate to mig-dst (uncertain)")):
+            with self.subTest(state):
+                self.assertEqual(MigrateInstance().log_entry(op, state)[3], message)
+
+    def test_a_migration_moved_then_failed_to_record_has_its_row_once(self):
+        op = self.queue(live_migrate="true")
+        ctx = self.start(op)
+        with patch("instances.utils.record_migration", side_effect=RuntimeError("database locked")), \
+                self.assertRaises(RuntimeError):
+            get_kind(op.kind).run(op, ctx)  # the migration's row, then the failed record's
+        op.refresh_from_db()
+        self.assertIsNone(MigrateInstance().log_entry(op, Operation.SUCCEEDED))  # recovery finds it moved
+        self.assertEqual(Logs.objects.filter(instance_uuid=UUID, message__startswith="VM mig-vm: migrate (").count(), 1)
 
     def test_recording_a_migration_holds_the_ownership_lock(self):
         # a sync of a third compute must not move the owners at the same time

@@ -1666,6 +1666,7 @@ class wvmInstance(wvmConnect):
                     new_model.set("primary", video_model.get("primary"))
                 self._defineXML(etree.tostring(tree).decode())
                 return
+        raise util.OperationError(gettext_noop("The VM has no video card"))
 
     def resize_cpu(self, cur_vcpu, vcpu):
         """
@@ -2940,14 +2941,18 @@ class wvmInstance(wvmConnect):
             raise util.OperationError(gettext_noop("The VM has no such USB device"))
 
     def set_link_state(self, mac_address, state):
+        found = False
         for xml_flags, affect in self._definitions():
             nic = self._nic(xml_flags, mac_address)
             if nic is None:
                 continue
+            found = True
             for link in nic.findall("link"):
                 nic.remove(link)
             etree.SubElement(nic, "link", state=state)
             self.instance.updateDeviceFlags(etree.tostring(nic).decode(), affect)
+        if not found:
+            raise util.OperationError(gettext_noop("The VM has no network interface %(mac)s"), mac=mac_address)
 
     def _set_options(self, tree, options):
         for o in ["title", "description"]:
