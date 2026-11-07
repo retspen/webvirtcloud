@@ -25,6 +25,9 @@ class FakeDomain:
         self.reads.append(flags)
         return f"<domain flags='{flags}' read='{len(self.reads)}'/>"
 
+    def blockInfo(self, dev):  # a disk no pool holds that libvirt cannot read either
+        raise libvirtError("cannot read")
+
 
 class FakeConn:
     def __init__(self):

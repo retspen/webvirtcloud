@@ -926,6 +926,11 @@ class wvmInstance(wvmConnect):
                             volume, disk_size, used_size, storage = details
                         else:
                             volume = src_file
+                            # a disk no pool holds: libvirt reads its size from the file or device,
+                            # named by its path: a target names the running VM's disk, which may
+                            # be another file than the one saved for its next start (that one: unknown)
+                            with contextlib.suppress(libvirtError):
+                                disk_size, used_size = self.instance.blockInfo(src_file)[:2]
                     except Exception as e:
                         logger.warning("Disk %s of %s not fully read: %s", dev, self.instance.name(), e)
                     finally:

@@ -40,7 +40,8 @@ def vm_reader(vcpu=2, memory=1024, disk_gib=10, pending=None):
             return values(config)["memory"]
 
         def get_disk_devices(self, config=False):
-            return [{"size": values(config)["disk_gib"] << 30}]
+            size = values(config)["disk_gib"]
+            return [{"size": None if size is None else size << 30}]
 
     def values(persistent):
         return config if persistent else live
@@ -97,6 +98,13 @@ class QuotaTests(TestCase):
             raise OperationError("Domain not found")
 
         self.assertEqual(self.check(0, 0, 512, 0, reader=gone)[0], QUOTA_UNVERIFIED)
+
+    def test_a_disk_whose_size_is_unknown_refuses_an_increase(self):
+        # not 0 GiB: a volume not read (its pool stopped) may be the largest
+        self.own(self.up, 1)
+        self.assertEqual(self.check(0, 1, 0, 0, reader=vm_reader(disk_gib=None))[0], QUOTA_UNVERIFIED)
+        UserAttributes.objects.filter(user=self.user).update(max_disk_size=-1)  # disks not limited: not needed
+        self.assertEqual(self.check(0, 1, 0, 0, reader=vm_reader(disk_gib=None))[0], "")
 
     def test_each_host_is_checked_once(self):
         for n in range(3):

@@ -78,7 +78,8 @@ def disk_gib(disks):
 # check_user_quota could not read every VM of the user: an increase is refused
 QUOTA_UNVERIFIED = "unverified"
 QUOTA_UNVERIFIED_TEXT = gettext_noop(
-    "The quota cannot be checked because a host of your virtual machines cannot be reached. Nothing was changed.")
+    "The quota cannot be checked: a host of your virtual machines cannot be reached, or the size of one of "
+    "their disks cannot be read. Nothing was changed.")
 
 # The quota a change would exceed: instance, cpu, memory or disk, the total it
 # would make and the limit
@@ -106,8 +107,8 @@ def check_user_quota(user, instance, cpu, memory, disk_size):
     The quota the user would exceed by adding these amounts (instances,
     vCPUs, memory MiB, disk GiB) to their VMs, a QuotaExceeded, or "". A quota of -1 has no
     limit; 0 allows none. QUOTA_UNVERIFIED if a
-    VM that counts cannot be read (its host is down, the VM is gone): the
-    usage is unknown, so an increase is refused.
+    VM that counts cannot be read (its host is down, the VM is gone, a disk's
+    size is unknown): the usage is unknown, so an increase is refused.
     """
     ua, attributes_created = UserAttributes.objects.get_or_create(user=user)
     msg = ""
@@ -156,7 +157,10 @@ def check_user_quota(user, instance, cpu, memory, disk_size):
             with conn.cached_reads():
                 cpu += max(conn.get_vcpu(), conn.get_vcpu(config=True))
                 memory += max(conn.get_memory(), conn.get_memory(config=True))
-                disk_size += max(disk_gib(conn.get_disk_devices()), disk_gib(conn.get_disk_devices(config=True)))
+                disks = conn.get_disk_devices(), conn.get_disk_devices(config=True)
+            if ua.max_disk_size >= 0 and any(disk["size"] is None for devices in disks for disk in devices):
+                return QUOTA_UNVERIFIED  # not 0 GiB
+            disk_size += max(map(disk_gib, disks))
         except libvirtError:
             return QUOTA_UNVERIFIED
 

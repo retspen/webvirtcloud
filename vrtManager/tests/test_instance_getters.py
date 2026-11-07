@@ -48,6 +48,15 @@ class DeviceGettersTestCase(unittest.TestCase):
         self.assertEqual([(n["inbound"], n["outbound"]) for n in nics[1:]], [([], [])] * 2)
         self.assertEqual([(n["nic"], n["model"]) for n in nics], [("default", "virtio"), ("br0", ""), ("", "")])
 
+    def test_a_disk_no_pool_holds_has_the_size_libvirt_reads(self):
+        p = proxy()
+        p.instance = MagicMock()
+        # vda: libvirt reads it, by its path; vdb: it cannot
+        p.instance.blockInfo.side_effect = lambda path: [20 << 30, 5 << 30, 20 << 30] if path == "/pool/a.qcow2" else \
+            (_ for _ in ()).throw(libvirtError("cannot read"))
+        self.assertEqual([(d["dev"], d["size"], d["used"]) for d in p.get_disk_devices()],
+                         [("vda", 20 << 30, 5 << 30), ("vdb", None, None)])
+
     def test_an_empty_cdrom_shows_no_pool(self):
         media = proxy().get_media_devices()
         self.assertEqual(
