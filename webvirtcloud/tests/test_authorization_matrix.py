@@ -83,6 +83,7 @@ DENIED = (403, 404)
 VIEW_VM = {
     "instances:instance",
     "instances:status",
+    "instances:nic_addresses",
     "instances:stats",
     "instances:osinfo",
     "instances:sshkeys",

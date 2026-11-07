@@ -795,15 +795,11 @@ class wvmInstance(wvmConnect):
         pcpus = hostinfo[4] * hostinfo[5] * hostinfo[6] * hostinfo[7]
         return range(1, max(int(pcpus), at_least) + 1)
 
-    def get_interface_addresses(self, iface_mac):
-        """The running VM's addresses of the NIC with iface_mac: (IPv4, IPv6
-        with prefix), from the guest agent when it has some, else from the
-        host's ARP table; (None, None) when neither has one. Read once in a
-        cached_reads block: the agent may take its whole timeout."""
-        return self._cached("addresses", self._read_addresses).get(iface_mac, (None, None))
-
-    def _read_addresses(self):
-        """{MAC: (IPv4 list, IPv6 list)}: each MAC's addresses from the first source that has some."""
+    def get_addresses(self):
+        """The running VM's addresses, {MAC: (IPv4 list, IPv6 list with
+        prefix)}, each MAC's from the first source that has some: the guest
+        agent, else the host's ARP table. The agent may take its whole
+        timeout: the VM page reads them after it loads (views.nic_addresses)."""
         if self.get_status() != 1:
             return {}
         sources = []
@@ -856,10 +852,6 @@ class wvmInstance(wvmConnect):
                     out_burst = out_attr.get("burst")
                     outbound = {"average": out_av, "peak": out_peak, "burst": out_burst}
 
-                try:
-                    ipv4, ipv6 = self.get_interface_addresses(mac_inst)
-                except libvirtError:
-                    ipv4, ipv6 = None, None
                 result.append(
                     {
                         "type": interface_type,
@@ -868,8 +860,6 @@ class wvmInstance(wvmConnect):
                         "target": target_inst,
                         "state": link_state,
                         "model": model_type,
-                        "ipv4": ipv4,
-                        "ipv6": ipv6,
                         "filterref": filterref_inst,
                         "inbound": inbound,
                         "outbound": outbound,

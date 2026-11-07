@@ -21,6 +21,7 @@ urlpatterns = [
     path("<int:pk>/destroy/", views.destroy, name="destroy"),
     path("<int:pk>/migrate/", views.migrate, name="migrate"),
     path("<int:pk>/status/", views.status, name="status"),
+    path("<int:pk>/addresses/", views.nic_addresses, name="nic_addresses"),
     path("<int:pk>/stats/", views.stats, name="stats"),
     path("<int:pk>/osinfo/", views.osinfo, name="osinfo"),
     path("<int:pk>/rootpasswd/", views.set_root_pass, name="rootpasswd"),

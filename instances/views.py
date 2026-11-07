@@ -296,7 +296,6 @@ def _instance_page(request, pk, instance, compute):
     if can_manage_console:
         console_form = ConsoleForm(instance=instance, is_superuser=request.user.is_superuser)
     console_listener_addresses = settings.QEMU_CONSOLE_LISTENER_ADDRESSES
-    ipv4_addresses = [address for net in instance.networks for address in net["ipv4"] or []]
     try:
         userinstance = UserInstance.objects.get(instance=instance, user=request.user)
     except UserInstance.DoesNotExist:
@@ -388,6 +387,18 @@ def _instance_page(request, pk, instance, compute):
 def status(request, pk):
     instance = get_instance(request.user, pk)
     return JsonResponse({"status": instance.proxy.get_status()})
+
+
+def nic_addresses(request, pk):
+    """The VM's addresses by MAC, which its page shows once it has loaded
+    (vm_addresses.js): the guest agent may take its whole timeout. A host
+    that cannot be read gives none."""
+    instance = get_instance(request.user, pk)
+    try:
+        found = instance.proxy.get_addresses()
+    except libvirtError:
+        found = {}
+    return JsonResponse({mac: {"ipv4": ipv4 or [], "ipv6": ipv6 or []} for mac, (ipv4, ipv6) in found.items()})
 
 
 def _valid_ssh_target(compute):

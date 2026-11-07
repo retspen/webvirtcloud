@@ -1,7 +1,7 @@
 """A running VM's addresses come from the guest agent when it answers and
 from the host's ARP table, so a VM without an agent shows its IPv4 address.
 The agent is asked with a timeout: interfaceAddresses() would wait for a
-hung agent indefinitely, and the VM page with it."""
+hung agent indefinitely; the VM page asks for them after it loads."""
 
 import json
 import unittest
@@ -38,32 +38,31 @@ class InterfaceAddressesTestCase(unittest.TestCase):
 
     def test_a_vm_without_an_agent_shows_its_arp_address(self):
         inst = vm(agent=False)
-        self.assertEqual(inst.get_interface_addresses(MAC), (["192.0.2.10"], []))
+        self.assertEqual(inst.get_addresses(), {MAC: (["192.0.2.10"], [])})
         self.agent.assert_not_called()
 
     def test_the_agents_address_comes_first_and_is_asked_with_a_timeout(self):
         inst = vm(agent=True)
-        self.assertEqual(inst.get_interface_addresses(MAC), (["192.0.2.20"], ["2001:db8::20/64"]))
+        self.assertEqual(inst.get_addresses(), {MAC: (["192.0.2.20"], ["2001:db8::20/64"])})
         self.agent.assert_called_once_with(inst.instance, '{"execute": "guest-network-get-interfaces"}', 10, 0)
         self.assertEqual([c.args for c in inst.instance.interfaceAddresses.call_args_list],
                          [(VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP,)])
 
-    def test_the_addresses_are_read_once_in_a_page_and_again_after_it(self):
+    def test_the_vm_s_definition_does_not_read_them(self):
         inst = vm(agent=True)
-        with inst.cached_reads():
-            inst.get_interface_addresses(MAC)
-            inst.get_interface_addresses("52:54:00:00:00:02")
-        self.assertEqual(self.agent.call_count, 1)
-        # outside a page's block, a new read: a NIC's address can change
-        inst.get_interface_addresses(MAC)
-        self.assertEqual(self.agent.call_count, 2)
+        inst._XMLDesc = lambda flags: f"<domain><devices><interface type='network'><mac address='{MAC}'/></interface></devices></domain>"
+        self.assertEqual([nic["mac"] for nic in inst.get_net_devices()], [MAC])
+        self.agent.assert_not_called()
+        inst.instance.interfaceAddresses.assert_not_called()
 
-    def test_a_mac_without_addresses_has_none(self):
-        self.assertEqual(vm(agent=False).get_interface_addresses("52:54:00:00:00:02"), (None, None))
+    def test_a_vm_that_does_not_run_has_none(self):
+        inst = vm(agent=True)
+        inst.get_status.return_value = 5
+        self.assertEqual(inst.get_addresses(), {})
 
     def test_an_agent_that_does_not_answer_leaves_the_arp_address(self):
         self.agent.side_effect = libvirtError("guest agent didn't respond to command within '10' seconds")
-        self.assertEqual(vm(agent=True).get_interface_addresses(MAC), (["192.0.2.10"], []))
+        self.assertEqual(vm(agent=True).get_addresses(), {MAC: (["192.0.2.10"], [])})
 
 
 class OsInfoTestCase(unittest.TestCase):

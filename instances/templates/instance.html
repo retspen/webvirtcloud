@@ -67,7 +67,7 @@
                 {% if not instance.is_template %}
                 <div class="col-6 col-lg-3">
                     <dt class="fw-normal text-body-secondary">{% trans "IPv4" %}</dt>
-                    <dd class="mb-0 font-monospace">{{ ipv4_addresses|join:", "|default:"—" }}</dd>
+                    <dd class="mb-0 font-monospace" data-address-mac="{% for nic in instance.networks %}{{ nic.mac }} {% endfor %}" data-address-family="ipv4" data-empty="—">{% trans "Reading…" %}</dd>
                 </div>
                 {% endif %}
             </dl>
@@ -133,6 +133,7 @@
 <script src="{% static 'js/poll.js' %}"></script>
 {% if not instance.is_template %}<script src="{% static 'js/instance_stats.js' %}"></script>{% endif %}
 <script src="{% static 'js/instance_status.js' %}"></script>
+<script src="{% static 'js/vm_addresses.js' %}" data-url="{% url 'instances:nic_addresses' instance.id %}"></script>
 {% job_panel_script job_resource %}
 <script src="{% static 'js/instance_tabs.js' %}"></script>
 <script src="{% static 'js/instance_page.js' %}"></script>

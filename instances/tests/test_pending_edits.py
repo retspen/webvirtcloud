@@ -82,6 +82,16 @@ class PendingEditsTestCase(TestCase):
         self.assertEqual(doc.xpath("//form[.//input[@name='qos_average']]//input[@name='qos_direction']/@value"),
                          ["inbound", "outbound"])
 
+    def test_the_page_leaves_the_addresses_to_its_script(self):
+        nic = {"type": "network", "mac": "52:54:10:00:00:01", "nic": "default", "state": "up", "model": "virtio",
+               "filterref": "", "target": "vnet0", "inbound": [], "outbound": []}
+        doc = self.page(nics=([nic], [nic]))
+        self.assertEqual(doc.xpath("//*[@data-address-family]/@data-address-family"), ["ipv4", "ipv4", "ipv6"])
+        # the header's are those of the VM's NICs, not the guest's own bridges
+        self.assertEqual(doc.xpath("//dt[.='IPv4']/following-sibling::dd/@data-address-mac"), ["52:54:10:00:00:01 "])
+        self.assertEqual(doc.xpath("//script[contains(@src, 'vm_addresses')]/@data-url"),
+                         [reverse("instances:nic_addresses", args=[self.instance.id])])
+
     def test_the_nics_are_rows_of_one_list_with_their_dialogs(self):
         nic = {"type": "network", "mac": "52:54:10:00:00:01", "nic": "default", "state": "up", "model": "virtio",
                "ipv4": None, "ipv6": None, "filterref": "", "target": "", "inbound": [], "outbound": []}

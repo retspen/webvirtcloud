@@ -318,7 +318,7 @@
                             </div>
                         </div>
                         <div class="d-flex flex-wrap align-items-center column-gap-4 row-gap-1 mt-2">
-                            <span class="text-break">{% if network.ipv4 %}{{ network.ipv4|join:", " }}{% else %}<span class="text-body-secondary">{% trans "No IPv4 address known" %}</span>{% endif %}</span>
+                            <span class="text-break text-body-secondary" data-address-mac="{{ network.mac }}" data-address-family="ipv4" data-empty="{% trans "No IPv4 address known" %}">{% trans "Reading…" %}</span>
                             <form action="{% url 'instances:set_link_state' instance.id %}" method="post" aria-label="{% trans "Link state form" %}">{% csrf_token %}
                                 <input type="hidden" name="mac" value="{{ network.mac }}">
                                 <input type="hidden" name="set_link_state" value="{{ network.state }}">
@@ -337,7 +337,7 @@
                             <dl class="row mb-0 mt-2" style="max-width: 32rem">
                                 <dt class="col-4 fw-normal text-body-secondary">{% trans "Type" %}</dt><dd class="col-8 mb-1">{{ network.type }}</dd>
                                 <dt class="col-4 fw-normal text-body-secondary">{% trans "Host device" %}</dt><dd class="col-8 mb-1 text-break">{{ network.target|default:_("no target") }}</dd>
-                                <dt class="col-4 fw-normal text-body-secondary">{% trans "IPv6" %}</dt><dd class="col-8 mb-1 text-break">{{ network.ipv6|join:", "|default:_("unknown") }}</dd>
+                                <dt class="col-4 fw-normal text-body-secondary">{% trans "IPv6" %}</dt><dd class="col-8 mb-1 text-break" data-address-mac="{{ network.mac }}" data-address-family="ipv6" data-empty="{% trans "unknown" %}">{% trans "Reading…" %}</dd>
                             </dl>
                         </details>
                         {% if network.inbound or network.outbound %}

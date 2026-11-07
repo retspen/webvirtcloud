@@ -2,6 +2,7 @@ from computes.models import Compute
 from django.conf import settings
 from instances.models import Flavor, Instance
 from instances.utils import nic_macs
+from libvirt import libvirtError
 from rest_framework import serializers
 
 
@@ -12,6 +13,17 @@ class InstanceSerializer(serializers.ModelSerializer):
 
 
 class InstanceDetailsSerializer(serializers.ModelSerializer):
+    networks = serializers.SerializerMethodField()
+
+    def get_networks(self, instance) -> list[dict]:
+        """Each NIC with its addresses (None: none known), which the VM page
+        reads after it loads (views.nic_addresses)."""
+        try:
+            found = instance.proxy.get_addresses()
+        except libvirtError:
+            found = {}
+        return [{**nic, **dict(zip(("ipv4", "ipv6"), found.get(nic["mac"], (None, None))))} for nic in instance.networks]
+
     def get_fields(self):
         fields = super().get_fields()
         # the host's ISO images are a superuser's, as on the VM page

@@ -140,7 +140,8 @@ class PageControlsTestCase(PageControls, TestCase):
         self.assertEqual([a.text_content().strip() for a in owner_page.xpath(links)], ["Instances"])
         self.assertIn("Guest agent not connected", self.last_page)
         self.assertIn("vda 2.0\xa0GB · vdb 1.0\xa0GB", self.last_page)
-        self.assertEqual(owner_page.xpath("normalize-space(//dt[.='IPv4']/following-sibling::dd)"), "—")
+        # filled by its script once the page has loaded ("—" when it has none)
+        self.assertEqual(owner_page.xpath("//dt[.='IPv4']/following-sibling::dd/@data-empty"), ["—"])
 
     def test_superuser_sees_every_control(self):
         superuser = get_user_model().objects.create_superuser("ctl_super", "ctl_super@example.com", "x")
