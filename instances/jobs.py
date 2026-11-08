@@ -4,6 +4,7 @@ import math
 import os
 import re
 import time
+from uuid import uuid4
 
 from django.db import transaction
 from django.core.exceptions import PermissionDenied
@@ -605,7 +606,7 @@ class CloneInstance(Kind):
         _check_clone_state(instance.proxy, data)
         return Plan(claims=keys, resource=claims.instance_key(instance.uuid),
                     label=f"{instance.compute.name}/{instance.name}",
-                    intent={"compute": instance.compute_id, "uuid": util.randomUUID(), "name": data["name"],
+                    intent={"compute": instance.compute_id, "uuid": str(uuid4()), "name": data["name"],
                             "clone": data, "quota": quota})
 
     def precheck(self, op, ctx):
@@ -875,7 +876,7 @@ class CreateInstance(Kind):
         compute = Compute.objects.get(pk=params["compute"])
         return Plan(claims=vm_claims(compute, params["name"]), resource=claims.compute_key(compute.pk),
                     label=f"{compute.name}/{params['name']}",
-                    intent={"compute": compute.pk, "uuid": util.randomUUID(), "name": params["name"]})
+                    intent={"compute": compute.pk, "uuid": str(uuid4()), "name": params["name"]})
 
     def precheck(self, op, ctx):
         if op.user is None or not op.user.is_active or not op.user.is_superuser:

@@ -63,14 +63,6 @@ class HostBusy(ConnectionFailed):
     (HOST_REQUESTS) still wait for its answers."""
 
 
-def randomUUID():
-    """Generate a random UUID."""
-    u = [secrets.randbelow(256) for _ in range(16)]
-    u[6] = u[6] & 15 | 4 << 4
-    u[8] = u[8] & 63 | 2 << 6
-    return "-".join(["%02x" * 4, "%02x" * 2, "%02x" * 2, "%02x" * 2, "%02x" * 6]) % tuple(u)
-
-
 def randomPasswd(length=12, alphabet=string.ascii_letters + string.digits):
     """Generate a random password"""
     return "".join([secrets.choice(alphabet) for _ in range(length)])

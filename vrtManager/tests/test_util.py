@@ -4,7 +4,6 @@ import unittest
 from vrtManager.util import (
     get_xml_path,
     randomPasswd,
-    randomUUID,
     validate_macaddr,
     vol_dev_type,
     vol_driver_type,
@@ -13,14 +12,6 @@ from vrtManager.util import (
 
 
 class TestVrtManagerUtil(unittest.TestCase):
-    def test_random_uuid_format(self):
-        uuid_str = randomUUID()
-        # UUIDv4 format check
-        pattern = r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
-        self.assertRegex(uuid_str, pattern)
-        # Ensure successive UUIDs are distinct
-        self.assertNotEqual(uuid_str, randomUUID())
-
     def test_validate_macaddr(self):
         self.assertIsNone(validate_macaddr(None))
         self.assertIsNone(validate_macaddr("52:54:10:aa:bb:cc"))

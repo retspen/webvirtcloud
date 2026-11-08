@@ -11,7 +11,7 @@ from django.http.response import Http404
 from django.shortcuts import reverse
 from django.test import TestCase
 from vrtManager.create import wvmCreate
-from vrtManager.util import randomUUID
+from uuid import uuid4
 
 from operations.models import Operation
 
@@ -212,7 +212,7 @@ class InstancesTestCase(TestCase):
         self.assertFalse(Instance.objects.filter(pk=instance.id).exists())
 
     def test_create_from_xml(self):
-        uuid = randomUUID()
+        uuid = str(uuid4())
         xml = self.xml.replace("wvc-test-vm", "wvc-test-vm-xml")
         xml = re.sub(r"\s?<uuid>.*?</uuid>", f"<uuid>{uuid}</uuid>", xml)
         response = self.client.post(
