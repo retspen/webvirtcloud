@@ -1182,12 +1182,6 @@ class wvmConnect(object):
             for dev in self.wvm.listAllDevices(libvirt.VIR_CONNECT_LIST_NODE_DEVICES_CAP_NET)
         ]
 
-    def close(self):
-        """Close connection"""
-        # to-do: do not close connection ;)
-        # self.wvm.close()
-        pass
-
     def get_firmwares(self, arch, machine):
         """The firmware a new VM can have: BIOS on x86, UEFI without Secure Boot
         when libvirt picks the firmware itself, and on x86_64 UEFI Secure Boot

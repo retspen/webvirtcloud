@@ -102,7 +102,6 @@ def storages(request, compute_id):
                     return HttpResponseRedirect(reverse("storage", args=[compute_id, data["name"]]))
             elif form.has_error("name", "taken"):
                 failed(request, compute, f"Storage pool {form.data['name'].strip()}", "add", "name already in use")
-        conn.close()
     except libvirtError as lib_err:
         messages.error(request, lib_err)
 
@@ -127,10 +126,7 @@ def storage(request, compute_id, pool):
         return HttpResponseRedirect(reverse("storages", args=[compute_id]))
 
     if request.method == "POST" and "iso_upload" in request.POST:
-        try:
-            return _handle_iso_upload(request, conn, compute, pool)
-        finally:
-            conn.close()
+        return _handle_iso_upload(request, conn, compute, pool)
 
     state = conn.is_active()
 
@@ -240,7 +236,6 @@ def storage(request, compute_id, pool):
     type = conn.get_type()
     autostart = conn.get_autostart()
     job_resource = claims.pool_key(compute.id, pool)
-    conn.close()
 
     return render(request, "storage.html", locals())
 

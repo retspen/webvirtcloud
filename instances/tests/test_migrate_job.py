@@ -203,7 +203,6 @@ class MigrateJobTestCase(TransactionTestCase):
         self.assertIn("/nfs/new.qcow2</span>:\n            on storage both hosts share", page)
         # a disk that cannot go keeps the form from being sent, as does a destination that does not answer
         self.assertEqual(page.count("data-refused"), 2)
-        dest.close.assert_called_once_with()
         with patch("instances.views.wvmInstances", side_effect=libvirtError("no answer")):
             page = self.client.get(reverse("instances:migrate_plan", args=[self.vm.pk]),
                                    {"compute_id": self.dest.pk}).content.decode()

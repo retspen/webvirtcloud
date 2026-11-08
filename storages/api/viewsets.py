@@ -81,7 +81,6 @@ class StorageViewSet(viewsets.ViewSet):
         )
         with audit(request, compute, f"Storage pool {pk}", "start"):
             ret = conn.start()
-        conn.close()
         return Response({"status": "Pool start command send: " + str(ret)})
 
     @extend_schema(request=None, responses=StatusSerializer)
@@ -94,7 +93,6 @@ class StorageViewSet(viewsets.ViewSet):
         )
         with audit(request, compute, f"Storage pool {pk}", "stop"):
             ret = conn.stop()
-        conn.close()
         return Response({"status": "Pool stop command send: " + str(ret)})
 
     @extend_schema(request=None, responses=StatusSerializer)
@@ -106,7 +104,6 @@ class StorageViewSet(viewsets.ViewSet):
             compute.hostname, compute.login, compute.password, compute.type, pk
         )
         ret = conn.refresh()
-        conn.close()
         return Response({"status": "Pool refresh command send: " + str(ret)})
 
     @extend_schema(
@@ -121,7 +118,6 @@ class StorageViewSet(viewsets.ViewSet):
             compute.hostname, compute.login, compute.password, compute.type, pk
         )
         ret = conn._XMLDesc(0)
-        conn.close()
         return Response({"return": str(ret)})
 
 
@@ -146,7 +142,6 @@ class VolumeViewSet(viewsets.ViewSet):
         if not conn.is_active():
             return Response({"detail": _("Pool is not active")}, status=status.HTTP_409_CONFLICT)
         volume_queryset = conn.update_volumes()
-        conn.close()
         serializer = VolumeSerializer(
             volume_queryset, many=True, context={"request": request}
         )
@@ -163,7 +158,6 @@ class VolumeViewSet(viewsets.ViewSet):
         if not conn.is_active():
             return Response({"detail": _("Pool is not active")}, status=status.HTTP_409_CONFLICT)
         volume_queryset = conn.get_volume_details(pk)
-        conn.close()
         serializer = VolumeSerializer(
             volume_queryset, many=False, context={"request": request}
         )
@@ -195,7 +189,6 @@ class VolumeViewSet(viewsets.ViewSet):
                         int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID),
                     )
                     entry.action = f"add volume {ret}"
-                conn.close()
                 return Response({"status": "Volume: " + ret + " is created"})
             else:
                 failed(request, compute, subject, action, "pool is not active")
@@ -216,7 +209,6 @@ class VolumeViewSet(viewsets.ViewSet):
             # no VM operation attaches it between the check and the delete
             with audit(request, compute, subject, action), libvirt_compute_lock(compute):
                 conn.del_volume(pk)
-            conn.close()
             return Response({"status": "Volume: " + pk + " is deleted"})
         else:
             failed(request, compute, subject, action, "pool is not active")

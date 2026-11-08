@@ -82,7 +82,6 @@ def networks(request, compute_id):
                     return HttpResponseRedirect(reverse("network", args=[compute_id, data["name"]]))
             elif form.has_error("name", "taken"):
                 failed(request, compute, f"Network {form.data['name'].strip()}", "add", "name already in use")
-        conn.close()
     except libvirtError as lib_err:
         messages.error(request, lib_err)
 
@@ -300,6 +299,5 @@ def network(request, compute_id, pool):
         lease["key"] = lease["mac"] if lease["ip"].version == 4 else lease["client_id"]
         lease["ip_index"] = next((ip["index"] for ip in dhcp_networks
                                   if ip["subnet"] and lease["ip"] in ip["subnet"]), None)
-    conn.close()
 
     return render(request, "network.html", locals())

@@ -484,18 +484,15 @@ def end(op, state, error=()):
                 jobs.finish(op, jobs.Outcome(Operation.FAILED, error=say(gettext_noop("The compute was deleted"))))
                 return
             conn = wvmStorage(compute.hostname, compute.login, compute.password, compute.type, op.params["pool"])
-            try:
-                with _target(conn, op) as target:
-                    # its last request died before the rename
-                    if op.intent["chunk"] == op.params["chunks"]:
-                        try:
-                            _complete(target, op)
-                        except (FileExistsError, ValueError):  # _complete failed the upload
-                            pass
-                    else:
-                        _end(target, op, state, error)
-            finally:
-                conn.close()
+            with _target(conn, op) as target:
+                # its last request died before the rename
+                if op.intent["chunk"] == op.params["chunks"]:
+                    try:
+                        _complete(target, op)
+                    except (FileExistsError, ValueError):  # _complete failed the upload
+                        pass
+                else:
+                    _end(target, op, state, error)
     except claims.Busy:
         pass
 

@@ -965,7 +965,6 @@ def migrate_plan(request, pk):
     if not compute_id.isdigit():
         raise Http404
     target = get_object_or_404(Compute, pk=compute_id)
-    dest = None
     try:
         dest = wvmInstances(target.hostname, target.login, target.password, target.type)
         pools = [{"name": name, "free": pool.info()[3]} for name, (pool, directory) in sorted(dest.file_pools().items())]
@@ -974,9 +973,6 @@ def migrate_plan(request, pk):
         context = {"disks": disks, "pending": pending, "pools": pools, "shut_off": instance.proxy.get_status() == 5}
     except libvirtError as err:
         context = {"error": error_text(request, err)}
-    finally:
-        if dest is not None:
-            dest.close()
     return render(request, "instances/migrate_plan.html", context)
 
 
@@ -2600,7 +2596,6 @@ def create_instance(request, compute_id, arch, machine):
                                 )
                             jobs.remember_job(request, op)
                             return redirect(reverse("instances", args=[compute.id]))
-            conn.close()
     except libvirtError as lib_err:
         messages.error(request, lib_err)
 

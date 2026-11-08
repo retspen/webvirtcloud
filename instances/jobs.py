@@ -264,8 +264,6 @@ def _remove_clone_nvram(op):
     except libvirtError as err:
         if err.get_error_code() != VIR_ERR_NO_STORAGE_VOL:
             raise  # unreachable: recovery waits and retries
-    finally:
-        host.close()
 
 
 def _clone_made(op, result):
@@ -1045,8 +1043,6 @@ def _remove_copies(op):
         source, _sep, name = op.resource_label.rpartition("/")
         write(op.username, source, name, f"VM {name}: remove the partial disk copies on {target.name}: "
               f"{safe_text(err)}", False, op.client_ip, op.intent["uuid"])
-    finally:
-        dest.close()
 
 
 def _moved(op, dest):

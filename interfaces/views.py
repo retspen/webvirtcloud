@@ -64,7 +64,6 @@ def interfaces(request, compute_id):
                     form.add_error(None, str(err))
                 else:
                     return HttpResponseRedirect(reverse("interface", args=[compute_id, data["name"]]))
-        conn.close()
     except libvirtError as lib_err:
         messages.error(request, lib_err)
 
@@ -110,7 +109,6 @@ def interface(request, compute_id, iface):
             vm_ids = dict(Instance.objects.filter(compute=compute, name__in=[vm["vm"] for vm in vms]).values_list("name", "id"))
             for vm in vms:
                 vm["id"] = vm_ids.get(vm["vm"])
-        conn.close()
     except libvirtError as lib_err:
         messages.error(request, lib_err)
 

@@ -126,7 +126,6 @@ def overview(request, compute_id):
                 "libvirt_version": conn.get_lib_version(),
                 "emulator": conn.get_emulator(arch), "guest_archs": conn.get_hypervisors_domain_types(),
             }
-            conn.close()
         except libvirtError as error:
             context["read_error"] = str(error)
         context["given"] = shown_capacity(compute)
@@ -313,7 +312,6 @@ class ComputeManager:
                     {"compute": self.compute.id, "idle": idle, "total": total, "time": taken}
                 ),
             }
-            conn.close()
         except libvirtError:
             pass
 

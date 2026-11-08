@@ -265,7 +265,6 @@ def migrate_instance(
         message = f"VM {instance.name}: {action}" + (f": {reason(error, user)}" if error is not None else "")
         write(user.username, source.name, instance.name, message, error is None, ip, instance.uuid)
 
-    conn_migrate = None
     try:
         conn_migrate = wvmInstances(
             new_compute.hostname,
@@ -291,9 +290,6 @@ def migrate_instance(
     except Exception as error:
         log(f"migrate to {target}", error)
         raise
-    finally:
-        if conn_migrate is not None:
-            conn_migrate.close()
 
     # The VM runs on new_compute now: what follows must not stop it
     # from being recorded there.
@@ -301,7 +297,6 @@ def migrate_instance(
     if on_moved is not None:  # its row is written: a later step that raises does not undo it
         on_moved()
     if autostart:
-        conn_new = None
         try:
             conn_new = wvmInstance(
                 new_compute.hostname,
@@ -314,9 +309,6 @@ def migrate_instance(
             conn_new.set_autostart(1)
         except (libvirtError, OSError) as error:
             log(f"restore autostart on {target}", error)
-        finally:
-            if conn_new is not None:
-                conn_new.close()
 
     for path, copy in copied:
         # shared storage: a VM or volume of any compute may use it; the destination's
@@ -335,7 +327,6 @@ def migrate_instance(
     # libvirt keeps the NVRAM file on the source; a VM created there
     # later with the same name would start with these variables.
     if nvram:
-        conn_new = None
         try:
             conn_new = wvmInstances(
                 new_compute.hostname, new_compute.login, new_compute.password, new_compute.type
@@ -343,9 +334,6 @@ def migrate_instance(
             instance.proxy.remove_nvram(nvram, conn_new)
         except Exception as error:  # the migration stands and is recorded
             log(f"remove NVRAM file {nvram} on the source", error)
-        finally:
-            if conn_new is not None:
-                conn_new.close()
 
     try:
         record_migration(instance, new_compute)
