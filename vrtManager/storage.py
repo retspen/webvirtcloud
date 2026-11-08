@@ -217,15 +217,6 @@ class wvmStorage(wvmConnect):
     def get_source_name(self):
         return util.get_xml_path(self._XMLDesc(0), "/pool/source/name")
 
-    def get_allocation(self):
-        return int(util.get_xml_path(self._XMLDesc(0), "/pool/allocation"))
-
-    def get_available(self):
-        return int(util.get_xml_path(self._XMLDesc(0), "/pool/available"))
-
-    def get_capacity(self):
-        return int(util.get_xml_path(self._XMLDesc(0), "/pool/capacity"))
-
     def get_rbd_source(self):
         def hosts(doc):
             hosts_array = []
