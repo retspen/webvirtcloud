@@ -1139,6 +1139,7 @@ class wvmInstance(wvmConnect):
             for source in disk.findall("source"):
                 disk.remove(source)
             if path:
+                disk.set("type", "file")  # a host drive (type block) reads source/@dev only
                 disk.insert(1, etree.Element("source", file=path))
             try:
                 self.instance.updateDeviceFlags(etree.tostring(disk).decode(), affect)

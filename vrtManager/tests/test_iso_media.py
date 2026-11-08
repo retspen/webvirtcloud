@@ -45,6 +45,13 @@ class IsoMediaTestCase(unittest.TestCase):
             self.updates(inst), [("sdb", "", VIR_DOMAIN_AFFECT_LIVE), ("sdb", "", VIR_DOMAIN_AFFECT_CONFIG)]
         )
 
+    def test_an_iso_in_a_host_drive_makes_it_a_file_drive(self):
+        inst = vm(active=False)
+        inst._XMLDesc = MagicMock(return_value=DOMAIN.replace("<disk type='file'", "<disk type='block'"))
+        inst._set_cdrom_media("sdb", "/iso/a.iso")
+        disk = etree.fromstring(inst.instance.updateDeviceFlags.call_args.args[0])
+        self.assertEqual((disk.get("type"), disk.find("source").get("file")), ("file", "/iso/a.iso"))
+
     def test_unknown_cdrom_changes_nothing(self):
         inst = vm(active=True)
         with self.assertRaises(libvirtError):
