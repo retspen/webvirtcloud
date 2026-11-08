@@ -3,6 +3,7 @@
 from types import SimpleNamespace
 from unittest.mock import PropertyMock, patch
 
+from libvirt import libvirtError
 from vrtManager.util import OperationError
 from django.contrib.auth import get_user_model
 from django.test import TransactionTestCase
@@ -72,8 +73,10 @@ class SnapshotJobsTestCase(TransactionTestCase):
 
     def test_a_name_that_is_empty_or_not_a_snapshot_name_is_refused_on_the_page(self):
         for name in ("", ".hidden", "a b"):
-            response = self.client.post(reverse("instances:snapshot", args=[self.instance.pk]),
-                                        {"name": name, "submission_key": "key-snap0001"}, follow=True)
+            # the VM page it goes back to, of a host that is not there
+            with patch.object(Compute, "connection", new_callable=PropertyMock, return_value=libvirtError("unreachable")):
+                response = self.client.post(reverse("instances:snapshot", args=[self.instance.pk]),
+                                            {"name": name, "submission_key": "key-snap0001"}, follow=True)
             self.assertContains(response, "Snapshot names are 1-64 letters")
         self.assertFalse(Operation.objects.exists())
 

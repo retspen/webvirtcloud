@@ -135,7 +135,8 @@ class CreateDialogHostsTestCase(TestCase):
         self.addCleanup(p.stop)
 
     def dialog(self, reachable):
-        with patch.object(Compute, "status", property(lambda compute: compute.name in reachable)):
+        with patch.object(Compute, "status", property(lambda compute: compute.name in reachable)), \
+                patch.object(Compute, "connection_error", property(lambda c: None if c.name in reachable else "unreachable")):
             response = self.client.get(reverse("instances:index"))
         return html.fromstring(response.content).get_element_by_id("AddInstance")
 

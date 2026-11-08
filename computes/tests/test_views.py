@@ -1,6 +1,6 @@
 import json
 import os
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import reverse
@@ -51,11 +51,13 @@ class ComputesTestCase(TestCase):
         except Exception:
             self.skipTest("Live libvirt compute host not available")
 
-    def test_index(self):
+    @patch.object(Compute, "connection", new_callable=PropertyMock, return_value=libvirtError("unreachable"))
+    def test_index(self, connection):
         response = self.client.get(reverse("computes"))
         self.assertEqual(response.status_code, 200)
 
-    def test_create_update_delete(self):
+    @patch.object(Compute, "connection", new_callable=PropertyMock, return_value=libvirtError("unreachable"))
+    def test_create_update_delete(self, connection):
         response = self.client.get(reverse("add_socket_host"))
         self.assertEqual(response.status_code, 200)
 

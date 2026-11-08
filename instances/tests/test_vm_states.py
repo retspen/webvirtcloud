@@ -32,6 +32,7 @@ class VmStatesTestCase(TestCase):
         proxy.get_domain_states.side_effect = read
         # self.up answers, self.down cannot be reached
         with patch.object(Compute, "status", property(lambda c: c.pk == self.up.pk)), \
+                patch.object(Compute, "connection_error", property(lambda c: None if c.pk == self.up.pk else "unreachable")), \
                 patch.object(Compute, "proxy", new_callable=PropertyMock, return_value=proxy):
             return self.client.get(reverse("instances:states") + query)
 
@@ -82,6 +83,7 @@ class VmStatesTestCase(TestCase):
     def test_the_lists_poll_it(self):
         self.client.force_login(self.admin)
         with patch.object(Compute, "status", property(lambda c: c.pk == self.up.pk)), \
+                patch.object(Compute, "connection_error", property(lambda c: None if c.pk == self.up.pk else "unreachable")), \
                 patch.object(Compute, "proxy", new_callable=PropertyMock,
                              return_value=MagicMock(**{"get_domain_rows.return_value": {}})), \
                 patch("instances.views.refresh_instance_database"), patch("computes.views.utils.refresh_instance_database"):

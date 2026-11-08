@@ -1,3 +1,5 @@
+from unittest.mock import PropertyMock, patch
+
 from appsettings.models import AppSettings
 from appsettings.settings import app_settings
 from computes.models import Compute
@@ -7,6 +9,7 @@ from django.contrib.auth.models import Permission
 from django.shortcuts import reverse
 from django.test import Client, RequestFactory, TestCase, override_settings
 from instances.models import Instance
+from libvirt import libvirtError
 
 
 from accounts.forms import UserInstanceForm, UserSSHKeyForm
@@ -36,6 +39,10 @@ class AccountsTestCase(TestCase):
         )
 
     def setUp(self):
+        # the pages read no host: its compute is not there
+        down = patch.object(Compute, "connection", new_callable=PropertyMock, return_value=libvirtError("unreachable"))
+        down.start()
+        self.addCleanup(down.stop)
         self.client.force_login(self.admin_user)
         permission = Permission.objects.get(codename="change_password")
         self.test_user.user_permissions.add(permission)
