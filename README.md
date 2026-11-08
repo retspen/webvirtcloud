@@ -743,7 +743,7 @@ A version from before v3.0.0 has no worker: `systemctl disable --now webvirt-wor
 
 ### Moving to a new machine
 
-A [backup](#backups) moves the panel to a new machine, or back onto lost volumes: the database, the secret key (signed-in users stay signed in), the worker's id and the SSH keys and TLS certificates the computes accept. Install the panel there first, the same version or a newer one, then copy the backup directory over and set `b` to it. The backup does not hold `docker-compose.override.yml`, the nginx config or `/etc/default/webvirtcloud`: bring your own lines over yourself. Users sign in with their passwords from the backup; the new installation's `data/admin_password` no longer applies. A `SECRET_KEY` set in the compose file has no `secret_key` in the backup: set the same value on the new machine. With PostgreSQL, stop the old panel before the new one starts: both would run the jobs of the one database.
+A [backup](#backups) moves the panel to a new machine, or back onto lost volumes: the database, the secret key (signed-in users stay signed in), the worker's id and the SSH keys and TLS certificates the computes accept. Install the panel there first, the same version or a newer one, then copy the backup directory over and set `b` to it. The backup does not hold `docker-compose.override.yml`, the nginx config or `/etc/default/webvirtcloud`: bring your own lines over yourself. Users sign in with their passwords from the backup; the new installation's `data/admin_password` no longer applies. A `SECRET_KEY` set in the compose file has no `secret_key` in the backup: set the same value on the new machine. With PostgreSQL, restore that database yourself and leave out the line below that restores `db.sqlite3` (the backup has none), and stop the old panel before the new one starts: both would run the jobs of the one database.
 
 Docker, in the directory you installed from:
 
@@ -772,7 +772,7 @@ mkdir -p ~www-data/.ssh && { [ ! -d "$b/ssh" ] || cp -r "$b"/ssh/. ~www-data/.ss
 mkdir -p ~www-data/.pki && { [ ! -d "$b/pki" ] || cp -r "$b"/pki/. ~www-data/.pki/; } &&
 venv/bin/python3 manage.py migrate &&
 chown -R www-data:www-data data ~www-data/.ssh ~www-data/.pki &&
-chmod 700 data ~www-data/.ssh ~www-data/.pki && chmod 600 db.sqlite3 &&
+chmod 700 data ~www-data/.ssh ~www-data/.pki && { [ ! -f db.sqlite3 ] || chmod 600 db.sqlite3; } &&
 systemctl start webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
 ```
 
