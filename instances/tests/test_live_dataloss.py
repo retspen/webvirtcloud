@@ -24,7 +24,7 @@ from instances.jobs import DeleteInstance
 from instances.models import Instance
 from operations.jobs import Context
 from operations.models import Operation, acquire
-from instances.utils import refr
+from computes.utils import refresh_instance_database
 
 P = livetest.PREFIX
 
@@ -70,7 +70,7 @@ class LiveDataLossTestCase(TestCase):
 
     def vm(self, name, disks, uefi=False, extra_devices=""):
         dom = livetest.define_vm(self.conn, P + name, disks, uefi=uefi, extra_devices=extra_devices)
-        refr(self.compute)
+        refresh_instance_database(self.compute)
         return dom, Instance.objects.get(compute=self.compute, uuid=dom.UUIDString())
 
     def post(self, view, instance, data=None):
@@ -243,7 +243,7 @@ class LiveDataLossTestCase(TestCase):
             "<os firmware='efi'><type arch='x86_64' machine='q35'>hvm</type></os>"
             "<features><acpi/></features><devices/></domain>"
         )
-        refr(self.compute)
+        refresh_instance_database(self.compute)
         inst = Instance.objects.get(compute=self.compute, uuid=dom.UUIDString())
         dom.createWithFlags(libvirt.VIR_DOMAIN_START_PAUSED)  # creates the NVRAM file
         dom.destroy()

@@ -436,12 +436,6 @@ def migration_target(compute):
     return compute.hostname
 
 
-def refr(compute):
-    from computes.utils import refresh_instance_database
-
-    refresh_instance_database(compute)
-
-
 def dhcpd_conf():
     """Optional dhcpd.conf in the application directory; clone names and MAC
     addresses are taken from its host entries when it exists."""

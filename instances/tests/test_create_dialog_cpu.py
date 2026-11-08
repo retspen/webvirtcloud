@@ -77,7 +77,7 @@ class CreateDialogCpuTestCase(TestCase):
             patch.object(Compute, name, new_callable=PropertyMock, return_value=value)
             for name, value in (("status", True), ("cpu_count", 1), ("ram_size", 1024), ("ram_usage", 0))
         ]
-        patches += [patch("instances.views.utils.refr"), patch("computes.models.wvmHostDetails")]
+        patches += [patch("instances.views.refresh_instance_database"), patch("computes.models.wvmHostDetails")]
         for p in patches:
             self.details = p.start()  # the last one: the host connection
             self.addCleanup(p.stop)
@@ -130,7 +130,7 @@ class CreateDialogHostsTestCase(TestCase):
             p = patch.object(Compute, name, new_callable=PropertyMock, return_value=value)
             p.start()
             self.addCleanup(p.stop)
-        p = patch("instances.views.utils.refr")
+        p = patch("instances.views.refresh_instance_database")
         p.start()
         self.addCleanup(p.stop)
 

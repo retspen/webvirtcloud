@@ -29,7 +29,7 @@ from operations.models import Operation
 from vrtManager.tests import livetest
 from .test_create_instance import run
 from instances.models import Instance
-from instances.utils import refr
+from computes.utils import refresh_instance_database
 
 P = livetest.PREFIX
 BOOT_TIMEOUT = 300
@@ -132,7 +132,7 @@ class LiveGuestTestCase(TestCase):
     <serial type='pty'/>
   </devices>
 </domain>""")
-        refr(self.compute)
+        refresh_instance_database(self.compute)
         return dom, Instance.objects.get(compute=self.compute, uuid=dom.UUIDString())
 
     def start(self, dom):

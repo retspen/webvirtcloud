@@ -21,7 +21,7 @@ from vrtManager.connection import connection_manager
 
 from vrtManager.tests import livetest
 from instances.models import Instance
-from instances.utils import refr
+from computes.utils import refresh_instance_database
 
 P = livetest.PREFIX
 POOL = P + "iscsi"
@@ -85,7 +85,7 @@ class LiveIscsiTestCase(TestCase):
                     "<vcpu>1</vcpu><os><type arch='x86_64' machine='q35'>hvm</type></os><features><acpi/></features>"
                     f"<devices>{PCI}</devices></domain>"
                 )
-                refr(self.compute)
+                refresh_instance_database(self.compute)
                 inst = Instance.objects.get(compute=self.compute, uuid=dom.UUIDString())
                 if running:
                     dom.create()

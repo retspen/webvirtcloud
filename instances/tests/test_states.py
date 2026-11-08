@@ -60,7 +60,7 @@ class StateTests(TestCase):
         props = {"status": True, "connection_error": None, "cpu_count": 1, "ram_size": 1, "ram_usage": 0,
                  "proxy": SimpleNamespace(get_domain_rows=lambda uuids=None: rows)}
         patches = [patch.object(Compute, k, new_callable=PropertyMock, return_value=v) for k, v in props.items()]
-        patches += [patch("instances.views.utils.refr"), patch("computes.views.utils.refresh_instance_database")]
+        patches += [patch("instances.views.refresh_instance_database"), patch("computes.views.utils.refresh_instance_database")]
         for p in patches:
             p.start()
         try:

@@ -8,7 +8,6 @@ from accounts.models import UserInstance
 from computes.models import Compute
 from computes.utils import refresh_instance_database
 from instances.models import Instance
-from instances.utils import refr
 from computes.tests.fakes import Domain
 
 
@@ -124,11 +123,6 @@ class InstanceReconciliationTestCase(TestCase):
         refresh_instance_database(self.compute)
 
         self.assertTrue(Instance.objects.filter(id=inst.id).exists())
-
-    def test_refr_invokes_refresh_instance_database(self):
-        with patch("computes.utils.refresh_instance_database") as mock_refresh:
-            refr(self.compute)
-            mock_refresh.assert_called_once_with(self.compute)
 
 
 class ReconciliationTransactionTestCase(TransactionTestCase):

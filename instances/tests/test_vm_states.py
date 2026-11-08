@@ -84,7 +84,7 @@ class VmStatesTestCase(TestCase):
         with patch.object(Compute, "status", property(lambda c: c.pk == self.up.pk)), \
                 patch.object(Compute, "proxy", new_callable=PropertyMock,
                              return_value=MagicMock(**{"get_domain_rows.return_value": {}})), \
-                patch("instances.views.utils.refr"), patch("computes.views.utils.refresh_instance_database"):
+                patch("instances.views.refresh_instance_database"), patch("computes.views.utils.refresh_instance_database"):
             for url, states_url in ((reverse("instances:index"), reverse("instances:states")),
                                     (reverse("instances", args=[self.up.pk]),
                                      reverse("instances:states") + f"?compute={self.up.pk}")):

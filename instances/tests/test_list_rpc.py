@@ -46,7 +46,7 @@ class ListReadTests(TestCase):
 
             return patch.object(cls, name, call)
 
-        patches = [patch("instances.views.utils.refr"), patch("computes.views.utils.refresh_instance_database"),
+        patches = [patch("instances.views.refresh_instance_database"), patch("computes.views.utils.refresh_instance_database"),
                    patch("vrtManager.connection.connection_manager.get_connection", return_value=self.conn),
                    counted(libvirt.virDomain, "info"), counted(libvirt.virDomain, "XMLDesc"),
                    counted(libvirt.virConnect, "lookupByUUIDString")]

@@ -28,7 +28,7 @@ class InstancesIndexTests(TestCase):
             Instance.objects.filter(pk=instance.pk).delete()
             self.assertFalse(Instance.objects.filter(pk=instance.pk).exists())
 
-        with patch("instances.views.utils.refr", side_effect=synchronize), patch.object(
+        with patch("instances.views.refresh_instance_database", side_effect=synchronize), patch.object(
             Compute, "status", new_callable=PropertyMock, return_value=True
         ), patch.object(
             Compute, "cpu_count", new_callable=PropertyMock, return_value=1

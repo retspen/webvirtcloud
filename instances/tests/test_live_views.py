@@ -18,7 +18,7 @@ from operations.models import Operation
 from vrtManager.tests import livetest
 from .test_create_instance import run
 from instances.models import Flavor, Instance
-from instances.utils import refr
+from computes.utils import refresh_instance_database
 
 TEST_COMPUTE_HOST = os.environ.get("TEST_LIBVIRT_HOST", "localhost")
 TEST_COMPUTE_LOGIN = os.environ.get("TEST_LIBVIRT_LOGIN", "")
@@ -87,7 +87,7 @@ class InstancesTestCase(TestCase):
 
             # Create testing vm from XML
             cls.connection._defineXML(cls.xml)
-            refr(cls.compute)
+            refresh_instance_database(cls.compute)
             # The compute may hold other VMs; never pick one of them.
             cls.instance: Instance = Instance.objects.get(compute=cls.compute, name="wvc-test-vm")
         except Exception as e:

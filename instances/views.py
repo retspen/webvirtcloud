@@ -16,7 +16,13 @@ from admin.decorators import superuser_only
 from appsettings.settings import app_settings
 from computes.models import Compute
 from computes.validators import validate_hostname, validate_login
-from computes.utils import libvirt_compute_lock, libvirt_instance_lock, lock_ownership, user_quota_lock
+from computes.utils import (
+    libvirt_compute_lock,
+    libvirt_instance_lock,
+    lock_ownership,
+    refresh_instance_database,
+    user_quota_lock,
+)
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
@@ -75,7 +81,7 @@ def index(request):
     # a user who sees no hosts makes the panel read only those of their own VMs
     computes = _listed_computes(request.user, list(Compute.objects.all().order_by("name")))
     for compute in computes:
-        utils.refr(compute)
+        refresh_instance_database(compute)
 
     show_hosts = request.user.is_superuser or request.user.has_perm("instances.view_instances")
     own_hosts_down = False
@@ -2459,7 +2465,7 @@ def create_instance_select_type(request, compute_id):
                 with libvirt_compute_lock(compute):
                     with audit(request, compute, f"VM {name}", "define from XML", instance=name) as entry:
                         conn._defineXML(xml)
-                        utils.refr(compute)
+                        refresh_instance_database(compute)
                         instance = compute.instance_set.get(name=name)
                         entry.uuid = instance.uuid
                 return redirect(reverse("instances:instance", args=[instance.id]))

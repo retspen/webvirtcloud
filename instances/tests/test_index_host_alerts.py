@@ -31,7 +31,7 @@ class IndexHostAlertTests(TestCase):
             return None if status(compute) else f"Connection Failed: no route to {compute.hostname}"
 
         self.client.force_login(user)
-        with patch("instances.views.utils.refr"), patch.object(Compute, "status", property(status)), patch.object(
+        with patch("instances.views.refresh_instance_database"), patch.object(Compute, "status", property(status)), patch.object(
             Compute, "connection_error", property(error)
         ), patch.object(Instance, "info", new_callable=PropertyMock, return_value=None):
             response = self.client.get(reverse("instances:index"))
@@ -77,7 +77,7 @@ class IndexHostAlertTests(TestCase):
             return True
 
         self.client.force_login(self.user)
-        with patch("instances.views.utils.refr") as refr, patch.object(Compute, "status", property(status)), \
+        with patch("instances.views.refresh_instance_database") as refr, patch.object(Compute, "status", property(status)), \
                 patch.object(Instance, "info", new_callable=PropertyMock, return_value=None):
             self.assertEqual(self.client.get(reverse("instances:index")).status_code, 200)
         self.assertEqual([call.args[0].name for call in refr.call_args_list], ["mine-host"])

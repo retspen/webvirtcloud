@@ -46,7 +46,7 @@ class UnreachableListTests(TestCase):
             else:
                 patches.append(patch.object(Compute, name, property(no_live_host_data)))
         patches += [
-            patch("instances.views.utils.refr"),
+            patch("instances.views.refresh_instance_database"),
             patch("computes.views.utils.refresh_instance_database"),
             patch.object(Compute, "proxy", new_callable=PropertyMock,
                          return_value=SimpleNamespace(get_domain_rows=domain_rows)),

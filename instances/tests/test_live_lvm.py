@@ -21,7 +21,7 @@ from vrtManager.connection import connection_manager
 
 from vrtManager.tests import livetest
 from instances.models import Instance
-from instances.utils import refr
+from computes.utils import refresh_instance_database
 
 P = livetest.PREFIX
 POOL = P + "lvm"
@@ -106,7 +106,7 @@ class LiveLvmTestCase(TestCase):
             "<os><type arch='x86_64' machine='q35'>hvm</type></os><features><acpi/></features>"
             f"<devices>{disks}{PCI}</devices></domain>"
         )
-        refr(self.compute)
+        refresh_instance_database(self.compute)
         return dom, Instance.objects.get(compute=self.compute, uuid=dom.UUIDString())
 
     def lv(self, name, gib=1):
