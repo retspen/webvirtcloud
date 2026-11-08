@@ -109,7 +109,6 @@ class CreateInstanceViewTests(TestCase):
         conn.get_network_models.return_value = ["virtio"]
         conn.get_storages.return_value = ["default"]
         conn.get_dom_capabilities.return_value = {"loader_enums": [], "loaders": [], "cpu_modes": ["host-model"]}
-        conn.get_capabilities.return_value = {}
         conn.get_firmwares.return_value = ["BIOS", "UEFI", "UEFI Secure Boot"]
         conn.get_tpm_model.return_value = "tpm-crb"
         for method, value in (host or {}).items():
@@ -147,14 +146,12 @@ class CreateInstanceViewTests(TestCase):
             name="create-fw-compute", hostname="localhost", type=4, login="", password="",
         )
         conn = connection_class.return_value
-        conn.get_instances.return_value = []
         conn.get_storages.return_value = []
         conn.get_networks.return_value = []
         conn.get_nwfilters.return_value = []
         conn.get_cache_modes.return_value = {}
         # A host without loader support has no "loaders"/"loader_enums" keys
         conn.get_dom_capabilities.return_value = {"loader_support": "no", "cpu_modes": ["host-model"]}
-        conn.get_capabilities.return_value = {}
         conn.get_firmwares.return_value = ["BIOS"]
         conn.get_tpm_model.return_value = None
 
@@ -162,6 +159,8 @@ class CreateInstanceViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         conn.get_firmwares.assert_called_once_with("x86_64", "q35")
+        conn.get_instances.assert_not_called()  # the page lists no VMs
+        conn.get_capabilities.assert_not_called()
         # a fresh host: what to do, not that the user defined nothing
         self.assertContains(response, "This host has no running storage pool for the VM&#x27;s disks: add or start one on its Storage page.")
         conn.get_storages.return_value = ["default"]

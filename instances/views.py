@@ -2541,7 +2541,6 @@ def create_instance(request, compute_id, arch, machine):
 
         default_firmware = app_settings.INSTANCE_FIRMWARE_DEFAULT_TYPE
         default_cpu_mode = app_settings.INSTANCE_CPU_DEFAULT_MODE
-        instances = conn.get_instances()
         videos = conn.get_video_models(arch, machine)
         default_video = app_settings.INSTANCE_VIDEO_DEFAULT_TYPE
         cache_modes = sorted(conn.get_cache_modes().items())
@@ -2568,7 +2567,6 @@ def create_instance(request, compute_id, arch, machine):
         default_input_device_bus = app_settings.INSTANCE_INPUT_DEFAULT_DEVICE
 
         dom_caps = conn.get_dom_capabilities(arch, machine)
-        caps = conn.get_capabilities(arch)
 
         virtio_support = conn.is_supports_virtio(arch, machine)
         firmwares = conn.get_firmwares(arch, machine)
