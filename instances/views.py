@@ -13,7 +13,6 @@ from ipaddress import ip_address
 
 from accounts.models import UserInstance, UserSSHKey
 from admin.decorators import superuser_only
-from appsettings.models import AppSettings
 from appsettings.settings import app_settings
 from computes.models import Compute
 from computes.validators import validate_hostname, validate_login
@@ -281,7 +280,6 @@ def _instance_page(request, pk, instance, compute):
     # the add-owner choices: users who are not owners yet; a superuser can use every VM
     users = User.objects.filter(is_superuser=False).exclude(userinstance__instance=instance).order_by("username")
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
-    keymaps = settings.QEMU_KEYMAPS
     # The console form renders the VNC password, so only users who may manage
     # console settings get the form (and the password) at all.
     # a template is cloned, not run: no console settings or host devices on its page
@@ -289,7 +287,6 @@ def _instance_page(request, pk, instance, compute):
     console_form = None
     if can_manage_console:
         console_form = ConsoleForm(instance=instance, is_superuser=request.user.is_superuser)
-    console_listener_addresses = settings.QEMU_CONSOLE_LISTENER_ADDRESSES
     try:
         userinstance = UserInstance.objects.get(instance=instance, user=request.user)
     except UserInstance.DoesNotExist:
@@ -322,17 +319,9 @@ def _instance_page(request, pk, instance, compute):
     clone_free_names = utils.get_clone_free_names()
 
     default_bus = app_settings.INSTANCE_VOLUME_DEFAULT_BUS
-    default_io = app_settings.INSTANCE_VOLUME_DEFAULT_IO
-    default_discard = app_settings.INSTANCE_VOLUME_DEFAULT_DISCARD
-    default_zeroes = app_settings.INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES
     default_cache = app_settings.INSTANCE_VOLUME_DEFAULT_CACHE
     default_format = app_settings.INSTANCE_VOLUME_DEFAULT_FORMAT
-    # default_disk_owner_uid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID)
-    # default_disk_owner_gid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID)
 
-    # clone_instance_auto_name = app_settings.CLONE_INSTANCE_AUTO_NAME
-
-    # userinstances = UserInstance.objects.filter(instance=instance).order_by('user__username')
     userinstances = instance.userinstance_set.order_by("user__username")
     # Host resources
     vcpu_host = len(instance.proxy.get_max_cpus())  # the host's logical CPUs, not the VM's maximum
@@ -2518,11 +2507,9 @@ def create_instance(request, compute_id, arch, machine):
     conn = None
     storages = list()
     networks = list()
-    hypervisors = list()
     meta_prealloc = False
     compute = get_object_or_404(Compute, pk=compute_id)
     flavors = Flavor.objects.filter().order_by("id")
-    appsettings = AppSettings.objects.all()
     vm_form = None
     flavor_form = FlavorForm()
     refused = False
@@ -2545,13 +2532,6 @@ def create_instance(request, compute_id, arch, machine):
         default_video = app_settings.INSTANCE_VIDEO_DEFAULT_TYPE
         cache_modes = sorted(conn.get_cache_modes().items())
         default_cache = app_settings.INSTANCE_VOLUME_DEFAULT_CACHE
-        default_io = app_settings.INSTANCE_VOLUME_DEFAULT_IO
-        default_zeroes = app_settings.INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES
-        default_discard = app_settings.INSTANCE_VOLUME_DEFAULT_DISCARD
-        default_disk_format = app_settings.INSTANCE_VOLUME_DEFAULT_FORMAT
-        default_disk_owner_uid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID)
-        default_disk_owner_gid = int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID)
-        default_scsi_disk_model = app_settings.INSTANCE_VOLUME_DEFAULT_SCSI_CONTROLLER
         listener_addr = settings.QEMU_CONSOLE_LISTENER_ADDRESSES
         disk_devices = conn.get_disk_device_types(arch, machine)
         disk_buses = conn.get_disk_bus_types(arch, machine)
