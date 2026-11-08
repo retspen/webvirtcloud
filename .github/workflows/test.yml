@@ -157,8 +157,19 @@ jobs:
             echo sentinel > "$f"
           done
 
+      - name: Set Up Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # The layers stay in GitHub's cache: a change of the code alone rebuilds
+      # only the last stage
       - name: Build Image
-        run: docker build -t webvirtcloud:ci .
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: webvirtcloud:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: No Runtime Data In Image
         run: |
