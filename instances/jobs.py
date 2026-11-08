@@ -23,6 +23,7 @@ from vrtManager.connection import NVRAM_DIR, wvmConnect
 from vrtManager.create import cpu_choices, wvmCreate
 from vrtManager.instance import HOST_DEVICES, check_snapshot_name, wvmInstance, wvmInstances
 from vrtManager.nodedevs import check_hostdevs
+from vrtManager.storage import FILE_POOL_TYPES
 
 from accounts.models import UserInstance, UserSSHKey
 from appsettings.settings import app_settings
@@ -803,9 +804,6 @@ class CloneInstance(Kind):
         return _log(op, state, f"clone from {source}", vm=op.intent["name"])
 
 
-# pools whose volumes are files a CD-ROM can read
-SEED_POOL_TYPES = ("dir", "fs", "netfs")
-
 
 def _seed_pool(conn, data):
     """The pool of a new VM's cloud-init seed: the one of its disk."""
@@ -861,7 +859,7 @@ class CreateInstance(Kind):
             if data["add_cdrom"] == "None":
                 raise util.OperationError(_("The cloud-init seed is read from a CD-ROM: choose its bus"))
             pool = _seed_pool(conn, data)
-            if util.get_xml_path(pool.XMLDesc(0), "/pool/@type") not in SEED_POOL_TYPES:
+            if util.get_xml_path(pool.XMLDesc(0), "/pool/@type") not in FILE_POOL_TYPES:
                 raise util.OperationError(_("The cloud-init seed needs a directory storage pool for the disk"))
         try:
             utils.nic_macs(data["mac"], data["networks"])

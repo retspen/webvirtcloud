@@ -5,7 +5,7 @@ import string
 import pycdlib
 from vrtManager import util
 from vrtManager.connection import wvmConnect
-from vrtManager.storage import wvmStorage
+from vrtManager.storage import FILE_POOL_TYPES, wvmStorage
 
 # libvirt's CPU modes a new VM can have; any other value is a CPU model's name (mode custom)
 CPU_MODES = ("host-model", "host-passthrough", "maximum")
@@ -88,10 +88,11 @@ class wvmCreate(wvmConnect):
 
         storage_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
         format = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
-        if storage_type == "dir":
+        if storage_type in FILE_POOL_TYPES:
             clone += ".img"
         else:
             metadata = False
+        options = "<compat>1.1</compat><features><lazy_refcounts/></features>" if format == "qcow2" else ""
         xml = f"""
             <volume>
                 <name>{clone}</name>
@@ -105,10 +106,7 @@ class wvmCreate(wvmConnect):
                         <mode>0644</mode>
                         <label>virt_image_t</label>
                     </permissions>
-                    <compat>1.1</compat>
-                    <features>
-                        <lazy_refcounts/>
-                    </features>
+                    {options}
                 </target>
             </volume>"""
         stg.createXMLFrom(xml, vol, metadata)
