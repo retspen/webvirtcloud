@@ -330,11 +330,12 @@ class QuotaRaceTestCase(TransactionTestCase):
         for vm in self.vms:
             UserInstance.objects.create(user=self.user, instance=vm, is_change=True)
         self.allocated = 2  # two VMs with one vCPU each
+        self.outcomes = []  # the messages of each resize
 
     def fake_quota(self, user, instance, cpu, memory, disk):
         seen = self.allocated
         time.sleep(0.3)  # widen the window between the check and the change
-        return "cpu" if seen + cpu > QUOTA_CPUS else ""
+        return QuotaExceeded("cpu", seen + cpu, QUOTA_CPUS) if seen + cpu > QUOTA_CPUS else None
 
     def fake_resize(self, cur_vcpu, vcpu):
         self.allocated += int(vcpu) - 1
@@ -342,8 +343,13 @@ class QuotaRaceTestCase(TransactionTestCase):
     def resize(self, vm):
         client = Client()
         client.force_login(self.user)
-        client.post(reverse("instances:resizevm_cpu", args=[vm.id]), {"vcpu": 3, "cur_vcpu": 3})
-        connection.close()
+        try:
+            response = client.post(reverse("instances:resizevm_cpu", args=[vm.id]), {"vcpu": 3, "cur_vcpu": 3})
+            self.outcomes.append(" ".join(str(m) for m in get_messages(response.wsgi_request)))
+        except Exception as e:  # a thread's exception would be lost
+            self.outcomes.append(repr(e))
+        finally:
+            connection.close()
 
     def test_second_concurrent_resize_is_refused(self):
         with patch("instances.views.utils.check_user_quota", self.fake_quota), patch(
@@ -359,3 +365,8 @@ class QuotaRaceTestCase(TransactionTestCase):
                 t.join()
         self.assertEqual(wvm.return_value.resize_cpu.call_count, 1)
         self.assertLessEqual(self.allocated, QUOTA_CPUS)
+        # one resized; the other was refused, by the user's quota lock or (once
+        # the first resize is done) by the quota, and did not fail otherwise
+        resized, refused = sorted(self.outcomes, key=lambda outcome: not outcome.startswith("vCPUs set"))
+        self.assertEqual(resized, "vCPUs set to 3 (maximum 3)")
+        self.assertRegex(refused, r"^(A short operation is in progress|The vCPU quota is reached)")
