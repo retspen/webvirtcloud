@@ -6,6 +6,9 @@ from lxml import etree
 from vrtManager import util
 from vrtManager.connection import wvmConnect
 
+# pools whose volumes are files: they take any image format
+FILE_POOL_TYPES = ("dir", "fs", "netfs")
+
 
 def volume_details(vol):
     """A volume's name, capacity (size), allocation and format, from its XML:
@@ -305,13 +308,15 @@ class wvmStorage(wvmConnect):
         disk_owner_gid=0,
     ):
         size = int(size) * 1073741824
-        storage_type = self.get_type()
-        alloc = size
-        if vol_fmt == "unknown":
-            vol_fmt = "raw"
-        if storage_type == "dir":
+        if self.get_type() in FILE_POOL_TYPES:
             name += f".{vol_fmt}" if vol_fmt in ("qcow", "qcow2") else ".img"
             alloc = 0
+        else:  # a block device, an LVM volume or an RBD image is raw and allocated whole
+            vol_fmt = "raw"
+            alloc = size
+            metadata = False
+        if vol_fmt == "unknown":
+            vol_fmt = "raw"
         xml = f"""
             <volume>
                 <name>{util.xml_escape(name)}</name>
@@ -338,7 +343,7 @@ class wvmStorage(wvmConnect):
 
     def clone_name(self, target_file, vol_fmt, file_suffix="img"):
         """The name clone_volume gives a copy: a dir pool adds the format's suffix."""
-        if self.get_type() != "dir":
+        if self.get_type() not in FILE_POOL_TYPES:
             return target_file
         if vol_fmt in ("qcow", "qcow2"):
             return f"{target_file}.{vol_fmt}"

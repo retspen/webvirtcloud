@@ -1,4 +1,3 @@
-import contextlib
 import io
 import json
 import string
@@ -6,6 +5,7 @@ import string
 import pycdlib
 from vrtManager import util
 from vrtManager.connection import wvmConnect
+from vrtManager.storage import wvmStorage
 
 # libvirt's CPU modes a new VM can have; any other value is a CPU model's name (mode custom)
 CPU_MODES = ("host-model", "host-passthrough", "maximum")
@@ -61,41 +61,10 @@ def get_rbd_storage_data(stg):
 
 class wvmCreate(wvmConnect):
     def create_volume(self, storage, name, size, image_format, metadata=False, disk_owner_uid=0, disk_owner_gid=0):
-        size = int(size) * 1073741824
-        stg = self.get_storage(storage)
-        storage_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
-        if storage_type == "dir":
-            name += f".{image_format}" if image_format in ("qcow", "qcow2") else ".img"
-            alloc = 0
-        else:
-            image_format = 'raw'
-            alloc = size
-            metadata = False
-        xml = f"""
-            <volume>
-                <name>{name}</name>
-                <capacity>{size}</capacity>
-                <allocation>{alloc}</allocation>
-                <target>
-                    <format type='{image_format}'/>
-                     <permissions>
-                        <owner>{disk_owner_uid}</owner>
-                        <group>{disk_owner_gid}</group>
-                        <mode>0644</mode>
-                        <label>virt_image_t</label>
-                    </permissions>
-                    <compat>1.1</compat>
-                    <features>
-                        <lazy_refcounts/>
-                    </features>
-                </target>
-            </volume>"""
-        stg.createXML(xml, metadata)
-
-        with contextlib.suppress(Exception):
-            stg.refresh(0)
-        vol = stg.storageVolLookupByName(name)
-        return vol.path()
+        """A new volume of size GiB in the pool storage, as the Storage page makes one; its path."""
+        stg = wvmStorage(self.host, self.login, self.passwd, self.conn, storage)
+        name = stg.create_volume(name, size, image_format, metadata, disk_owner_uid, disk_owner_gid)
+        return stg.get_volume(name).path()
 
     def get_volume_format_type(self, path):
         vol = self.get_volume_by_path(path)

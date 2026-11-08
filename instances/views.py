@@ -1303,7 +1303,7 @@ def add_new_vol(request, pk):
 
             pool_type = conn_pool.get_type()
             disk_type = conn_pool.get_volume_type(os.path.basename(source))
-            # the pool decides: only a dir pool keeps the asked format, the others create raw
+            # the pool decides: a file pool keeps the asked format, the others create raw
             format = util.vol_driver_type(conn_pool.get_volume_format_type(os.path.basename(source)), pool_type)
 
             if pool_type == "rbd":
