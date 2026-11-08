@@ -42,6 +42,23 @@ class TestChangeNetwork(unittest.TestCase):
         self.assertEqual(second.find("link").get("state"), "down")
         self.assertEqual(second.find("address").get("bus"), "0x02")
 
+    def test_the_same_filter_keeps_its_parameters(self):
+        from lxml import etree
+
+        inst = stopped_instance()
+        filtered = DOMAIN_XML.replace("<model type='virtio'/></interface>",
+                                      "<model type='virtio'/><filterref filter='clean-traffic'>"
+                                      "<parameter name='IP' value='192.0.2.10'/></filterref></interface>", 1)
+        inst._XMLDesc = MagicMock(return_value=filtered)
+        inst.change_network("52:54:00:00:00:01", "52:54:00:00:00:01", None, None, "virtio", "clean-traffic")
+        nic = etree.fromstring(inst.wvm.defineXML.call_args[0][0]).find("devices/interface")
+        self.assertEqual([(f.get("filter"), f.find("parameter").get("value")) for f in nic.findall("filterref")],
+                         [("clean-traffic", "192.0.2.10")])
+
+        inst.change_network("52:54:00:00:00:01", "52:54:00:00:00:01", None, None, "virtio", "no-mac-spoofing")
+        nic = etree.fromstring(inst.wvm.defineXML.call_args[0][0]).find("devices/interface")
+        self.assertEqual([(f.get("filter"), len(f)) for f in nic.findall("filterref")], [("no-mac-spoofing", 0)])
+
     def defined_nic(self, *args):
         from lxml import etree
 

@@ -2813,9 +2813,11 @@ class wvmInstance(wvmConnect):
             iface.remove(old_model)
         if model and model != "default":  # default: no model, libvirt chooses
             etree.SubElement(iface, "model", type=model)
+        # the same filter keeps its parameters (clean-traffic's IP, for one)
         for old_filter in iface.findall("filterref"):
-            iface.remove(old_filter)
-        if nwfilter:
+            if old_filter.get("filter") != nwfilter:
+                iface.remove(old_filter)
+        if nwfilter and iface.find("filterref") is None:
             etree.SubElement(iface, "filterref", filter=nwfilter)
 
         self._defineXML(etree.tostring(tree).decode())
