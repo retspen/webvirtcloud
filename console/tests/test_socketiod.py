@@ -11,8 +11,7 @@ from unittest.mock import patch
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.sessions.backends.db import SessionStore
-from django.test import TestCase, override_settings
+from django.test import Client, TestCase, override_settings
 
 from accounts.models import UserInstance
 from computes.models import Compute
@@ -38,10 +37,9 @@ class Base(TestCase):
 
     def signed_in(self, user=None):
         """The environ of a request with a session of user (the owner)."""
-        session = SessionStore()
-        session["_auth_user_id"] = str((user or self.user).pk)
-        session.create()
-        return {"HTTP_COOKIE": f"{settings.SESSION_COOKIE_NAME}={session.session_key}"}
+        client = Client()
+        client.force_login(user or self.user)
+        return {"HTTP_COOKIE": f"{settings.SESSION_COOKIE_NAME}={client.session.session_key}"}
 
     def token(self, user=None, vm=None):
         vm = vm or self.vm

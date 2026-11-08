@@ -6,11 +6,11 @@ also wants the session cookie of the token's user (session_user_id).
 socketiod's token travels in the Socket.IO handshake, not the URL."""
 
 from importlib import import_module
+from types import SimpleNamespace
 
 from django import db
 from django.conf import settings
-from django.contrib.auth import SESSION_KEY
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user, get_user_model
 from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 from django.http import parse_cookie
 
@@ -55,8 +55,10 @@ def may_still_open(user_id, instance):
 
 def session_user_id(cookie_header):
     """The id (a string) of the user signed in with the session cookie of a
-    request's Cookie header, or None."""
+    request's Cookie header, or None. Django's own check: a session that a
+    password change or a deactivation ended is no one's."""
     session_key = parse_cookie(cookie_header or "").get(settings.SESSION_COOKIE_NAME)
     if not session_key:
         return None
-    return import_module(settings.SESSION_ENGINE).SessionStore(session_key).get(SESSION_KEY)
+    user = get_user(SimpleNamespace(session=import_module(settings.SESSION_ENGINE).SessionStore(session_key)))
+    return str(user.pk) if user.is_authenticated else None

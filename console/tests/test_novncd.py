@@ -262,6 +262,21 @@ class NovncdDaemonLogicTestCase(TestCase):
         self.assertIsNone(tokens.session_user_id(f"{settings.SESSION_COOKIE_NAME}={SessionStore().session_key}"))
         self.assertIsNone(tokens.session_user_id(None))
 
+    def test_a_session_that_a_password_change_or_a_deactivation_ended_names_no_one(self):
+        user = get_user_model().objects.create_user("vnc-old-session", password="pw")
+        for change in ({"password": "new"}, {"is_active": False}):
+            with self.subTest(change=change):
+                self.client.force_login(user)
+                cookie = f"{settings.SESSION_COOKIE_NAME}={self.client.session.session_key}"
+                if "password" in change:
+                    user.set_password(change["password"])
+                else:
+                    user.is_active = False
+                user.save()
+                self.assertIsNone(tokens.session_user_id(cookie))
+                user.is_active = True
+                user.save()
+
     def test_a_vnc_session_ends_when_its_user_may_no_longer_open_it(self):
         tsock, ended = MagicMock(), MagicMock()
         ended.wait.return_value = False  # ACCESS_CHECK passed, the session still open
