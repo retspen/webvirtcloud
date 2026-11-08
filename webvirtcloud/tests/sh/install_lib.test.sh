@@ -28,6 +28,7 @@ check "fails when python cannot run" "! wvc_ensure_secret_key '$tmp/data' no-suc
 # wvc_ensure_settings: creates once, keeps on re-run
 echo "TEMPLATE" > "$tmp/tpl"
 check "ensure_settings returns 0 on create" "wvc_ensure_settings '$tmp/tpl' '$tmp/settings.py'"
+check "settings created from the template" "[ \"\$(cat '$tmp/settings.py')\" = TEMPLATE ]"
 echo "EDITED" > "$tmp/settings.py"
 check "ensure_settings returns 1 when present" "! wvc_ensure_settings '$tmp/tpl' '$tmp/settings.py'"
 check "existing settings kept" "[ \"\$(cat '$tmp/settings.py')\" = EDITED ]"
