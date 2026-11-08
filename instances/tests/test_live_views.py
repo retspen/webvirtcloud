@@ -449,8 +449,6 @@ class InstancesTestCase(TestCase):
             reverse("instances:edit_volume", args=[self.instance.id]),
             {
                 "vol_path": f"{livetest.POOL_PATH}/wvc-test-volume.qcow2",
-                # 'vol_shareable': False,
-                # 'vol_readonly': False,
                 "vol_bus": "virtio",
                 "vol_bus_old": "virtio",
                 "vol_format": "qcow2",
@@ -475,18 +473,6 @@ class InstancesTestCase(TestCase):
 
         del self.instance.media
         self.assertEqual(len(self.instance.media), 2)
-
-        # create dummy iso
-        # with tempfile.NamedTemporaryFile() as f:
-        #     f.write(b'\x00' * 1024**2)
-
-        #     response = self.client.post(
-        #         reverse('storage', args=[instance.compute.id, 'default']),
-        #         {
-        #             'iso_upload': True,
-        #             'file': f
-        #         },
-        #     )
 
         # detach CD-ROM drive
         response = self.client.post(
@@ -1024,22 +1010,6 @@ class InstancesTestCase(TestCase):
         del self.instance.config_networks
         self.assertFalse(self.instance.config_networks[0]["inbound"])
 
-        # test on running instance
-        # self.instance.proxy.start()
-        # response = self.client.post(
-        #     reverse('instances:set_qos', args=[self.instance.id]),
-        #     {
-        #         'net-mac-0': net_mac,
-        #         'qos_direction': 'inbound',
-        #         'qos_average': 1,
-        #         'qos_peak': 1,
-        #         'qos_burst': 1,
-        #     },
-        #     HTTP_REFERER=reverse('index'),
-        # )
-        # self.assertEqual(response.status_code, 302)
-        # self.instance.proxy.force_shutdown()
-
     def test_change_options(self):
         self.assertEqual(self.instance.title, "")
         self.assertEqual(self.instance.description, "")
@@ -1087,26 +1057,3 @@ class InstancesTestCase(TestCase):
             HTTP_REFERER=reverse("index"),
         )
         self.assertEqual(response.status_code, 302)
-
-    # def donot_test_instance(self):
-    #     compute: Compute = Compute.objects.get(pk=1)
-    #     user: User = User.objects.get(pk=1)
-
-    #     # delete started instance with disks
-    #     self.instance.proxy.start()
-    #     del self.instance.status
-    #     self.assertEqual(self.instance.status, 1)
-
-    # # delete volume
-    # response = self.client.post(
-    #     reverse('instances:delete_vol', args=[instance.id]),
-    #     {
-    #         'storage': 'default',
-    #         'dev': 'vdb',
-    #         'name': 'test3.qcow2',
-    #     },
-    #     HTTP_REFERER=reverse('index'),
-    # )
-    # self.assertEqual(response.status_code, 302)
-
-    # , list(response.context['messages'])[0]

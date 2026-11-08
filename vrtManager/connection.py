@@ -777,7 +777,6 @@ class wvmConnect(object):
         def get_bus_list(ctx):
             return [v.text for v in ctx.xpath("/domainCapabilities/devices/disk/enum[@name='bus']/value")]
 
-        # return [ 'ide', 'scsi', 'usb', 'virtio' ]
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_bus_list)
 
     def get_disk_device_types(self, arch, machine):
@@ -790,7 +789,6 @@ class wvmConnect(object):
         def get_device_list(ctx):
             return [v.text for v in ctx.xpath("/domainCapabilities/devices/disk/enum[@name='diskDevice']/value")]
 
-        # return [ 'disk', 'cdrom', 'floppy', 'lun' ]
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_device_list)
 
     def get_cpu_modes(self, arch, machine):

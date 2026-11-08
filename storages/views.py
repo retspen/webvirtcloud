@@ -178,7 +178,6 @@ def storage(request, compute_id, pool):
                     request, _("Volume: %(vol)s is deleted.") % {"vol": volname}
                 )
             return redirect(reverse("storage", args=[compute.id, pool]))
-            # return HttpResponseRedirect(request.get_full_path())
         if "create_volume" in request.POST:
             form = CreateVolumeForm(request.POST)
             if form.is_valid():
