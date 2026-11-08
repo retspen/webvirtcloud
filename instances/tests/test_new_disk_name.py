@@ -6,9 +6,10 @@ from unittest.mock import patch
 
 from computes.models import Compute
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 from instances.models import Instance
+from instances.utils import get_new_disk_dev
 
 
 def dev(name, bus):
@@ -84,3 +85,12 @@ class NewDiskNameTestCase(TestCase):
     def test_a_cdrom_without_media_is_empty(self):
         call = self.attach("add_cdrom", {"bus": "scsi", "media": ""}, status=1)
         self.assertEqual((call.kwargs["target_bus"], call.args[1]), ("scsi", ""))
+
+
+class BusPrefixTestCase(SimpleTestCase):
+    def test_each_bus_names_its_disks_with_its_prefix(self):
+        for bus, name in (("virtio", "vdb"), ("ide", "hdb"), ("fdc", "fdb"), ("sata", "sdb"), ("scsi", "sdb"),
+                          ("usb", "sdb"), ("xen", "sdb")):
+            with self.subTest(bus=bus):
+                taken = [{"dev": name[:2] + "a"}]
+                self.assertEqual(get_new_disk_dev(taken, [], bus), name)  # a CD-ROM's name is taken too

@@ -18,7 +18,7 @@ from logs.audit import reason, write
 from operations.models import Operation
 from vrtManager.connection import other_hosts, wvmConnect
 from vrtManager.instance import wvmInstance, wvmInstances
-from vrtManager.util import ConnectionFailed, message
+from vrtManager.util import ConnectionFailed, message, vol_dev_type
 
 from .models import Instance
 
@@ -206,14 +206,7 @@ def check_user_quota(user, instance, cpu, memory, disk_size):
 def get_new_disk_dev(media, disks, bus):
     existing_disk_devs = []
     existing_media_devs = []
-    if bus == "virtio":
-        dev_base = "vd"
-    elif bus == "ide":
-        dev_base = "hd"
-    elif bus == "fdc":
-        dev_base = "fd"
-    else:
-        dev_base = "sd"
+    dev_base = vol_dev_type(bus) or "sd"
 
     if disks:
         existing_disk_devs = [disk["dev"] for disk in disks]
