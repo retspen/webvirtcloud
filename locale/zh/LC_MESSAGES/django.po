@@ -7978,10 +7978,6 @@ msgstr "转换为其他格式"
 msgid "raw"
 msgstr "raw"
 
-#: storages/templates/storage.html:192
-msgid "qcow"
-msgstr "qcow"
-
 #: storages/templates/storage.html:193
 msgid "qcow2"
 msgstr "qcow2"

@@ -8423,10 +8423,6 @@ msgstr "Başka bir biçime dönüştür"
 msgid "raw"
 msgstr "raw"
 
-#: storages/templates/storage.html:192
-msgid "qcow"
-msgstr "qcow"
-
 #: storages/templates/storage.html:193
 msgid "qcow2"
 msgstr "qcow2"
