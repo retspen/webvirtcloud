@@ -44,6 +44,9 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 FROM base
 
+# 4 gunicorn workers of 4 threads (about 140 MB each); docker-compose.override.yml can set another number
+ENV GUNICORN_CMD_ARGS="--workers 4"
+
 COPY --from=build /srv/webvirtcloud/venv venv
 COPY . .
 
