@@ -68,7 +68,6 @@ The libvirt layer: the connections and the host objects the apps work on (the ap
 | `hostdetails.py` | host CPU, memory and capabilities |
 | `storage.py`, `network.py`, `interface.py`, `nwfilters.py`, `virtsecrets.py`, `nodedevs.py` | the host objects of the apps with the same names |
 | `util.py` | `OperationError` (its text translated when shown, English in logs), XML helpers |
-| `rwlock.py` | the connection manager's read-write lock |
 
 ## Jobs
 

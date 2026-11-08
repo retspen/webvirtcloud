@@ -15,7 +15,6 @@ from django.utils.functional import cached_property
 from libvirt import libvirtError
 from lxml import etree
 from vrtManager import util
-from vrtManager.rwlock import ReadWriteLock
 
 CONN_SOCKET = 4
 CONN_TLS = 3
@@ -379,7 +378,7 @@ class wvmConnectionManager(object):
         # connections are shared between all threads, see:
         #     http://wiki.libvirt.org/page/FAQ#Is_libvirt_thread_safe.3F
         self._connections = dict()
-        self._connections_lock = ReadWriteLock()
+        self._connections_lock = threading.RLock()  # the dict only: connecting runs outside it
         self._inherited = []
         self._host_requests = {}  # host: the web requests using it, whatever the login (HOST_REQUESTS)
 
@@ -389,7 +388,7 @@ class wvmConnectionManager(object):
         would call libvirt in the child."""
         self._inherited.append(self._connections)
         self._connections = dict()
-        self._connections_lock = ReadWriteLock()
+        self._connections_lock = threading.RLock()
         self._host_requests = {}
 
     def _search_connection(self, host, login, passwd, conn):
@@ -397,17 +396,10 @@ class wvmConnectionManager(object):
         search the connection dict for a connection with the given credentials
         if it does not exist return None
         """
-        self._connections_lock.acquireRead()
-        try:
-            if host in self._connections:
-                connections = self._connections[host]
-
-                for connection in connections:
-                    if connection.login == login and connection.passwd == passwd and connection.type == conn:
-                        return connection
-        finally:
-            self._connections_lock.release()
-
+        with self._connections_lock:
+            for connection in self._connections.get(host, []):
+                if connection.login == login and connection.passwd == passwd and connection.type == conn:
+                    return connection
         return None
 
     def get_connection(self, host, login, passwd, conn):
@@ -421,23 +413,15 @@ class wvmConnectionManager(object):
         login = str(login)
         passwd = str(passwd) if passwd is not None else None
 
-        connection = self._search_connection(host, login, passwd, conn)
-
-        if connection is None:
-            self._connections_lock.acquireWrite()
-            try:
-                # we have to search for the connection again after acquiring the write lock
-                # as the thread previously holding the write lock may have already added our connection
-                connection = self._search_connection(host, login, passwd, conn)
-                if connection is None:
-                    # Only register it here: connecting under the global lock
-                    # would make every other host wait for a slow one.
-                    connection = wvmConnection(host, login, passwd, conn)
-                    connection.requests = self._host_requests.setdefault(
-                        host, threading.BoundedSemaphore(HOST_REQUESTS))
-                    self._connections.setdefault(host, []).append(connection)
-            finally:
-                self._connections_lock.release()
+        with self._connections_lock:
+            connection = self._search_connection(host, login, passwd, conn)
+            if connection is None:
+                # Only register it here: connecting under the global lock
+                # would make every other host wait for a slow one.
+                connection = wvmConnection(host, login, passwd, conn)
+                connection.requests = self._host_requests.setdefault(
+                    host, threading.BoundedSemaphore(HOST_REQUESTS))
+                self._connections.setdefault(host, []).append(connection)
 
         _count_on(connection)
         live = connection.alive_connection()
