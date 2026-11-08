@@ -94,8 +94,9 @@ def nwfilter(request, compute_id, nwfltr):
         rules = nwfilter.get_rules()
         refs = nwfilter.get_refs()
         ref_choices = nwfilter.get_ref_choices()
-        filter_names = nwfilter.get_nwfilters()
-        referenced_by = [nwf["name"] for nwf in nwfilter.get_nwfilters_info() if name in nwf["refs"]]
+        filters = nwfilter.get_nwfilters_info()
+        filter_names = [nwf["name"] for nwf in filters]
+        referenced_by = [nwf["name"] for nwf in filters if name in nwf["refs"]]
         vm_names = nwfilter.get_users().get(name, [])
         vm_ids = dict(Instance.objects.filter(compute=compute, name__in=vm_names).values_list("name", "id"))
         vms = [{"name": vm_name, "id": vm_ids.get(vm_name)} for vm_name in vm_names]

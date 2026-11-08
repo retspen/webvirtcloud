@@ -177,7 +177,11 @@ class PageTests(TestCase):
         self.assertEqual(page.xpath("//button[@name='del_nwfilter']"), [])
 
     def test_a_reference_to_a_filter_gone_is_not_a_link(self):
-        self.wvm.listNWFilters.return_value = ["web"]
-        page = html.fromstring(self.client.get(reverse("nwfilter", args=[self.compute.id, "web"])).content)
+        url = reverse("nwfilter", args=[self.compute.id, "web"])
+        page = html.fromstring(self.client.get(url).content)  # the host lists only "web"
         self.assertEqual(page.xpath("//a[text()='clean-traffic']"), [])
         self.assertIn("Missing", page.xpath("//td[contains(., 'clean-traffic')]")[0].text_content())
+        clean = MagicMock(**{"name.return_value": "clean-traffic", "XMLDesc.return_value": "<filter name='clean-traffic'/>"})
+        self.wvm.listAllNWFilters.return_value.append(clean)
+        page = html.fromstring(self.client.get(url).content)
+        self.assertEqual(page.xpath("//a[text()='clean-traffic']/@href"), [reverse("nwfilter", args=[self.compute.id, "clean-traffic"])])
