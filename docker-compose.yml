@@ -1,8 +1,6 @@
 services:
   webvirtcloud:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     image: webvirtcloud:latest
     container_name: webvirtcloud
     restart: unless-stopped
@@ -44,10 +42,6 @@ services:
 
 volumes:
   webvirtcloud-data:
-    driver: local
   webvirtcloud-ssh:
-    driver: local
   webvirtcloud-pki:
-    driver: local
   webvirtcloud-backups:
-    driver: local
