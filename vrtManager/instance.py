@@ -1226,20 +1226,8 @@ class wvmInstance(wvmConnect):
         elif disk_type == "block":  # a volume of an LVM, disk or iSCSI pool
             xml_disk += f"<source dev='{source}'/>"
         elif disk_type == "network":
-            if pool_type == "rbd":
-                auth_type = source_info.get("auth_type")
-                auth_user = source_info.get("auth_user")
-                auth_uuid = source_info.get("auth_uuid")
-                xml_disk += f"""<auth username='{auth_user}'>
-                                <secret type='{auth_type}' uuid='{auth_uuid}'/>
-                            </auth>"""
-                xml_disk += f"""<source protocol='{pool_type}' name='{source}'>"""
-                for host in source_info.get("hosts"):
-                    if host.get("hostport"):
-                        xml_disk += f"""<host name="{host.get('hostname')}" port='{host.get('hostport')}'/>"""
-                    else:
-                        xml_disk += f"""<host name="{host.get('hostname')}"/>"""
-                xml_disk += """</source>"""
+            if pool_type == "rbd":  # source_info: rbd_source_children of the pool
+                xml_disk += f"<source protocol='rbd' name='{source}'>{source_info}</source>"
             else:
                 raise Exception("Not implemented disk type")
         else:

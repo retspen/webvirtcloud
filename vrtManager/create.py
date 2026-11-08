@@ -5,7 +5,7 @@ import string
 import pycdlib
 from vrtManager import util
 from vrtManager.connection import wvmConnect
-from vrtManager.storage import FILE_POOL_TYPES, wvmStorage
+from vrtManager.storage import FILE_POOL_TYPES, rbd_source_children, wvmStorage
 
 # libvirt's CPU modes a new VM can have; any other value is a CPU model's name (mode custom)
 CPU_MODES = ("host-model", "host-passthrough", "maximum")
@@ -36,27 +36,6 @@ def nocloud_seed(instance_id, hostname, user_data):
     iso.write_fp(out)
     iso.close()
     return out.getvalue()
-
-
-def get_rbd_storage_data(stg):
-    xml = stg.XMLDesc(0)
-    ceph_user = util.get_xml_path(xml, "/pool/source/auth/@username")
-
-    def get_ceph_hosts(doc):
-        hosts = list()
-        for host in doc.xpath("/pool/source/host"):
-            name = host.get('name')
-            if name:
-                port = host.get('port')
-                if port:
-                    hosts.append({"name": name, "port": port})
-                else:
-                    hosts.append({"name": name})
-        return hosts
-
-    ceph_hosts = util.get_xml_path(xml, func=get_ceph_hosts)
-    secret_uuid = util.get_xml_path(xml, "/pool/source/auth/secret/@uuid")
-    return ceph_user, secret_uuid, ceph_hosts
 
 
 class wvmCreate(wvmConnect):
@@ -242,21 +221,9 @@ class wvmCreate(wvmConnect):
                 add_cdrom = "None"
 
             if stg_type == "rbd":
-                ceph_user, secret_uuid, ceph_hosts = get_rbd_storage_data(stg)
                 xml += f"""<disk type='network' device='disk'>
-                            <driver name='qemu' type='{volume["type"]}' {disk_opts} />"""
-                xml += f"""  <auth username='{ceph_user}'>
-                                <secret type='ceph' uuid='{secret_uuid}'/>
-                            </auth>
-                            <source protocol='rbd' name='{volume["path"]}'>"""
-                if isinstance(ceph_hosts, list):
-                    for host in ceph_hosts:
-                        if host.get("port"):
-                            xml += f"""
-                                   <host name='{host.get("name")}' port='{host.get("port")}'/>"""
-                        else:
-                            xml += f"""<host name='{host.get("name")}'/>"""
-                xml += """</source>"""
+                            <driver name='qemu' type='{volume["type"]}' {disk_opts} />
+                            <source protocol='rbd' name='{util.xml_escape(volume["path"])}'>{rbd_source_children(stg)}</source>"""
             else:
                 xml += f"""<disk type='file' device='{volume["device"]}'>"""
                 xml += f""" <driver name='qemu' type='{volume["type"]}' {disk_opts}/>"""

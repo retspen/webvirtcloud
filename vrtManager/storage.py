@@ -10,6 +10,22 @@ from vrtManager.connection import wvmConnect
 FILE_POOL_TYPES = ("dir", "fs", "netfs")
 
 
+def rbd_source_children(pool):
+    """The <auth> and <host> elements of an RBD disk's <source>, as XML text:
+    the disk reaches Ceph as its pool does, with its user, its secret (by
+    uuid or usage) and its monitors."""
+    source = etree.fromstring(pool.XMLDesc(0)).find("source")
+    children = [etree.Element("host", host.attrib) for host in source.findall("host")]
+    auth = source.find("auth")
+    if auth is not None:
+        disk_auth = etree.Element("auth", username=auth.get("username"))
+        secret = auth.find("secret")
+        etree.SubElement(disk_auth, "secret", type=auth.get("type"),
+                         **{key: value for key, value in secret.attrib.items() if key in ("uuid", "usage")})
+        children.insert(0, disk_auth)
+    return "".join(etree.tostring(child, encoding="unicode") for child in children)
+
+
 def volume_details(vol):
     """A volume's name, capacity (size), allocation and format, from its XML:
     one libvirt call, which refreshes the volume as info() does. Logical and
@@ -219,35 +235,6 @@ class wvmStorage(wvmConnect):
 
     def get_source_name(self):
         return util.get_xml_path(self._XMLDesc(0), "/pool/source/name")
-
-    def get_rbd_source(self):
-        def hosts(doc):
-            hosts_array = []
-
-            for host in doc.xpath("/pool/source/host"):
-                name = host.get("name")
-                if name:
-                    port = host.get("port")
-                    if port:
-                        hosts_array.append({"hostname": name, "hostport": port})
-                    else:
-                        hosts_array.append({"hostname": name})
-
-            name = doc.get("name")
-            auth = doc.xpath("/pool/source/auth")
-            auth_type = auth[0].get("type")
-            auth_user = auth[0].get("username")
-            auth_uuid = auth[0].xpath("secret/@uuid")[0]
-
-            return {
-                "name": name,
-                "auth_type": auth_type,
-                "auth_user": auth_user,
-                "auth_uuid": auth_uuid,
-                "hosts": hosts_array,
-            }
-
-        return util.get_xml_path(self._XMLDesc(0), func=hosts)
 
     def get_volumes(self):
         return self.pool.listVolumes()

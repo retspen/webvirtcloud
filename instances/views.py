@@ -58,7 +58,7 @@ from vrtManager.create import cpu_choices, wvmCreate
 from vrtManager.instance import USAGE_MAX_WINDOW, wvmInstances
 from vrtManager.interface import wvmInterface
 from vrtManager.nodedevs import device_names, hostdev_problems, node_devices, pci_problems
-from vrtManager.storage import wvmStorage
+from vrtManager.storage import rbd_source_children, wvmStorage
 from vrtManager.util import randomPasswd
 
 from instances.models import Instance
@@ -1307,7 +1307,7 @@ def add_new_vol(request, pk):
             format = util.vol_driver_type(conn_pool.get_volume_format_type(os.path.basename(source)), pool_type)
 
             if pool_type == "rbd":
-                source_info = conn_pool.get_rbd_source()
+                source_info = rbd_source_children(conn_pool.pool)
             else:  # add more disk types to handle different pool and disk types
                 source_info = None
 
@@ -1382,7 +1382,7 @@ def add_existing_vol(request, pk):
     format_type = util.vol_driver_type(conn_create.get_volume_format_type(name), pool_type)
     disk_type = conn_create.get_volume_type(name)
     if pool_type == "rbd":
-        source_info = conn_create.get_rbd_source()
+        source_info = rbd_source_children(conn_create.pool)
         path = conn_create.get_source_name()
         source = f"{path}/{name}"
     else:
