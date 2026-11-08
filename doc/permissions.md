@@ -17,7 +17,7 @@ WebVirtCloud combines three kinds of access rights:
 | Start, shut down, power cycle, force off | ✅ | ✅ | — | ❌ |
 | Open the console (noVNC, `.vv` file for virt-viewer, VDI URL) | ✅ | ✅ | — | ❌ |
 | Resize CPU/memory/disk, set root password, add SSH key, change title/description | ✅ | ✅ | `is_change` | ❌ |
-| Change console settings (type, VNC password, keymap) | ✅ | ✅ | `is_change` and `is_vnc` | ❌ |
+| Change console settings (type, VNC password, keymap) | ✅ | ✅ | `is_change` and `is_vnc`; the listen address, and removing the password of a console that listens beyond localhost, are a superuser's | ❌ |
 | Snapshots | ✅ | ✅ | `is_change` and `instances.snapshot_instances` | ❌ |
 | Clone | ✅ | ✅ | `is_change` and `instances.clone_instances` (templates: viewing the template is enough) | templates only, with `instances.clone_instances` |
 | Delete the VM | ✅ | ✅ | `is_delete` | ❌ |
