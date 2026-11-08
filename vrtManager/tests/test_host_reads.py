@@ -91,6 +91,19 @@ class CapabilitiesOnceTestCase(unittest.TestCase):
             ["capabilities", ("/usr/bin/qemu-kvm", "x86_64", "q35", "kvm"), ("/usr/bin/qemu-kvm", "x86_64", "pc", "kvm")],
         )
 
+    def test_the_domain_capabilities_are_read_from_their_xml(self):
+        conn = connection()
+        conn.wvm.getDomainCapabilities = lambda *key: (
+            "<domainCapabilities><path>/usr/bin/qemu-kvm</path><domain>kvm</domain><machine>pc-q35-9.0</machine>"
+            "<vcpu max='4096'/><iothreads supported='yes'/><os supported='yes'><loader supported='no'/></os>"
+            "<devices><disk supported='no'/><video supported='no'/><hostdev supported='no'/></devices>"
+            "<features><gic supported='no'/><sev supported='no'/></features></domainCapabilities>")
+        caps = conn.get_dom_capabilities("x86_64", "q35")
+        self.assertEqual((caps["path"], caps["domain"], caps["machine"], caps["vcpu_max"]),
+                         ("/usr/bin/qemu-kvm", "kvm", "pc-q35-9.0", "4096"))
+        self.assertEqual((caps["iothreads_support"], caps["loader_support"], caps["features_genid_support"]),
+                         ("yes", "no", None))
+
     def test_an_architecture_the_host_does_not_run_is_refused_with_its_name(self):
         # the create page and the API take it from the URL: it was a KeyError, a 500
         with self.assertRaisesRegex(util.OperationError, "This host has no architecture noarch"):

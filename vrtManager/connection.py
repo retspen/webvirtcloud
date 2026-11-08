@@ -540,15 +540,15 @@ class wvmConnect(object):
         """Return domain capabilities"""
         result = dict()
 
-        xml = self.get_dom_cap_xml(arch, machine)
-        result["path"] = util.get_xml_path(xml, "/domainCapabilities/path")
-        result["domain"] = util.get_xml_path(xml, "/domainCapabilities/domain")
-        result["machine"] = util.get_xml_path(xml, "/domainCapabilities/machine")
-        result["vcpu_max"] = util.get_xml_path(xml, "/domainCapabilities/vcpu/@max")
-        result["iothreads_support"] = util.get_xml_path(xml, "/domainCapabilities/iothreads/@supported")
-        result["os_support"] = util.get_xml_path(xml, "/domainCapabilities/os/@supported")
+        doc = etree.fromstring(self.get_dom_cap_xml(arch, machine))
+        result["path"] = util.get_xpath(doc, "/domainCapabilities/path")
+        result["domain"] = util.get_xpath(doc, "/domainCapabilities/domain")
+        result["machine"] = util.get_xpath(doc, "/domainCapabilities/machine")
+        result["vcpu_max"] = util.get_xpath(doc, "/domainCapabilities/vcpu/@max")
+        result["iothreads_support"] = util.get_xpath(doc, "/domainCapabilities/iothreads/@supported")
+        result["os_support"] = util.get_xpath(doc, "/domainCapabilities/os/@supported")
 
-        result["loader_support"] = util.get_xml_path(xml, "/domainCapabilities/os/loader/@supported")
+        result["loader_support"] = util.get_xpath(doc, "/domainCapabilities/os/loader/@supported")
         if result["loader_support"] == "yes":
             result["loaders"] = self.get_os_loaders(arch, machine)
             result["loader_enums"] = self.get_os_loader_enums(arch, machine)
@@ -558,27 +558,25 @@ class wvmConnect(object):
             # supported and unknown cpu models
             result["cpu_custom_models"] = self.get_cpu_custom_types(arch, machine)
 
-        result["disk_support"] = util.get_xml_path(xml, "/domainCapabilities/devices/disk/@supported")
+        result["disk_support"] = util.get_xpath(doc, "/domainCapabilities/devices/disk/@supported")
         if result["disk_support"] == "yes":
             result["disk_devices"] = self.get_disk_device_types(arch, machine)
             result["disk_bus"] = self.get_disk_bus_types(arch, machine)
 
-        result["video_support"] = util.get_xml_path(xml, "/domainCapabilities/devices/video/@supported")
+        result["video_support"] = util.get_xpath(doc, "/domainCapabilities/devices/video/@supported")
         if result["video_support"] == "yes":
             result["video_types"] = self.get_video_models(arch, machine)
 
-        result["hostdev_support"] = util.get_xml_path(xml, "/domainCapabilities/devices/hostdev/@supported")
+        result["hostdev_support"] = util.get_xpath(doc, "/domainCapabilities/devices/hostdev/@supported")
         if result["hostdev_support"] == "yes":
             result["hostdev_types"] = self.get_hostdev_modes(arch, machine)
             result["hostdev_startup_policies"] = self.get_hostdev_startup_policies(arch, machine)
             result["hostdev_subsys_types"] = self.get_hostdev_subsys_types(arch, machine)
 
-        result["features_gic_support"] = util.get_xml_path(xml, "/domainCapabilities/features/gic/@supported")
-        result["features_genid_support"] = util.get_xml_path(xml, "/domainCapabilities/features/genid/@supported")
-        result["features_vmcoreinfo_support"] = util.get_xml_path(
-            xml, "/domainCapabilities/features/vmcoreinfo/@supported"
-        )
-        result["features_sev_support"] = util.get_xml_path(xml, "/domainCapabilities/features/sev/@supported")
+        result["features_gic_support"] = util.get_xpath(doc, "/domainCapabilities/features/gic/@supported")
+        result["features_genid_support"] = util.get_xpath(doc, "/domainCapabilities/features/genid/@supported")
+        result["features_vmcoreinfo_support"] = util.get_xpath(doc, "/domainCapabilities/features/vmcoreinfo/@supported")
+        result["features_sev_support"] = util.get_xpath(doc, "/domainCapabilities/features/sev/@supported")
 
         return result
 

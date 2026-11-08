@@ -2,6 +2,7 @@ from django.utils.translation import gettext_noop
 import contextlib
 
 import libvirt
+from lxml import etree
 from vrtManager import util
 from vrtManager.connection import wvmConnect
 
@@ -35,7 +36,7 @@ class wvmStorages(wvmConnect):
             if stg_status:
                 with contextlib.suppress(libvirt.libvirtError):  # refused while a volume is cloned in it
                     stg.refresh(0)
-            xml = stg.XMLDesc(0)
+            doc = etree.fromstring(stg.XMLDesc(0))
             stg_vol = len(stg.listVolumes()) if stg_status else None
             _state, stg_size, _allocation, stg_free = stg.info()
             storages.append(
@@ -43,8 +44,8 @@ class wvmStorages(wvmConnect):
                     "name": pool,
                     "status": stg_status,
                     "autostart": stg.autostart(),
-                    "type": util.get_xml_path(xml, "/pool/@type"),
-                    "path": util.get_xml_path(xml, "/pool/target/path") or util.get_xml_path(xml, "/pool/source/name"),
+                    "type": doc.get("type"),
+                    "path": util.get_xpath(doc, "/pool/target/path") or util.get_xpath(doc, "/pool/source/name"),
                     "volumes": stg_vol,
                     "size": stg_size,
                     "free": stg_free,
