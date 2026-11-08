@@ -9416,3 +9416,7 @@ msgstr "本机"
 #: webvirtcloud/settings.py:320
 msgid "All interfaces"
 msgstr "所有接口"
+
+#, python-format
+msgid "The VM's CPU topology has %(count)s vCPUs: change it in the XML editor to set another maximum"
+msgstr "该虚拟机的 CPU 拓扑为 %(count)s 个 vCPU：要设置其他最大值，请在 XML 编辑器中修改拓扑"

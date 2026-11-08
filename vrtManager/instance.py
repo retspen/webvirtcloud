@@ -4,6 +4,7 @@ import contextlib
 import ipaddress
 import json
 import logging
+import math
 import os.path
 import re
 import string
@@ -1681,9 +1682,15 @@ class wvmInstance(wvmConnect):
         raise util.OperationError(gettext_noop("The VM has no video card"))
 
     def resize_cpu(self, cur_vcpu, vcpu):
-        """
-        Function change ram and cpu on instance.
-        """
+        """The current and maximum vCPUs of a shut-off VM. A CPU topology
+        fixes the maximum: libvirt refuses another one."""
+        topology = etree.fromstring(self._XMLDesc(PERSISTENT_XML)).find("cpu/topology")
+        if topology is not None:
+            count = math.prod(int(value) for key, value in topology.attrib.items()
+                              if key in ("sockets", "dies", "clusters", "cores", "threads"))
+            if count != int(vcpu):
+                raise util.OperationError(gettext_noop("The VM's CPU topology has %(count)s vCPUs: change it in the "
+                                                       "XML editor to set another maximum"), count=count)
         is_vcpus_enabled = self.get_vcpus()
         if is_vcpus_enabled:
             self.set_vcpu_hotplug(False)

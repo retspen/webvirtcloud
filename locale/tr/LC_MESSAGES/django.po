@@ -9997,3 +9997,7 @@ msgstr "Yerel sunucu"
 #: webvirtcloud/settings.py:320
 msgid "All interfaces"
 msgstr "Tüm arabirimler"
+
+#, python-format
+msgid "The VM's CPU topology has %(count)s vCPUs: change it in the XML editor to set another maximum"
+msgstr "VM'nin CPU topolojisi %(count)s vCPU içeriyor: başka bir en fazla değer için onu XML düzenleyicide değiştirin"
