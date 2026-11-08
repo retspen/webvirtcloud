@@ -768,7 +768,7 @@ systemctl stop webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
 cd /srv/webvirtcloud &&
 venv/bin/python3 -c "import os,sqlite3,sys; [os.remove(p) for p in ('db.sqlite3-journal','db.sqlite3-wal','db.sqlite3-shm') if os.path.exists(p)]; sqlite3.connect(sys.argv[1]).backup(sqlite3.connect('db.sqlite3'))" "$b/db.sqlite3" &&
 cp "$b/node_id" data/ && { [ ! -f "$b/secret_key" ] || cp "$b/secret_key" data/; } &&
-mkdir -p ~www-data/.ssh && { [ ! -d "$b/ssh" ] || cp "$b"/ssh/* ~www-data/.ssh/; } &&
+mkdir -p ~www-data/.ssh && { [ ! -d "$b/ssh" ] || cp -r "$b"/ssh/. ~www-data/.ssh/; } &&
 mkdir -p ~www-data/.pki && { [ ! -d "$b/pki" ] || cp -r "$b"/pki/. ~www-data/.pki/; } &&
 venv/bin/python3 manage.py migrate &&
 chown -R www-data:www-data data ~www-data/.ssh ~www-data/.pki &&
