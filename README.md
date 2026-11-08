@@ -490,7 +490,7 @@ A VM without graphics (no `<graphics>` device, a `<console type='pty'>`) opens a
 
 ## Backups
 
-The panel backs itself up every day at 03:15 (cron in Docker, `webvirt-backup.timer` otherwise) into a new directory under `/srv/webvirtcloud/backups`, in Docker the `webvirtcloud-backups` volume, and keeps the newest 7. A backup holds:
+The panel backs itself up every day at 03:15 (cron in Docker; otherwise `webvirt-backup.timer`, within 10 minutes after and at the next boot if the server was off) into a new directory under `/srv/webvirtcloud/backups`, in Docker the `webvirtcloud-backups` volume, and keeps the newest 7. A backup holds:
 
 - `db.sqlite3`: a consistent copy taken while the panel runs, checked with `PRAGMA integrity_check`; with PostgreSQL it is left out, so back up that database yourself
 - `secret_key`, `node_id` and `settings.py`
