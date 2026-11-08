@@ -234,7 +234,7 @@ sudo cat /srv/webvirtcloud/data/admin_password            # installer or manual 
 docker compose exec webvirtcloud cat data/admin_password   # Docker
 ```
 
-Sign in at `http://<server-ip>`; you must set a new password at the first login, and the file is then deleted. To choose the name or password yourself, set `ADMIN_USERNAME` and/or `ADMIN_PASSWORD` in the environment before that first `migrate`; a password you set is not written to the file and need not be changed. A lost password is reset with `python3 manage.py changepassword admin` (Docker: `docker compose exec -u www-data webvirtcloud venv/bin/python3 manage.py changepassword admin`).
+Sign in at `http://<server-ip>`; you must set a new password at the first login, and the file is then deleted. To choose the name or password yourself, set `ADMIN_USERNAME` and/or `ADMIN_PASSWORD` in the environment before that first `migrate`; a password you set is not written to the file and need not be changed. A lost password is reset from a root shell with `cd /srv/webvirtcloud && runuser -u www-data -- venv/bin/python3 manage.py changepassword admin` (`nginx` on RHEL / openSUSE; load `/etc/default/webvirtcloud` first if you use it, see [Environment variables](#environment-variables); Docker: `docker compose exec -u www-data webvirtcloud venv/bin/python3 manage.py changepassword admin`).
 
 ## Adding a Compute Node
 
@@ -778,12 +778,12 @@ systemctl start webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
 
 ### Behavior changes
 
-What an update from an older version changes for operators and users:
+What an update from an older version changes for operators and users. `manage.py` below is, from a root shell in `/srv/webvirtcloud` with `/etc/default/webvirtcloud` loaded if you use it, `runuser -u www-data -- venv/bin/python3 manage.py` (`nginx` on RHEL / openSUSE), in Docker `docker compose exec -u www-data webvirtcloud venv/bin/python3 manage.py`:
 
 - Requests for a host not in `ALLOWED_HOSTS` get 400. The installer writes the server's names and IPs; add more with the `ALLOWED_HOSTS` env var. The cloud-init datasource host must be allowed too.
 - Logging out needs a POST; a GET to `/accounts/logout/` gets 405.
-- The API accepts only a session from the login form or an API token (no HTTP Basic), and the API docs need a login. Sessions opened through the old password-only doors skip OTP; end them once after the update (everyone signs in again): `python3 manage.py shell -c "from django.contrib.sessions.models import Session; Session.objects.all().delete()"`.
-- Failed logins lock a user (django-axes). The limit and lock time are on the Settings page; unlock with `python3 manage.py axes_reset_username <username>`.
+- The API accepts only a session from the login form or an API token (no HTTP Basic), and the API docs need a login. Sessions opened through the old password-only doors skip OTP; end them once after the update (everyone signs in again): `manage.py shell -c "from django.contrib.sessions.models import Session; Session.objects.all().delete()"`.
+- Failed logins lock a user (django-axes). The limit and lock time are on the Settings page; unlock with `manage.py axes_reset_username <username>`.
 - Changing one's own password is the "Can change password" permission (per user or group; new users have it); `SHOW_PROFILE_EDIT_PASSWORD` is gone.
 - The admin's first-login password change survives losing `data/admin_password` (migration `accounts.0007`); run `migrate` as a user who can read that file.
 - A new VM and each clone get a random VNC password of their own (clones no longer share their source's). The console page sends it for a user with **Open a console without the VM's console password**, which a new user has unless unticked; others are asked for it. Existing VMs keep theirs.
