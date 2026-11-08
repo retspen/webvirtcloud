@@ -70,6 +70,9 @@ def connect(sid, environ, auth):
         raise refused(environ, refusals.TURNED_OFF)
     try:
         instance, user = authorize((auth or {}).get("token"), "pty")
+        # a token read from a log or a URL is no use without its user's session (as in novncd)
+        if session_user_id(environ.get("HTTP_COOKIE")) != str(user.pk):
+            raise PermissionError("The console page was opened in another session")
     except PermissionError:
         raise refused(environ, refusals.NOT_ALLOWED)
     finally:

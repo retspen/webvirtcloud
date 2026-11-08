@@ -9,7 +9,9 @@ from importlib.util import module_from_spec, spec_from_loader
 from pathlib import Path
 from unittest.mock import patch
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.sessions.backends.db import SessionStore
 from django.test import TestCase, override_settings
 
 from accounts.models import UserInstance
@@ -33,6 +35,13 @@ class Base(TestCase):
         self.vm = Instance.objects.create(compute=self.compute, name="vm-a", uuid="11111111-0000-0000-0000-000000000001")
         self.user = get_user_model().objects.create_user("owner", password="pw")
         UserInstance.objects.create(user=self.user, instance=self.vm)
+
+    def signed_in(self, user=None):
+        """The environ of a request with a session of user (the owner)."""
+        session = SessionStore()
+        session["_auth_user_id"] = str((user or self.user).pk)
+        session.create()
+        return {"HTTP_COOKIE": f"{settings.SESSION_COOKIE_NAME}={session.session_key}"}
 
     def token(self, user=None, vm=None):
         vm = vm or self.vm
@@ -90,16 +99,25 @@ class SocketiodTestCase(Base):
 
     @override_settings(SERIAL_CONSOLE_ENABLED=True)
     def test_a_valid_token_starts_a_console_for_its_session(self):
-        self.assertIsNone(self.d.connect("sid-1", {}, {"token": self.token()}))
+        self.assertIsNone(self.d.connect("sid-1", self.signed_in(), {"token": self.token()}))
         self.assertEqual(self.d.sessions["sid-1"]["vm"], self.vm.pk)
         self.assertEqual(self.started[0][0], self.d.forward)
 
     def refused(self, sid, auth):
         with self.assertRaises(self.d.socketio.exceptions.ConnectionRefusedError) as refusal, \
                 self.assertLogs("socketiod", level="INFO") as log:  # the reason is logged too
-            self.d.connect(sid, {}, auth)
+            self.d.connect(sid, self.signed_in(), auth)
         self.assertIn(refusal.exception.error_args["message"], log.output[0])
         return refusal.exception.error_args["message"]
+
+    @override_settings(SERIAL_CONSOLE_ENABLED=True)
+    def test_a_token_without_its_users_session_is_refused(self):
+        # read from a log or a URL, used in another user's browser or without a session
+        stranger = get_user_model().objects.create_user("stranger", password="pw")
+        for environ in (self.signed_in(stranger), {}):
+            with self.subTest(environ), self.assertRaises(self.d.socketio.exceptions.ConnectionRefusedError):
+                self.d.connect("sid", environ, {"token": self.token()})
+        self.assertEqual(self.d.sessions, {})
 
     def test_refused_connections_start_nothing_and_say_why(self):
         other = Instance.objects.create(compute=self.compute, name="vm-b", uuid="11111111-0000-0000-0000-000000000002")
@@ -109,7 +127,7 @@ class SocketiodTestCase(Base):
         with override_settings(SERIAL_CONSOLE_ENABLED=True):
             self.assertIn("expired", self.refused("no-auth", None))
             self.assertIn("expired", self.refused("bad", {"token": "x"}))
-            self.assertIsNone(self.d.connect("first", {}, {"token": self.token()}))
+            self.assertIsNone(self.d.connect("first", self.signed_in(), {"token": self.token()}))
             # one session per VM
             self.assertIn("another window", self.refused("second", {"token": self.token()}))
             with patch.object(self.d, "MAX_SESSIONS", 1):
@@ -130,7 +148,7 @@ class SocketiodTestCase(Base):
 
     @override_settings(SERIAL_CONSOLE_ENABLED=True)
     def test_input_and_resize_go_to_the_session_and_are_checked(self):
-        self.d.connect("sid-1", {}, {"token": self.token()})
+        self.d.connect("sid-1", self.signed_in(), {"token": self.token()})
         fd = self.d.sessions["sid-1"]["fd"]
         with patch.object(self.d.os, "write", side_effect=lambda fd, data: len(data)) as write, \
                 patch.object(self.d.fcntl, "ioctl") as ioctl:
@@ -147,7 +165,7 @@ class SocketiodTestCase(Base):
 
     @override_settings(SERIAL_CONSOLE_ENABLED=True)
     def test_a_session_is_stopped_once(self):
-        self.d.connect("sid-1", {}, {"token": self.token()})
+        self.d.connect("sid-1", self.signed_in(), {"token": self.token()})
         pid = self.d.sessions["sid-1"]["pid"]
         session = self.d.sessions["sid-1"]
         self.d.disconnect("sid-1")
@@ -165,12 +183,12 @@ class SocketiodTestCase(Base):
     @override_settings(SERIAL_CONSOLE_ENABLED=True)
     def test_a_superuser_takes_over_a_console_left_open(self):
         admin = get_user_model().objects.create_superuser("root", "root@example.com", "pw")
-        self.d.connect("owner-tab", {}, {"token": self.token()})
+        self.d.connect("owner-tab", self.signed_in(), {"token": self.token()})
         old = self.d.sessions["owner-tab"]
         killed_at_emit = []
         with patch.object(self.d.sio, "emit", side_effect=lambda *a, **k: killed_at_emit.append(self.d.os.kill.call_count)) as emit, \
                 patch.object(self.d.sio, "disconnect") as disconnect:
-            self.assertIsNone(self.d.connect("admin-tab", {}, {"token": self.token(admin)}))
+            self.assertIsNone(self.d.connect("admin-tab", self.signed_in(admin), {"token": self.token(admin)}))
         self.assertEqual(list(self.d.sessions), ["admin-tab"])
         self.assertFalse(old["open"])
         # the old worker was killed before the new one started: libvirt gives the console to one
@@ -195,7 +213,8 @@ class SocketiodTestCase(Base):
 
         threads = [threading.Thread(target=connect, args=(n,)) for n in range(8)]
         # the threads have their own database connections, outside this test's transaction
-        with patch.object(self.d, "authorize", return_value=(self.vm, self.user)):
+        with patch.object(self.d, "authorize", return_value=(self.vm, self.user)), \
+                patch.object(self.d, "session_user_id", return_value=str(self.user.pk)):
             for t in threads:
                 t.start()
             for t in threads:
@@ -226,7 +245,7 @@ class PasteTestCase(Base):
         for p in patches:
             p.start()
             self.addCleanup(p.stop)
-        d.connect("sid-1", {}, {"token": self.token()})
+        d.connect("sid-1", self.signed_in(), {"token": self.token()})
         self.addCleanup(d.stop, "sid-1")
         paste = threading.Thread(target=d.pty_input, args=("sid-1", {"input": "x" * 1_000_000}), daemon=True)
         paste.start()
@@ -252,8 +271,8 @@ class WorkerIsolationTestCase(Base):
         self.addCleanup(os.unlink, script.name)
         with patch.object(d, "CONSOLECALLBACK", script.name), patch.object(d.sio, "start_background_task"), \
                 patch.object(d.db, "close_old_connections"):
-            d.connect("first", {}, {"token": self.token()})
-            d.connect("second", {}, {"token": self.token(vm=other)})
+            d.connect("first", self.signed_in(), {"token": self.token()})
+            d.connect("second", self.signed_in(), {"token": self.token(vm=other)})
         self.addCleanup(lambda: [d.stop(sid) for sid in list(d.sessions)])
         output, fd = b"", d.sessions["second"]["fd"]
         while b"]" not in output:

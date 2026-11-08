@@ -484,7 +484,7 @@ A VM without graphics (no `<graphics>` device, a `<console type='pty'>`) opens a
 - The VM page's Settings → Console switches a shut-off VM between VNC and serial (Console type). A new VNC console takes the form's other fields; on a TCP or TLS compute it needs Listen on: All interfaces (SSH and socket computes reach a localhost console).
 - The guest must use its serial port: a login prompt needs `systemctl enable --now serial-getty@ttyS0`, boot messages need the kernel parameter `console=ttyS0,115200`. The console shows only what the guest writes after it opens; press Enter for a new prompt.
 - socketiod listens on 127.0.0.1:6081; the page reaches it through nginx's `/socket.io/` location on the panel's own address.
-- It accepts the console page's signed token, which expires after 120 s, from a signed-in session (noVNC wants the session of the token's user). An open console closes within 10 s once its user loses access to the VM.
+- It accepts the console page's signed token, which expires after 120 s, only from the session of the user it was given to, as noVNC does. An open console closes within 10 s once its user loses access to the VM.
 - One console per VM, at most 20 at a time; a second one is refused with the reason, except a superuser's, which takes the console over.
 - novncd and socketiod log to the journal (`journalctl -u webvirt-novncd -u webvirt-socketiod`) or, in Docker, to `docker logs`: a console that was refused or could not connect says why there.
 
