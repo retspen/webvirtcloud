@@ -24,8 +24,15 @@ class ConnectionThreadsTestCase(unittest.TestCase):
         self.addCleanup(patcher.stop)
         self.manager = wvmConnectionManager()
         self.release = threading.Event()
-        self.addCleanup(self.release.set)
+        self.threads = set(threading.enumerate())
+        self.addCleanup(self.finish_opens)
         self.opened = []
+
+    def finish_opens(self):
+        """Let every open this test started end: one ending later would run into another test."""
+        self.release.set()
+        for thread in set(threading.enumerate()) - self.threads:
+            thread.join(5)
 
     def open_auth(self, *conns):
         pending = list(conns)
