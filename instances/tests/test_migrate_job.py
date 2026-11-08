@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import PermissionDenied
 from django.test import TransactionTestCase
 from django.urls import reverse
 
@@ -66,6 +67,15 @@ class MigrateJobTestCase(TransactionTestCase):
         self.assertTrue(self.dest_conn.moveto.call_args.args[2])  # live
         self.vm.refresh_from_db()
         self.assertEqual(self.vm.compute, self.dest)
+
+    def test_the_worker_refuses_a_migration_whose_user_may_no_longer_migrate(self):
+        op = self.queue(live_migrate="true")
+        for change in ({"is_superuser": False}, {"is_active": False}):
+            with self.subTest(change=change):
+                get_user_model().objects.filter(pk=op.user_id).update(**{"is_superuser": True, "is_active": True, **change})
+                op.refresh_from_db()
+                with self.assertRaises(PermissionDenied):
+                    MigrateInstance().precheck(op, None)
 
     def test_recovery_reads_where_the_vm_is(self):
         op = Operation(params={"instance": self.vm.pk, "target": self.dest.pk},
