@@ -285,6 +285,12 @@ class VolumesTestCase(unittest.TestCase):
         stg.pool.storageVolLookupByName.return_value = volume("a.img", 4096, 0, "raw")
         self.assertEqual(stg.get_volume_details("a.img"), {"name": "a.img", "size": 4096, "allocation": 0, "type": "raw"})
 
+    def test_the_pool_size_is_one_info_call(self):
+        stg = self.storage([])
+        stg.pool.info.return_value = [2, 500, 380, 120]
+        self.assertEqual(stg.get_size(), [500, 120])
+        stg.pool.info.assert_called_once_with()
+
 
 def host(*readings):
     """A wvmHostDetails whose getCPUStats returns readings, (idle, busy) each."""

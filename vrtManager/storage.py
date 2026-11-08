@@ -155,7 +155,8 @@ class wvmStorage(wvmConnect):
             return "Unknown"
 
     def get_size(self):
-        return [self.pool.info()[1], self.pool.info()[3]]
+        _state, capacity, _allocation, available = self.pool.info()
+        return [capacity, available]
 
     def _XMLDesc(self, flags):
         return self.pool.XMLDesc(flags)
