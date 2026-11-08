@@ -132,7 +132,6 @@ def storage(request, compute_id, pool):
         finally:
             conn.close()
 
-    storages = conn.get_storages()
     state = conn.is_active()
 
     if request.method == "POST":

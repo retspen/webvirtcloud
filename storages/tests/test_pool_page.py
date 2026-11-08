@@ -31,6 +31,7 @@ class PoolPageTests(TestCase):
         self.conn.get_size.return_value = (0, 0)  # an iSCSI pool without LUNs
         response = self.client.get(reverse("storage", args=[self.compute.pk, "default"]))
         self.assertContains(response, "base.qcow2")
+        self.conn.get_storages.assert_not_called()  # the page lists no other pools
 
     def test_the_volume_list_answers_while_a_volume_is_cloned(self):
         response = self.client.get(reverse("volumes", args=[self.compute.pk, "default"]))
