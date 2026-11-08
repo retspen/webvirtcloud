@@ -227,7 +227,7 @@ class wvmCreate(wvmConnect):
             else:
                 xml += f"""<disk type='file' device='{volume["device"]}'>"""
                 xml += f""" <driver name='qemu' type='{volume["type"]}' {disk_opts}/>"""
-                xml += f""" <source file='{volume["path"]}'/>"""
+                xml += f""" <source file='{util.xml_escape(volume["path"])}'/>"""
 
             if volume.get("bus") in dom_caps["disk_bus"]:
                 dev_prefix = util.vol_dev_type(volume.get("bus"))
@@ -255,9 +255,9 @@ class wvmCreate(wvmConnect):
             xml += """<interface type='network'>"""
             if idx < len(macs):
                 xml += f"""<mac address='{macs[idx].strip()}'/>"""
-            xml += f"""<source network='{net}'/>"""
+            xml += f"""<source network='{util.xml_escape(net)}'/>"""
             if nwfilter:
-                xml += f"""<filterref filter='{nwfilter}'/>"""
+                xml += f"""<filterref filter='{util.xml_escape(nwfilter)}'/>"""
             if virtio:
                 xml += f"""<model type='{net_model}'/>"""
             xml += """</interface>"""

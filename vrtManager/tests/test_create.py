@@ -181,3 +181,24 @@ class NewVmPortsTests(SimpleTestCase):
 
     def test_a_pc_vm_has_none_its_pci_bus_has_slots(self):
         self.assertEqual(defined_controllers("pc-i440fx-rhel7.6.0"), [])
+
+
+class NewVmTextTests(SimpleTestCase):
+    def test_a_path_a_network_and_a_filter_are_text(self):
+        odd = "a'b\"c<d>&e"
+        conn = wvmCreate.__new__(wvmCreate)
+        conn.wvm = MagicMock()
+        conn.get_storage_by_vol_path = MagicMock()
+        conn.get_storage_by_vol_path.return_value.XMLDesc.return_value = "<pool type='dir'/>"
+        volume = {"path": f"/srv/{odd}/vm.qcow2", "type": "qcow2", "device": "disk", "bus": "virtio", "cache_mode": None,
+                  "io_mode": None, "discard_mode": None, "detect_zeroes_mode": None}
+        with patch.object(wvmCreate, "get_capabilities", return_value={"features": []}), \
+                patch.object(wvmCreate, "get_dom_capabilities", return_value=PORTS_DOM_CAPS):
+            conn.create_instance(name="vm-1", memory=512, vcpu=1, vcpu_mode="host-model",
+                                 uuid="00000000-0000-4000-8000-0000000000c2", arch="x86_64", machine="pc",
+                                 firmware="BIOS", volumes=[volume], networks=odd, nwfilter=odd, virtio=True,
+                                 listener_addr="0.0.0.0", add_cdrom="None", add_input="None")
+        devices = etree.fromstring(conn.wvm.defineXML.call_args.args[0]).find("devices")
+        self.assertEqual(devices.find("disk/source").get("file"), f"/srv/{odd}/vm.qcow2")
+        self.assertEqual(devices.find("interface/source").get("network"), odd)
+        self.assertEqual(devices.find("interface/filterref").get("filter"), odd)
