@@ -7,7 +7,7 @@ WebVirtCloud combines three kinds of access rights:
   - `instances.view_instances` — **read-only auditor role**: sees every VM in lists and detail pages, but cannot change them and cannot open their consoles.
   - `instances.clone_instances` — may clone VMs (see the table for which ones).
   - `instances.snapshot_instances` — may create, revert and delete snapshots of VMs they may change.
-  - `instances.passwordless_console` — the console page fills in the VNC password automatically (granted to all users by default).
+  - `instances.passwordless_console` — the console page fills in the VNC password automatically (ticked by default on the Users page's new-user form; a user made otherwise, such as from LDAP, does not get it).
   - `accounts.change_password` — may change their own password.
 - **Per-VM ownership** (an owner entry for a user on a VM, managed by a superuser on the VM's page) with three flags: `is_change`, `is_delete`, `is_vnc`. An owner without flags may see, start and stop the VM and open its console.
 
