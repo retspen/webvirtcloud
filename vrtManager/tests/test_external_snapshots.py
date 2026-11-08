@@ -78,7 +78,6 @@ def proxy(status=1, internal=(), external=(), xml=DOMAIN, jobs=None, managed_sav
     p.get_uuid = lambda: "11111111-2222-3333-4444-555555555555"
     p.get_cur_memory = lambda: 1024
     p.refresh_instance_pools = MagicMock()
-    p._snapshotCreateXML = MagicMock()
     p.wvm = MagicMock()
     dom = MagicMock()
     snaps = {s.getName(): s for s in (*internal, *external)}
@@ -242,7 +241,7 @@ class SnapshotStateTestCase(unittest.TestCase):
                     with self.assertRaises(util.OperationError):
                         act(p)
                     p.instance.revertToSnapshot.assert_not_called()
-                    p._snapshotCreateXML.assert_not_called()
+                    p.instance.snapshotCreateXML.assert_not_called()
 
     def test_an_internal_snapshot_is_reverted_to_on_a_shut_off_vm(self):
         for status in (1, 3):
@@ -257,7 +256,7 @@ DISK_ONLY_ATOMIC = libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY | libvirt.VIR_DO
 
 
 def created(p):
-    xml, flags = p._snapshotCreateXML.call_args[0]
+    xml, flags = p.instance.snapshotCreateXML.call_args[0]
     return xml, flags
 
 
@@ -306,7 +305,7 @@ class CreateTestCase(unittest.TestCase):
                           side_effect=libvirtError("guest agent didn't respond to command within '10' seconds")):
             with self.assertRaises(libvirtError):
                 p.create_external_snapshot("q", quiesce=True)
-        p._snapshotCreateXML.assert_not_called()
+        p.instance.snapshotCreateXML.assert_not_called()
 
     def test_quiesce_needs_a_running_vm_with_its_agent_and_no_memory(self):
         # libvirt accepts quiesce only for disk-only snapshots, through the agent
@@ -322,7 +321,7 @@ class CreateTestCase(unittest.TestCase):
     def refused(self, p, pattern, **kwargs):
         with self.assertRaisesRegex(util.OperationError, pattern):
             p.create_external_snapshot(kwargs.pop("name", "s"), **kwargs)
-        p._snapshotCreateXML.assert_not_called()
+        p.instance.snapshotCreateXML.assert_not_called()
 
     def test_invalid_names_are_refused(self):
         for name in ("", ".hidden", "a/b", "a b", "x" * 65, "<x>"):
@@ -406,18 +405,18 @@ class CreateTestCase(unittest.TestCase):
         with self.assertRaisesRegex(util.OperationError, r"needs 4\.0 GiB \(20% of the VM's disks in it, at least 2 GiB"):
             p.create_external_snapshot("s", free_percent=20, free_min_gib=2)
         p.create_external_snapshot("s", free_percent=0, free_min_gib=0)  # no check
-        p._snapshotCreateXML.assert_called_once()
+        p.instance.snapshotCreateXML.assert_called_once()
 
     def test_a_volume_that_cannot_be_read_is_refused_not_skipped(self):
         p = proxy()
         p.get_volume_by_path = MagicMock(side_effect=libvirtError("permission denied"))
         with self.assertRaises(libvirtError):
             p.create_external_snapshot("s")
-        p._snapshotCreateXML.assert_not_called()
+        p.instance.snapshotCreateXML.assert_not_called()
 
     def test_a_disk_in_no_pool_is_not_checked(self):
         p = self.space({"/pool/a.qcow2": ("default", 20 * GiB), "/elsewhere/b.qcow2": None}, {"default": 2 * GiB})
-        p._snapshotCreateXML.assert_called_once()
+        p.instance.snapshotCreateXML.assert_called_once()
 
 
 REVERT_RUNNING = libvirt.VIR_DOMAIN_SNAPSHOT_REVERT_RUNNING
@@ -694,7 +693,7 @@ class PoolRefreshTestCase(unittest.TestCase):
         p = proxy()
         p.refresh_instance_pools.side_effect = [None, libvirtError("pool busy")]
         p.create_external_snapshot("one")
-        p._snapshotCreateXML.assert_called_once()
+        p.instance.snapshotCreateXML.assert_called_once()
 
     def test_create_is_refused_when_the_refresh_before_it_fails(self):
         # the free space is not known then
@@ -702,7 +701,7 @@ class PoolRefreshTestCase(unittest.TestCase):
         p.refresh_instance_pools.side_effect = libvirtError("pool busy")
         with self.assertRaisesRegex(util.OperationError, "free space is unknown: pool busy"):
             p.create_external_snapshot("one")
-        p._snapshotCreateXML.assert_not_called()
+        p.instance.snapshotCreateXML.assert_not_called()
 
     def test_delete_and_revert_succeed_and_report_nothing_when_the_refresh_fails(self):
         for action in ("delete_external_snapshot", "revert_external_snapshot"):
@@ -737,7 +736,7 @@ class KindTestCase(unittest.TestCase):
         p = proxy(external=[fake_snap("e")])
         with self.assertRaisesRegex(util.OperationError, "external snapshots"):
             p.create_snapshot("i")
-        p._snapshotCreateXML.assert_not_called()
+        p.instance.snapshotCreateXML.assert_not_called()
 
 
 if __name__ == "__main__":

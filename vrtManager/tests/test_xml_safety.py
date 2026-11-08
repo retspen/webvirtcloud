@@ -56,15 +56,14 @@ class TestXmlSafety(unittest.TestCase):
         inst.get_snapshot_jobs = MagicMock(return_value=[])
         inst.get_status = MagicMock(return_value=5)  # shutoff
         inst._XMLDesc = MagicMock(return_value="<domain></domain>")
-        inst._snapshotCreateXML = MagicMock(return_value=None)
 
         bad_name = "snap<inject>&quotes"
         bad_desc = "desc<tag>&and"
 
         inst.create_snapshot(bad_name, bad_desc)
 
-        inst._snapshotCreateXML.assert_called_once()
-        created_xml = inst._snapshotCreateXML.call_args[0][0]
+        inst.instance.snapshotCreateXML.assert_called_once()
+        created_xml = inst.instance.snapshotCreateXML.call_args[0][0]
         self.assertNotIn("<inject>", created_xml)
         self.assertNotIn("<tag>", created_xml)
         self.assertIn("&lt;inject&gt;&amp;quotes", created_xml)
@@ -76,7 +75,6 @@ class TestXmlSafety(unittest.TestCase):
         inst.get_snapshot_jobs = MagicMock(return_value=[])
         inst._XMLDesc = MagicMock(return_value="<domain><os><loader type='rom'>/usr/share/rom.bin</loader></os></domain>")
         inst._defineXML = MagicMock()
-        inst._snapshotCreateXML = MagicMock(return_value=None)
         inst.get_status = MagicMock(return_value=5)
 
         inst.create_snapshot("snap_rom", "testing rom preservation")
@@ -108,12 +106,11 @@ class TestXmlSafety(unittest.TestCase):
             return_value="<domain><os><loader readonly='yes' type='pflash'>/usr/share/OVMF/OVMF.fd</loader></os></domain>"
         )
         inst._defineXML = MagicMock()
-        inst._snapshotCreateXML = MagicMock()
 
         inst.create_snapshot("snap", "uefi")
 
         inst._defineXML.assert_not_called()
-        self.assertIn("type='pflash'", inst._snapshotCreateXML.call_args[0][0])
+        self.assertIn("type='pflash'", inst.instance.snapshotCreateXML.call_args[0][0])
 
 
 class TestCloneRollback(unittest.TestCase):

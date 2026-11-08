@@ -1839,9 +1839,6 @@ class wvmInstance(wvmConnect):
                     grew = True
         return files[len(tops):] + memory
 
-    def _snapshotCreateXML(self, xml, flag):
-        self.instance.snapshotCreateXML(xml, flag)
-
     def create_snapshot(self, name, desc=None):
         self._check_snapshot_state()
         if self.instance.snapshotListNames(VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL):
@@ -1864,7 +1861,7 @@ class wvmInstance(wvmConnect):
         xml += self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         xml += """<active>0</active>
                   </domainsnapshot>"""
-        self._snapshotCreateXML(xml, 0)
+        self.instance.snapshotCreateXML(xml, 0)
 
     def create_external_snapshot(self, name, desc="", memory=False, quiesce=False, free_percent=10, free_min_gib=1):
         """A disk-only snapshot, or with memory too (running VMs only). Every
@@ -1922,7 +1919,7 @@ class wvmInstance(wvmConnect):
         if quiesce:
             self.ping_agent()
             flags |= VIR_DOMAIN_SNAPSHOT_CREATE_QUIESCE
-        self._snapshotCreateXML(xml, flags)
+        self.instance.snapshotCreateXML(xml, flags)
         self._refresh_pools_after_snapshot()
 
     def _snapshot_memory(self, name, disks):
