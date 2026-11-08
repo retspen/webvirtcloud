@@ -1,12 +1,12 @@
 # WebVirtCloud architecture
 
-WebVirtCloud is a web panel for libvirt hosts. libvirt is the source of truth: the panel reads a host's VMs, pools, networks and devices from libvirt when a page needs them, and its database holds what libvirt does not (users, permissions, quotas, compute connection details, jobs, the audit log, settings) and, per VM, the compute, name and UUID that permissions hang on. VMs keep running when the panel is stopped. Changes made with `virsh` or `virt-manager` reach those VM rows the next time a VM list page is loaded; the API's VM list reads the rows as they are.
+WebVirtCloud is a web panel for libvirt hosts. libvirt is the source of truth: the panel reads a host's VMs, pools, networks and devices from libvirt when a page needs them, and its database holds what libvirt does not (users, permissions, quotas, compute connection details, jobs, the audit log, settings) and, per VM, the compute, name and UUID that permissions hang on. VMs keep running when the panel is stopped. Changes made with `virsh` or `virt-manager` reach those VM rows the next time a VM list page is loaded; the API's list of a compute's VMs reconciles them with libvirt first, its list of all VMs reads the rows as they are.
 
 ## Stack
 
 | Layer | Technology |
 |---|---|
-| Runtime | Python 3.10–3.13, Django 5.2 LTS |
+| Runtime | Python 3.10–3.14, Django 5.2 LTS |
 | Database | SQLite (WAL) by default, PostgreSQL optional |
 | libvirt | `libvirt-python`, `lxml` for the XML |
 | API | Django REST Framework, `drf-nested-routers`, `drf-spectacular` (OpenAPI 3.0), API tokens (`django-rest-knox`) |
