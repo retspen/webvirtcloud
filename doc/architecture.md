@@ -13,7 +13,7 @@ WebVirtCloud is a web panel for libvirt hosts. libvirt is the source of truth: t
 | Frontend | Django templates, Bootstrap 5, Bootstrap Icons, vendored jQuery, Chart.js, noVNC, xterm.js |
 | Security | `django-otp` (TOTP), `django-axes` (lockout), optional `django-auth-ldap`; CSP `script-src 'self'` |
 | Serving | nginx in front of gunicorn (gthread workers) and WhiteNoise |
-| Processes | systemd units on hosts, runit in the Docker image |
+| Processes | systemd units on hosts, supervisord in the Docker image |
 
 ## Processes
 
@@ -31,12 +31,12 @@ Django, worker, novncd, socketiod ── libvirt (TCP, SSH, TLS or local socket)
 panel ── gstfsd on each compute, at the compute's hostname, port 16510 (HMAC-signed requests; loopback only when the panel runs on the compute)
 ```
 
-| Unit (systemd) | runit service (Docker) | Runs |
+| Unit (systemd) | supervisord program (Docker) | Runs |
 |---|---|---|
-| `webvirt-cloud` | `webvirtcloud` | gunicorn |
-| `webvirt-novncd` | `novnc` | `console/novncd` |
+| `webvirt-cloud` | `gunicorn` | gunicorn |
+| `webvirt-novncd` | `novncd` | `console/novncd` |
 | `webvirt-socketiod` | `socketiod` | `console/socketiod` |
-| `webvirt-worker` | `webvirtcloud-worker` | `manage.py run_worker` |
+| `webvirt-worker` | `worker` | `manage.py run_worker` |
 | `webvirt-backup.timer` | `cron` (`/etc/cron.d/webvirtcloud-backup`) | `manage.py backup` |
 | `webvirt-gstfsd` (on computes) | | `conf/daemon/gstfsd` |
 

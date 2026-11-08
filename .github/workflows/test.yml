@@ -183,7 +183,7 @@ jobs:
               sleep 5
             done
             docker inspect -f '{{json .State.Health}}' $c || true
-            docker exec $c sv status /etc/service/nginx /etc/service/webvirtcloud /etc/service/novnc || true
+            docker exec $c supervisorctl status || true
             docker logs $c || true
             exit 1
           done

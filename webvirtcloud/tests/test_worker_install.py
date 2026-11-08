@@ -12,14 +12,13 @@ BASE = Path(settings.BASE_DIR)
 
 class WorkerInstallTestCase(SimpleTestCase):
     def test_docker(self):
-        dockerfile = (BASE / "Dockerfile").read_text()
-        self.assertIn("conf/runit/webvirtcloud-worker.sh", dockerfile)
-        self.assertIn("/etc/service/webvirtcloud-worker/run", dockerfile)
-        script = (BASE / "conf/runit/webvirtcloud-worker.sh").read_text()
-        for text in ("/sbin/setuser www-data", "manage.py run_worker",
-                     "WEBVIRTCLOUD_LOG_FILE=/srv/webvirtcloud/data/webvirtcloud-worker.log"):
-            self.assertIn(text, script)
-        self.assertIn("ENV KILL_PROCESS_TIMEOUT=80", dockerfile)
+        conf = (BASE / "conf/docker/supervisord.conf").read_text()
+        worker = conf[conf.index("[program:worker]"):].split("\n\n")[0]
+        for text in ("user=www-data", "manage.py run_worker",
+                     'WEBVIRTCLOUD_LOG_FILE="/srv/webvirtcloud/data/webvirtcloud-worker.log"', "stopwaitsecs=80"):
+            self.assertIn(text, worker)
+        # a stop signals every program at once: the worker's drain is not behind the others' stops
+        self.assertRegex(conf, r"programs=.*\bworker\b")
         compose = (BASE / "docker-compose.yml").read_text()
         self.assertRegex(compose, r"stop_grace_period:\s*9\ds")
         # the worker's host identity lives in the data volume, not in a fixed hostname

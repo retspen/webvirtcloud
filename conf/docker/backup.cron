@@ -1,0 +1,2 @@
+# The daily backup into /srv/webvirtcloud/backups (the webvirtcloud-backups volume); its output goes to docker logs
+15 3 * * * root (. /run/webvirtcloud.env && cd /srv/webvirtcloud && runuser -u www-data -- venv/bin/python3 manage.py backup) > /proc/1/fd/1 2>&1

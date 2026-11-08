@@ -6,7 +6,7 @@ services:
     image: webvirtcloud:latest
     container_name: webvirtcloud
     restart: unless-stopped
-    # above my_init's 80 s, which is above the worker's 60 s drain
+    # above supervisord's 80 s for the worker, which drains its jobs for 60 s
     stop_grace_period: 95s
     # every request is a line of gunicorn's access log: kept to 5 files of 10 MB, as the panel's own log
     logging:

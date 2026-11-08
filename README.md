@@ -117,7 +117,7 @@ cd /srv/webvirtcloud
 # 3. Settings, allowed hosts and secret key
 cp webvirtcloud/settings.py.template webvirtcloud/settings.py
 sed -i 's|^ALLOWED_HOSTS = .*|ALLOWED_HOSTS = ["wvc.example.com", "192.0.2.10", "localhost", "127.0.0.1", "[::1]"]|' webvirtcloud/settings.py
-mkdir -p data && python3 conf/runit/secret_generator.py > data/secret_key && chmod 600 data/secret_key
+mkdir -p data && python3 conf/secret_generator.py > data/secret_key && chmod 600 data/secret_key
 
 # 4. Virtualenv and dependencies
 python3 -m venv --system-site-packages venv
@@ -155,7 +155,7 @@ cd /srv/webvirtcloud
 # 3. Settings, allowed hosts and secret key
 cp webvirtcloud/settings.py.template webvirtcloud/settings.py
 sed -i 's|^ALLOWED_HOSTS = .*|ALLOWED_HOSTS = ["wvc.example.com", "192.0.2.10", "localhost", "127.0.0.1", "[::1]"]|' webvirtcloud/settings.py
-mkdir -p data && python3 conf/runit/secret_generator.py > data/secret_key && chmod 600 data/secret_key
+mkdir -p data && python3 conf/secret_generator.py > data/secret_key && chmod 600 data/secret_key
 
 # 4. Virtualenv and dependencies
 python3 -m venv --system-site-packages venv
@@ -200,7 +200,7 @@ cd /srv/webvirtcloud
 # 3. Settings, allowed hosts and secret key
 cp webvirtcloud/settings.py.template webvirtcloud/settings.py
 sed -i 's|^ALLOWED_HOSTS = .*|ALLOWED_HOSTS = ["wvc.example.com", "192.0.2.10", "localhost", "127.0.0.1", "[::1]"]|' webvirtcloud/settings.py
-mkdir -p data && python3.11 conf/runit/secret_generator.py > data/secret_key && chmod 600 data/secret_key
+mkdir -p data && python3.11 conf/secret_generator.py > data/secret_key && chmod 600 data/secret_key
 
 # 4. Virtualenv and dependencies
 python3.11 -m venv --system-site-packages venv
@@ -234,7 +234,7 @@ sudo cat /srv/webvirtcloud/data/admin_password            # installer or manual 
 docker compose exec webvirtcloud cat data/admin_password   # Docker
 ```
 
-Sign in at `http://<server-ip>`; you must set a new password at the first login, and the file is then deleted. To choose the name or password yourself, set `ADMIN_USERNAME` and/or `ADMIN_PASSWORD` in the environment before that first `migrate`; a password you set is not written to the file and need not be changed. A lost password is reset with `python3 manage.py changepassword admin` (Docker: `docker compose exec webvirtcloud /sbin/setuser www-data venv/bin/python3 manage.py changepassword admin`).
+Sign in at `http://<server-ip>`; you must set a new password at the first login, and the file is then deleted. To choose the name or password yourself, set `ADMIN_USERNAME` and/or `ADMIN_PASSWORD` in the environment before that first `migrate`; a password you set is not written to the file and need not be changed. A lost password is reset with `python3 manage.py changepassword admin` (Docker: `docker compose exec -u www-data webvirtcloud venv/bin/python3 manage.py changepassword admin`).
 
 ## Adding a Compute Node
 
@@ -503,7 +503,7 @@ The database holds compute passwords and keys: the directories are readable only
 Take one now:
 
 ```bash
-docker compose exec webvirtcloud /sbin/setuser www-data venv/bin/python3 manage.py backup   # Docker
+docker compose exec -u www-data webvirtcloud venv/bin/python3 manage.py backup   # Docker
 systemctl start webvirt-backup && journalctl -u webvirt-backup -n 3                          # otherwise
 ```
 
@@ -879,7 +879,7 @@ Run every step as your normal user, not with `sudo`: if `manage.py` ever runs as
 
    ```bash
    cp webvirtcloud/settings.py.template webvirtcloud/settings.py
-   mkdir -p data && python conf/runit/secret_generator.py > data/secret_key && chmod 600 data/secret_key
+   mkdir -p data && python conf/secret_generator.py > data/secret_key && chmod 600 data/secret_key
    ```
 
 4. Migrate and run the dev server (`settings-dev` enables `DEBUG` and the Django Debug Toolbar); the admin password is in `data/admin_password`, or set `ADMIN_PASSWORD` beforehand:
@@ -948,7 +948,7 @@ python manage.py test
 HOME=$PWD/.vagrant/tls TEST_LIBVIRT_TYPE=3 TEST_LIBVIRT_SSH_HOST= python manage.py test   # compute1 again, over TLS
 # a socket compute is the panel's own libvirt: the committed HEAD runs inside compute1
 git archive HEAD | vagrant ssh compute1 -c "sudo sh -c 'rm -rf /root/wvc && mkdir /root/wvc && tar -x -C /root/wvc'"
-vagrant ssh compute1 -c "sudo -i sh -ec 'dnf -y install python3-devel openldap-devel cyrus-sasl-devel gcc; cd /root/wvc; python3 -m venv --system-site-packages venv; venv/bin/pip install -r dev/requirements.txt; cp webvirtcloud/settings.py.template webvirtcloud/settings.py; mkdir data; venv/bin/python conf/runit/secret_generator.py > data/secret_key; TEST_LIBVIRT_HOST=localhost TEST_LIBVIRT_TYPE=4 TEST_LIBVIRT_LOGIN=wvc TEST_LIBVIRT_PASSWORD=wvc-test TEST_LIBVIRT_LVM_DEVICE=/dev/vdb TEST_LIBVIRT_ISCSI_TARGET=iqn.2026-10.test.wvc:lun TEST_LIBVIRT_NFS_EXPORT=/srv/wvc-nfs venv/bin/python manage.py test'"
+vagrant ssh compute1 -c "sudo -i sh -ec 'dnf -y install python3-devel openldap-devel cyrus-sasl-devel gcc; cd /root/wvc; python3 -m venv --system-site-packages venv; venv/bin/pip install -r dev/requirements.txt; cp webvirtcloud/settings.py.template webvirtcloud/settings.py; mkdir data; venv/bin/python conf/secret_generator.py > data/secret_key; TEST_LIBVIRT_HOST=localhost TEST_LIBVIRT_TYPE=4 TEST_LIBVIRT_LOGIN=wvc TEST_LIBVIRT_PASSWORD=wvc-test TEST_LIBVIRT_LVM_DEVICE=/dev/vdb TEST_LIBVIRT_ISCSI_TARGET=iqn.2026-10.test.wvc:lun TEST_LIBVIRT_NFS_EXPORT=/srv/wvc-nfs venv/bin/python manage.py test'"
 vagrant destroy -f
 ```
 
