@@ -64,7 +64,7 @@ def _log(inst, what):
     write("-", inst.compute.name, inst.name, f"VM {inst.name} ({inst.uuid}): {what}", True, uuid=inst.uuid)
 
 
-def _move_ownership(source, target):
+def move_ownership(source, target):
     """Give target the owners and template flag of source; a user's rights are merged."""
     for ui in UserInstance.objects.filter(instance=source):
         existing = UserInstance.objects.filter(instance=target, user=ui.user).first()
@@ -88,7 +88,7 @@ def forget(inst):
     comes back."""
     elsewhere = Instance.objects.filter(uuid=inst.uuid).exclude(compute_id=inst.compute_id).first()
     if elsewhere:
-        _move_ownership(inst, elsewhere)
+        move_ownership(inst, elsewhere)
         _log(inst, f"owners moved to {elsewhere.compute.name}")
     else:
         _bury(inst)

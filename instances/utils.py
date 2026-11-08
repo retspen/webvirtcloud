@@ -8,7 +8,7 @@ from collections import namedtuple
 from accounts.models import UserInstance, UserAttributes
 from appsettings.settings import app_settings
 from computes.models import Compute
-from computes.utils import lock_ownership
+from computes.utils import lock_ownership, move_ownership
 from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
@@ -351,28 +351,7 @@ def record_migration(instance, new_compute):
         lock_ownership()
         target_inst = Instance.objects.filter(compute=new_compute, uuid=instance.uuid).first()
         if target_inst and target_inst.id != instance.id:
-            for ui in UserInstance.objects.filter(instance=instance):
-                existing_ui = UserInstance.objects.filter(instance=target_inst, user=ui.user).first()
-                if not existing_ui:
-                    ui.instance = target_inst
-                    ui.save()
-                else:
-                    updated = False
-                    if ui.is_change and not existing_ui.is_change:
-                        existing_ui.is_change = True
-                        updated = True
-                    if ui.is_delete and not existing_ui.is_delete:
-                        existing_ui.is_delete = True
-                        updated = True
-                    if ui.is_vnc and not existing_ui.is_vnc:
-                        existing_ui.is_vnc = True
-                        updated = True
-                    if updated:
-                        existing_ui.save()
-                    ui.delete()
-            if instance.is_template and not target_inst.is_template:
-                target_inst.is_template = True
-                target_inst.save(update_fields=["is_template"])
+            move_ownership(instance, target_inst)
             instance.delete()
             instance.id = target_inst.id
             instance.compute = new_compute

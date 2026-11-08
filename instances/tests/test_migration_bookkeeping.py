@@ -68,3 +68,12 @@ class MigrationBookkeepingTests(TestCase):
         found.refresh_from_db()
         self.assertTrue(found.is_template)
         self.assertEqual(UserInstance.objects.get(user=owner).instance_id, found.id)
+
+    def test_an_owner_of_both_records_keeps_the_rights_of_both(self):
+        owner = get_user_model().objects.create_user("mb-both")
+        UserInstance.objects.create(user=owner, instance=self.vm, is_change=True)
+        found = Instance.objects.create(compute=self.dest, name="vm", uuid="u-mb")
+        UserInstance.objects.create(user=owner, instance=found, is_vnc=True)
+        self.migrate()
+        ui = UserInstance.objects.get(user=owner)
+        self.assertEqual((ui.instance_id, ui.is_change, ui.is_delete, ui.is_vnc), (found.id, True, False, True))
