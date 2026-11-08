@@ -155,7 +155,8 @@ function load_list(list, url, fill) {
 function load_volumes(pool) {
     images_control.clearOptions();  // keeps the chosen volumes
     return load_list(images_control, volumes_url(pool), function (data) {
-        data['vols'].forEach(item => images_control.addOption({value: item, text: item}));
+        // a pool's volumes have their own names; the chosen ones may come from several pools
+        data['vols'].forEach(item => images_control.addOption({value: pool + "/" + item, text: item}));
     });
 }
 

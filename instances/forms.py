@@ -117,7 +117,8 @@ class NewVMForm(forms.Form):
     net_model = forms.CharField(max_length=256, required=False)
     storage = forms.CharField(max_length=256, required=False)
     template = forms.CharField(max_length=256, required=False)
-    images = forms.CharField(max_length=256, required=False)
+    template_pool = forms.CharField(max_length=256, required=False)
+    images = forms.CharField(max_length=256, required=False)  # existing volumes, each "pool/volume"
     cache_mode = forms.CharField(max_length=16)
     hdd_size = forms.IntegerField(min_value=1, required=False)
     meta_prealloc = forms.BooleanField(required=False)

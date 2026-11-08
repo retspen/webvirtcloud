@@ -47,6 +47,25 @@ class CreateInstanceViewTests(TestCase):
 
     @patch("instances.views.wvmCreate", new=wvm_create)
     @patch("instances.views.NewVMForm")
+    def test_a_volume_is_taken_from_its_own_pool(self, form_class):
+        # another pool may have a volume of the same name
+        _, conn = self.create(form_class)
+        run(Operation.objects.get())
+        conn.get_volume_path.assert_called_once_with("base.qcow2", "pool-b")
+
+        Operation.objects.all().delete()
+        Instance.objects.all().delete()
+        paths = {("base.qcow2", "pool-b"): "/pool-b/base.qcow2"}  # the copy's name is free
+        conn.get_volume_path.side_effect = lambda name, pool: paths.get((name, pool))
+        try:
+            _, conn = self.create(form_class, images="", template="base.qcow2", template_pool="pool-b", storage="default")
+            run(Operation.objects.get())
+        finally:
+            conn.get_volume_path.side_effect = None
+        self.assertEqual(conn.clone_from_template.call_args.args[:3], ("new-vm", "/pool-b/base.qcow2", "default"))
+
+    @patch("instances.views.wvmCreate", new=wvm_create)
+    @patch("instances.views.NewVMForm")
     def test_secure_boot_and_a_tpm_reach_the_definition(self, form_class):
         _, conn = self.create(form_class, firmware="UEFI Secure Boot", tpm=True)
         run(Operation.objects.get())
@@ -120,7 +139,7 @@ class CreateInstanceViewTests(TestCase):
         form.is_valid.return_value = True
         form.cleaned_data = {
             "name": "new-vm", "meta_prealloc": False, "hdd_size": 0,
-            "template": "", "images": "base.qcow2", "cache_mode": "default",
+            "template": "", "template_pool": "", "images": "pool-b/base.qcow2", "cache_mode": "default",
             "firmware": "BIOS", "net_model": "virtio", "memory": 1024,
             "vcpu": 1, "vcpu_mode": "host-model", "networks": "default",
             "virtio": True, "listener_addr": "0.0.0.0", "nwfilter": "",

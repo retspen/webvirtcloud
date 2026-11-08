@@ -175,7 +175,7 @@ class InstancesTestCase(TestCase):
                 "memory": 128,
                 "device0": "disk",
                 "bus0": "virtio",
-                "images": "wvc-test-volume.qcow2",
+                "images": f"{livetest.POOL}/wvc-test-volume.qcow2",
                 "storage-control": livetest.POOL,
                 "image-control": "wvc-test.qcow2",
                 "networks": "default",

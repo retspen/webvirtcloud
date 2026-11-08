@@ -811,7 +811,7 @@ def _seed_pool(conn, data):
     """The pool of a new VM's cloud-init seed: the one of its disk."""
     if data["storage"]:
         return conn.get_storage(data["storage"])
-    return conn.get_storage_by_vol_path(conn.get_volume_path(data["images"].split(",")[0]))
+    return conn.get_storage(data["images"].split(",")[0].partition("/")[0])
 
 
 @register
@@ -822,7 +822,7 @@ class CreateInstance(Kind):
 
     def normalize(self, raw):
         # what the API leaves out means what create_instance did by default
-        params = {"template": "", "images": "", "firmware": "", "net_model": "virtio", "add_cdrom": "sata",
+        params = {"template": "", "template_pool": "", "images": "", "firmware": "", "net_model": "virtio", "add_cdrom": "sata",
                   "add_input": "default", "meta_prealloc": False, "hdd_size": 0, "cloud_init": False, "tpm": False,
                   "mac": "", "nwfilter": ""}
         params.update({k: v for k, v in raw.items() if k not in ("submission_key", "create", "csrfmiddlewaretoken")})
@@ -922,13 +922,14 @@ class CreateInstance(Kind):
                 created.append(path)
                 volume_list.append(volume(path))
             elif data["template"]:
-                path = conn.clone_from_template(data["name"], conn.get_volume_path(data["template"]), data["storage"],
+                path = conn.clone_from_template(data["name"], conn.get_volume_path(data["template"], data["template_pool"]), data["storage"],
                                                 meta_prealloc, default_disk_owner_uid, default_disk_owner_gid)
                 created.append(path)
                 volume_list.append(volume(path))
             else:
-                for vol, (device, bus) in zip(data["images"].split(","), data["devices"]):
-                    volume_list.append(volume(conn.get_volume_path(vol), device, bus))
+                for image, (device, bus) in zip(data["images"].split(","), data["devices"]):
+                    pool, _sep, name = image.partition("/")  # an existing volume is "pool/volume"
+                    volume_list.append(volume(conn.get_volume_path(name, pool), device, bus))
 
             if data["cloud_init"]:
                 ctx.set_phase(gettext_noop("Writing the cloud-init seed"))

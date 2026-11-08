@@ -101,16 +101,13 @@ class wvmCreate(wvmConnect):
         vol = self.get_volume_by_path(path)
         return util.vol_driver_type(util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type"))
 
-    def get_volume_path(self, volume, pool=None):
-        storages = [pool] if pool else self.get_storages(only_actives=True)
-        for storage in storages:
-            stg = self.get_storage(storage)
-            if stg.info()[0] != 0:
-                stg.refresh(0)
-                for img in stg.listVolumes():
-                    if img == volume:
-                        vol = stg.storageVolLookupByName(img)
-                        return vol.path()
+    def get_volume_path(self, volume, pool):
+        """The path of that volume of the pool; None if an active pool has no such volume."""
+        stg = self.get_storage(pool)
+        if stg.info()[0] != 0:
+            stg.refresh(0)
+            if volume in stg.listVolumes():
+                return stg.storageVolLookupByName(volume).path()
 
     def get_storage_by_vol_path(self, vol_path):
         vol = self.get_volume_by_path(vol_path)

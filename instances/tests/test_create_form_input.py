@@ -256,13 +256,13 @@ class SubmittedListsTests(TestCase):
 
     def test_a_refused_form_sends_back_its_lists(self):
         _, response = render_create_page(self, valid(
-            name="bad name!", disk_source="existing", **{"storage-control": "default"}, images="a.qcow2,b.qcow2",
+            name="bad name!", disk_source="existing", **{"storage-control": "default"}, images="default/a.qcow2,default/b.qcow2",
             device0="cdrom", bus0="sata", device1="disk", bus1="virtio",
             networks="default,isolated", mac="52:54:00:00:00:01"))
         self.assertEqual(self.lists(response), {
             "pool": "default",
-            "disks": [{"volume": "a.qcow2", "device": "cdrom", "bus": "sata"},
-                      {"volume": "b.qcow2", "device": "disk", "bus": "virtio"}],
+            "disks": [{"volume": "default/a.qcow2", "device": "cdrom", "bus": "sata"},
+                      {"volume": "default/b.qcow2", "device": "disk", "bus": "virtio"}],
             "networks": [{"name": "default", "mac": "52:54:00:00:00:01"}, {"name": "isolated", "mac": ""}],
         })
 
