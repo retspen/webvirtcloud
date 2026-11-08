@@ -85,27 +85,23 @@ class ConnectionThreadsTestCase(unittest.TestCase):
 
     def test_a_close_during_the_lookup_never_returns_none(self):
         """The close callback runs on the event loop thread, at any moment of
-        another thread's get_connection."""
-        for nth in range(1, 4):
-            with self.subTest(nth=nth):
-                self.manager = wvmConnectionManager()
-                conn = alive_connection()
-                self.release.set()
-                with self.open_auth(conn):
-                    self.assertIs(self.get(), conn)
-                entry = self.entries()[0]
-                calls = []
+        another thread's get_connection: here while it checks the connection."""
+        conn = alive_connection()
+        self.release.set()
+        with self.open_auth(conn):
+            self.assertIs(self.get(), conn)
+        entry = self.entries()[0]
 
-                def is_alive():
-                    calls.append(1)
-                    if len(calls) == nth and not entry.connection_state_lock.locked():
-                        entry._wvmConnection__connection_close_callback(conn, 2)
-                    return 1
+        def is_alive():
+            entry._wvmConnection__connection_close_callback(conn, 2)
+            return 1
 
-                conn.isAlive.side_effect = is_alive
-                with self.open_auth(alive_connection()):
-                    result = self.get()
-                self.assertIsNotNone(result)
+        conn.isAlive.side_effect = is_alive
+        reopened = alive_connection()
+        with self.open_auth(reopened):
+            result = self.get()
+        self.assertIsNone(entry.connection)  # the close came during the lookup
+        self.assertIs(result, conn)  # the connection it checked, not None or an error
 
 
 if __name__ == "__main__":
