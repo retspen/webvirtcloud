@@ -57,8 +57,15 @@ class BoundedOpenTestCase(unittest.TestCase):
             self.addCleanup(patcher.stop)
         self.manager = wvmConnectionManager()
         self.release = threading.Event()
-        self.addCleanup(self.release.set)
+        self.threads = set(threading.enumerate())
+        self.addCleanup(self.finish_opens)
         self.calls = 0
+
+    def finish_opens(self):
+        """Let every open this test started end: one ending later would log into another test."""
+        self.release.set()
+        for thread in set(threading.enumerate()) - self.threads:
+            thread.join(5)
 
     def open_auth(self, result):
         def open_auth(uri, auth, flags):
