@@ -33,8 +33,8 @@ WebVirtCloud and `virt-manager`/`virsh` can manage the same libvirt host **concu
 
 * QEMU/KVM hypervisor management (multiple compute nodes), with each host's capacity and what its VMs were given
 * Virtual machine lifecycle: create, delete, power management, clone (also of a running VM, with libvirt 11.10 or later), migrate (with or without shared storage), disk moves between pools
-* Long operations (create, clone, delete, snapshots, migration, disk moves, ISO upload) run as jobs that the page follows and can cancel
-* External snapshots (memory optional, guest file systems frozen through the agent)
+* Long operations (create, clone, delete, snapshots, migration, disk moves, ISO upload) run as jobs that the page follows; a queued job can be cancelled, and a running clone, migration, disk move or ISO upload too
+* External snapshots (memory optional; without memory, guest file systems can be frozen through the agent)
 * **External change detection:** VMs created, deleted or renamed via `virt-manager` or `virsh` are reconciled into the database automatically
 * Real-time hypervisor and VM statistics (CPU, RAM, disk, network)
 * Storage pool and volume management
@@ -42,7 +42,7 @@ WebVirtCloud and `virt-manager`/`virsh` can manage the same libvirt host **concu
 * PCI and USB devices of the host given to VMs
 * UEFI Secure Boot and TPM 2.0 for new VMs, as Windows 11 needs
 * Browser-based VNC console (noVNC) and serial console
-* Role-based access control: users only see the VMs assigned to them, within their quota
+* Role-based access control: users see the VMs assigned to them, within their quota; an auditor permission shows every VM read-only
 * 2FA (OTP / TOTP) and failed-login lockout
 * SSH public key and root password management (guest agent for a running VM, gstfsd for a shut-off one)
 * Finding VMs by IP or MAC address, and a VM report as an Excel file
