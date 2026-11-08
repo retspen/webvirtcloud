@@ -139,7 +139,7 @@ def validate_macaddr(val):
     if val is None:
         return
 
-    if not (isinstance(val, str) or isinstance(val, str)):
+    if not isinstance(val, str):
         raise ValueError("MAC address must be a string.")
 
     form = re.match("^([0-9a-fA-F]{1,2}:){5}[0-9a-fA-F]{1,2}$", val)
