@@ -18,10 +18,12 @@ RUN apt-get update -qqy \
 
 WORKDIR /srv/webvirtcloud
 COPY conf/requirements.txt conf/requirements-ldap.txt conf/
-# hadolint ignore=DL3013,DL3042
-RUN python3 -m venv venv \
-    && venv/bin/pip install --no-cache-dir -U pip wheel \
-    && venv/bin/pip install --no-cache-dir -r conf/requirements.txt -r conf/requirements-ldap.txt
+# pip's cache stays on the build host for the next build; pip itself is not
+# shipped: a dependency change is a new image
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python3 -m venv venv \
+    && venv/bin/pip install -r conf/requirements.txt -r conf/requirements-ldap.txt \
+    && venv/bin/pip uninstall -y pip
 
 FROM phusion/baseimage:resolute-1.0.23
 
@@ -49,11 +51,13 @@ WORKDIR /srv/webvirtcloud
 COPY --from=build /srv/webvirtcloud/venv venv
 COPY . /srv/webvirtcloud
 
-# Run collectstatic with temporary dummy key, then remove temporary settings file
+# The code stays root's: the panel writes only to its data and backup
+# directories (made its own at start). A settings file and a key exist only
+# for collectstatic.
 RUN cp webvirtcloud/settings.py.template webvirtcloud/settings.py && \
-	SECRET_KEY="build-dummy-key-only-for-collectstatic" venv/bin/python3 manage.py collectstatic --noinput && \
-	rm -f webvirtcloud/settings.py && \
-	chown -R www-data:www-data /srv/webvirtcloud
+	SECRET_KEY="build-dummy-key-only-for-collectstatic" WEBVIRTCLOUD_LOG_FILE=/tmp/build.log \
+	venv/bin/python3 manage.py collectstatic --noinput && \
+	rm -f webvirtcloud/settings.py /tmp/build.log
 
 # Setup Nginx
 RUN printf "\n%s" "daemon off;" >> /etc/nginx/nginx.conf && \
