@@ -90,11 +90,11 @@ class Compute(Model):
 
     @cached_property
     def cpu_count(self):
-        return self.proxy.get_node_info()[3]
-    
+        return self.proxy.host_info[2]
+
     @cached_property
     def ram_size(self):
-        return self.proxy.get_node_info()[2]
+        return self.proxy.host_info[1] * 1048576  # MiB
 
     @cached_property
     def ram_usage(self):

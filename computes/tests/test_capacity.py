@@ -36,6 +36,12 @@ class CapacityTests(TestCase):
         self.assertIsNone(self.compute.capacity)
         details.assert_not_called()
 
+    @patch("computes.models.wvmHostDetails")
+    def test_cpus_and_memory_come_from_the_host_info(self, details):
+        details.return_value.host_info = ["x86_64", 32768, 8, 2400]
+        self.assertEqual((self.compute.cpu_count, self.compute.ram_size), (8, 32 * GIB))
+        details.return_value.get_node_info.assert_not_called()  # no hostname, sysinfo or URI read
+
 
 class ComputesPageTests(TestCase):
     def test_the_list_shows_what_each_compute_has_given(self):
