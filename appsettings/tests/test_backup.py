@@ -40,6 +40,17 @@ class BackupTests(SimpleTestCase):
         home.start()
         self.addCleanup(home.stop)
         self.backups = self.base / "backups"
+        # the panel's database, its last change still only in the WAL file
+        db = sqlite3.connect(self.base / "db.sqlite3")
+        self.addCleanup(db.close)
+        db.execute("PRAGMA journal_mode=WAL")
+        db.execute("PRAGMA wal_autocheckpoint=0")
+        db.execute("CREATE TABLE computes_compute (name)")
+        db.execute("INSERT INTO computes_compute VALUES ('kept')")
+        db.commit()
+        name = patch.dict(connection.settings_dict, NAME=str(self.base / "db.sqlite3"))
+        name.start()
+        self.addCleanup(name.stop)
 
     def backup(self, *args):
         out = StringIO()
@@ -53,8 +64,7 @@ class BackupTests(SimpleTestCase):
     def test_a_backup_holds_the_database_keys_and_settings_for_the_panel_user_only(self):
         backup = self.backup()
         with closing(sqlite3.connect(backup / "db.sqlite3")) as db:
-            tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
-        self.assertIn("computes_compute", tables)
+            self.assertEqual(db.execute("SELECT name FROM computes_compute").fetchall(), [("kept",)])
         self.assertEqual(sorted(p.name for p in backup.iterdir()), ["db.sqlite3", "node_id", "secret_key", "settings.py", "ssh"])
         self.assertEqual((backup / "secret_key").read_text(), "key")
         self.assertEqual([p.name for p in (backup / "ssh").iterdir()], ["id_ed25519"])  # not what a link points to
