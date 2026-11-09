@@ -91,6 +91,10 @@ class AllowedHostsTestCase(SimpleTestCase):
     def test_allowed_hosts_star_escape(self):
         self.assertIn("*", self.hosts({"ALLOWED_HOSTS": "*"}))
 
+    def test_a_network_stops_the_start(self):
+        with self.assertRaisesRegex(AssertionError, "not networks: 192.0.2.0/24"):
+            self.hosts({"ALLOWED_HOSTS": "wvc.example.com,192.0.2.0/24"})
+
 
 class EmailEnvTestCase(SimpleTestCase):
     def test_email_from_env(self):

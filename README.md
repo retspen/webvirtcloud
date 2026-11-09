@@ -337,7 +337,7 @@ If libvirt warns `Host SMBIOS information is not available`, install `dmidecode`
 
 | Variable | Effect |
 | --- | --- |
-| `ALLOWED_HOSTS` | extra host names/IPs the panel answers to (comma-separated, `*` for any); other hosts get 400 |
+| `ALLOWED_HOSTS` | extra host names/IPs the panel answers to (comma-separated, `*` for any; a network such as `192.0.2.0/24` is refused at start); other hosts get 400 |
 | `CSRF_TRUSTED_ORIGINS` | extra trusted origins, e.g. `https://wvc.example.com` |
 | `WEBVIRTCLOUD_HTTPS=1` | HTTPS profile, see [HTTPS and reverse proxy](#https-and-reverse-proxy) |
 | `WEBVIRTCLOUD_SERIAL_CONSOLE=1` | serial console, see [Serial console](#serial-console) |

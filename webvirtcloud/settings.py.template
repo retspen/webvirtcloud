@@ -47,6 +47,10 @@ MAC_OUI = '52:54:10'
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]"]
 if extra_hosts := os.getenv("ALLOWED_HOSTS"):
     ALLOWED_HOSTS.extend([host.strip() for host in extra_hosts.split(",") if host.strip()])
+# Django compares the request's host with each entry as a name: a network
+# (192.0.2.0/24) matches no request and would leave its addresses refused
+if networks := [host for host in ALLOWED_HOSTS if "/" in host]:
+    raise ImproperlyConfigured(f"ALLOWED_HOSTS takes host names and addresses, not networks: {', '.join(networks)}")
 
 CSRF_TRUSTED_ORIGINS = ["http://localhost", "http://127.0.0.1", "http://localhost:8000", "http://127.0.0.1:8000"]
 if extra_origins := os.getenv("CSRF_TRUSTED_ORIGINS"):
