@@ -50,28 +50,59 @@ def get_clone_free_names(size=10):
     return free_names
 
 
+# the computes an earlier check still waits for: a new check does not ask them again, so
+# retried deletes do not pile up calls to a host that does not answer
+_UNANSWERED = set()
+
+
 @other_hosts()
 def paths_used_on_other_computes(compute, own):
     """The paths in own that the VMs and volumes of the panel's other computes
     use (paths_in_use): shared storage holds a file at the same path on every
     host that mounts it, as migration needs. ConnectionFailed naming a compute
-    that cannot be read, which might use them: users who do not see hosts
-    learn only that a host cannot be reached."""
-    used = set()
+    that cannot be read, or does not answer within USED_CHECK_WAIT (as in
+    used_anywhere), which might use them: users who do not see hosts learn
+    only that a host cannot be reached."""
     host = wvmConnect(compute.hostname, compute.login, compute.password, compute.type).host_uuid()
-    for other in Compute.objects.exclude(pk=compute.pk):
-        try:
-            conn = wvmConnect(other.hostname, other.login, other.password, other.type)
-            if host and conn.host_uuid() == host:
-                continue  # the VM's own host under another record: its VM is the one going
-            used |= conn.paths_in_use(own=own)
-        except libvirtError as err:
-            raise ConnectionFailed(gettext_noop("The disk files cannot be checked on %(host)s: %(err)s"),
-                                   host=other.name, err=err) from err
+    others = list(Compute.objects.exclude(pk=compute.pk))
+    if waiting := [other.name for other in others if other.pk in _UNANSWERED]:
+        raise ConnectionFailed(gettext_noop("The disk files cannot be checked on %(host)s: it did not answer within "
+                                            "%(seconds)s seconds"), host=waiting[0], seconds=USED_CHECK_WAIT)
+    used, failure, asking = set(), [], []
+
+    def check():
+        for other in others:
+            asking[:] = [other.name]
+            _UNANSWERED.add(other.pk)
+            try:
+                conn = wvmConnect(other.hostname, other.login, other.password, other.type)
+                if host and conn.host_uuid() == host:
+                    continue  # the VM's own host under another record: its VM is the one going
+                used.update(conn.paths_in_use(own=own))
+            except libvirtError as err:
+                failure.append(ConnectionFailed(gettext_noop("The disk files cannot be checked on %(host)s: %(err)s"),
+                                                host=other.name, err=err))
+                return
+            except Exception as err:  # raised in the caller's thread, as before
+                failure.append(err)
+                return
+            finally:
+                _UNANSWERED.discard(other.pk)
+        asking.clear()
+
+    thread = threading.Thread(target=check, daemon=True)
+    thread.start()
+    thread.join(USED_CHECK_WAIT)
+    if failure:
+        raise failure[0]
+    if asking:
+        raise ConnectionFailed(gettext_noop("The disk files cannot be checked on %(host)s: it did not answer within "
+                                            "%(seconds)s seconds"), host=asking[0], seconds=USED_CHECK_WAIT)
     return used & set(own)
 
 
-USED_CHECK_WAIT = 60  # seconds a disk move or a migration waits for the computes to tell whether its old file is used
+# seconds a disk move, a migration or a VM delete waits for the computes to tell whether a file is used
+USED_CHECK_WAIT = 60
 
 
 def used_anywhere(path, skip=None):

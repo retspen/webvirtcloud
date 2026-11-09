@@ -9436,3 +9436,7 @@ msgstr "使用量 (RSS)"
 #, python-format
 msgid "%(label)s: %(vcpu)s vCPU, %(memory)s MiB, new %(disk)s GiB disk"
 msgstr "%(label)s：%(vcpu)s 个 vCPU，%(memory)s MiB，新建 %(disk)s GiB 磁盘"
+
+#, python-format
+msgid "The disk files cannot be checked on %(host)s: it did not answer within %(seconds)s seconds"
+msgstr "无法在 %(host)s 上检查磁盘文件：它在 %(seconds)s 秒内没有响应"

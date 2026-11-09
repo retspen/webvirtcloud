@@ -10017,3 +10017,7 @@ msgstr "Kullanım (RSS)"
 #, python-format
 msgid "%(label)s: %(vcpu)s vCPU, %(memory)s MiB, new %(disk)s GiB disk"
 msgstr "%(label)s: %(vcpu)s vCPU, %(memory)s MiB, yeni %(disk)s GiB disk"
+
+#, python-format
+msgid "The disk files cannot be checked on %(host)s: it did not answer within %(seconds)s seconds"
+msgstr "Disk dosyaları %(host)s üzerinde denetlenemiyor: %(seconds)s saniye içinde yanıt vermedi"

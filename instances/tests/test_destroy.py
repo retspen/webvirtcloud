@@ -1,3 +1,5 @@
+import threading
+import time
 from contextlib import contextmanager
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -9,6 +11,7 @@ from django.test import TestCase, TransactionTestCase
 from django.urls import reverse
 from instances.jobs import DeleteInstance
 from instances.models import Instance
+from instances import utils
 from instances.utils import paths_used_on_other_computes
 from libvirt import VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM, VIR_ERR_NO_STORAGE_VOL, libvirtError
 from logs.models import Logs
@@ -297,3 +300,30 @@ class OtherComputesTestCase(TestCase):
         self.assertEqual(caught.exception.args[0], "The disk files cannot be checked on host-b: connection refused")
         # users who do not see hosts get neither the host nor libvirt's text
         self.assertEqual(public_error_text(caught.exception), "The host of this virtual machine cannot be reached right now.")
+
+    def test_a_host_that_does_not_answer_is_an_error_in_bounded_time(self):
+        # connected, but stuck (a hung NFS mount): the delete job must not wait for it for good
+        hosts = self.hosts({"192.0.2.61": set(), "192.0.2.62": set()})
+        stuck = threading.Event()
+        self.addCleanup(stuck.set)
+        hosts["192.0.2.62"].paths_in_use.side_effect = lambda own: stuck.wait(10) and set()
+        with patch("instances.utils.wvmConnect", side_effect=lambda host, *args: hosts[host]), \
+                patch("instances.utils.USED_CHECK_WAIT", 0.2):
+            started = time.monotonic()
+            with self.assertRaises(ConnectionFailed) as caught:
+                paths_used_on_other_computes(self.source, ["/nfs/a.qcow2"])
+        self.assertLess(time.monotonic() - started, 2)
+        self.assertEqual(caught.exception.args[0], "The disk files cannot be checked on host-c: it did not answer within 0.2 seconds")
+        # a retry while the host still has not answered does not ask it again
+        with patch("instances.utils.wvmConnect", side_effect=lambda host, *args: hosts[host]):
+            with self.assertRaises(ConnectionFailed):
+                paths_used_on_other_computes(self.source, ["/nfs/a.qcow2"])
+        self.assertEqual(hosts["192.0.2.62"].paths_in_use.call_count, 1)
+        stuck.set()  # it answers: it is asked again
+        hosts["192.0.2.62"].paths_in_use.side_effect = None
+        hosts["192.0.2.62"].paths_in_use.return_value = set()
+        deadline = time.monotonic() + 2
+        while utils._UNANSWERED and time.monotonic() < deadline:
+            time.sleep(0.01)
+        with patch("instances.utils.wvmConnect", side_effect=lambda host, *args: hosts[host]):
+            self.assertEqual(paths_used_on_other_computes(self.source, ["/nfs/a.qcow2"]), set())
