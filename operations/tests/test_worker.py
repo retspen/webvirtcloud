@@ -60,6 +60,20 @@ class WorkerTestCase(TransactionTestCase):
     def job(self, host, n):
         return self.submit("test.host", {"host": host, "n": n}, f"key-h{host}-{n:04d}")
 
+    def test_a_stuck_housekeeping_pass_is_not_started_again(self):
+        stuck, passes = threading.Event(), []
+
+        def housekeeping():
+            passes.append(1)
+            stuck.wait(10)
+        with patch("operations.worker.HOUSEKEEPING_EVERY", 0), patch("operations.worker.housekeeping", housekeeping):
+            self.start()
+            self.assertTrue(wait_for(lambda: passes))
+            time.sleep(0.5)  # ten ticks
+            self.assertEqual(len(passes), 1)
+            stuck.set()
+            self.assertTrue(wait_for(lambda: len(passes) > 1))
+
     def test_a_stuck_host_takes_half_the_slots_and_one_progress_read(self):
         fakes.STUCK[1] = threading.Event()
         stuck = [self.job(1, n) for n in range(4)]

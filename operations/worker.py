@@ -111,6 +111,7 @@ class Worker:
         self.progress_pool = ThreadPoolExecutor(PROGRESS_THREADS, thread_name_prefix="wvc-progress")
         self.recovery = Scheduler(self)
         self._last = {"heartbeat": 0.0, "progress": 0.0, "housekeeping": 0.0}
+        self.housekeeping = None  # the future of the last housekeeping pass
 
     # -- process ------------------------------------------------------------
 
@@ -194,7 +195,9 @@ class Worker:
         self._claim()
         if now - self._last["housekeeping"] >= HOUSEKEEPING_EVERY:
             self._last["housekeeping"] = now
-            self.control.submit(_guarded, housekeeping)
+            # one pass at a time: a pass stuck on a host (an upload's cleanup) holds one control thread, not all
+            if self.housekeeping is None or self.housekeeping.done():
+                self.housekeeping = self.control.submit(_guarded, housekeeping)
 
     def _mine(self, pks):
         """This worker's active jobs among pks; used only inside fenced."""
