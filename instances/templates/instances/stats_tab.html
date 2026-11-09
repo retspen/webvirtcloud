@@ -1,7 +1,8 @@
 {% load i18n %}
 <div class="tab-pane" id="graphics" role="tabpanel" data-url="{% url 'instances:stats' instance.id %}"
      data-average-over="{% trans "average over" %}" data-in="{% trans "In" %}" data-out="{% trans "Out" %}"
-     data-read="{% trans "Read" %}" data-write="{% trans "Write" %}">
+     data-read="{% trans "Read" %}" data-write="{% trans "Write" %}"
+     data-usage="{% trans "Usage" context "chart" %}" data-usage-rss="{% trans "Usage (RSS)" context "chart" %}">
     <div class="card">
     <div class="card-body">
         <div class="d-flex flex-wrap align-items-center gap-2 mb-3">

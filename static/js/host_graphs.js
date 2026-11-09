@@ -2,14 +2,14 @@
 var state = document.getElementById("graph_state");
 // the seconds each CPU point averages
 var cpuWindows = [];
-var cpuChart = lineChart(document.getElementById("cpuChart"), "%", ["Usage"], {
+var cpuChart = lineChart(document.getElementById("cpuChart"), "%", [state.dataset.usage], {
     max: 100,
     tooltip: function (context, text) {
         var span = cpuWindows[context.dataIndex];
         return span ? text + ' (' + state.dataset.averageOver + ' ' + span + ' s)' : text;
     },
 });
-var memChart = lineChart(document.getElementById("memChart"), "GB", ["Usage"]);
+var memChart = lineChart(document.getElementById("memChart"), "GB", [state.dataset.usage]);
 var cpuNow = document.getElementById("cpu_now");
 var memNow = document.getElementById("mem_now");
 var lastUpdate = "–";

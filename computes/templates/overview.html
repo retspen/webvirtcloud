@@ -108,7 +108,7 @@
 </div>
 <div class="small text-body-secondary mt-2 mb-4">
     {% trans "The last 10 readings, one every 5 seconds. Memory in use leaves out the host's buffers and cache." %}
-    <span id="graph_state" data-url="{% url 'compute_graph' compute.id %}" data-average-over="{% trans "average over" %}" data-updated="{% trans "Updated at %(time)s." %}"
+    <span id="graph_state" data-url="{% url 'compute_graph' compute.id %}" data-average-over="{% trans "average over" %}" data-usage="{% trans "Usage" context "chart" %}" data-updated="{% trans "Updated at %(time)s." %}"
         data-stale="{% trans "Not updated since %(time)s: the host did not answer." %}">{% trans "Waiting for the first reading." %}</span>
 </div>
 

@@ -9424,3 +9424,15 @@ msgstr "所有接口"
 #, python-format
 msgid "The VM's CPU topology has %(count)s vCPUs: change it in the XML editor to set another maximum"
 msgstr "该虚拟机的 CPU 拓扑为 %(count)s 个 vCPU：要设置其他最大值，请在 XML 编辑器中修改拓扑"
+
+msgctxt "chart"
+msgid "Usage"
+msgstr "使用量"
+
+msgctxt "chart"
+msgid "Usage (RSS)"
+msgstr "使用量 (RSS)"
+
+#, python-format
+msgid "%(label)s: %(vcpu)s vCPU, %(memory)s MiB, new %(disk)s GiB disk"
+msgstr "%(label)s：%(vcpu)s 个 vCPU，%(memory)s MiB，新建 %(disk)s GiB 磁盘"

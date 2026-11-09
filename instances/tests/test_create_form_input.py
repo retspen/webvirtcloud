@@ -204,6 +204,8 @@ class FlavorPresetTests(TestCase):
         [preset] = page.xpath(f"//button[contains(@class, 'preset')][@data-label='{self.flavor.label}']")
         self.assertEqual((preset.get("data-vcpu"), preset.get("data-memory"), preset.get("data-disk")), ("1", "512", "10"))
         self.assertEqual((preset.get("type"), preset.get("aria-pressed")), ("button", "false"))
+        # what a screen reader hears when it is applied (create_instance.js), in the page's language
+        self.assertEqual(preset.get("data-status"), "wvc-test: 1 vCPU, 512 MiB, new 10 GiB disk")
 
     def test_the_flavor_dialog_sits_outside_the_form(self):
         _, response = render_create_page(self)

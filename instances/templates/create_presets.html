@@ -4,7 +4,8 @@
 <div class="d-flex flex-wrap gap-2" role="group" aria-labelledby="presets-label" aria-describedby="presets_help">
     {% for flavor in flavors %}
     <button type="button" class="btn btn-sm border text-body focus-ring preset" aria-pressed="false"
-            data-label="{{ flavor.label }}" data-vcpu="{{ flavor.vcpu }}" data-memory="{{ flavor.memory }}" data-disk="{{ flavor.disk }}">
+            data-label="{{ flavor.label }}" data-vcpu="{{ flavor.vcpu }}" data-memory="{{ flavor.memory }}" data-disk="{{ flavor.disk }}"
+            data-status="{% blocktrans with label=flavor.label vcpu=flavor.vcpu memory=flavor.memory disk=flavor.disk %}{{ label }}: {{ vcpu }} vCPU, {{ memory }} MiB, new {{ disk }} GiB disk{% endblocktrans %}">
         <strong>{{ flavor.label }}</strong> · {{ flavor.vcpu }} vCPU · {{ flavor.memory }} MiB · {{ flavor.disk }} GiB
     </button>
     {% endfor %}

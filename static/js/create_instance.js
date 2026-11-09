@@ -52,8 +52,7 @@ function apply_preset(button) {
     clear_presets();
     button.setAttribute("aria-pressed", "true");
     button.classList.replace("text-body", "btn-primary");
-    document.querySelector("#preset-status").textContent =
-        `${button.dataset.label}: ${button.dataset.vcpu} vCPU, ${button.dataset.memory} MiB, new ${button.dataset.disk} GiB disk`;
+    document.querySelector("#preset-status").textContent = button.dataset.status;
 }
 
 function clear_presets() {

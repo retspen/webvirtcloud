@@ -21,23 +21,23 @@
             stats_poll.start();
             return;
         }
-        var cpuChart = lineChart(document.getElementById("cpuChart"), "%", ["Usage"], {
+        var cpuChart = lineChart(document.getElementById("cpuChart"), "%", [pane.dataset.usage], {
             max: 100,
             tooltip: function (context, text) {
                 var span = cpuWindows[context.dataIndex];
                 return span ? text + ' (' + pane.dataset.averageOver + ' ' + span + ' s)' : text;
             },
         });
-        var memChart = lineChart(document.getElementById("memChart"), "MiB", ["Usage (RSS)"]);
+        var memChart = lineChart(document.getElementById("memChart"), "MiB", [pane.dataset.usageRss]);
         var diskChart = {};
         pane.querySelectorAll("canvas[data-disk]").forEach(function (canvas) {
-            diskChart[canvas.dataset.disk] = lineChart(canvas, "MB/s", ["Read", "Write"]);
+            diskChart[canvas.dataset.disk] = lineChart(canvas, "MB/s", [pane.dataset.read, pane.dataset.write]);
         });
         // two NICs with one MAC (a misconfiguration) share the first one's chart
         var netChart = {};
         pane.querySelectorAll("canvas[data-mac]").forEach(function (canvas) {
             var mac = canvas.dataset.mac;
-            netChart[mac] = netChart[mac] || lineChart(canvas, "Mbit/s", ["Inbound", "Outbound"]);
+            netChart[mac] = netChart[mac] || lineChart(canvas, "Mbit/s", [pane.dataset.in, pane.dataset.out]);
         });
 
         // the first point at once, then every 5 s like the host graph

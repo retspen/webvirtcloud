@@ -197,7 +197,8 @@ const fieldsets = ["new", "existing", "template"].map(s => Object.assign(new El(
 all[".disk-source"] = fieldsets;
 const presets = [["small", "2", "2048", "40"], ["large", "4", "8192", "80"]].map(function ([label, vcpu, memory, disk]) {
   const button = new El();
-  Object.assign(button.dataset, {label, vcpu, memory, disk});
+  // status: the text the page has for it, in its language (create_presets.html)
+  Object.assign(button.dataset, {label, vcpu, memory, disk, status: label + " in the page's language"});
   button.classes.add("text-body");
   return button;
 });
@@ -235,7 +236,7 @@ console.log(JSON.stringify({applied, cleared: pressed()}));""")
         self.assertTrue(applied["radio"])
         self.assertEqual(applied["sources"][0], ["source-new", False, False])
         self.assertEqual(applied["pressed"], [["false", "text-body"], ["true", "btn-primary"]])
-        self.assertEqual(applied["status"], "large: 4 vCPU, 8192 MiB, new 80 GiB disk")
+        self.assertEqual(applied["status"], "large in the page's language")
         self.assertEqual(out["cleared"], [["false", "text-body"], ["false", "text-body"]])
 
 

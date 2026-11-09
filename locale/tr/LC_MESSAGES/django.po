@@ -10005,3 +10005,15 @@ msgstr "Tüm arabirimler"
 #, python-format
 msgid "The VM's CPU topology has %(count)s vCPUs: change it in the XML editor to set another maximum"
 msgstr "VM'nin CPU topolojisi %(count)s vCPU içeriyor: başka bir en fazla değer için onu XML düzenleyicide değiştirin"
+
+msgctxt "chart"
+msgid "Usage"
+msgstr "Kullanım"
+
+msgctxt "chart"
+msgid "Usage (RSS)"
+msgstr "Kullanım (RSS)"
+
+#, python-format
+msgid "%(label)s: %(vcpu)s vCPU, %(memory)s MiB, new %(disk)s GiB disk"
+msgstr "%(label)s: %(vcpu)s vCPU, %(memory)s MiB, yeni %(disk)s GiB disk"
