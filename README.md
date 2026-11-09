@@ -354,7 +354,7 @@ The on/off variables take `1` or `0`; any other value, such as `true`, stops the
 Where to set them:
 
 - **Docker:** the `environment:` list of `docker-compose.override.yml`; every process in the container gets it.
-- **Installer and manual installation:** edit `webvirtcloud/settings.py`, or put them in `/etc/default/webvirtcloud` (root, mode 600), one `NAME='value'` per line (single quotes: systemd and the shell then read the same value); the panel's services read it. Then `systemctl restart webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker`, and load the file before running `manage.py`: `set -a; . /etc/default/webvirtcloud; set +a`.
+- **Installer and manual installation:** `/etc/default/webvirtcloud` (root, mode 600), one `NAME='value'` per line (single quotes: systemd and the shell then read the same value); the panel's services read it. `settings.py` does not read these names: a line `WEBVIRTCLOUD_HTTPS = 1` there does nothing. To set an option in `settings.py` instead, change the setting the template fills from the variable, e.g. `SERIAL_CONSOLE_ENABLED = True`. Then `systemctl restart webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker`, and load the file before running `manage.py`: `set -a; . /etc/default/webvirtcloud; set +a`.
 
 Some options exist only in `settings.py` (LDAP, `OTP_ENABLED`, `LOGIN_TRUSTED_PROXIES`). Docker builds that file from the template in each new container; to keep such options there, mount your own copy and update it from the template after each update:
 
