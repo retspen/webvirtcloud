@@ -55,7 +55,7 @@ COPY . .
 # for collectstatic.
 RUN cp webvirtcloud/settings.py.template webvirtcloud/settings.py \
     && SECRET_KEY=build-only WEBVIRTCLOUD_LOG_FILE=/tmp/build.log venv/bin/python3 manage.py collectstatic --noinput \
-    && rm webvirtcloud/settings.py /tmp/build.log
+    && rm -f webvirtcloud/settings.py /tmp/build.log  # the log handler makes the file at its first line only
 
 COPY conf/docker/nginx.conf /etc/nginx/nginx.conf
 COPY conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/

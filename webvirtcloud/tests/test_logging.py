@@ -18,7 +18,7 @@ from webvirtcloud.middleware import RequestIdMiddleware
 class LoggingConfigTestCase(SimpleTestCase):
     def test_default_handler_rotates(self):
         handler = settings.LOGGING["handlers"]["default"]
-        self.assertEqual(handler["class"], "logging.handlers.RotatingFileHandler")
+        self.assertEqual(handler["class"], "concurrent_log_handler.ConcurrentRotatingFileHandler")
         self.assertGreater(handler["maxBytes"], 0)
         self.assertGreater(handler["backupCount"], 0)
 
@@ -48,6 +48,31 @@ class LoggingConfigTestCase(SimpleTestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(os.path.isdir(os.path.dirname(log)), log)
 
+
+    def test_a_process_writes_into_the_file_another_one_rotated(self):
+        # each web worker has its own handler on the file; with a plain
+        # RotatingFileHandler the others went on writing into the rotated one
+        import tempfile
+
+        from django.utils.module_loading import import_string
+
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp)
+        log = os.path.join(tmp, "wvc.log")
+        handler_class = import_string(settings.LOGGING["handlers"]["default"]["class"])
+        first, second = (handler_class(log, maxBytes=100, backupCount=5) for _ in range(2))
+        self.addCleanup(first.close)
+        self.addCleanup(second.close)
+
+        def write(handler, text):
+            handler.emit(logging.LogRecord("wvc", logging.INFO, __file__, 0, text, None, None))
+
+        write(second, "second, before")
+        for _ in range(3):
+            write(first, "first " + "x" * 60)  # rotates
+        write(second, "second, after")
+        with open(log) as current:
+            self.assertIn("second, after", current.read())
 
 class RequestIdTestCase(TestCase):
     def test_a_line_of_a_request_names_the_request_user_and_address(self):

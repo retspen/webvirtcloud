@@ -6,6 +6,8 @@ django-otp==1.7.5
 idna>=3.15
 requests>=2.33.0
 urllib3>=2.8.0
+# the panel's processes rotate one log file without losing each other's lines
+concurrent-log-handler==0.9.31
 django-axes==8.3.1
 djangorestframework==3.18.3
 django-rest-knox==5.1.1

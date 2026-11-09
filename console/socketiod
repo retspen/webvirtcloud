@@ -97,6 +97,7 @@ def connect(sid, environ, auth):
                 # pty.fork's master is inheritable: without this each worker would
                 # hold the other sessions' consoles open
                 os.dup2(LOG_FD, 3)
+                os.set_inheritable(3, True)  # LOG_FD may be 3 itself: dup2 then keeps it close-on-exec
                 os.closerange(4, os.sysconf("SC_OPEN_MAX"))
                 os.environ["CONSOLECALLBACK_LOG_FD"] = "3"
                 os.execv(sys.executable, [sys.executable, CONSOLECALLBACK, str(instance.pk), str(user.pk)])

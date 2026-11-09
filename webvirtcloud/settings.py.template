@@ -289,7 +289,8 @@ LOGGING = {
             },
         'default': {
             'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
+            # every web worker writes the file: one rotates it at a time, under a lock
+            'class': 'concurrent_log_handler.ConcurrentRotatingFileHandler',
             'filename': WEBVIRTCLOUD_LOG_FILE,
             'maxBytes': 10 * 1024 * 1024,
             'backupCount': 5,
