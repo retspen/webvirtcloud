@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 
 from django.conf import settings
 from django.test import SimpleTestCase, TestCase, override_settings
@@ -164,3 +165,16 @@ class EnvFlagTestCase(SimpleTestCase):
         for var in self.FLAGS:
             with self.subTest(var), self.assertRaisesRegex(AssertionError, f"{var} must be 1 or 0, not 'true'"):
                 load_settings({var: "true"}, ["DEBUG"])
+
+
+class LogFileEnvTestCase(SimpleTestCase):
+    def log_file(self, env):
+        return load_settings(env, ["WEBVIRTCLOUD_LOG_FILE"])["WEBVIRTCLOUD_LOG_FILE"]
+
+    def test_a_relative_log_file_is_in_the_panel_directory(self):
+        self.assertEqual(self.log_file({"WEBVIRTCLOUD_LOG_FILE": "data/panel.log"}), str(settings.BASE_DIR / "data" / "panel.log"))
+
+    def test_the_default_and_an_absolute_log_file(self):
+        self.assertEqual(self.log_file({"WEBVIRTCLOUD_LOG_FILE": ""}), str(settings.BASE_DIR / "data" / "webvirtcloud.log"))
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(self.log_file({"WEBVIRTCLOUD_LOG_FILE": f"{tmp}/w.log"}), f"{tmp}/w.log")

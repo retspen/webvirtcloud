@@ -260,10 +260,10 @@ LOCALE_PATHS = [
     BASE_DIR / "locale",
 ]
 
-# Resolve the application log path and make sure its directory exists, so a
-# clean checkout, CI, or a Docker build (none of which create data/) does not
-# fail when logging is configured.
-WEBVIRTCLOUD_LOG_FILE = os.getenv("WEBVIRTCLOUD_LOG_FILE", str(BASE_DIR / "data" / "webvirtcloud.log"))
+# Resolve the application log path (a relative one from the panel's directory)
+# and make sure its directory exists, so a clean checkout, CI, or a Docker
+# build (none of which create data/) does not fail when logging is configured.
+WEBVIRTCLOUD_LOG_FILE = str(BASE_DIR / (os.getenv("WEBVIRTCLOUD_LOG_FILE") or "data/webvirtcloud.log"))
 os.makedirs(os.path.dirname(WEBVIRTCLOUD_LOG_FILE), exist_ok=True)
 
 LOGGING = {
