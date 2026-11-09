@@ -3,7 +3,9 @@ import random
 import re
 import string
 import threading
+import time
 from collections import namedtuple
+from contextlib import contextmanager
 
 from accounts.models import UserInstance, UserAttributes
 from appsettings.settings import app_settings
@@ -50,9 +52,32 @@ def get_clone_free_names(size=10):
     return free_names
 
 
-# the computes an earlier check still waits for: a new check does not ask them again, so
-# retried deletes do not pile up calls to a host that does not answer
-_UNANSWERED = set()
+# when each call to a compute that has not returned started (time.monotonic()). A compute
+# with one older than USED_CHECK_WAIT does not answer: a new check does not ask it, so
+# retried deletes do not pile up calls to it; a check beside another one still asks.
+_ASKING = {}
+_ASKING_LOCK = threading.Lock()
+
+
+@contextmanager
+def _asking(compute):
+    started = time.monotonic()
+    with _ASKING_LOCK:
+        _ASKING.setdefault(compute.pk, []).append(started)
+    try:
+        yield
+    finally:
+        with _ASKING_LOCK:
+            _ASKING[compute.pk].remove(started)
+            if not _ASKING[compute.pk]:
+                del _ASKING[compute.pk]
+
+
+def _unanswered(computes):
+    """The first of computes that a call has waited on for USED_CHECK_WAIT, or None."""
+    now = time.monotonic()
+    with _ASKING_LOCK:
+        return next((c for c in computes if any(now - t >= USED_CHECK_WAIT for t in _ASKING.get(c.pk, ()))), None)
 
 
 @other_hosts()
@@ -65,20 +90,24 @@ def paths_used_on_other_computes(compute, own):
     only that a host cannot be reached."""
     host = wvmConnect(compute.hostname, compute.login, compute.password, compute.type).host_uuid()
     others = list(Compute.objects.exclude(pk=compute.pk))
-    if waiting := [other.name for other in others if other.pk in _UNANSWERED]:
+    if waiting := _unanswered(others):
         raise ConnectionFailed(gettext_noop("The disk files cannot be checked on %(host)s: it did not answer within "
-                                            "%(seconds)s seconds"), host=waiting[0], seconds=USED_CHECK_WAIT)
-    used, failure, asking = set(), [], []
+                                            "%(seconds)s seconds"), host=waiting.name, seconds=USED_CHECK_WAIT)
+    # the compute the check is at: the first one until the thread starts, so that a thread
+    # started late still counts as one that did not answer
+    used, failure, asking = set(), [], [other.name for other in others[:1]]
 
     def check():
         for other in others:
             asking[:] = [other.name]
-            _UNANSWERED.add(other.pk)
+            if _unanswered([other]):  # it stopped answering another check meanwhile
+                return
             try:
-                conn = wvmConnect(other.hostname, other.login, other.password, other.type)
-                if host and conn.host_uuid() == host:
-                    continue  # the VM's own host under another record: its VM is the one going
-                used.update(conn.paths_in_use(own=own))
+                with _asking(other):
+                    conn = wvmConnect(other.hostname, other.login, other.password, other.type)
+                    if host and conn.host_uuid() == host:
+                        continue  # the VM's own host under another record: its VM is the one going
+                    used.update(conn.paths_in_use(own=own))
             except libvirtError as err:
                 failure.append(ConnectionFailed(gettext_noop("The disk files cannot be checked on %(host)s: %(err)s"),
                                                 host=other.name, err=err))
@@ -86,8 +115,6 @@ def paths_used_on_other_computes(compute, own):
             except Exception as err:  # raised in the caller's thread, as before
                 failure.append(err)
                 return
-            finally:
-                _UNANSWERED.discard(other.pk)
         asking.clear()
 
     thread = threading.Thread(target=check, daemon=True)
@@ -110,16 +137,23 @@ def used_anywhere(path, skip=None):
     shared storage holds it for every host that mounts it; a compute that
     cannot be read might, and so might one that does not answer within
     USED_CHECK_WAIT: libvirt has no call timeout, and a stuck host would
-    hold the job for as long as it is stuck. skip: a compute not asked."""
+    hold the job for as long as it is stuck. A compute an earlier check still
+    has waited on for that long is not asked again (_ASKING). skip: a compute not asked."""
     computes = list(Compute.objects.exclude(pk=skip))
+    if _unanswered(computes):
+        return True
     answer = []
 
     def check():
         for c in computes:
+            if _unanswered([c]):  # it stopped answering another check meanwhile
+                answer.append(True)
+                return
             try:
-                if path in wvmConnect(c.hostname, c.login, c.password, c.type).paths_in_use():
-                    answer.append(True)
-                    return
+                with _asking(c):
+                    if path in wvmConnect(c.hostname, c.login, c.password, c.type).paths_in_use():
+                        answer.append(True)
+                        return
             except libvirtError:
                 answer.append(True)
                 return

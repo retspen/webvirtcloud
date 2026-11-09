@@ -301,6 +301,24 @@ class OtherComputesTestCase(TestCase):
         # users who do not see hosts get neither the host nor libvirt's text
         self.assertEqual(public_error_text(caught.exception), "The host of this virtual machine cannot be reached right now.")
 
+    def test_a_check_whose_thread_starts_late_is_an_error_not_an_empty_answer(self):
+        from types import SimpleNamespace
+
+        late = []
+
+        class LateThread(threading.Thread):  # scheduled only after the caller gave up
+            def run(self):
+                late.append(self)
+                time.sleep(0.3)
+                super().run()
+        hosts = self.hosts({"192.0.2.61": {"/nfs/a.qcow2"}})
+        with patch("instances.utils.wvmConnect", side_effect=lambda host, *args: hosts[host]), \
+                patch("instances.utils.USED_CHECK_WAIT", 0.1), \
+                patch.object(utils, "threading", SimpleNamespace(Thread=LateThread)):
+            with self.assertRaises(ConnectionFailed):
+                paths_used_on_other_computes(self.source, ["/nfs/a.qcow2"])
+            late[0].join(5)  # its calls end within this test
+
     def test_a_host_that_does_not_answer_is_an_error_in_bounded_time(self):
         # connected, but stuck (a hung NFS mount): the delete job must not wait for it for good
         hosts = self.hosts({"192.0.2.61": set(), "192.0.2.62": set()})
@@ -315,7 +333,9 @@ class OtherComputesTestCase(TestCase):
         self.assertLess(time.monotonic() - started, 2)
         self.assertEqual(caught.exception.args[0], "The disk files cannot be checked on host-c: it did not answer within 0.2 seconds")
         # a retry while the host still has not answered does not ask it again
-        with patch("instances.utils.wvmConnect", side_effect=lambda host, *args: hosts[host]):
+        time.sleep(0.25)  # the call, started after the caller's wait began, is 0.2 s old
+        with patch("instances.utils.wvmConnect", side_effect=lambda host, *args: hosts[host]), \
+                patch("instances.utils.USED_CHECK_WAIT", 0.2):
             with self.assertRaises(ConnectionFailed):
                 paths_used_on_other_computes(self.source, ["/nfs/a.qcow2"])
         self.assertEqual(hosts["192.0.2.62"].paths_in_use.call_count, 1)
@@ -323,7 +343,7 @@ class OtherComputesTestCase(TestCase):
         hosts["192.0.2.62"].paths_in_use.side_effect = None
         hosts["192.0.2.62"].paths_in_use.return_value = set()
         deadline = time.monotonic() + 2
-        while utils._UNANSWERED and time.monotonic() < deadline:
+        while utils._ASKING and time.monotonic() < deadline:
             time.sleep(0.01)
         with patch("instances.utils.wvmConnect", side_effect=lambda host, *args: hosts[host]):
             self.assertEqual(paths_used_on_other_computes(self.source, ["/nfs/a.qcow2"]), set())

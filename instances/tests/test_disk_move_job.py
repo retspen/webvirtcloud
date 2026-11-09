@@ -144,4 +144,28 @@ class UsedAnywhereTestCase(TransactionTestCase):
             hosts.return_value.paths_in_use.side_effect = lambda: stuck.wait(10) and set()
             started = time.monotonic()
             self.assertTrue(utils.used_anywhere(OLD))
+            # the next job does not leave one more check waiting on it
+            time.sleep(0.25)  # the call, started after the caller's wait began, is 0.2 s old
+            self.assertTrue(utils.used_anywhere(OLD))
+            self.assertEqual(hosts.return_value.paths_in_use.call_count, 1)
         self.assertLess(time.monotonic() - started, 2)
+        stuck.set()
+        deadline = time.monotonic() + 2
+        while utils._ASKING and time.monotonic() < deadline:
+            time.sleep(0.01)
+        self.assertFalse(utils._ASKING)
+
+    def test_a_check_beside_another_one_still_asks_a_host_that_answers(self):
+        from instances import utils
+
+        Compute.objects.create(name="slow", hostname="192.0.2.63", login="root", password="", type=1)
+        answers = []
+        with patch("instances.utils.wvmConnect") as hosts, patch.object(utils, "USED_CHECK_WAIT", 2):
+            hosts.return_value.paths_in_use.side_effect = lambda: time.sleep(0.2) or set()
+            checks = [threading.Thread(target=lambda: answers.append(utils.used_anywhere(OLD))) for _ in range(2)]
+            for check in checks:
+                check.start()
+            for check in checks:
+                check.join(5)
+            self.assertEqual(hosts.return_value.paths_in_use.call_count, 2)
+        self.assertEqual(answers, [False, False])  # not "in use" because the other check was asking
