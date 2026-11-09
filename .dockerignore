@@ -14,6 +14,8 @@ backups
 **/console/cert.pem*
 **/dhcpd.*
 webvirtcloud/settings.py
+# the copy the README has Docker users keep next to the compose file
+settings.py
 **/staticfiles
 
 # virtualenvs, caches and editor files

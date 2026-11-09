@@ -152,7 +152,7 @@ jobs:
       - name: Plant Secret Sentinels
         run: |
           mkdir -p data
-          for f in data/secret_key data/admin_password webvirtcloud/settings.py.bak \
+          for f in data/secret_key data/admin_password settings.py webvirtcloud/settings.py.bak \
                    'webvirtcloud/settings.py~' webvirtcloud/.settings.py.swp; do
             echo sentinel > "$f"
           done
@@ -175,7 +175,7 @@ jobs:
         run: |
           docker run --rm --entrypoint sh webvirtcloud:ci -c '
             cd /srv/webvirtcloud
-            for f in data/secret_key data/admin_password webvirtcloud/settings.py.bak \
+            for f in data/secret_key data/admin_password settings.py webvirtcloud/settings.py.bak \
                      "webvirtcloud/settings.py~" webvirtcloud/.settings.py.swp; do
               if [ -e "$f" ]; then echo "$f is in the image"; exit 1; fi
             done'
