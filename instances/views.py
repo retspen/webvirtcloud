@@ -288,8 +288,7 @@ def _instance_page(request, pk, instance, compute):
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
     # The console form renders the VNC password, so only users who may manage
     # console settings get the form (and the password) at all.
-    # a template is cloned, not run: no console settings or host devices on its page
-    can_manage_console = utils.can_manage_console(request.user, instance) and not instance.is_template
+    can_manage_console = utils.can_manage_console(request.user, instance)
     console_form = None
     if can_manage_console:
         console_form = ConsoleForm(instance=instance, is_superuser=request.user.is_superuser)

@@ -45,6 +45,13 @@ class UpdateConsoleTestCase(TestCase):
         proxy.set_console_listener_addr.assert_called_once_with("0.0.0.0")
         proxy.set_console_passwd.assert_not_called()
 
+    def test_a_template_s_console_settings_are_not_changed(self):
+        # its page has no console form: a template is cloned, not run
+        self.instance.is_template = True
+        self.instance.save()
+        proxy, _ = self.post({**VNC, "keymap": "de"})
+        proxy.set_console_keymap.assert_not_called()
+
     def test_the_password_changes_by_the_action_chosen(self):
         for action, password in (("set", " a b c "), ("set", "éééé"), ("none", "")):
             with self.subTest(action, password=password):

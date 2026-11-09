@@ -136,9 +136,16 @@ ROLE_EXPECTATIONS = {
 
 # A template VM: only superusers and staff owners change or delete it; other
 # owners keep view, power (poweron and powercycle are no-ops on a template)
-# and console. Cloning has its own rule, see the clone test.
+# and console. No one changes its console settings: a template is cloned, not
+# run. Cloning has its own rule, see the clone test.
 TEMPLATE_ROLE_EXPECTATIONS = {
     **ROLE_EXPECTATIONS,
+    "staff_owner_is_change_is_vnc": (
+        True,
+        False,
+        {"is_change": True, "is_vnc": True},
+        VIEW_VM | POWER_AND_CONSOLE | CHANGE_VM | TEMPLATE_FLAG,
+    ),
     "owner_is_change": (False, False, {"is_change": True}, VIEW_VM | POWER_AND_CONSOLE),
     "owner_is_delete": (False, False, {"is_delete": True}, VIEW_VM | POWER_AND_CONSOLE),
 }

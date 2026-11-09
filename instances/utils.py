@@ -463,15 +463,13 @@ def can_manage_console(user, instance):
     """
     Who may see and change a VM's console settings, including its VNC
     password: an active superuser, or an active owner with both is_change and
-    is_vnc; on a template only a staff owner (as get_instance(perm_type="change")).
+    is_vnc. No one on a template: it is cloned, not run.
     is_staff and the global view_instances permission alone do not count.
     """
-    if not user.is_active:
+    if not user.is_active or instance.is_template:
         return False
     if user.is_superuser:
         return True
-    if instance.is_template and not user.is_staff:
-        return False
     return UserInstance.objects.filter(
         instance=instance, user=user, is_change=True, is_vnc=True
     ).exists()
