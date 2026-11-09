@@ -158,5 +158,8 @@ class ExceptionMiddleware:
             if request.method not in ("GET", "HEAD"):
                 # a refused form: back to the page it was on, with the reason
                 return redirect(same_origin_referer(request, "/"))
+            if exception.get_error_code() in NOT_FOUND_CODES:
+                # removed on the host, as a VM undefined in virsh: not a fault of the panel
+                return render(request, "404.html", {"request_path": request.path}, status=404)
             return render(request, "500.html", {"libvirt_error": True}, status=500)
             # TODO: check connecting to host via VPN

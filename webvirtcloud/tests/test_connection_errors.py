@@ -70,6 +70,13 @@ class ConnectionErrorPageTests(TestCase):
         self.assertIn(HOST_DETAIL.encode(), response.content)
         self.assertTrue(messages)
 
+    def test_a_read_of_a_vm_removed_on_its_host_is_not_found(self):
+        # a VM page polls its state: the VM undefined in virsh answers 404, not a panel fault
+        error = libvirt_error(libvirt.VIR_FROM_QEMU, "Domain not found", libvirt.VIR_ERR_NO_DOMAIN)
+        response, _ = self.handle(self.admin, error, path="/instances/1/status/", method="get")
+        self.assertEqual(response.status_code, 404)
+        self.assertIn(b"Page not found", response.content)
+
     def test_administrators_see_connection_details(self):
         for user in (self.admin, self.viewer):
             with self.subTest(user=user.username):
