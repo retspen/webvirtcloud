@@ -63,8 +63,10 @@ class Command(BaseCommand):
                 raise CommandError(f"The copy of the database is damaged: {result}")
         else:
             self.stderr.write("The database is not sqlite and is not in the backup: back it up with its own tools.")
+        # the key in use: SECRET_KEY from the environment has no data/secret_key
+        (to / "secret_key").write_text(settings.SECRET_KEY + "\n")
         data = settings.BASE_DIR / "data"
-        for source in (data / "secret_key", data / "node_id", settings.BASE_DIR / "webvirtcloud" / "settings.py"):
+        for source in (data / "node_id", settings.BASE_DIR / "webvirtcloud" / "settings.py"):
             if source.is_file():
                 shutil.copyfile(source, to / source.name)
         ssh = Path.home() / ".ssh"

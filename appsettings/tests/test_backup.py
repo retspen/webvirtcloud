@@ -33,7 +33,7 @@ class BackupTests(SimpleTestCase):
             (self.base / path).parent.mkdir(parents=True, exist_ok=True)
             (self.base / path).write_text(text)
         (self.base / "home/.ssh/agent").symlink_to(self.base / "data/secret_key")
-        overridden = override_settings(BASE_DIR=self.base)
+        overridden = override_settings(BASE_DIR=self.base, SECRET_KEY="key in use")
         overridden.enable()
         self.addCleanup(overridden.disable)
         home = patch.object(Path, "home", return_value=self.base / "home")
@@ -66,7 +66,9 @@ class BackupTests(SimpleTestCase):
         with closing(sqlite3.connect(backup / "db.sqlite3")) as db:
             self.assertEqual(db.execute("SELECT name FROM computes_compute").fetchall(), [("kept",)])
         self.assertEqual(sorted(p.name for p in backup.iterdir()), ["db.sqlite3", "node_id", "secret_key", "settings.py", "ssh"])
-        self.assertEqual((backup / "secret_key").read_text(), "key")
+        # the key in use, also when it came from the environment and not data/secret_key
+        self.assertEqual((backup / "secret_key").read_text(), "key in use\n")
+        self.assertEqual(oct((backup / "secret_key").stat().st_mode & 0o777), "0o600")
         self.assertEqual([p.name for p in (backup / "ssh").iterdir()], ["id_ed25519"])  # not what a link points to
         self.assertEqual(oct(self.backups.stat().st_mode & 0o777), "0o700")
         self.assertEqual(oct(backup.stat().st_mode & 0o777), "0o700")
