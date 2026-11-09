@@ -220,8 +220,12 @@ class HostRequestsTestCase(unittest.TestCase):
     """At most HOST_REQUESTS web requests of a process use one host at a
     time; another waits CONNECT_TIMEOUT and is refused."""
 
+    # also how long a request waits for the fake open's thread: 0.2 s was
+    # missed on a loaded CI runner ("h did not answer within 0.2 s")
+    TIMEOUT = 1.0
+
     def setUp(self):
-        for name, value in (("wvmEventLoop", MagicMock()), ("CONNECT_TIMEOUT", 0.2)):
+        for name, value in (("wvmEventLoop", MagicMock()), ("CONNECT_TIMEOUT", self.TIMEOUT)):
             patcher = patch(f"vrtManager.connection.{name}", value)
             patcher.start()
             self.addCleanup(patcher.stop)
@@ -266,7 +270,7 @@ class HostRequestsTestCase(unittest.TestCase):
         started = time.monotonic()
         with self.assertLogs("vrtManager.connection", "WARNING") as logs:
             self.assertEqual(self.request("h"), ["Connection Failed: h does not answer: 2 requests still wait for it"])
-        self.assertGreaterEqual(time.monotonic() - started, 0.2)
+        self.assertGreaterEqual(time.monotonic() - started, self.TIMEOUT)
         self.assertEqual(logs.output, ["WARNING:vrtManager.connection:h: request refused, 2 requests still wait for the host"])
         self.assertEqual(self.request("g"), [])
 
