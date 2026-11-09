@@ -85,11 +85,12 @@ def forget(inst):
     """Remove an instance whose VM its compute no longer lists, or whose
     compute is deleted. Its ownership goes to the same UUID on another
     compute (an out-of-band move) or is kept in a tombstone in case the VM
-    comes back."""
-    elsewhere = Instance.objects.filter(uuid=inst.uuid).exclude(compute_id=inst.compute_id).first()
-    if elsewhere:
-        move_ownership(inst, elsewhere)
-        _log(inst, f"owners moved to {elsewhere.compute.name}")
+    comes back. Two other computes with the UUID: either may be a copy, so
+    the Removed VMs page shows the owners for an administrator to add."""
+    elsewhere = list(Instance.objects.filter(uuid=inst.uuid).exclude(compute_id=inst.compute_id)[:2])
+    if len(elsewhere) == 1:
+        move_ownership(inst, elsewhere[0])
+        _log(inst, f"owners moved to {elsewhere[0].compute.name}")
     else:
         _bury(inst)
     inst.delete()

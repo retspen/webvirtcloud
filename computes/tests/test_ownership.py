@@ -98,6 +98,21 @@ class OwnershipTestCase(TestCase):
         self.assertEqual(self.ownership(self.host_a), (True, [(self.owner, True, False, True)]))
         self.assertEqual(self.ownership(self.host_b), (False, []))
 
+    def test_a_move_to_one_of_two_copies_gives_the_owners_to_neither(self):
+        host_c = self.compute("host-c")
+        self.owned_vm(self.host_a)
+        self.on(self.host_a, [("vm", UUID)])
+        for host in (self.host_b, host_c):
+            self.on(host, [("vm", UUID)])
+            refresh_instance_database(host)
+        self.on(self.host_a, [])
+        refresh_instance_database(self.host_a)
+
+        self.assertEqual(self.ownership(self.host_b), (False, []))
+        self.assertEqual(self.ownership(host_c), (False, []))
+        self.assertEqual(InstanceTombstone.objects.get().owners,
+                         [{"user": self.owner.id, "is_change": True, "is_delete": False, "is_vnc": True}])
+
     @override_settings(INSTANCE_OWNERSHIP_RETENTION_DAYS=30)
     def test_ownership_is_kept_for_a_bounded_time(self):
         self.owned_vm(self.host_a)
