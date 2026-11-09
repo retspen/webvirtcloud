@@ -1,3 +1,5 @@
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 
@@ -187,12 +189,33 @@ class RecoveryTestCase(TransactionTestCase):
     def test_a_cancel_of_a_job_libvirt_still_runs_goes_to_libvirt_once(self):
         op = self.orphan({})
         Operation.objects.filter(pk=op.pk).update(state=Operation.CANCELLING, cancel_requested=True)
-        with patch.object(fakes.ScriptedKind, "cancel") as cancel:
+        sent = threading.Event()
+        with patch.object(fakes.ScriptedKind, "cancel", side_effect=lambda op: sent.set()) as cancel:
             self.run_at(1000, Outcome(Operation.RUNNING))
+            self.assertTrue(sent.wait(5))  # in a thread of its own
             self.scheduler.next_try[op.pk] = 0
             self.run_at(1015, Outcome(Operation.RUNNING))
         cancel.assert_called_once()
         self.assertEqual(cancel.call_args.args[0].pk, op.pk)
+
+    def test_a_cancel_hook_waiting_for_the_job_to_end_does_not_hold_up_its_inspection(self):
+        # libvirt finished the job just after the inspection saw it run: the hook waits for an end that
+        # only the next inspection can record
+        op = self.orphan({})
+        Operation.objects.filter(pk=op.pk).update(state=Operation.CANCELLING, cancel_requested=True)
+        ended = threading.Event()
+
+        def cancel(op):
+            while Operation.objects.filter(pk=op.pk, state__in=Operation.ACTIVE).exists():
+                time.sleep(0.05)
+            ended.set()
+
+        with patch.object(fakes.ScriptedKind, "cancel", side_effect=cancel):
+            self.run_at(1000, Outcome(Operation.RUNNING))
+            self.scheduler.next_try[op.pk] = 0
+            self.run_at(1015, Outcome(Operation.SUCCEEDED))
+            self.assertTrue(ended.wait(5), "the hook ends with the job")
+        self.assertEqual(self.reload(op).state, Operation.SUCCEEDED)
 
     def test_a_job_without_a_cancel_is_watched_without_one(self):
         self.orphan({})

@@ -19,7 +19,7 @@ from importlib import import_module
 from pathlib import Path
 
 from django.conf import settings
-from django.db import DatabaseError, close_old_connections
+from django.db import DatabaseError, close_old_connections, connection
 from django.utils import timezone
 from django.utils.translation import gettext_noop
 
@@ -346,6 +346,13 @@ def _guarded(fn, op=None):
         close_old_connections()
 
 
+def _cancel_apart(fn, op):
+    try:
+        _guarded(fn, op)
+    finally:
+        connection.close()  # the thread's own
+
+
 def execute(worker, op_id):
     """A job thread: precheck and run. Errors before effects fail the job;
     after effects they go to inspection; a lost lease leaves it alone."""
@@ -494,10 +501,12 @@ class Scheduler:
                 return
             self.failing_since.pop(op_id, None)
             if outcome.state == Operation.RUNNING:
-                # libvirt still runs it: a cancel asked meanwhile goes to libvirt once, as for a job thread's
+                # libvirt still runs it: a cancel asked meanwhile goes to libvirt once, as for a job thread's.
+                # In a thread of its own: a hook may wait for the job to end, which only this inspection
+                # can find (libvirt finished it meanwhile); inline it would wait for good.
                 if op.cancel_requested and op_id not in self.cancel_sent:
                     self.cancel_sent.add(op_id)
-                    _guarded(jobs.get_kind(op.kind).cancel, op)
+                    threading.Thread(target=_cancel_apart, args=(jobs.get_kind(op.kind).cancel, op), daemon=True).start()
                 now = time.monotonic()
                 if not outcome.stalled:
                     self.stalled_since.pop(op_id, None)
