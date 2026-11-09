@@ -83,7 +83,8 @@ class WorkerTestCase(TransactionTestCase):
         for op in [*stuck, healthy]:
             jobs.cancel(op.pk, self.user)
         # the other host's cancel goes through; the stuck host's second cancel waits for its first
-        self.assertTrue(wait_for(lambda: ("cancel", 2) in fakes.HOST_CALLS))
+        # (the hooks start in no set order: wait for both)
+        self.assertTrue(wait_for(lambda: ("cancel", 2) in fakes.HOST_CALLS and ("cancel", 1) in fakes.HOST_CALLS))
         self.assertEqual(fakes.HOST_CALLS.count(("cancel", 1)), 1)
         fakes.STUCK[1].set()
         self.assertTrue(wait_for(lambda: fakes.HOST_CALLS.count(("cancel", 1)) == 2))
