@@ -308,6 +308,21 @@ class MigrateJobTestCase(TransactionTestCase):
             get_kind(op.kind).cancel(op)
         proxy.return_value.instance.abortJob.assert_not_called()
 
+    def test_a_waiting_cancel_leaves_the_migration_of_a_later_job_alone(self):
+        # the job ends before libvirt began; another job's migration of the VM starts meanwhile
+        op = self.queue(live_migrate="true")
+        self.start(op)
+
+        def ended(_seconds):
+            Operation.objects.filter(pk=op.pk).update(state=Operation.FAILED)
+
+        with patch("instances.jobs.wvmInstance") as proxy, patch("instances.jobs.time.sleep", side_effect=ended):
+            dom = proxy.return_value.instance
+            dom.isActive.return_value = True
+            dom.jobInfo.side_effect = [[0] * 12] + [[2] + [0] * 11] * 3  # no job yet, then the later one's
+            get_kind(op.kind).cancel(op)
+        dom.abortJob.assert_not_called()
+
     def test_each_end_of_a_migration_leaves_one_logs_row(self):
         op = self.queue(live_migrate="true")
         ctx = self.start(op)

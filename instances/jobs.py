@@ -99,6 +99,11 @@ def _libvirt_busy(dom):
     return dom.isActive() and dom.jobInfo()[0] != VIR_DOMAIN_JOB_NONE
 
 
+def _active(op):
+    """The job has not ended: a cancel hook still acts for it."""
+    return Operation.objects.filter(pk=op.pk, state__in=Operation.ACTIVE).exists()
+
+
 def _log(op, state, action, vm=None):
     """The job's row: "VM <name>: <action>", the end state added unless it succeeded."""
     compute, _sep, label_vm = op.resource_label.rpartition("/")  # a VM name has no "/"
@@ -1159,13 +1164,13 @@ class MigrateInstance(Kind):
     def cancel(self, op):
         dom = _proxy(_instance(op.params["instance"])).instance
         # the worker sends a cancel once: one that comes before libvirt began
-        # the migration waits for it, or for the job to end without it
-        while not _libvirt_busy(dom):
-            if not Operation.objects.filter(pk=op.pk, state__in=Operation.ACTIVE).exists():
-                return
+        # the migration waits for it, or for the job to end without it. The job is
+        # asked for last: once it ended, a migration libvirt runs is another job's
+        while _active(op) and not _libvirt_busy(dom):
             time.sleep(1)
-        # an error (the migration ended meanwhile) goes to the worker log
-        dom.abortJob()
+        if _active(op):
+            # an error (the migration ended meanwhile) goes to the worker log
+            dom.abortJob()
 
     def reconcile(self, op):
         source = _domain(op.intent["compute"], op.intent["uuid"])
@@ -1260,12 +1265,11 @@ class MoveDisk(Kind):
 
     def cancel(self, op):
         dom = _proxy(_instance(op.params["instance"])).instance
-        # the worker sends a cancel once: one before the copy began waits for it
-        while dom.isActive() and not dom.blockJobInfo(op.params["dev"], 0):
-            if not Operation.objects.filter(pk=op.pk, state__in=Operation.ACTIVE).exists():
-                return
+        # the worker sends a cancel once: one before the copy began waits for it.
+        # The job is asked for last: once it ended, a copy libvirt runs is another job's
+        while _active(op) and dom.isActive() and not dom.blockJobInfo(op.params["dev"], 0):
             time.sleep(1)
-        if dom.isActive():
+        if _active(op) and dom.isActive():
             dom.blockJobAbort(op.params["dev"], 0)
 
     def reconcile(self, op):
