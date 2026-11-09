@@ -235,7 +235,10 @@ LANGUAGES = [
     ("zh-hans", "简体中文"),
 ]
 
-TIME_ZONE = "UTC"
+# the installer writes the server's zone; Docker takes TZ (Django sets the process's TZ from this)
+TIME_ZONE = os.getenv("TZ") or "UTC"
+if TIME_ZONE.startswith(":"):  # ":/etc/localtime", a libc form naming a file, is no zone name for Django
+    TIME_ZONE = "UTC"
 
 USE_I18N = True
 

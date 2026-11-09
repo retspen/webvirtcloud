@@ -16,7 +16,7 @@ CONFIG_VARS = [
     "WEBVIRTCLOUD_HTTPS", "WEBVIRTCLOUD_DEBUG", "WEBVIRTCLOUD_SERIAL_CONSOLE", "ALLOWED_HOSTS",
     "EMAIL_HOST", "EMAIL_PORT", "EMAIL_HOST_USER", "EMAIL_HOST_PASSWORD", "EMAIL_USE_TLS",
     "WEBVIRTCLOUD_DB_HOST", "WEBVIRTCLOUD_DB_PORT", "WEBVIRTCLOUD_DB_NAME",
-    "WEBVIRTCLOUD_DB_USER", "WEBVIRTCLOUD_DB_PASSWORD",
+    "WEBVIRTCLOUD_DB_USER", "WEBVIRTCLOUD_DB_PASSWORD", "TZ",
 ]
 
 
@@ -178,3 +178,10 @@ class LogFileEnvTestCase(SimpleTestCase):
         self.assertEqual(self.log_file({"WEBVIRTCLOUD_LOG_FILE": ""}), str(settings.BASE_DIR / "data" / "webvirtcloud.log"))
         with tempfile.TemporaryDirectory() as tmp:
             self.assertEqual(self.log_file({"WEBVIRTCLOUD_LOG_FILE": f"{tmp}/w.log"}), f"{tmp}/w.log")
+
+
+class TimeZoneEnvTestCase(SimpleTestCase):
+    def test_time_zone_from_tz_or_utc(self):
+        self.assertEqual(load_settings({}, ["TIME_ZONE"])["TIME_ZONE"], "UTC")
+        self.assertEqual(load_settings({"TZ": "Europe/Istanbul"}, ["TIME_ZONE"])["TIME_ZONE"], "Europe/Istanbul")
+        self.assertEqual(load_settings({"TZ": ":/etc/localtime"}, ["TIME_ZONE"])["TIME_ZONE"], "UTC")

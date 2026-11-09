@@ -29,6 +29,7 @@ services:
       # Host names/IPs the panel is reached by (comma-separated; "*" accepts any).
       # Without it only localhost works. Set it in docker-compose.override.yml.
       - ALLOWED_HOSTS=localhost
+      # Time zone of the panel's dates and the daily backup (e.g. Europe/Istanbul)
       - TZ=UTC
     volumes:
       # Persistent SQLite database and runtime data
