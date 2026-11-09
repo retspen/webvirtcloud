@@ -68,8 +68,9 @@ OTP_LINK_MAX_AGE = 3600
 
 def send_email_with_otp(request, user):
     """Mail the user a link to the page of their OTP QR code, good for
-    OTP_LINK_MAX_AGE: the QR code's secret is never in a mailbox."""
-    url = request.build_absolute_uri(reverse("accounts:otp_qr", args=[OTP_LINK.sign(str(user.pk))]))
+    OTP_LINK_MAX_AGE: the QR code's secret is never in a mailbox. The token
+    is the URL's fragment, which no request carries: it is in no access log."""
+    url = request.build_absolute_uri(reverse("accounts:otp_qr")) + "#" + OTP_LINK.sign(str(user.pk))
     send_mail(
         _("OTP QR Code"),
         _("Open this link within an hour to see the OTP QR code of account '%(user)s':\n\n%(url)s")

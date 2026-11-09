@@ -38,7 +38,7 @@ urlpatterns = [
     path("api_token/created/", views.api_token_created, name="api_token_created"),
     path("api_token/<str:token_key>/delete/", views.api_token_delete, name="api_token_delete"),
     path("email_otp/", views.email_otp, name="email_otp"),
-    path("otp_qr/<str:token>/", views.otp_qr, name="otp_qr"),
+    path("otp_qr/", views.otp_qr, name="otp_qr"),
     path(
         "admin_email_otp/<int:user_id>/",
         views.admin_email_otp,

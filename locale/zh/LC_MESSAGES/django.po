@@ -396,10 +396,14 @@ msgstr "双因素保护已启用"
 msgid "OTP QR Code"
 msgstr "OTP 二维码"
 
-#: accounts/templates/accounts/otp_qr.html:11
+#: accounts/templates/accounts/otp_qr.html:12
 #, python-format
 msgid "Scan this QR code to get OTP for account '%(user)s'"
 msgstr "扫描此二维码以获取账户“%(user)s”的 OTP"
+
+#: accounts/templates/accounts/otp_qr.html:16
+msgid "Open the link from the mail to see the OTP QR code."
+msgstr "请打开邮件中的链接以查看 OTP 二维码。"
 
 #: accounts/templates/api_token_created.html:4
 #: accounts/templates/api_token_created.html:5

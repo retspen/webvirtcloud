@@ -99,18 +99,24 @@ class AccountsUtilsTestCase(TestCase):
         self.assertEqual((message.subject, message.to, message.alternatives), ("OTP QR Code", ["user@example.com"], []))
         self.assertNotIn(device.bin_key.hex(), message.body)
         self.assertNotIn("otpauth", message.body)
-        link = re.search(r"http://testserver(/\S+)", message.body).group(1)
-        page = self.client.get(link)
-        self.assertEqual(page["Cache-Control"], "no-store")
-        self.assertEqual(len(html.fromstring(page.content).xpath("//svg")), 1)
+        # the token is the fragment, which no request (no access log) carries
+        path, token = re.search(r"http://testserver(/\S+)#(\S+)", message.body).groups()
+        self.assertEqual(path, reverse("accounts:otp_qr"))
+        page = html.fromstring(self.client.get(path).content)
+        self.assertEqual((page.xpath("//svg"), page.xpath("//form[@id='otp-qr-form']/input[@name='token']/@type")), ([], ["hidden"]))
+        self.assertEqual(page.xpath("//script/@src")[-1], "/static/js/otp_qr.js")
+        shown = self.client.post(path, {"token": token})
+        self.assertEqual(shown["Cache-Control"], "no-store")
+        self.assertEqual(len(html.fromstring(shown.content).xpath("//svg")), 1)
 
     @override_settings(OTP_ENABLED=True)
     def test_a_link_that_is_old_or_not_signed_shows_nothing(self):
         get_user_totp_device(self.user)
         token = OTP_LINK.sign(str(self.user.pk))
         with patch("django.core.signing.time.time", return_value=time.time() + OTP_LINK_MAX_AGE + 1):
-            self.assertEqual(self.client.get(reverse("accounts:otp_qr", args=[token])).status_code, 404)
-        self.assertEqual(self.client.get(reverse("accounts:otp_qr", args=[f"{self.user.pk}:x:y"])).status_code, 404)
+            self.assertEqual(self.client.post(reverse("accounts:otp_qr"), {"token": token}).status_code, 404)
+        self.assertEqual(self.client.post(reverse("accounts:otp_qr"), {"token": f"{self.user.pk}:x:y"}).status_code, 404)
+        self.assertEqual(self.client.post(reverse("accounts:otp_qr")).status_code, 404)
 
     def test_the_qr_code_is_what_django_qr_code_drew(self):
         # sha256 of the SVG django-qr-code 4.2.0 made for this URL

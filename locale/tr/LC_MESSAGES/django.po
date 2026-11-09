@@ -399,10 +399,14 @@ msgstr "2FA Koruması Etkin"
 msgid "OTP QR Code"
 msgstr "OTP QR Kodu"
 
-#: accounts/templates/accounts/otp_qr.html:11
+#: accounts/templates/accounts/otp_qr.html:12
 #, python-format
 msgid "Scan this QR code to get OTP for account '%(user)s'"
 msgstr "'%(user)s' hesabının OTP kodlarını almak için bu QR kodunu tarayın"
+
+#: accounts/templates/accounts/otp_qr.html:16
+msgid "Open the link from the mail to see the OTP QR code."
+msgstr "OTP QR kodunu görmek için e-postadaki bağlantıyı açın."
 
 #: accounts/templates/api_token_created.html:4
 #: accounts/templates/api_token_created.html:5

@@ -353,12 +353,15 @@ def email_otp(request):
 
 
 @login_not_required
-def otp_qr(request, token):
-    """The OTP QR code of the user a mailed link (send_email_with_otp) names."""
+def otp_qr(request):
+    """The OTP QR code of the user a mailed link (send_email_with_otp) names.
+    The link's token is in its fragment: the page posts it (otp_qr.js)."""
     if not settings.OTP_ENABLED:
         raise Http404
+    if request.method != "POST":
+        return render(request, "accounts/otp_qr.html")
     try:
-        user_id = OTP_LINK.unsign(token, max_age=OTP_LINK_MAX_AGE)
+        user_id = OTP_LINK.unsign(request.POST.get("token", ""), max_age=OTP_LINK_MAX_AGE)
     except BadSignature:
         raise Http404
     user = get_object_or_404(get_user_model(), pk=user_id, is_active=True)
