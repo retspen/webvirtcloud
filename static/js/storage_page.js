@@ -107,6 +107,9 @@ $(document).ready(function() {
                 data: formData,
                 processData: false,
                 contentType: false,
+                // anything else is not a stored chunk: a redirect to an HTML page (the host did
+                // not answer, the session ended) is an error, not a success
+                dataType: 'json',
                 success: function(data) {
                     if (chunkIndex === 0) {
                         // the job panel follows the upload from here
