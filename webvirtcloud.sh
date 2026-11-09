@@ -306,6 +306,15 @@ install_webvirtcloud () {
 
   chown -R "$nginx_group":"$nginx_group" "$APP_PATH"
 
+  # the services' environment (PostgreSQL, SECRET_KEY): migrate must reach their database
+  if [ -f /etc/default/webvirtcloud ]; then
+    # -v traces every command: the file's passwords stay out of that trace
+    case $- in *x*) trace=true; set +x ;; *) trace=false ;; esac
+    # shellcheck source=/dev/null
+    set -a; . /etc/default/webvirtcloud; set +a
+    if $trace; then set -x; fi
+  fi
+
   echo "* Django Migrate."
   log "$PYTHON $APP_PATH/manage.py migrate" || { echo "manage.py migrate failed: see /var/log/webvirtcloud-install.log." >&2; exit 1; }
 
