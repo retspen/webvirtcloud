@@ -5,6 +5,7 @@ on libvirt's test driver."""
 from unittest.mock import patch
 
 import libvirt
+from appsettings.models import AppSettings
 from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -107,3 +108,14 @@ class DetailReadsTests(TestCase):
             proxy.set_console_keymap("de")
             self.assertEqual(proxy.get_console_passwd(), "pass1")
             self.assertEqual(proxy.get_console_keymap(), "de")
+
+    def test_the_drbd_state_does_not_bring_back_a_vm_deleted_meanwhile(self):
+        AppSettings.objects.filter(key="VM_DRBD_STATUS").update(value="True")
+
+        def deleted_meanwhile(request, pk):
+            Instance.objects.filter(pk=pk).delete()
+            return "None DRBD"
+
+        with patch("instances.views.drbd_status", side_effect=deleted_meanwhile):
+            self.render()
+        self.assertFalse(Instance.objects.filter(pk=self.vm.pk).exists())

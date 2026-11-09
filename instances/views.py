@@ -342,7 +342,8 @@ def _instance_page(request, pk, instance, compute):
 
     if app_settings.VM_DRBD_STATUS == "True":
         instance.drbd = drbd_status(request, pk)
-        instance.save()
+        # the state alone: a whole-row save would undo a migration or delete finished meanwhile
+        Instance.objects.filter(pk=instance.pk).update(drbd=instance.drbd)
 
     usb_hostdevs, pci_hostdevs, other_hostdevs = instance.proxy.get_hostdevs()
     if usb_hostdevs or pci_hostdevs:
