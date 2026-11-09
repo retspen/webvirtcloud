@@ -236,6 +236,16 @@ class DestroyOrderTestCase(TransactionTestCase):
                 response = self.client.get(reverse("instances:destroy", args=[self.instance.id]))
                 self.assertEqual(b"Its TPM state is deleted" in response.content, shown)
 
+    def test_the_confirmation_page_names_the_host_only_to_whom_the_app_shows_hosts(self):
+        owner = get_user_model().objects.create_user("destroy_owner", password="pw")
+        self.instance.userinstance_set.create(user=owner, is_delete=True)
+        for user, shown in ((self.admin, True), (owner, False)):
+            with self.subTest(user=user.username), patch("instances.models.wvmInstance"):
+                self.client.force_login(user)
+                response = self.client.get(reverse("instances:destroy", args=[self.instance.id]))
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual("on destroy-compute" in response.content.decode(), shown)
+
     def test_the_confirmation_page_of_a_paused_vm_offers_the_form(self):
         with patch("instances.models.wvmInstance") as wvm:
             wvm.return_value.get_status.return_value = 3  # paused

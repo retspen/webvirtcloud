@@ -4,7 +4,7 @@
 {% block title %}{% blocktrans with name=instance.name %}Destroy {{ name }}{% endblocktrans %}{% endblock title %}
 
 {% block page_heading %}
-{% blocktrans with name=instance.name %}Destroy {{ name }}{% endblocktrans %} <small class="text-body-secondary fs-6">{% blocktrans with host=instance.compute.name %}on {{ host }}{% endblocktrans %}</small>
+{% blocktrans with name=instance.name %}Destroy {{ name }}{% endblocktrans %}{% if perms.instances.view_instances %} <small class="text-body-secondary fs-6">{% blocktrans with host=instance.compute.name %}on {{ host }}{% endblocktrans %}</small>{% endif %}
 {% endblock page_heading %}
 
 {% block content %}
