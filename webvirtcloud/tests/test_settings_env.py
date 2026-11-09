@@ -12,7 +12,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 # Env vars that change the settings; removed from the inherited environment so
 # every case starts from the defaults.
 CONFIG_VARS = [
-    "WEBVIRTCLOUD_HTTPS", "ALLOWED_HOSTS",
+    "WEBVIRTCLOUD_HTTPS", "WEBVIRTCLOUD_DEBUG", "ALLOWED_HOSTS",
     "EMAIL_HOST", "EMAIL_PORT", "EMAIL_HOST_USER", "EMAIL_HOST_PASSWORD", "EMAIL_USE_TLS",
     "WEBVIRTCLOUD_DB_HOST", "WEBVIRTCLOUD_DB_PORT", "WEBVIRTCLOUD_DB_NAME",
     "WEBVIRTCLOUD_DB_USER", "WEBVIRTCLOUD_DB_PASSWORD",
@@ -132,3 +132,13 @@ class DatabaseEnvTestCase(SimpleTestCase):
             {"ENGINE": "django.db.backends.postgresql", "PORT": "5432",
              "NAME": "webvirtcloud", "USER": "webvirtcloud", "PASSWORD": ""},
         )
+
+
+class DebugEnvTestCase(SimpleTestCase):
+    def test_debug_is_off_unless_asked(self):
+        self.assertFalse(load_settings({}, ["DEBUG"])["DEBUG"])
+        self.assertFalse(load_settings({"WEBVIRTCLOUD_DEBUG": "0"}, ["DEBUG"])["DEBUG"])
+        self.assertTrue(load_settings({"WEBVIRTCLOUD_DEBUG": "1"}, ["DEBUG"])["DEBUG"])
+
+    def test_debug_loads_the_urls(self):
+        run_manage({"WEBVIRTCLOUD_DEBUG": "1"}, "check")

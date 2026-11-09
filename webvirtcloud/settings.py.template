@@ -26,7 +26,8 @@ if not SECRET_KEY:
         except OSError:
             pass
 
-DEBUG = False
+# WEBVIRTCLOUD_DEBUG=1 shows error details on the pages: for trying things out only
+DEBUG = os.getenv("WEBVIRTCLOUD_DEBUG") == "1"
 
 MAC_OUI = '52:54:10'
 

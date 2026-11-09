@@ -43,13 +43,9 @@ urlpatterns = [
     re_path(r"^api/(?:.*/)?$", api_not_found),
 ]
 
-if settings.DEBUG:
-    try:
-        import debug_toolbar
+# settings-dev installs the toolbar; WEBVIRTCLOUD_DEBUG alone does not
+if "debug_toolbar" in settings.INSTALLED_APPS:
+    import debug_toolbar
 
-        urlpatterns += [
-            path("__debug__/", include(debug_toolbar.urls)),
-        ]
-    except ImportError:
-        pass
+    urlpatterns += [path("__debug__/", include(debug_toolbar.urls))]
 
