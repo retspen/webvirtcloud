@@ -29,7 +29,8 @@ class InstanceManager(models.Manager):
 
 class Instance(models.Model):
     compute = models.ForeignKey(Compute, on_delete=models.CASCADE)
-    name = models.CharField(_("name"), max_length=120, db_index=True)
+    # libvirt takes any name its <name>.xml file can have: up to 251 bytes
+    name = models.CharField(_("name"), max_length=255, db_index=True)
     uuid = models.CharField(_("uuid"), max_length=36, db_index=True)
     is_template = models.BooleanField(_("is template"), default=False)
     created = models.DateTimeField(_("created"), auto_now_add=True)
@@ -409,7 +410,7 @@ class InstanceTombstone(models.Model):
     """
 
     uuid = models.CharField(max_length=36, db_index=True)
-    name = models.CharField(max_length=120)
+    name = models.CharField(max_length=255)
     host = models.CharField(max_length=64, blank=True)  # the compute's name: the compute may be deleted
     is_template = models.BooleanField(default=False)
     owners = models.JSONField(default=list)  # [{"user": id, "is_change": .., "is_delete": .., "is_vnc": ..}]

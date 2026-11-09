@@ -17,7 +17,7 @@ def write(user, host, instance, message, success=None, ip=None, uuid=""):
     Save one Logs row. A failure is written to the log file instead and never
     raised, so an audit write cannot break the action it records.
     """
-    user, host, instance, uuid = user[:150], host[:255], instance[:120], uuid[:36]
+    user, host, instance, uuid = user[:150], host[:255], instance[:255], uuid[:36]
     try:
         with transaction.atomic():
             Logs.objects.create(user=user, host=host, instance=instance, instance_uuid=uuid, message=message,

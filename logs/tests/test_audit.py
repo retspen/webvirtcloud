@@ -25,11 +25,11 @@ class WriteTests(TestCase):
         self.assertEqual(row.ip, "192.0.2.7")
 
     def test_long_values_are_cut(self):
-        write("u" * 200, "h" * 300, "i" * 200, "m" * 5000)
+        write("u" * 200, "h" * 300, "i" * 300, "m" * 5000)
         row = Logs.objects.get()
         self.assertEqual(len(row.user), 150)
         self.assertEqual(len(row.host), 255)
-        self.assertEqual(len(row.instance), 120)
+        self.assertEqual(len(row.instance), 255)
         self.assertEqual(len(row.message), 5000)
 
     def test_a_failed_write_inside_a_transaction_leaves_it_usable(self):

@@ -7,7 +7,8 @@ from django.test.utils import CaptureQueriesContext
 from accounts.models import UserInstance
 from computes.models import Compute
 from computes.utils import refresh_instance_database
-from instances.models import Instance
+from instances.models import Instance, InstanceTombstone
+from logs.models import Logs
 from computes.tests.fakes import Domain
 
 
@@ -40,6 +41,23 @@ class InstanceReconciliationTestCase(TestCase):
         self.assertEqual(instances[0].uuid, "11111111-1111-1111-1111-111111111111")
         self.assertEqual(instances[1].name, "vm-beta")
         self.assertEqual(instances[1].uuid, "22222222-2222-2222-2222-222222222222")
+
+    def test_a_longest_libvirt_name_is_kept_and_buried(self):
+        # libvirt's limit: its <name>.xml file; PostgreSQL refused names over 120
+        name = "v" * 251
+        uuid = "55555555-5555-5555-5555-555555555555"
+        mock_proxy = MagicMock()
+        mock_proxy.wvm.listAllDomains.return_value = [Domain(name=name, uuid=uuid)]
+        self.compute.__dict__["proxy"] = mock_proxy
+        self.compute.__dict__["status"] = True
+
+        refresh_instance_database(self.compute)
+        UserInstance.objects.create(instance=Instance.objects.get(uuid=uuid), user=self.user)
+        mock_proxy.wvm.listAllDomains.return_value = []
+        refresh_instance_database(self.compute)
+
+        self.assertEqual(InstanceTombstone.objects.get(uuid=uuid).name, name)
+        self.assertEqual(Logs.objects.filter(instance_uuid=uuid).first().instance, name)
 
     def test_domain_deleted_in_libvirt_is_deleted_from_db(self):
         inst = Instance.objects.create(
