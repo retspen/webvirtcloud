@@ -1,5 +1,6 @@
 from admin.permissions import IsSuperUser
 from computes.models import Compute
+from computes.utils import libvirt_compute_lock
 from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -30,7 +31,7 @@ class ComputeViewSet(viewsets.ModelViewSet):
         compute = serializer.instance
         subject = f"Compute {compute.name} ({compute.hostname})"
         before = snapshot(compute)
-        with audit(self.request, compute, subject, "change") as entry:
+        with audit(self.request, compute, subject, "change") as entry, libvirt_compute_lock(compute):
             serializer.save()
             fields = changed_fields(before, snapshot(compute))
             entry.action = "change " + ", ".join(fields)

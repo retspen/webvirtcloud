@@ -54,6 +54,17 @@ class ComputeAuditRowTests(TestCase):
         self.assertFalse(row.success)
         self.assertTrue(Compute.objects.exists())
 
+    def test_a_compute_with_a_job_is_not_changed(self):
+        # the job would run on whatever host the compute names when it starts
+        compute = Compute.objects.create(name="c1", hostname="192.0.2.5", login="admin", password="secret", type=1)
+        claims.admit({claims.compute_key(compute.id): Claim.SHARED}, holder="192.0.2.30:1:1")
+        self.client.post(reverse("compute_update", args=[compute.id]), self.form_data("192.0.2.6"))
+        res = self.client.patch(f"/api/v1/computes/{compute.id}/", {"hostname": "192.0.2.6"},
+                                content_type="application/json")
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual(Compute.objects.get().hostname, "192.0.2.5")
+        self.assertEqual([r.success for r in Logs.objects.all()], [False, False])
+
     def test_the_api_writes_the_same_rows(self):
         data = {"name": "c1", "hostname": "192.0.2.5", "login": "admin", "password": "secret", "type": 1}
         res = self.client.post("/api/v1/computes/", data, content_type="application/json")

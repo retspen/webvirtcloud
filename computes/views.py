@@ -179,7 +179,8 @@ def compute_update(request, compute_id):
     before = snapshot(compute)
     form = FormClass(request.POST or None, instance=compute)
     if form.is_valid():
-        with audit(request, compute, subject, "change") as entry:
+        # held as a delete holds it: a job on the compute keeps the host it was admitted for
+        with audit(request, compute, subject, "change") as entry, utils.libvirt_compute_lock(compute):
             form.save()
             fields = changed_fields(before, snapshot(compute))
             entry.action = "change " + ", ".join(fields)
