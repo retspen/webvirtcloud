@@ -22,6 +22,5 @@ python-engineio==4.15.1
 python-socketio==5.18.1
 segno==1.6.6
 websockify==0.13.0
-whitenoise==6.12.0
 # the root password's SHA-512 crypt hash (the stdlib crypt is gone in Python 3.13)
 libpass==1.9.4

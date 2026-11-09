@@ -90,7 +90,6 @@ MIDDLEWARE = [
     "webvirtcloud.middleware.RequestIdMiddleware",
     "webvirtcloud.middleware.AccessDeniedMiddleware",
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -230,7 +229,7 @@ USE_TZ = True
 STATIC_URL = "/static/"
 
 # Source assets live in static/; collectstatic gathers them with the apps'
-# assets into staticfiles/ (gitignored), which WhiteNoise and nginx serve.
+# assets into staticfiles/ (gitignored), which nginx serves.
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 

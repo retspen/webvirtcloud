@@ -12,7 +12,7 @@ WebVirtCloud is a web panel for libvirt hosts. libvirt is the source of truth: t
 | API | Django REST Framework, `drf-nested-routers`, `drf-spectacular` (OpenAPI 3.0), API tokens (`django-rest-knox`) |
 | Frontend | Django templates, Bootstrap 5, Bootstrap Icons, vendored jQuery, Chart.js, noVNC, xterm.js |
 | Security | `django-otp` (TOTP), `django-axes` (lockout), optional `django-auth-ldap`; CSP `script-src 'self'` |
-| Serving | nginx in front of gunicorn (gthread workers) and WhiteNoise |
+| Serving | nginx in front of gunicorn (gthread workers); nginx serves the static files |
 | Processes | systemd units on hosts, supervisord in the Docker image |
 
 ## Processes

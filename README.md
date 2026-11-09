@@ -895,7 +895,7 @@ Run every step as your normal user, not with `sudo`: if `manage.py` ever runs as
    python manage.py run_worker --settings=webvirtcloud.settings-dev
    ```
 
-   Open `http://127.0.0.1:8000`. The browser consoles connect to `/novncd/` and `/socket.io/` on the panel's own address, which the dev server does not proxy: try them in the Docker image, or behind nginx with `conf/nginx/webvirtcloud.conf`.
+   Open `http://127.0.0.1:8000`. The dev server serves the static files from `static/` while `DEBUG` is on; to try the panel with `DEBUG = False`, add `--insecure` (development only: in production nginx serves `staticfiles/`, which `collectstatic` fills). The browser consoles connect to `/novncd/` and `/socket.io/` on the panel's own address, which the dev server does not proxy: try them in the Docker image, or behind nginx with `conf/nginx/webvirtcloud.conf`.
 
 ### Keyboard layouts
 
