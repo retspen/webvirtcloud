@@ -11,8 +11,19 @@ try:
     HAS_LDAP = True
 except ImportError:
     HAS_LDAP = False
+from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 from pathlib import Path
+
+
+def env_flag(name, default="0"):
+    """An on/off environment variable: 1 or 0 (unset: the default; empty: 0, as
+    before). Another value stops the start, so that "true" does not quietly mean off."""
+    value = os.getenv(name, default) or "0"
+    if value not in ("0", "1"):
+        raise ImproperlyConfigured(f"{name} must be 1 or 0, not {value!r}")
+    return value == "1"
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,7 +38,7 @@ if not SECRET_KEY:
             pass
 
 # WEBVIRTCLOUD_DEBUG=1 shows error details on the pages: for trying things out only
-DEBUG = os.getenv("WEBVIRTCLOUD_DEBUG") == "1"
+DEBUG = env_flag("WEBVIRTCLOUD_DEBUG")
 
 MAC_OUI = '52:54:10'
 
@@ -47,7 +58,7 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Production profile for a panel served over HTTPS: secure cookies, HTTP to
 # HTTPS redirect and HSTS. Off by default (plain HTTP).
-if os.getenv("WEBVIRTCLOUD_HTTPS") == "1":
+if env_flag("WEBVIRTCLOUD_HTTPS"):
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_SSL_REDIRECT = True
@@ -310,7 +321,7 @@ WS_HOST = "127.0.0.1"
 # Serial console (xterm.js over socketiod) for VMs without graphics. socketiod
 # accepts only the console page's signed token (as noVNC does); while this is
 # False it refuses every connection. Restart socketiod after changing it.
-SERIAL_CONSOLE_ENABLED = os.getenv("WEBVIRTCLOUD_SERIAL_CONSOLE") == "1"
+SERIAL_CONSOLE_ENABLED = env_flag("WEBVIRTCLOUD_SERIAL_CONSOLE")
 
 SOCKETIO_PORT = 6081
 # Listen on localhost only; the console page reaches socketiod through the
@@ -412,7 +423,7 @@ SPECTACULAR_SETTINGS = {
 # EMAIL Config (SMTP; override through the environment)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "1") == "1"
+EMAIL_USE_TLS = env_flag("EMAIL_USE_TLS", "1")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 ## sender's email-id
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")

@@ -12,7 +12,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 # Env vars that change the settings; removed from the inherited environment so
 # every case starts from the defaults.
 CONFIG_VARS = [
-    "WEBVIRTCLOUD_HTTPS", "WEBVIRTCLOUD_DEBUG", "ALLOWED_HOSTS",
+    "WEBVIRTCLOUD_HTTPS", "WEBVIRTCLOUD_DEBUG", "WEBVIRTCLOUD_SERIAL_CONSOLE", "ALLOWED_HOSTS",
     "EMAIL_HOST", "EMAIL_PORT", "EMAIL_HOST_USER", "EMAIL_HOST_PASSWORD", "EMAIL_USE_TLS",
     "WEBVIRTCLOUD_DB_HOST", "WEBVIRTCLOUD_DB_PORT", "WEBVIRTCLOUD_DB_NAME",
     "WEBVIRTCLOUD_DB_USER", "WEBVIRTCLOUD_DB_PASSWORD",
@@ -142,3 +142,21 @@ class DebugEnvTestCase(SimpleTestCase):
 
     def test_debug_loads_the_urls(self):
         run_manage({"WEBVIRTCLOUD_DEBUG": "1"}, "check")
+
+
+class EnvFlagTestCase(SimpleTestCase):
+    FLAGS = {"WEBVIRTCLOUD_DEBUG": "DEBUG", "WEBVIRTCLOUD_HTTPS": "SESSION_COOKIE_SECURE",
+             "WEBVIRTCLOUD_SERIAL_CONSOLE": "SERIAL_CONSOLE_ENABLED", "EMAIL_USE_TLS": "EMAIL_USE_TLS"}
+
+    def test_a_flag_is_1_or_0_unset_is_its_default_and_empty_is_off(self):
+        for var, name in self.FLAGS.items():
+            with self.subTest(var):
+                self.assertTrue(load_settings({var: "1"}, [name])[name])
+                self.assertFalse(load_settings({var: "0"}, [name])[name])
+                self.assertFalse(load_settings({var: ""}, [name])[name])
+                self.assertEqual(load_settings({}, [name])[name], var == "EMAIL_USE_TLS")
+
+    def test_another_value_stops_the_start(self):
+        for var in self.FLAGS:
+            with self.subTest(var), self.assertRaisesRegex(AssertionError, f"{var} must be 1 or 0, not 'true'"):
+                load_settings({var: "true"}, ["DEBUG"])
