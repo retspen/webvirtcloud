@@ -18,6 +18,7 @@ function jobPanel(element, urls, csrfToken, initialIds, states, text) {
     var inflight = {};  // id -> true: its outcome is being fetched
     var dismissed = {}; // id -> true: never shown again
     var outcomes = {};  // id -> finished job, until dismissed
+    var unlisted = {};  // id -> active job asked for by its id, not in the list (its resource gone)
     var cancelling = {}; // id -> true: its cancel request runs
     var notice = "";    // why the last cancel failed, until dismissed
     (initialIds || []).forEach(function (id) { pending[id] = true; });
@@ -88,6 +89,7 @@ function jobPanel(element, urls, csrfToken, initialIds, states, text) {
             + esc(notice) + '</span><div class="ms-auto"><button type="button" class="btn btn-sm btn-outline-secondary"'
             + ' data-dismiss-error="1">' + esc(text.dismiss) + "</button></div></div>") : "";
         last.jobs.forEach(function (job) { html += jobHtml(job); });
+        Object.keys(unlisted).forEach(function (id) { html += jobHtml(unlisted[id]); });
         Object.keys(outcomes).forEach(function (id) { html += outcomeHtml(outcomes[id]); });
         last.others.forEach(function (o) {
             html += '<div class="alert alert-secondary mb-3" role="status">' + header(o.label, o.state, "", "") + "</div>";
@@ -135,9 +137,15 @@ function jobPanel(element, urls, csrfToken, initialIds, states, text) {
             .done(function (job) {
                 if (dismissed[id]) { delete pending[id]; return; }
                 // still active: pending until a list shows it (one older than the job may not) or it
-                // ends; the next poll asks for it again
-                if (["queued", "running", "cancelling"].indexOf(job.state) >= 0) { return; }
+                // ends; the next poll asks for it again. It is shown meanwhile: a deleted VM's job
+                // goes on (its disks) after the VM's record, and so its list, is gone
+                if (["queued", "running", "cancelling"].indexOf(job.state) >= 0) {
+                    unlisted[id] = job;
+                    render();
+                    return;
+                }
                 delete pending[id];
+                delete unlisted[id];
                 // only when no other job runs, is shown or awaited: a reload would lose its outcome
                 var others = Object.keys(outcomes).length + Object.keys(pending).length + Object.keys(shown).length;
                 // the page in use (poll.js): its outcome waits in the panel, with Refresh
@@ -158,6 +166,7 @@ function jobPanel(element, urls, csrfToken, initialIds, states, text) {
                 // not allowed or gone: asking again cannot help; a network error or 5xx can pass
                 if (xhr.status === 403 || xhr.status === 404) {
                     delete pending[id];
+                    delete unlisted[id];
                     render();
                 }
             })
@@ -168,7 +177,7 @@ function jobPanel(element, urls, csrfToken, initialIds, states, text) {
         var now = {};
         data.jobs.forEach(function (job) { now[job.id] = job; });
         Object.keys(shown).forEach(function (id) { if (!now[id]) { pending[id] = true; } });
-        Object.keys(now).forEach(function (id) { delete pending[id]; });
+        Object.keys(now).forEach(function (id) { delete pending[id]; delete unlisted[id]; });
         shown = now;
         last = data;
         Object.keys(pending).forEach(fetchOutcome);
@@ -201,7 +210,15 @@ function jobPanel(element, urls, csrfToken, initialIds, states, text) {
             });
     }
 
-    var poller = pollWhileVisible(3000, function () { return $.getJSON(urls.resource); }, onData, 0);
+    var poller = pollWhileVisible(3000, function () {
+        return $.getJSON(urls.resource).fail(function (xhr) {
+            // the resource is gone (an owner's VM deleted) or no longer the user's: its jobs are
+            // not listed any more, so each one's outcome is asked for by its id
+            if (xhr.status === 403 || xhr.status === 404) {
+                onData(Object.assign({}, last, { jobs: [], others: [] }));
+            }
+        });
+    }, onData, 0);
     // follow a job the page just started, as a remembered one
     poller.track = function (id) {
         pending[id] = true;

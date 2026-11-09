@@ -361,3 +361,22 @@ console.log("ok");
     assert.ok(elt.innerHTML.includes('<span class="badge bg-primary">çalışıyor</span>')
         && elt.innerHTML.includes(">İptal</button>"), "labels and texts of the page's language");
 }
+
+// the resource is gone (an owner deleted the VM, which takes its ownership): the list answers 404,
+// the job's outcome is asked for by its id, and its page opens
+open = []; timers = [];
+window.backgroundJobRunning = false; window.opened = undefined;
+const elGone = { innerHTML: "", addEventListener() {} };
+jobPanel(elGone, urls, "tok", undefined, STATES, TEXT);
+advance(0);
+answer("/r", { ...empty, jobs: [{ ...running, id: "f", label: "Delete VM", state: "queued" }] });
+advance(3000);
+answer("/r", { status: 404 }, false);
+// its disks are still being deleted: the job stays shown, with its Cancel button
+answer("/j/f", { ...running, id: "f", label: "Delete VM", state: "running", cancellable: true });
+assert.ok(elGone.innerHTML.includes("Delete VM") && elGone.innerHTML.includes('data-cancel="f"'),
+    "an active job whose resource is gone stays shown");
+advance(3000);
+answer("/r", { status: 404 }, false);
+answer("/j/f", { ...running, id: "f", label: "Delete VM", state: "succeeded", result: { open: "/instances/" } });
+assert.strictEqual(window.opened, "/instances/", "the outcome of a job whose resource is gone is shown");
