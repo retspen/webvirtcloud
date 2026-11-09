@@ -14,7 +14,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 # every case starts from the defaults.
 CONFIG_VARS = [
     "WEBVIRTCLOUD_HTTPS", "WEBVIRTCLOUD_DEBUG", "WEBVIRTCLOUD_SERIAL_CONSOLE", "ALLOWED_HOSTS",
-    "EMAIL_HOST", "EMAIL_PORT", "EMAIL_HOST_USER", "EMAIL_HOST_PASSWORD", "EMAIL_USE_TLS",
+    "EMAIL_HOST", "EMAIL_PORT", "EMAIL_HOST_USER", "EMAIL_HOST_PASSWORD", "EMAIL_USE_TLS", "DEFAULT_FROM_EMAIL",
     "WEBVIRTCLOUD_DB_HOST", "WEBVIRTCLOUD_DB_PORT", "WEBVIRTCLOUD_DB_NAME",
     "WEBVIRTCLOUD_DB_USER", "WEBVIRTCLOUD_DB_PASSWORD", "TZ",
 ]
@@ -106,6 +106,13 @@ class EmailEnvTestCase(SimpleTestCase):
             "EMAIL_HOST": "smtp.example.com", "EMAIL_PORT": 25, "EMAIL_HOST_USER": "wvc",
             "EMAIL_HOST_PASSWORD": "secret", "EMAIL_USE_TLS": False,
         })
+
+    def test_the_sender_is_the_smtp_account_unless_set(self):
+        self.assertEqual(load_settings({}, ["DEFAULT_FROM_EMAIL"])["DEFAULT_FROM_EMAIL"], "webmaster@localhost")
+        env = {"EMAIL_HOST_USER": "wvc@example.com"}
+        self.assertEqual(load_settings(env, ["DEFAULT_FROM_EMAIL"])["DEFAULT_FROM_EMAIL"], "wvc@example.com")
+        env["DEFAULT_FROM_EMAIL"] = "WebVirtCloud <noreply@example.com>"
+        self.assertEqual(load_settings(env, ["DEFAULT_FROM_EMAIL"])["DEFAULT_FROM_EMAIL"], "WebVirtCloud <noreply@example.com>")
 
 
 class DatabaseEnvTestCase(SimpleTestCase):
