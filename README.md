@@ -587,7 +587,7 @@ and follow [Moving to a new machine](#moving-to-a-new-machine) with that `b` (le
 
 ## Updating
 
-Every update starts with a backup in its own directory (mode 700, named by date) that holds the database, the commit it was taken from and, for installer and manual installations, `settings.py`, the nginx config, `/etc/default/webvirtcloud` if there is one and migrations an old installer generated (`local-migrations.tar`). The database is copied with SQLite's backup API, which also finishes a write interrupted by a crash. This covers sqlite only; with PostgreSQL (`WEBVIRTCLOUD_DB_HOST`), back up that database yourself before updating.
+Every update starts with a backup in its own directory (mode 700, named by date) that holds the database, the commit it was taken from, for Docker the TLS client certificates and, for installer and manual installations, `settings.py`, the nginx config, `/etc/default/webvirtcloud` if there is one and migrations an old installer generated (`local-migrations.tar`). The database is copied with SQLite's backup API, which also finishes a write interrupted by a crash. This covers sqlite only; with PostgreSQL (`WEBVIRTCLOUD_DB_HOST`), back up that database yourself before updating.
 
 ### Docker
 
@@ -602,11 +602,16 @@ mkdir -m 700 "$b" && git rev-parse HEAD > "$b/commit" &&
 git checkout master && git pull &&
 docker compose build &&
 docker compose stop -t 95 &&
+{ docker compose cp webvirtcloud:/var/www/.pki "$b/pki" || mkdir -m 700 "$b/pki"; } &&
 docker compose run --rm --no-deps -T --entrypoint /srv/webvirtcloud/venv/bin/python3 webvirtcloud \
   -c "import sqlite3,sys,tempfile; t=tempfile.mktemp(); sqlite3.connect('data/db.sqlite3').backup(sqlite3.connect(t)); sys.stdout.buffer.write(open(t,'rb').read())" > "$b/db.sqlite3.part" &&
 mv "$b/db.sqlite3.part" "$b/db.sqlite3" &&
-docker compose up -d
+docker compose up -d --no-start &&
+docker compose cp "$b/pki/." webvirtcloud:/var/www/.pki/ &&
+docker compose start
 ```
+
+The TLS client certificates (`/var/www/.pki`) go into the backup and back into the new container before it starts: up to v4.3.0 they were in the container itself, not in a volume. A container of v4.3.0 or older without them may have no `.pki`: `docker compose cp` then says it cannot find it, and the `mkdir` stands in.
 
 ### Moving from supervisor to systemd
 
@@ -715,8 +720,13 @@ docker compose run --rm --no-deps -T --entrypoint /srv/webvirtcloud/venv/bin/pyt
   -c "import os,sqlite3,sys,tempfile; t=tempfile.mktemp(); open(t,'wb').write(sys.stdin.buffer.read()); [os.remove(p) for p in ('data/db.sqlite3-journal','data/db.sqlite3-wal','data/db.sqlite3-shm') if os.path.exists(p)]; sqlite3.connect(t).backup(sqlite3.connect('data/db.sqlite3'))" < "$b/db.sqlite3" &&
 git checkout "$(cat "$b/commit")" &&
 docker compose build &&
-docker compose up -d    # the container fixes ownership and modes at start
+docker compose up -d --no-start &&
+{ [ ! -d "$b/pki" ] || docker compose cp "$b/pki/." webvirtcloud:/var/www/.pki/; } &&
+docker compose start &&
+docker compose exec webvirtcloud chown -R www-data:www-data /var/www/.pki
 ```
+
+The container fixes the ownership and modes of the database and keys at start; the last line gives the TLS client certificates to `www-data` also in an image of v4.3.0 or older, which neither does that nor keeps them in a volume.
 
 Installer and manual installation, from a root shell (`nginx:nginx` on RHEL / openSUSE):
 
