@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 08:10+0000\n"
+"POT-Creation-Date: 2026-11-10 08:52+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -708,7 +708,7 @@ msgstr "Listelerde tüm sanal makineleri ve sunucuları salt okunur görme"
 #: admin/templates/admin/user_list.html:34
 #: computes/templates/computes/instances.html:46
 #: instances/templates/add_instance_owner_block.html:17
-#: instances/templates/instances/stats_tab.html:68
+#: instances/templates/instances/stats_tab.html:70
 #: operations/templates/operations/job.html:21
 #: operations/templates/operations/jobs.html:27
 #: operations/templates/operations/jobs.html:61
@@ -750,14 +750,14 @@ msgstr "vCPU"
 #: instances/templates/create_inst_block.html:33
 #: instances/templates/instance.html:66
 #: instances/templates/instances/resize_tab.html:17
-#: instances/templates/instances/stats_tab.html:35
+#: instances/templates/instances/stats_tab.html:36
 msgid "Memory"
 msgstr "Bellek"
 
 #: admin/forms.py:191 instances/models.py:235
 #: instances/templates/create_instance_w2.html:118
 #: instances/templates/instances/settings_tab.html:25
-#: instances/templates/instances/stats_tab.html:52
+#: instances/templates/instances/stats_tab.html:53
 msgid "Disk"
 msgstr "Disk"
 
@@ -885,7 +885,7 @@ msgstr "Aramayla eşleşen grup yok."
 
 #: admin/templates/admin/logs.html:6 admin/templates/admin/logs.html:8
 #: admin/templates/admin/logs.html:19
-#: instances/templates/instances/stats_tab.html:19 templates/navbar.html:34
+#: instances/templates/instances/stats_tab.html:20 templates/navbar.html:34
 msgid "Logs"
 msgstr "Loglar"
 
@@ -914,6 +914,7 @@ msgid "There are no log rows yet."
 msgstr "Henüz log satırı yok."
 
 #: admin/templates/admin/logs.html:38
+#: instances/templates/instances/stats_tab.html:69
 #, python-format
 msgid "Date (%(time_zone)s)"
 msgstr "Tarih (%(time_zone)s)"
@@ -923,12 +924,12 @@ msgid "Instance"
 msgstr "Sanal Makine"
 
 #: admin/templates/admin/logs.html:42
-#: instances/templates/instances/stats_tab.html:69
+#: instances/templates/instances/stats_tab.html:71
 msgid "Message"
 msgstr "Mesaj"
 
 #: admin/templates/admin/logs.html:43
-#: instances/templates/instances/stats_tab.html:70
+#: instances/templates/instances/stats_tab.html:72
 msgid "Result"
 msgstr "Sonuç"
 
@@ -937,15 +938,15 @@ msgid "IP"
 msgstr "IP"
 
 #: admin/templates/admin/logs.html:56 admin/views.py:292 instances/states.py:19
-#: instances/views.py:419 instances/views.py:421 logs/views.py:17
+#: instances/views.py:419 instances/views.py:421 logs/views.py:18
 msgid "Unknown"
 msgstr "Bilinmeyen"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:292 logs/views.py:17
+#: admin/templates/admin/logs.html:56 admin/views.py:292 logs/views.py:18
 msgid "Done"
 msgstr "Tamamlandı"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:292 logs/views.py:17
+#: admin/templates/admin/logs.html:56 admin/views.py:292 logs/views.py:18
 #: operations/templates/operations/job.html:107
 msgid "Failed"
 msgstr "Başarısız"
@@ -2311,12 +2312,12 @@ msgstr ""
 "tamponlarını ve önbelleğini içermez."
 
 #: computes/templates/overview.html:111
-#: instances/templates/instances/stats_tab.html:3
+#: instances/templates/instances/stats_tab.html:4
 msgid "average over"
 msgstr "ortalama süresi"
 
 #: computes/templates/overview.html:111
-#: instances/templates/instances/stats_tab.html:5
+#: instances/templates/instances/stats_tab.html:6
 msgctxt "chart"
 msgid "Usage"
 msgstr "Kullanım"
@@ -2510,7 +2511,7 @@ msgstr "Ölçekleme"
 #: instances/templates/instance.html:71
 #: instances/templates/instances/settings_tab.html:180
 #: instances/templates/instances/settings_tab.html:398
-#: instances/templates/instances/stats_tab.html:64
+#: instances/templates/instances/stats_tab.html:65
 #: interfaces/templates/create_iface_block.html:94
 #: interfaces/templates/create_iface_block.html:117
 #: interfaces/templates/interface.html:97
@@ -3637,7 +3638,7 @@ msgstr "Sanal makinenin çalışacağı sunucuyu seçin."
 #: instances/templates/create_inst_block.html:23
 #: instances/templates/instance.html:62
 #: instances/templates/instances/resize_tab.html:14
-#: instances/templates/instances/stats_tab.html:28
+#: instances/templates/instances/stats_tab.html:29
 msgid "CPU"
 msgstr "CPU"
 
@@ -4804,7 +4805,7 @@ msgstr "Ön Yükleme"
 
 #: instances/templates/instances/settings_tab.html:39
 #: instances/templates/instances/settings_tab.html:805
-#: instances/templates/instances/stats_tab.html:45
+#: instances/templates/instances/stats_tab.html:46
 #: networks/templates/network.html:6 networks/templates/network.html:8
 #: networks/templates/network.html:48
 msgid "Network"
@@ -5861,78 +5862,74 @@ msgstr ""
 "Saatler %(TIME_ZONE)s saat dilimindedir. Anlık görüntüsü olan bir sanal "
 "makine taşınamaz."
 
-#: instances/templates/instances/stats_tab.html:3
+#: instances/templates/instances/stats_tab.html:4
 msgid "In"
 msgstr "Gelen"
 
-#: instances/templates/instances/stats_tab.html:3
+#: instances/templates/instances/stats_tab.html:4
 msgid "Out"
 msgstr "Giden"
 
-#: instances/templates/instances/stats_tab.html:4
+#: instances/templates/instances/stats_tab.html:5
 msgid "Read"
 msgstr "Okuma"
 
-#: instances/templates/instances/stats_tab.html:4
+#: instances/templates/instances/stats_tab.html:5
 msgid "Write"
 msgstr "Yaz"
 
-#: instances/templates/instances/stats_tab.html:5
+#: instances/templates/instances/stats_tab.html:6
 msgctxt "chart"
 msgid "Usage (RSS)"
 msgstr "Kullanım (RSS)"
 
-#: instances/templates/instances/stats_tab.html:11
+#: instances/templates/instances/stats_tab.html:12
 msgid "Updates every 5 seconds."
 msgstr "Her 5 saniyede bir güncellenir."
 
-#: instances/templates/instances/stats_tab.html:13
+#: instances/templates/instances/stats_tab.html:14
 msgid "The VM is not running: nothing is measured."
 msgstr "Sanal makine çalışmıyor: hiçbir şey ölçülmüyor."
 
-#: instances/templates/instances/stats_tab.html:17
+#: instances/templates/instances/stats_tab.html:18
 msgid "Stats view"
 msgstr "İstatistik görünümü"
 
-#: instances/templates/instances/stats_tab.html:18
+#: instances/templates/instances/stats_tab.html:19
 msgid "Graphs"
 msgstr "Grafikler"
 
-#: instances/templates/instances/stats_tab.html:29
+#: instances/templates/instances/stats_tab.html:30
 msgid "of the host"
 msgstr "sunucu kapasitesinin"
 
-#: instances/templates/instances/stats_tab.html:31
+#: instances/templates/instances/stats_tab.html:32
 msgid "CPU use, recent readings"
 msgstr "CPU kullanımı, son ölçümler"
 
-#: instances/templates/instances/stats_tab.html:38
+#: instances/templates/instances/stats_tab.html:39
 msgid "Memory use, recent readings"
 msgstr "Bellek kullanımı, son ölçümler"
 
-#: instances/templates/instances/stats_tab.html:47
+#: instances/templates/instances/stats_tab.html:48
 #, python-format
 msgid "Network %(mac)s, recent readings"
 msgstr "Ağ %(mac)s, son ölçümler"
 
-#: instances/templates/instances/stats_tab.html:54
+#: instances/templates/instances/stats_tab.html:55
 #, python-format
 msgid "Disk %(dev)s, recent readings"
 msgstr "Disk %(dev)s, son ölçümler"
 
-#: instances/templates/instances/stats_tab.html:64
+#: instances/templates/instances/stats_tab.html:65
 msgid "The logs could not be loaded."
 msgstr "Loglar yüklenemedi."
 
-#: instances/templates/instances/stats_tab.html:67
-msgid "Date"
-msgstr "Tarih"
-
-#: instances/templates/instances/stats_tab.html:77
+#: instances/templates/instances/stats_tab.html:79
 msgid "The latest rows, newest first."
 msgstr "En son satırlar, en yenisi önce."
 
-#: instances/templates/instances/stats_tab.html:78
+#: instances/templates/instances/stats_tab.html:80
 msgid "All of this VM's logs"
 msgstr "Bu sanal makinenin tüm logları"
 

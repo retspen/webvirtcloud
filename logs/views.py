@@ -1,5 +1,6 @@
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from admin.decorators import superuser_only
@@ -23,6 +24,7 @@ def vm_logs(request, pk):
             "instance": log.instance,
             "message": log.message,
             "result": results[log.success],
-            "date": log.date.strftime("%x %X"),
+            # as the Logs page shows it: in the panel's time zone, which the tab's heading names
+            "date": timezone.localtime(log.date).strftime("%Y-%m-%d %H:%M:%S"),
         })
     return JsonResponse(logs, safe=False)

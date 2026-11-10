@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 08:10+0000\n"
+"POT-Creation-Date: 2026-11-10 08:52+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -688,7 +688,7 @@ msgstr "在列表中查看所有虚拟机和主机（只读）"
 #: admin/templates/admin/user_list.html:34
 #: computes/templates/computes/instances.html:46
 #: instances/templates/add_instance_owner_block.html:17
-#: instances/templates/instances/stats_tab.html:68
+#: instances/templates/instances/stats_tab.html:70
 #: operations/templates/operations/job.html:21
 #: operations/templates/operations/jobs.html:27
 #: operations/templates/operations/jobs.html:61
@@ -729,14 +729,14 @@ msgstr "vCPU"
 #: instances/templates/create_inst_block.html:33
 #: instances/templates/instance.html:66
 #: instances/templates/instances/resize_tab.html:17
-#: instances/templates/instances/stats_tab.html:35
+#: instances/templates/instances/stats_tab.html:36
 msgid "Memory"
 msgstr "内存"
 
 #: admin/forms.py:191 instances/models.py:235
 #: instances/templates/create_instance_w2.html:118
 #: instances/templates/instances/settings_tab.html:25
-#: instances/templates/instances/stats_tab.html:52
+#: instances/templates/instances/stats_tab.html:53
 msgid "Disk"
 msgstr "磁盘"
 
@@ -862,7 +862,7 @@ msgstr "没有与搜索匹配的用户组。"
 
 #: admin/templates/admin/logs.html:6 admin/templates/admin/logs.html:8
 #: admin/templates/admin/logs.html:19
-#: instances/templates/instances/stats_tab.html:19 templates/navbar.html:34
+#: instances/templates/instances/stats_tab.html:20 templates/navbar.html:34
 msgid "Logs"
 msgstr "日志"
 
@@ -891,6 +891,7 @@ msgid "There are no log rows yet."
 msgstr "还没有日志行。"
 
 #: admin/templates/admin/logs.html:38
+#: instances/templates/instances/stats_tab.html:69
 #, python-format
 msgid "Date (%(time_zone)s)"
 msgstr "日期（%(time_zone)s）"
@@ -900,12 +901,12 @@ msgid "Instance"
 msgstr "虚拟机"
 
 #: admin/templates/admin/logs.html:42
-#: instances/templates/instances/stats_tab.html:69
+#: instances/templates/instances/stats_tab.html:71
 msgid "Message"
 msgstr "消息"
 
 #: admin/templates/admin/logs.html:43
-#: instances/templates/instances/stats_tab.html:70
+#: instances/templates/instances/stats_tab.html:72
 msgid "Result"
 msgstr "结果"
 
@@ -914,15 +915,15 @@ msgid "IP"
 msgstr "IP"
 
 #: admin/templates/admin/logs.html:56 admin/views.py:292 instances/states.py:19
-#: instances/views.py:419 instances/views.py:421 logs/views.py:17
+#: instances/views.py:419 instances/views.py:421 logs/views.py:18
 msgid "Unknown"
 msgstr "未知"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:292 logs/views.py:17
+#: admin/templates/admin/logs.html:56 admin/views.py:292 logs/views.py:18
 msgid "Done"
 msgstr "完成"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:292 logs/views.py:17
+#: admin/templates/admin/logs.html:56 admin/views.py:292 logs/views.py:18
 #: operations/templates/operations/job.html:107
 msgid "Failed"
 msgstr "失败"
@@ -2235,12 +2236,12 @@ msgid ""
 msgstr "最近 10 次读数，每 5 秒一次。内存使用量不含主机的缓冲区和缓存。"
 
 #: computes/templates/overview.html:111
-#: instances/templates/instances/stats_tab.html:3
+#: instances/templates/instances/stats_tab.html:4
 msgid "average over"
 msgstr "平均"
 
 #: computes/templates/overview.html:111
-#: instances/templates/instances/stats_tab.html:5
+#: instances/templates/instances/stats_tab.html:6
 msgctxt "chart"
 msgid "Usage"
 msgstr "使用量"
@@ -2425,7 +2426,7 @@ msgstr "缩放"
 #: instances/templates/instance.html:71
 #: instances/templates/instances/settings_tab.html:180
 #: instances/templates/instances/settings_tab.html:398
-#: instances/templates/instances/stats_tab.html:64
+#: instances/templates/instances/stats_tab.html:65
 #: interfaces/templates/create_iface_block.html:94
 #: interfaces/templates/create_iface_block.html:117
 #: interfaces/templates/interface.html:97
@@ -3490,7 +3491,7 @@ msgstr "选择运行虚拟机的主机。"
 #: instances/templates/create_inst_block.html:23
 #: instances/templates/instance.html:62
 #: instances/templates/instances/resize_tab.html:14
-#: instances/templates/instances/stats_tab.html:28
+#: instances/templates/instances/stats_tab.html:29
 msgid "CPU"
 msgstr "CPU"
 
@@ -4590,7 +4591,7 @@ msgstr "启动"
 
 #: instances/templates/instances/settings_tab.html:39
 #: instances/templates/instances/settings_tab.html:805
-#: instances/templates/instances/stats_tab.html:45
+#: instances/templates/instances/stats_tab.html:46
 #: networks/templates/network.html:6 networks/templates/network.html:8
 #: networks/templates/network.html:48
 msgid "Network"
@@ -5554,78 +5555,74 @@ msgstr "该虚拟机没有快照。"
 msgid "Times in %(TIME_ZONE)s. A VM with snapshots cannot be migrated."
 msgstr "时间以 %(TIME_ZONE)s 显示。有快照的虚拟机无法迁移。"
 
-#: instances/templates/instances/stats_tab.html:3
+#: instances/templates/instances/stats_tab.html:4
 msgid "In"
 msgstr "入"
 
-#: instances/templates/instances/stats_tab.html:3
+#: instances/templates/instances/stats_tab.html:4
 msgid "Out"
 msgstr "出"
 
-#: instances/templates/instances/stats_tab.html:4
+#: instances/templates/instances/stats_tab.html:5
 msgid "Read"
 msgstr "读"
 
-#: instances/templates/instances/stats_tab.html:4
+#: instances/templates/instances/stats_tab.html:5
 msgid "Write"
 msgstr "写"
 
-#: instances/templates/instances/stats_tab.html:5
+#: instances/templates/instances/stats_tab.html:6
 msgctxt "chart"
 msgid "Usage (RSS)"
 msgstr "使用量 (RSS)"
 
-#: instances/templates/instances/stats_tab.html:11
+#: instances/templates/instances/stats_tab.html:12
 msgid "Updates every 5 seconds."
 msgstr "每 5 秒更新一次。"
 
-#: instances/templates/instances/stats_tab.html:13
+#: instances/templates/instances/stats_tab.html:14
 msgid "The VM is not running: nothing is measured."
 msgstr "虚拟机未运行：无测量数据。"
 
-#: instances/templates/instances/stats_tab.html:17
+#: instances/templates/instances/stats_tab.html:18
 msgid "Stats view"
 msgstr "统计视图"
 
-#: instances/templates/instances/stats_tab.html:18
+#: instances/templates/instances/stats_tab.html:19
 msgid "Graphs"
 msgstr "图表"
 
-#: instances/templates/instances/stats_tab.html:29
+#: instances/templates/instances/stats_tab.html:30
 msgid "of the host"
 msgstr "占主机"
 
-#: instances/templates/instances/stats_tab.html:31
+#: instances/templates/instances/stats_tab.html:32
 msgid "CPU use, recent readings"
 msgstr "CPU 使用率，最近读数"
 
-#: instances/templates/instances/stats_tab.html:38
+#: instances/templates/instances/stats_tab.html:39
 msgid "Memory use, recent readings"
 msgstr "内存使用率，最近读数"
 
-#: instances/templates/instances/stats_tab.html:47
+#: instances/templates/instances/stats_tab.html:48
 #, python-format
 msgid "Network %(mac)s, recent readings"
 msgstr "网络 %(mac)s，最近读数"
 
-#: instances/templates/instances/stats_tab.html:54
+#: instances/templates/instances/stats_tab.html:55
 #, python-format
 msgid "Disk %(dev)s, recent readings"
 msgstr "磁盘 %(dev)s，最近读数"
 
-#: instances/templates/instances/stats_tab.html:64
+#: instances/templates/instances/stats_tab.html:65
 msgid "The logs could not be loaded."
 msgstr "无法加载日志。"
 
-#: instances/templates/instances/stats_tab.html:67
-msgid "Date"
-msgstr "日期"
-
-#: instances/templates/instances/stats_tab.html:77
+#: instances/templates/instances/stats_tab.html:79
 msgid "The latest rows, newest first."
 msgstr "最近的记录，最新的在前。"
 
-#: instances/templates/instances/stats_tab.html:78
+#: instances/templates/instances/stats_tab.html:80
 msgid "All of this VM's logs"
 msgstr "该虚拟机的全部日志"
 

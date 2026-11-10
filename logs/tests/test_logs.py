@@ -1,10 +1,14 @@
+from datetime import datetime, timezone as dt_timezone
+
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import translation
 
 from computes.models import Compute
 from instances.models import Instance
 from logs.audit import write
+from logs.models import Logs
 from logs.views import VM_LOG_ROWS
 
 UUID = "12345678-1234-1234-1234-123456789012"
@@ -40,6 +44,15 @@ class VMLogsTestCase(TestCase):
         self.assertEqual((row["user"], row["host"], row["instance"]), ("admin", "c1", "test-vm"))
         self.assertEqual(self.shown(), [("VM test-vm: power off: not running", "Failed"),
                                         ("VM test-vm: power on", "Done")])
+
+    @override_settings(TIME_ZONE="Europe/Istanbul")
+    def test_a_row_shows_its_time_as_the_logs_page_does(self):
+        write("admin", "c1", "test-vm", "VM test-vm: power on", True, uuid=UUID)
+        Logs.objects.update(date=datetime(2026, 11, 10, 9, 0, tzinfo=dt_timezone.utc))
+        for language in ("en", "tr"):
+            with translation.override(language):
+                row = self.client.get(reverse("vm_logs", args=[self.instance.pk])).json()[0]
+            self.assertEqual(row["date"], "2026-11-10 12:00:00")
 
     def test_a_vm_is_found_by_uuid_not_by_name(self):
         other = Compute.objects.create(name="c2", hostname="192.0.2.2", type=1)

@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load tz %}
 <div class="tab-pane" id="graphics" role="tabpanel" data-url="{% url 'instances:stats' instance.id %}"
      data-average-over="{% trans "average over" %}" data-in="{% trans "In" %}" data-out="{% trans "Out" %}"
      data-read="{% trans "Read" %}" data-write="{% trans "Write" %}"
@@ -64,7 +65,8 @@
                        data-empty="{% trans "None" %}" data-failed="{% trans "The logs could not be loaded." %}">
                         <thead>
                             <tr>
-                                <th scope="col">{% trans "Date" %}</th>
+                                {% get_current_timezone as time_zone %}
+                                <th scope="col">{% blocktrans %}Date ({{ time_zone }}){% endblocktrans %}</th>
                                 <th scope="col">{% trans "User" %}</th>
                                 <th scope="col">{% trans "Message" %}</th>
                                 <th scope="col">{% trans "Result" %}</th>
