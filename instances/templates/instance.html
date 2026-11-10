@@ -43,6 +43,8 @@
                     <a class="btn btn-sm btn-secondary" href="{% url 'instances:instance' instance.id %}">{% bs_icon 'arrow-clockwise' %} {% trans "Refresh" %}</a>
                 </div>
             </div>
+            {# shown by instance_status.js while the VM's state cannot be read #}
+            <div class="alert alert-warning small py-2 mt-2 mb-0" id="vm-host-lost" role="status" hidden>{% trans "This page could not be refreshed: its state and figures may be out of date." %}</div>
             {% if not instance.is_template %}
             <div class="d-flex flex-wrap column-gap-3 row-gap-1 small mt-2">
                 {% if not instance.guest_agent %}

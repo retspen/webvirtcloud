@@ -276,6 +276,12 @@ class PendingEditsTestCase(TestCase):
         User.objects.filter(username="pe-new").delete()  # no one left to add: no search box to load
         self.assertNotIn("/static/js/searchable_select.js", self.page().xpath("//script/@src"))
 
+    def test_the_page_has_a_hidden_notice_for_a_host_that_stops_answering(self):
+        # instance_status.js shows it while the state poll fails
+        (notice,) = self.page().xpath("//div[@id='vm-host-lost']")
+        self.assertIn("hidden", notice.attrib)
+        self.assertIn("could not be refreshed", notice.text_content())
+
     def test_a_paused_vm_offers_to_turn_vcpus_on_only(self):
         # unplugging a vCPU needs the guest, which a paused VM does not run
         vcpus = {"0": {"enabled": "yes", "hotpluggable": "no", "order": "1"},
