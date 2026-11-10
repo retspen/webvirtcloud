@@ -2589,11 +2589,8 @@ def create_instance(request, compute_id, arch, machine):
                             messages.error(request, str(err))
                         else:
                             if op.params["machine"] != machine:
-                                messages.warning(
-                                    request,
-                                    "Changing machine type from '%s' to 'q35' "
-                                    "which is required for UEFI secure boot." % machine,
-                                )
+                                messages.warning(request, _("The machine type is q35, not %(machine)s: "
+                                                            "UEFI Secure Boot needs it") % {"machine": machine})
                             jobs.remember_job(request, op)
                             return redirect(reverse("instances", args=[compute.id]))
     except libvirtError as lib_err:

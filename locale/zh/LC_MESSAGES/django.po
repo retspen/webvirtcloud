@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 17:47+0000\n"
+"POT-Creation-Date: 2026-11-10 17:48+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -6130,19 +6130,24 @@ msgstr "此主机没有可用于虚拟机磁盘的运行中存储池：请在其
 msgid "This host has no network for the VM: add one on its Networks page."
 msgstr "此主机没有可供虚拟机使用的网络：请在其“网络”页面添加一个。"
 
-#: instances/views.py:2622
+#: instances/views.py:2592
+#, python-format
+msgid "The machine type is q35, not %(machine)s: UEFI Secure Boot needs it"
+msgstr "机器类型为 q35，而不是 %(machine)s：UEFI 安全启动需要它"
+
+#: instances/views.py:2619
 msgid "Flavor Created"
 msgstr "规格已创建"
 
-#: instances/views.py:2630
+#: instances/views.py:2627
 msgid "Create Flavor"
 msgstr "创建规格"
 
-#: instances/views.py:2642
+#: instances/views.py:2639
 msgid "Flavor Deleted"
 msgstr "规格已删除"
 
-#: instances/views.py:2648
+#: instances/views.py:2645
 msgid "Only the size template goes; VMs made from it keep their size."
 msgstr "仅删除此规格；由它创建的虚拟机保持其大小。"
 

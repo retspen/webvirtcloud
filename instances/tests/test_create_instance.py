@@ -4,7 +4,9 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from computes.models import Compute
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.messages import get_messages
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 from instances.api.serializers import CreateInstanceSerializer
@@ -75,6 +77,14 @@ class CreateInstanceViewTests(TestCase):
 
     @patch("instances.views.wvmCreate", new=wvm_create)
     @patch("instances.views.NewVMForm")
+    def test_secure_boot_on_another_machine_type_says_so_in_the_users_language(self, form_class):
+        self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = "tr"
+        response, _ = self.create(form_class, machine="pc", firmware="UEFI Secure Boot")
+        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)],
+                         ["Makine türü pc değil q35: UEFI Secure Boot bunu gerektiriyor"])
+
+    @patch("instances.views.wvmCreate", new=wvm_create)
+    @patch("instances.views.NewVMForm")
     def test_a_firmware_or_a_tpm_the_host_does_not_offer_is_refused(self, form_class):
         for data, host in (({"firmware": "UEFI Secure Boot"}, {"get_firmwares": ["BIOS", "UEFI"]}),
                            ({"tpm": True}, {"get_tpm_model": None})):
@@ -103,7 +113,7 @@ class CreateInstanceViewTests(TestCase):
                 conn.create_volume.assert_not_called()
                 conn.create_instance.assert_not_called()
 
-    def create(self, form_class, host=None, **data):
+    def create(self, form_class, host=None, machine="q35", **data):
         """POST the create form with data over the form's defaults; host: what
         the mocked host answers, over its defaults."""
         user = get_user_model().objects.filter(username="create-test-admin").first() or (
@@ -150,7 +160,7 @@ class CreateInstanceViewTests(TestCase):
         }
 
         response = self.client.post(
-            reverse("instances:create_instance", args=[compute.id, "x86_64", "q35"]),
+            reverse("instances:create_instance", args=[compute.id, "x86_64", machine]),
             {"create": "1", "device0": "disk", "bus0": "virtio", "submission_key": "key-create01"},
         )
         return response, conn
