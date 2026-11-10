@@ -11,6 +11,7 @@ from django.test import TestCase
 from django.urls import reverse
 from instances.models import Instance
 from lxml import html
+from libvirt import libvirtError
 from vrtManager.util import OperationError
 
 ERROR = "Connection Failed: No route to host"
@@ -74,6 +75,23 @@ class UnreachableListTests(TestCase):
         response = self.get(reverse("instances:index"))
         self.assert_unknown(response, [self.vm_a, self.vm_b])
         self.assertContains(response, ERROR)
+
+    def test_a_host_that_stops_answering_while_the_list_is_made_is_no_error_page(self):
+        # status read True, then the host's keepalive ran out: its numbers fail
+        AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value="grouped")
+        def gone():
+            raise libvirtError("internal error: client socket is closed")
+        with patch.object(Compute, "status", new_callable=PropertyMock, return_value=True), \
+                patch.object(Compute, "connection_error", new_callable=PropertyMock, return_value=None), \
+                patch("instances.views.refresh_instance_database"), \
+                patch.object(Compute, "proxy", new_callable=PropertyMock, return_value=type("P", (), {
+                    "get_domain_rows": lambda self, uuids=None: {}, "get_memory_usage": lambda self: gone(),
+                    "host_info": property(lambda self: gone())})()):
+            response = self.client.get(reverse("instances:index"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "vm-a")
+        # not offered for a new VM
+        self.assertNotContains(response, reverse("instances:create_instance_select_type", args=[self.compute.id]))
 
     def test_grouped_index_lists_the_vms_of_a_down_host(self):
         AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value="grouped")

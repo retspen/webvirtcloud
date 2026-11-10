@@ -88,17 +88,28 @@ class Compute(Model):
             self.type,
         )
 
+    # The VM list reads these when it renders, after status: a host that
+    # stopped answering meanwhile gives None, not an error page.
     @cached_property
     def cpu_count(self):
-        return self.proxy.host_info[2]
+        try:
+            return self.proxy.host_info[2]
+        except libvirtError:
+            return None
 
     @cached_property
     def ram_size(self):
-        return self.proxy.host_info[1] * 1048576  # MiB
+        try:
+            return self.proxy.host_info[1] * 1048576  # MiB
+        except libvirtError:
+            return None
 
     @cached_property
     def ram_usage(self):
-        return self.proxy.get_memory_usage()["percent"]
+        try:
+            return self.proxy.get_memory_usage()["percent"]
+        except libvirtError:
+            return None
 
     @cached_property
     def capacity(self):

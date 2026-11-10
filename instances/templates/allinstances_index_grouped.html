@@ -41,7 +41,7 @@
                                 <span class="host-collapsed-badge badge text-bg-secondary d-none">{% trans "collapsed" %}</span>
                             </div>
                         </td>
-                        {% if compute.status is True %}
+                        {% if compute.status is True and compute.ram_usage is not None %}
                         <td class="d-none d-sm-table-cell">{{ compute.cpu_count }}</td>
                         <td class="d-none d-sm-table-cell">{{ compute.ram_size|filesizeformat }}</td>
                         <td>

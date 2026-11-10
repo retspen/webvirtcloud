@@ -105,7 +105,8 @@ def index(request):
         request,
         "allinstances.html",
         {"computes": computes, "instances": instances, "show_hosts": show_hosts, "own_hosts_down": own_hosts_down,
-         "reachable_computes": [c for c in computes if c.status is True],
+         # the hosts a new VM can go to: one that stopped answering since status has no numbers
+         "reachable_computes": [c for c in computes if c.status is True and c.ram_usage is not None],
          "unreachable_computes": [c for c in computes if c.status is not True],
          "states": [label for label, _color in STATES.values()] + [UNKNOWN[0]],
          "states_url": reverse("instances:states")},
