@@ -52,10 +52,24 @@ CLOSE_REASONS = {
 SSH_COMMAND = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libvirt-ssh")
 
 logger = logging.getLogger(__name__)
-# libvirt prints each error on stderr without saying where it came from; every
-# process that talks to libvirt imports this module. The errors are raised to
-# the callers, which handle or report them.
-libvirt.registerErrorHandler(lambda context, error: None, None)
+
+
+def _on_libvirt_error(context, error):
+    """libvirt prints each error on stderr without saying where it came from;
+    every process that talks to libvirt imports this module. The errors are
+    raised to the callers, which handle or report them.
+
+    A daemon behind the host's virtproxyd (virtstoraged, virtnetworkd, ...)
+    that restarts leaves the connection open and alive, but every later call
+    to it fails with "client socket is closed". libvirt reports that as an
+    RPC internal error and does not say on which connection, so the process
+    opens new ones."""
+    code, domain = error[0], error[1]
+    if code == libvirt.VIR_ERR_INTERNAL_ERROR and domain == libvirt.VIR_FROM_RPC:
+        connection_manager.reopen = True
+
+
+libvirt.registerErrorHandler(_on_libvirt_error, None)
 
 
 class wvmEventLoop(threading.Thread):
@@ -324,6 +338,17 @@ class wvmConnection(object):
     def __connect_socket(self):
         return libvirt.open("qemu:///system")
 
+    def retire(self):
+        """Open a new connection when next asked, and leave the current one to
+        the threads using it: it closes when they are done. A connection that
+        failed or is opening keeps its state (connection_manager.reopen)."""
+        with self.connection_state_lock:
+            connection, self.connection = self.connection, None
+        if connection is not None:
+            # libvirt holds the callback, and through it the connection
+            with contextlib.suppress(libvirtError):
+                connection.unregisterCloseCallback()
+
     def close(self):
         """
         closes the connection (if it is active)
@@ -381,6 +406,7 @@ class wvmConnectionManager(object):
         self._connections_lock = threading.RLock()  # the dict only: connecting runs outside it
         self._inherited = []
         self._host_requests = {}  # host: the web requests using it, whatever the login (HOST_REQUESTS)
+        self.reopen = False  # an RPC error (_on_libvirt_error): the next get_connection retires the open connections
 
     def forget_connections(self):
         """For a forked child: stop using the inherited connections (the
@@ -414,6 +440,11 @@ class wvmConnectionManager(object):
         passwd = str(passwd) if passwd is not None else None
 
         with self._connections_lock:
+            if self.reopen:
+                self.reopen = False
+                for entries in self._connections.values():
+                    for entry in entries:
+                        entry.retire()
             connection = self._search_connection(host, login, passwd, conn)
             if connection is None:
                 # Only register it here: connecting under the global lock

@@ -177,6 +177,36 @@ class BoundedOpenTestCase(unittest.TestCase):
         self.assertIsNone(entry.connection)
         self.assertEqual(entry.last_error, {"text": "Connection closed (keepalive timeout)", "values": {}})
 
+    def test_an_rpc_error_opens_new_connections(self):
+        self.release.set()
+        old, new = alive_connection(), alive_connection()
+        with self.open_auth(old):
+            self.get()
+        with patch("vrtManager.connection.connection_manager", self.manager):
+            # another error keeps the connection
+            connection._on_libvirt_error(None, (libvirt.VIR_ERR_NO_DOMAIN, libvirt.VIR_FROM_QEMU, "no domain", 2))
+            self.assertIs(self.get()[0], old)
+            # a restarted virtstoraged: the connection is alive, its storage calls fail for good
+            connection._on_libvirt_error(None, (libvirt.VIR_ERR_INTERNAL_ERROR, libvirt.VIR_FROM_RPC,
+                                                "internal error: client socket is closed", 2))
+            with self.open_auth(new):
+                self.assertIs(self.get()[0], new)
+            self.assertIs(self.get()[0], new)
+        old.close.assert_not_called()  # a thread may still use it
+        old.unregisterCloseCallback.assert_called_once()  # else libvirt keeps it
+
+    def test_an_rpc_error_keeps_a_failed_hosts_retry_delay(self):
+        self.release.set()
+        with self.open_auth(libvirt.libvirtError("unable to connect")):
+            self.get()
+        with patch("vrtManager.connection.connection_manager", self.manager):
+            connection._on_libvirt_error(None, (libvirt.VIR_ERR_INTERNAL_ERROR, libvirt.VIR_FROM_RPC,
+                                                "internal error: client socket is closed", 2))
+            with self.open_auth(alive_connection()):
+                result, _took = self.get()
+        self.assertIsInstance(result, libvirt.libvirtError)  # still within RETRY_AFTER
+        self.assertEqual(self.calls, 1)
+
     def test_the_log_has_each_change_of_a_host_not_each_retry(self):
         self.release.set()
         conn = alive_connection()
