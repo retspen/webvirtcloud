@@ -23,6 +23,7 @@ const rfb = new RFB(document.getElementById('screen'), url,
 
 let connected = false;
 let closed = false;
+let disconnecting = false;  // the user's Disconnect, not a lost connection
 let refusal = null;
 
 function showStatus(text, color) {
@@ -47,7 +48,8 @@ rfb.addEventListener('disconnect', (e) => {
     } else if (!connected) {
         showStatus(status.dataset.failed, 'danger');
     } else {
-        showStatus(e.detail.clean ? status.dataset.disconnected : status.dataset.lost, 'danger');
+        // noVNC calls a server's close clean too: the VM's stop, a migration, a restarted proxy
+        showStatus(disconnecting ? status.dataset.disconnected : status.dataset.lost, 'danger');
     }
     connectionButton.textContent = connectionButton.dataset.reconnect;
     credentialsDialog.hide();
@@ -58,6 +60,7 @@ connectionButton.addEventListener('click', () => {
     if (closed) {
         window.location.reload();
     } else {
+        disconnecting = true;
         rfb.disconnect();
     }
 });

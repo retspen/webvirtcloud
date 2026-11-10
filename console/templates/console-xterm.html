@@ -14,6 +14,7 @@
 {% block navbarstatus %}
 <span id="status" class="badge text-bg-secondary" role="status"
     data-connected="{% trans "Connected" %}" data-disconnected="{% trans "Disconnected" %}"
+    data-lost="{% trans "Connection lost" %}"
     data-taken-over="{% trans "Taken over by %(name)s" %}"
     data-hint="{% trans "Connected. If the VM shows nothing, press Enter." %}">{% trans "Connecting" %}</span>
 {% endblock %}

@@ -58,13 +58,14 @@ socket.on('connect', () => {
 socket.on('taken_over', (data) => {
     takenBy = data.by;
 });
-socket.on('disconnect', () => {
+socket.on('disconnect', (reason) => {
     if (takenBy) {
         const text = status.dataset.takenOver.replace('%(name)s', takenBy);
         term.write('\r\n[' + text + ']\r\n');
         showStatus(text, 'danger');
     } else {
-        showStatus(status.dataset.disconnected, 'danger');
+        // the user's Disconnect, or the server's end (the terminal says why) or a lost connection
+        showStatus(reason === 'io client disconnect' ? status.dataset.disconnected : status.dataset.lost, 'danger');
     }
 });
 // the server says why: serial console off, an expired link, the console open elsewhere
