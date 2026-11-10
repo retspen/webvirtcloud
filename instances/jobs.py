@@ -302,9 +302,10 @@ def record_vm(op, owner):
                                                defaults={"is_delete": True, "is_change": True, "is_vnc": True})
 
 
-def vm_outcome(op, owner, volumes):
+def vm_outcome(op, owner, volumes, pools=None):
     """The VM is defined last: if it exists, the job succeeded. If it does not and
-    none of its planned volumes exists either, the job failed and changed nothing."""
+    none of its planned volumes exists either, the job failed and changed nothing.
+    The volumes are looked for in the pools named, else in every running pool."""
     c = Compute.objects.get(pk=op.intent["compute"])
     conn = wvmConnect(c.hostname, c.login, c.password, c.type).wvm
     try:
@@ -313,7 +314,9 @@ def vm_outcome(op, owner, volumes):
         if err.get_error_code() != VIR_ERR_NO_DOMAIN:
             raise  # unreachable: recovery waits and retries
         held = set()
-        for pool in conn.listAllStoragePools(VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE):
+        # a pool named that is not running cannot be listed: recovery waits for it
+        for pool in (conn.listAllStoragePools(VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE) if pools is None
+                     else [conn.storagePoolLookupByName(name) for name in pools]):
             held.update(pool.listVolumes())
         left = sorted(held & set(volumes))
         if not left:
@@ -810,11 +813,27 @@ class CloneInstance(Kind):
 
 
 
-def _seed_pool(conn, data):
+def _seed_pool(data):
     """The pool of a new VM's cloud-init seed: the one of its disk."""
-    if data["storage"]:
-        return conn.get_storage(data["storage"])
-    return conn.get_storage(data["images"].split(",")[0].partition("/")[0])
+    return data["storage"] or data["images"].split(",")[0].partition("/")[0]
+
+
+def _disk_names(data):
+    """The new disk's pool and the names the disk may have there: on a block
+    pool its VM's name, on a file pool with the suffix of its format."""
+    if not (data["hdd_size"] or data["template"]):
+        return None, []  # existing volumes only
+    return data["storage"] or data["template_pool"], [data["name"] + ext for ext in ("", ".img", ".qcow", ".qcow2")]
+
+
+def _check_disk_name(conn, data):
+    """A volume already in the pool is not the new disk's, whatever recovery finds."""
+    pool, names = _disk_names(data)
+    if names:
+        storage = conn.get_storage(pool)
+        storage.refresh(0)
+        if set(names) & set(storage.listVolumes()):
+            raise util.OperationError(_("Image has already exist. Please check volumes or change instance name"))
 
 
 @register
@@ -852,8 +871,7 @@ class CreateInstance(Kind):
             raise util.OperationError(_("First you need to create or select an image"))
         if len(sources) > 1:
             raise util.OperationError(_("Choose one disk source: a new disk, existing volumes or a template"))
-        if not data["hdd_size"] and data["template"] and conn.get_volume_path(data["name"] + ".img", data["storage"]):
-            raise util.OperationError(_("Image has already exist. Please check volumes or change instance name"))
+        _check_disk_name(conn, data)
         if data["cache_mode"] not in conn.get_cache_modes():
             raise util.OperationError(_("Invalid cache mode"))
         if data["vcpu_mode"] not in cpu_choices(conn.get_dom_capabilities(data["arch"], data["machine"])):
@@ -863,7 +881,7 @@ class CreateInstance(Kind):
         if data["cloud_init"]:
             if data["add_cdrom"] == "None":
                 raise util.OperationError(_("The cloud-init seed is read from a CD-ROM: choose its bus"))
-            pool = _seed_pool(conn, data)
+            pool = conn.get_storage(_seed_pool(data))
             if util.get_xml_path(pool.XMLDesc(0), "/pool/@type") not in FILE_POOL_TYPES:
                 raise util.OperationError(_("The cloud-init seed needs a directory storage pool for the disk"))
         try:
@@ -888,8 +906,10 @@ class CreateInstance(Kind):
         if Instance.objects.filter(name__exact=op.params["name"]).exists():
             raise util.OperationError(_("There is an instance with same name. Remove it and try again!"))
         c = Compute.objects.get(pk=op.params["compute"])
-        if op.params["name"] in wvmCreate(c.hostname, c.login, c.password, c.type).get_instances():
+        conn = wvmCreate(c.hostname, c.login, c.password, c.type)
+        if op.params["name"] in conn.get_instances():
             raise util.OperationError(_("A virtual machine with this name already exists"))
+        _check_disk_name(conn, op.params)
 
     def run(self, op, ctx):
         data = op.params
@@ -938,7 +958,7 @@ class CreateInstance(Kind):
                 ctx.set_phase(gettext_noop("Writing the cloud-init seed"))
                 keys = UserSSHKey.objects.filter(user=op.user).values_list("keypublic", flat=True)
                 user_data = render_to_string("user_data", {"instance_keys": list(keys)})
-                seed = conn.create_seed(_seed_pool(conn, data).name(), op.intent["uuid"], data["name"], user_data)
+                seed = conn.create_seed(_seed_pool(data), op.intent["uuid"], data["name"], user_data)
                 created.append(seed)
                 volume_list.append(volume(seed, "cdrom", data["add_cdrom"]))
 
@@ -987,10 +1007,12 @@ class CreateInstance(Kind):
 
     def reconcile(self, op):
         data = op.params
-        names = [data["name"] + ext for ext in ("", ".img", ".qcow", ".qcow2")] if data["hdd_size"] or data["template"] else []
+        pool, names = _disk_names(data)
+        pools = {pool} if names else set()
         if data.get("cloud_init"):
             names.append(f"cidata-{op.intent['uuid']}.iso")
-        return vm_outcome(op, owner=False, volumes=names)
+            pools.add(_seed_pool(data))
+        return vm_outcome(op, owner=False, volumes=names, pools=sorted(pools))
 
     def log_entry(self, op, state):
         return _log(op, state, "create")

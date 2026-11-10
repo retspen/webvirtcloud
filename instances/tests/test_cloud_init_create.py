@@ -94,8 +94,8 @@ class CloudInitCreateTestCase(TransactionTestCase):
         missing = libvirt.libvirtError("no domain")
         missing.get_error_code = lambda: libvirt.VIR_ERR_NO_DOMAIN
         conn.return_value.wvm.lookupByUUIDString.side_effect = missing
-        conn.return_value.wvm.listAllStoragePools.return_value = [
-            SimpleNamespace(listVolumes=lambda: ["cidata-abababab-0000-1111-2222-333333333333.iso"])]
+        conn.return_value.wvm.storagePoolLookupByName.return_value = SimpleNamespace(
+            listVolumes=lambda: ["cidata-abababab-0000-1111-2222-333333333333.iso"])
         outcome = CreateInstance().reconcile(op)
         self.assertEqual(outcome.state, Operation.UNCERTAIN)
         self.assertIn("cidata-abababab-0000-1111-2222-333333333333.iso", words(outcome.error))

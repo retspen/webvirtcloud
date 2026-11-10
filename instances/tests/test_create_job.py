@@ -126,12 +126,32 @@ class CreateJobTestCase(TransactionTestCase):
         missing = libvirt.libvirtError("no domain")
         missing.err = (libvirt.VIR_ERR_NO_DOMAIN, libvirt.VIR_FROM_QEMU, "no domain")
         conn.return_value.wvm.lookupByUUIDString.side_effect = missing
-        pool = MagicMock()
-        pool.listVolumes.return_value = ["other.qcow2"]
-        conn.return_value.wvm.listAllStoragePools.return_value = [pool]
+        pools = {"default": MagicMock(), "other": MagicMock()}
+        conn.return_value.wvm.storagePoolLookupByName.side_effect = pools.get
+        pools["default"].listVolumes.return_value = ["other.qcow2"]
+        pools["other"].listVolumes.return_value = ["api-vm.qcow2"]  # not the job's pool
         self.assertEqual(CreateInstance().reconcile(op).state, Operation.FAILED)
-        pool.listVolumes.return_value = ["api-vm.qcow2"]
+        pools["default"].listVolumes.return_value = ["api-vm.qcow2"]
         self.assertEqual(CreateInstance().reconcile(op).state, Operation.UNCERTAIN)
+        # a pool that is not running may hold the disk: recovery waits for it
+        pools["default"].listVolumes.side_effect = libvirt.libvirtError("storage pool 'default' is not active")
+        with self.assertRaises(libvirt.libvirtError):
+            CreateInstance().reconcile(op)
+
+    def test_a_volume_already_named_as_the_new_disk_is_refused(self):
+        # else the job would fail on it and recovery take it for the job's own
+        url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"
+        self.conn.get_storage.return_value.listVolumes.return_value = ["api-vm.qcow2"]
+        response = self.client.post(url, BODY, content_type="application/json")
+        self.assertContains(response, "Image has already exist", status_code=400)
+        self.assertFalse(Operation.objects.exists())
+        self.conn.get_storage.assert_called_with("default")
+        # one made after the job was queued
+        self.conn.get_storage.return_value.listVolumes.return_value = []
+        self.client.post(url, BODY, content_type="application/json")
+        self.conn.get_storage.return_value.listVolumes.return_value = ["api-vm.img"]
+        with self.assertRaisesMessage(libvirt.libvirtError, "Image has already exist"):
+            CreateInstance().precheck(Operation.objects.get(), None)
 
     def test_the_worker_checks_the_user_and_the_name_again(self):
         response = self.client.post(f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/", BODY,
