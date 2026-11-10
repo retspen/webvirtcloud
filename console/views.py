@@ -8,7 +8,7 @@ from pathlib import Path
 from appsettings.settings import app_settings
 from console import tokens
 from django.conf import settings
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.utils.translation import gettext_lazy as _
 from instances.models import Instance
 from instances.utils import can_open_console
@@ -42,6 +42,12 @@ def console(request, compute_id, uuid):
     """The console page of the VM with this UUID on this compute. A console
     that cannot open gets a page that says why, and no console client."""
     instance = Instance.objects.filter(compute_id=compute_id, uuid=uuid).first()
+    if instance is None:
+        # migrated since the page was opened: a reconnect finds the VM on its
+        # new compute, when it is the only one with that UUID the user may open
+        moved = [vm for vm in Instance.objects.filter(uuid=uuid) if can_open_console(request.user, vm)]
+        if len(moved) == 1:
+            return redirect("console", moved[0].compute_id, uuid)
     # Same answer for "no such VM" and "not allowed", so the response
     # does not reveal whether a VM exists.
     if instance is None or not can_open_console(request.user, instance):

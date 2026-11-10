@@ -183,6 +183,26 @@ class ConsoleViewsTestCase(TestCase):
         self.assertNotContains(response, "vm-alpha", status_code=403)
         self.assertNotIn("token", response.context)
 
+    def test_a_migrated_vms_console_link_leads_to_its_new_compute(self):
+        # the page's Reconnect after a migration, which moved the VM's row
+        other = Compute.objects.create(name="other", hostname="192.0.2.7", login="root", password="", type=2)
+        Instance.objects.filter(pk=self.instance.pk).update(compute=other)
+        self.client.force_login(self.alice)
+        response = self.client.get(self.url)
+        self.assertRedirects(response, reverse("console", args=[other.id, self.instance.uuid]),
+                             fetch_redirect_response=False)
+        # who may not open it learns nothing
+        self.client.force_login(self.bob)
+        self.assertEqual(self.client.get(self.url).status_code, 403)
+
+    def test_a_uuid_on_two_other_computes_is_not_guessed(self):
+        Instance.objects.filter(pk=self.instance.pk).delete()
+        for name, hostname in (("c2", "192.0.2.8"), ("c3", "192.0.2.9")):
+            compute = Compute.objects.create(name=name, hostname=hostname, login="root", password="", type=2)
+            Instance.objects.create(compute=compute, name="vm-alpha", uuid=self.instance.uuid)
+        self.client.force_login(self.admin_user)
+        self.assertEqual(self.client.get(self.url).status_code, 403)
+
     @override_settings(SERIAL_CONSOLE_ENABLED=False)
     @patch("console.views.wvmInstance")
     def test_a_console_that_cannot_open_gets_no_console_client(self, mock_wvm):
