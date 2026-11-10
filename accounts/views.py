@@ -380,7 +380,8 @@ def admin_email_otp(request, user_id):
     subject = f"User {user.username}"
     if user.email != "":
         try:
-            with audit(request, None, subject, "mail OTP QR code"):
+            # a device made for a mail that did not go would ask for codes the user never got
+            with audit(request, None, subject, "mail OTP QR code"), transaction.atomic():
                 get_user_totp_device(user)
                 send_email_with_otp(request, user)
         except OSError as err:  # the SMTP server refused it, or did not answer within EMAIL_TIMEOUT

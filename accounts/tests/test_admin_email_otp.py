@@ -3,6 +3,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django_otp.plugins.otp_totp.models import TOTPDevice
 
 
 class AdminEmailOtpTestCase(TestCase):
@@ -30,6 +31,11 @@ class AdminEmailOtpTestCase(TestCase):
         response = self.client.post(self.url)
         self.assertEqual(response.status_code, 302)
         mock_send.assert_called_once()
+
+    @patch("accounts.views.send_email_with_otp", side_effect=ConnectionRefusedError)
+    def test_a_mail_that_did_not_go_leaves_the_user_without_otp(self, mock_send):
+        self.client.post(self.url)
+        self.assertFalse(TOTPDevice.objects.filter(user=self.user).exists())
 
     def test_the_smtp_connection_waits_a_bounded_time(self):
         from django.core.mail.backends.smtp import EmailBackend
