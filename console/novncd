@@ -78,6 +78,10 @@ def get_connection_infos(instance):
 
 
 WILDCARD = (None, "", "0.0.0.0", "::")
+# A host that drops off the network sends nothing to say so: TCP keepalive
+# notices it on a quiet console, TCP_USER_TIMEOUT on one with data unanswered,
+# and the session ends within about a minute (Linux has every option).
+KEEPALIVE = {"TCP_KEEPIDLE": 30, "TCP_KEEPINTVL": 10, "TCP_KEEPCNT": 3, "TCP_USER_TIMEOUT": 60000}
 
 
 def bounded_connect(host, port, connect=True):
@@ -85,6 +89,10 @@ def bounded_connect(host, port, connect=True):
     waits for one that does not answer as long as the OS does (some 2 minutes)."""
     tsock = socket.create_connection((host, port), timeout=CONNECT_TIMEOUT)
     tsock.settimeout(None)  # a console may stay quiet for long once connected
+    tsock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+    for name, value in KEEPALIVE.items():
+        if hasattr(socket, name):
+            tsock.setsockopt(socket.IPPROTO_TCP, getattr(socket, name), value)
     return tsock
 
 

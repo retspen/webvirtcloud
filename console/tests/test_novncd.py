@@ -4,6 +4,7 @@ port it cannot listen on ends it with a failure status, which systemd restarts."
 import socket
 import subprocess
 import sys
+import unittest
 from pathlib import Path
 
 from django.test import SimpleTestCase
@@ -233,6 +234,16 @@ class NovncdDaemonLogicTestCase(TestCase):
             tsock = novncd_mod.bounded_connect("192.0.2.40", 5900, connect=True)
         create_connection.assert_called_once_with(("192.0.2.40", 5900), timeout=novncd_mod.CONNECT_TIMEOUT)
         tsock.settimeout.assert_called_once_with(None)
+
+    @unittest.skipUnless(hasattr(socket, "TCP_USER_TIMEOUT"), "Linux socket options")
+    def test_a_vnc_server_gone_from_the_network_is_noticed(self):
+        listener = socket.create_server(("127.0.0.1", 0))
+        self.addCleanup(listener.close)
+        tsock = novncd_mod.bounded_connect(*listener.getsockname())
+        self.addCleanup(tsock.close)
+        self.assertEqual(tsock.getsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE), 1)
+        self.assertEqual(tsock.getsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE), 30)
+        self.assertEqual(tsock.getsockopt(socket.IPPROTO_TCP, socket.TCP_USER_TIMEOUT), 60000)
 
     def test_a_token_without_its_users_session_is_refused_and_logged(self):
         from logs.models import Logs
