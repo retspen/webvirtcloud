@@ -2,6 +2,7 @@
 readable only by the panel's user, the newest --keep of them kept."""
 
 import fcntl
+from datetime import datetime
 import os
 import shutil
 import sqlite3
@@ -85,11 +86,23 @@ class BackupTests(SimpleTestCase):
         self.assertEqual(oct(copy.stat().st_mode & 0o777), "0o600")
 
     def test_only_the_newest_backups_and_no_partial_one_are_kept(self):
-        for name in ("webvirtcloud-backup-20260101-000000", "webvirtcloud-backup-20260102-000000",
-                     ".webvirtcloud-backup-20260103-000000"):
+        for made, name in ((1, "webvirtcloud-backup-20260101-000000"), (2, "webvirtcloud-backup-20260102-000000"),
+                           (3, ".webvirtcloud-backup-20260103-000000")):
             (self.backups / name).mkdir(parents=True)
+            os.utime(self.backups / name, (made, made))
         backup = self.backup("--keep", "2")
         self.assertEqual(self.kept(), ["webvirtcloud-backup-20260102-000000", backup.name])
+
+    def test_the_newest_are_kept_by_when_they_were_made_not_by_name(self):
+        # 02:50 CEST, then 02:10 CET forty minutes later as the clock went back; or an
+        # older backup named in another time zone
+        older = self.backups / "webvirtcloud-backup-20261025-025000"
+        older.mkdir(parents=True)
+        os.utime(older, (1, 1))
+        with patch("appsettings.management.commands.backup.datetime") as clock:
+            clock.now.return_value = datetime(2026, 10, 25, 2, 10)
+            newest = self.backup("--keep", "1")
+        self.assertEqual(self.kept(), [newest.name])
 
     def test_a_failed_backup_leaves_nothing_and_deletes_no_older_one(self):
         (self.backups / "webvirtcloud-backup-20260101-000000").mkdir(parents=True)

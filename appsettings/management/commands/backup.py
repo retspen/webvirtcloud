@@ -46,7 +46,11 @@ class Command(BaseCommand):
             raise
         # only after a good backup: a failing one never costs an older one;
         # the partial ones are what a killed run left behind
-        for old in [*sorted(backups.glob(PREFIX + "*"))[:-keep], *backups.glob(f".{PREFIX}*")]:
+        # the newest by when they were made, not by name: a name is the local time, which goes back
+        # an hour in autumn (and was the panel's zone or UTC as an installation's TZ changed);
+        # by name among those of the same time, which a coarse file system clock gives
+        made = sorted(backups.glob(PREFIX + "*"), key=lambda path: (path.stat().st_mtime_ns, path.name))
+        for old in [*made[:-keep], *backups.glob(f".{PREFIX}*")]:
             shutil.rmtree(old)
         return backups / name
 

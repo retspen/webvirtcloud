@@ -65,7 +65,7 @@ from libvirt import (
 from libvirt_qemu import qemuAgentCommand
 
 from collections import OrderedDict
-from datetime import datetime
+from datetime import datetime, timezone
 from xml.etree import ElementTree
 
 from lxml import etree
@@ -2136,7 +2136,8 @@ class wvmInstance(wvmConnect):
                     detaches.setdefault(dev, path)
             snapshots.append(
                 {
-                    "date": datetime.fromtimestamp(int(tree.findtext("creationTime"))),
+                    # aware: sorted in UTC, shown in the panel's time zone
+                    "date": datetime.fromtimestamp(int(tree.findtext("creationTime")), timezone.utc),
                     "name": snap.getName(),
                     "description": tree.findtext("description") or "",
                     "memory": tree.find("memory[@snapshot='external']") is not None,

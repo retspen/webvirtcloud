@@ -4,7 +4,7 @@ cases are in vrtManager/tests/test_live_snapshots.py."""
 
 import json
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import libvirt
@@ -110,7 +110,8 @@ class SnapshotListTestCase(unittest.TestCase):
         [entry] = p.get_snapshot(EXTERNAL)
         self.assertEqual(entry["name"], "one")
         self.assertEqual(entry["description"], "d & e")
-        self.assertEqual(entry["date"], datetime.fromtimestamp(1700000000))
+        # aware: two snapshots an hour apart around an autumn clock change stay in order
+        self.assertEqual(entry["date"], datetime(2023, 11, 14, 22, 13, 20, tzinfo=timezone.utc))
         self.assertTrue(entry["memory"])
         self.assertTrue(entry["current"])
 
