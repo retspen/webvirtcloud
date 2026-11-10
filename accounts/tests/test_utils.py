@@ -93,7 +93,7 @@ class AccountsUtilsTestCase(TestCase):
     @override_settings(OTP_ENABLED=True)
     def test_the_mail_links_to_the_qr_code_and_holds_no_secret(self):
         device = get_user_totp_device(self.user)
-        send_email_with_otp(RequestFactory().get("/"), self.user)
+        send_email_with_otp(RequestFactory().get("/"), device)
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
         self.assertEqual((message.subject, message.to, message.alternatives), ("OTP QR Code", ["user@example.com"], []))
@@ -111,8 +111,7 @@ class AccountsUtilsTestCase(TestCase):
 
     @override_settings(OTP_ENABLED=True)
     def test_a_link_that_is_old_or_not_signed_shows_nothing(self):
-        get_user_totp_device(self.user)
-        token = OTP_LINK.sign(str(self.user.pk))
+        token = OTP_LINK.sign(str(get_user_totp_device(self.user).pk))
         with patch("django.core.signing.time.time", return_value=time.time() + OTP_LINK_MAX_AGE + 1):
             self.assertEqual(self.client.post(reverse("accounts:otp_qr"), {"token": token}).status_code, 404)
         self.assertEqual(self.client.post(reverse("accounts:otp_qr"), {"token": f"{self.user.pk}:x:y"}).status_code, 404)

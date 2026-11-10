@@ -44,6 +44,7 @@ urlpatterns = [
         views.admin_email_otp,
         name="admin_email_otp",
     ),
+    path("admin_reset_otp/<int:user_id>/", views.admin_reset_otp, name="admin_reset_otp"),
 ]
 
 if settings.OTP_ENABLED:

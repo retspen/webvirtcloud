@@ -61,16 +61,19 @@ def validate_ssh_key(key):
     return True
 
 
-# the link a mail carries to its user's OTP QR code: the mail holds no secret
-OTP_LINK = TimestampSigner(salt="accounts.otp_qr")
+# the link a mail carries to its device's OTP QR code: the mail holds no secret.
+# Links once named the user: this salt refuses those, whose id may be another's device.
+OTP_LINK = TimestampSigner(salt="accounts.otp_qr.device")
 OTP_LINK_MAX_AGE = 3600
 
 
-def send_email_with_otp(request, user):
-    """Mail the user a link to the page of their OTP QR code, good for
+def send_email_with_otp(request, device):
+    """Mail the device's user a link to the page of its OTP QR code, good for
     OTP_LINK_MAX_AGE: the QR code's secret is never in a mailbox. The token
-    is the URL's fragment, which no request carries: it is in no access log."""
-    url = request.build_absolute_uri(reverse("accounts:otp_qr")) + "#" + OTP_LINK.sign(str(user.pk))
+    is the URL's fragment, which no request carries: it is in no access log.
+    It names the device, so after an OTP reset it shows nothing."""
+    user = device.user
+    url = request.build_absolute_uri(reverse("accounts:otp_qr")) + "#" + OTP_LINK.sign(str(device.pk))
     send_mail(
         _("OTP QR Code"),
         _("Open this link within an hour to see the OTP QR code of account '%(user)s':\n\n%(url)s")

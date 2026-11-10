@@ -21,6 +21,7 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from django.views.decorators.debug import sensitive_post_parameters
+from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from accounts.apps import admin_password_path
 from computes.utils import lock_ownership
@@ -191,6 +192,7 @@ def account(request, user_id):
             "publickeys": publickeys,
             "api_tokens": ApiToken.objects.filter(user_id=user_id),
             "otp_enabled": settings.OTP_ENABLED,
+            "has_otp": TOTPDevice.objects.filter(user=user).exists(),
         },
     )
 
@@ -333,7 +335,7 @@ def email_otp(request):
                 try:
                     # the row's user is the requester: anonymous
                     with audit(request, None, f"User {user.username}", "mail OTP QR code (lost OTP)"):
-                        send_email_with_otp(request, user)
+                        send_email_with_otp(request, device)
                 except Exception:
                     logging.getLogger(__name__).exception("Could not mail the OTP QR code to user %s", user.pk)
 
@@ -354,21 +356,18 @@ def email_otp(request):
 
 @login_not_required
 def otp_qr(request):
-    """The OTP QR code of the user a mailed link (send_email_with_otp) names.
+    """The OTP QR code of the device a mailed link (send_email_with_otp) names.
     The link's token is in its fragment: the page posts it (otp_qr.js)."""
     if not settings.OTP_ENABLED:
         raise Http404
     if request.method != "POST":
         return render(request, "accounts/otp_qr.html")
     try:
-        user_id = OTP_LINK.unsign(request.POST.get("token", ""), max_age=OTP_LINK_MAX_AGE)
+        device_id = OTP_LINK.unsign(request.POST.get("token", ""), max_age=OTP_LINK_MAX_AGE)
     except BadSignature:
         raise Http404
-    user = get_object_or_404(get_user_model(), pk=user_id, is_active=True)
-    device = get_existing_totp_device(user)
-    if device is None:
-        raise Http404
-    response = render(request, "accounts/otp_qr.html", {"user": user, "qr_svg": otp_qr_svg(device)})
+    device = get_object_or_404(TOTPDevice, pk=device_id, confirmed=True, user__is_active=True)
+    response = render(request, "accounts/otp_qr.html", {"user": device.user, "qr_svg": otp_qr_svg(device)})
     response["Cache-Control"] = "no-store"
     return response
 
@@ -382,8 +381,7 @@ def admin_email_otp(request, user_id):
         try:
             # a device made for a mail that did not go would ask for codes the user never got
             with audit(request, None, subject, "mail OTP QR code"), transaction.atomic():
-                get_user_totp_device(user)
-                send_email_with_otp(request, user)
+                send_email_with_otp(request, get_user_totp_device(user))
         except OSError as err:  # the SMTP server refused it, or did not answer within EMAIL_TIMEOUT
             messages.error(request, _("The OTP QR code could not be mailed to %(user)s: %(error)s") % {
                 "user": user, "error": err})
@@ -394,4 +392,16 @@ def admin_email_otp(request, user_id):
     else:
         failed(request, None, subject, "mail OTP QR code", "no email address")
         messages.error(request, _("User email not set, failed to send QR code"))
+    return redirect("accounts:account", user.id)
+
+
+@require_POST
+@superuser_only
+def admin_reset_otp(request, user_id):
+    """Forget the user's OTP device, as when it is lost or stolen: they sign
+    in with the password alone until a new QR code is mailed."""
+    user = get_object_or_404(get_user_model(), pk=user_id)
+    with audit(request, None, f"User {user.username}", "reset OTP"):
+        TOTPDevice.objects.filter(user=user).delete()
+    messages.success(request, _("OTP of %(user)s was reset: a new QR code can be mailed.") % {"user": user})
     return redirect("accounts:account", user.id)

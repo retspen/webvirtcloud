@@ -36,6 +36,12 @@
                     <form method="post" action="{% url 'accounts:admin_email_otp' user.id %}">{% csrf_token %}
                         <button type="submit" class="btn btn-outline-secondary">{% bs_icon 'qr-code' %} {% trans "Email OTP QR code" %}</button>
                     </form>
+                    {% if has_otp %}
+                    <form method="post" action="{% url 'accounts:admin_reset_otp' user.id %}">{% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger"
+                                data-confirm="{% blocktrans %}Reset the OTP of {{ user }}? Their authenticator app stops working; they sign in with the password alone until a new QR code is mailed.{% endblocktrans %}">{% bs_icon 'x-circle' %} {% trans "Reset OTP" %}</button>
+                    </form>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
