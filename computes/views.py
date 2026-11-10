@@ -293,7 +293,7 @@ class ComputeManager:
         return data["idle"], data["total"], data["time"]
 
     def compute_graph(self, cpu_sample=None):
-        result = {"cpudata": None, "memdata": {"total": None, "usage": None}, "timeline": timezone.now().strftime("%H:%M:%S")}
+        result = {"cpudata": None, "memdata": {"total": None, "usage": None}, "timeline": timezone.localtime().strftime("%H:%M:%S")}
         try:
             conn = wvmHostDetails(
                 self.compute.hostname,
@@ -306,7 +306,7 @@ class ComputeManager:
             result = {
                 "cpudata": cpu["usage"],
                 "memdata": conn.get_memory_usage(),
-                "timeline": timezone.now().strftime("%H:%M:%S"),
+                "timeline": timezone.localtime().strftime("%H:%M:%S"),  # the panel's time, as the VM charts
                 "window": round(cpu["window"], 1),
                 "cpu_sample": CPU_SAMPLE_SIGNER.sign_object(
                     {"compute": self.compute.id, "idle": idle, "total": total, "time": taken}

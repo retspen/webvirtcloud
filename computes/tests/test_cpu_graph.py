@@ -2,6 +2,7 @@
 previous answer and now, without waiting, when that sample is recent and
 unaltered; otherwise over one second as before."""
 
+from datetime import datetime, timezone as dt_timezone
 import json
 import shutil
 import subprocess
@@ -11,7 +12,7 @@ from unittest.mock import PropertyMock, patch
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core import signing
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from libvirt import libvirtError
 from lxml import html
@@ -52,6 +53,13 @@ class GraphTestCase(TestCase):
         self.assertEqual((data["cpudata"], data["window"], data["memdata"]["percent"]), (12.5, 5.0, 25))
         self.graph(cpu_sample=data["cpu_sample"])
         self.assertEqual(self.previous(), (10, 20, 100.0))
+
+    @override_settings(TIME_ZONE="Europe/Istanbul")
+    def test_the_time_of_a_point_is_the_panels(self):
+        with patch("django.utils.timezone.now", return_value=datetime(2026, 11, 10, 9, 0, tzinfo=dt_timezone.utc)):
+            self.assertEqual(self.graph()["timeline"], "12:00:00")
+            self.conn.get_cpu_usage.side_effect = libvirtError("unreachable")  # its error answer too
+            self.assertEqual(self.graph()["timeline"], "12:00:00")
 
     def test_an_altered_old_or_foreign_sample_is_not_used(self):
         token = self.graph()["cpu_sample"]

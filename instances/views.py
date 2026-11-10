@@ -8,7 +8,6 @@ import re
 import secrets
 import socket
 import subprocess
-import time
 from ipaddress import ip_address
 
 from accounts.models import UserInstance, UserSSHKey
@@ -480,7 +479,7 @@ def stats(request, pk):
         # MB/s and Mbit/s
         "blkdata": [{"dev": disk["dev"], "data": [mega(disk["rd"]), mega(disk["wr"])]} for disk in usage["disks"]],
         "netdata": [{"mac": nic["mac"], "data": [mega(nic["rx"]), mega(nic["tx"])]} for nic in usage["nics"]],
-        "timeline": time.strftime("%H:%M:%S"),
+        "timeline": timezone.localtime().strftime("%H:%M:%S"),  # the panel's time, as the host charts
     }
     if "sample" in usage:
         result["window"] = None if usage["window"] is None else round(usage["window"], 1)

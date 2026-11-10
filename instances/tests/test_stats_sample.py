@@ -2,6 +2,7 @@
 its compute; the next poll sends it back so that the rates are averages since
 then, without waiting."""
 
+from datetime import datetime, timezone as dt_timezone
 import json
 import shutil
 import subprocess
@@ -13,7 +14,7 @@ from computes.models import Compute
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core import signing
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from lxml import html
 from instances.models import Instance
@@ -62,6 +63,11 @@ class StatsViewTestCase(TestCase):
         self.assertEqual(data["netdata"], [{"mac": "52:54:00:00:00:01", "data": [8.0, 0.0]}])
         self.stats(sample=data["sample"])
         self.assertEqual(self.previous(), SAMPLE)
+
+    @override_settings(TIME_ZONE="Europe/Istanbul")
+    def test_the_time_of_a_point_is_the_panels(self):
+        with patch("django.utils.timezone.now", return_value=datetime(2026, 11, 10, 9, 0, tzinfo=dt_timezone.utc)):
+            self.assertEqual(self.stats()["timeline"], "12:00:00")
 
     def test_an_altered_old_or_foreign_sample_is_not_used(self):
         token = self.stats()["sample"]
