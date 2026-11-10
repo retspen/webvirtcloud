@@ -62,5 +62,5 @@
         </div>
     {% endif %}
 </div>
-{% if logs %}{% bootstrap_pagination logs extra=query %}{% endif %}
+{% if logs %}{% bootstrap_pagination logs extra=query pages_to_show=5 extra_classes="flex-wrap" %}{% endif %}
 {% endblock %}

@@ -101,7 +101,7 @@
     {% endif %}
 </div>
 {% if page.has_other_pages %}
-    {% bootstrap_pagination page extra=page_query %}
+    {% bootstrap_pagination page extra=page_query pages_to_show=5 extra_classes="flex-wrap" %}
 {% endif %}
 {% endblock %}
 {% block script %}
