@@ -15,7 +15,7 @@
                         {# users who are not owners yet; a superuser can use every VM #}
                         {% if users %}
                         <label class="form-label" for="add-owner-user">{% trans "User" %}</label>
-                        <select class="form-select" name="user_id" id="add-owner-user">
+                        <select class="form-select" name="user_id" id="add-owner-user" data-searchable>
                             {% for user in users %}
                             <option value="{{ user.id }}">{{ user.username }}</option>
                             {% endfor %}

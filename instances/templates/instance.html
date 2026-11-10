@@ -7,6 +7,10 @@
 
 {% block title %}{% trans "Instance" %} - {{ instance.name }}{% endblock %}
 
+{% block style %}
+{% if request.user.is_superuser and users %}<link href="{% static 'css/tom-select.bootstrap5.min.css' %}" rel="stylesheet">{% endif %}
+{% endblock style %}
+
 {% block page_header %}{% endblock page_header %}{# the card below has the heading #}
 
 {% block content %}
@@ -126,6 +130,10 @@
 
 {% endblock %}
 {% block script %}
+{% if request.user.is_superuser and users %}{# Add owner's user list #}
+<script src="{% static 'js/tom-select.complete.min.js' %}"></script>
+<script src="{% static 'js/searchable_select.js' %}"></script>
+{% endif %}
 <script src="{% static 'js/ace/ace.js' %}" type="text/javascript" charset="utf-8"></script>
 <script src="{% static 'js/xml_editor.js' %}"></script>
 <script src="{% static 'js/chart.umd.min.js' %}"></script>

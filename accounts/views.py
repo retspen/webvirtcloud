@@ -254,6 +254,7 @@ def user_instance_create(request, user_id):
         {
             "form": form,
             "title": _("Create User Instance"),
+            "searchable": True,
         },
     )
 

@@ -270,6 +270,11 @@ class PendingEditsTestCase(TestCase):
                          [f"/instances/{self.instance.id}/#users"] * 2)
         # not an owner yet and not an administrator, who can use every VM anyway
         self.assertEqual(doc.xpath("//select[@id='add-owner-user']/option/text()"), ["pe-new"])
+        # a search box for a list of every user (searchable_select.js)
+        self.assertEqual(doc.xpath("//select[@id='add-owner-user']/@data-searchable"), [""])
+        self.assertIn("/static/js/searchable_select.js", doc.xpath("//script/@src"))
+        User.objects.filter(username="pe-new").delete()  # no one left to add: no search box to load
+        self.assertNotIn("/static/js/searchable_select.js", self.page().xpath("//script/@src"))
 
     def test_a_paused_vm_offers_to_turn_vcpus_on_only(self):
         # unplugging a vCPU needs the guest, which a paused VM does not run

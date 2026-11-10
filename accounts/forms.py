@@ -2,7 +2,7 @@ from appsettings.settings import app_settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.validators import MaxLengthValidator
-from django.forms import CharField, EmailField, Form, ModelForm, TypedChoiceField, ValidationError
+from django.forms import CharField, EmailField, Form, ModelForm, Select, TypedChoiceField, ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from .models import UserInstance, UserSSHKey
@@ -36,6 +36,8 @@ class UserInstanceForm(ModelForm):
         labels = {"is_change": _("Change settings"), "is_delete": _("Delete the VM"),
                   "is_vnc": _("Change console settings")}
         help_texts = {"is_vnc": _("Only together with Change settings")}
+        # a list of every user and every VM
+        widgets = {"user": Select(attrs={"data-searchable": ""}), "instance": Select(attrs={"data-searchable": ""})}
 
 
 class UniqueEmailMixin:

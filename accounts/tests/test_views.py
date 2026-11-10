@@ -10,6 +10,7 @@ from django.shortcuts import reverse
 from django.test import Client, RequestFactory, TestCase, override_settings
 from instances.models import Instance
 from libvirt import libvirtError
+from lxml import html
 
 
 from accounts.forms import UserInstanceForm, UserSSHKeyForm
@@ -114,6 +115,11 @@ class AccountsTestCase(TestCase):
 
         logged_in = self.client.login(request=RequestFactory().get("/"), username="test", password="Wvc-changed-9")
         self.assertTrue(logged_in)
+
+    def test_the_user_and_the_vm_of_a_new_ownership_are_searched(self):
+        doc = html.fromstring(self.client.get(reverse("accounts:user_instance_create", args=[self.test_user.id])).content)
+        self.assertEqual(doc.xpath("//select[@data-searchable]/@name"), ["user", "instance"])
+        self.assertIn("/static/js/searchable_select.js", doc.xpath("//script/@src"))
 
     def test_user_instance_create_update_delete(self):
         # create

@@ -1,8 +1,13 @@
 {% extends "base.html" %}
 {% load django_bootstrap5 %}
 {% load i18n %}
+{% load static %}
 
 {% block title %}{{ title }}{% endblock %}
+
+{% block style %}
+{% if searchable %}<link href="{% static 'css/tom-select.bootstrap5.min.css' %}" rel="stylesheet">{% endif %}
+{% endblock style %}
 
 {% block page_header %}
 <div class="row justify-content-center">
@@ -26,3 +31,10 @@
     </div>
 </div>
 {% endblock content %}
+
+{% block script %}
+{% if searchable %}{# its selects with data-searchable #}
+<script src="{% static 'js/tom-select.complete.min.js' %}"></script>
+<script src="{% static 'js/searchable_select.js' %}"></script>
+{% endif %}
+{% endblock script %}
