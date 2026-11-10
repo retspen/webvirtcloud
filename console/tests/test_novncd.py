@@ -16,6 +16,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.core.signing import TimestampSigner
 from django.conf import settings
+from django.db import OperationalError
 from django.test import TestCase, override_settings
 from instances.models import Instance
 from libvirt import libvirtError
@@ -297,6 +298,15 @@ class NovncdDaemonLogicTestCase(TestCase):
         self.assertEqual(may_still_open.call_count, 2)
         may_still_open.assert_called_with(7, vm)
         tsock.shutdown.assert_called_once_with(novncd_mod.socket.SHUT_RDWR)
+
+    def test_a_vnc_session_whose_access_cannot_be_checked_ends(self):
+        tsock, ended = MagicMock(), MagicMock()
+        ended.wait.return_value = False
+        with patch.object(novncd_mod, "may_still_open", side_effect=OperationalError("database is locked")), \
+                self.assertLogs(level="WARNING") as logs:
+            novncd_mod.end_when_refused(MagicMock(), 7, tsock, ended)
+        tsock.shutdown.assert_called_once_with(novncd_mod.socket.SHUT_RDWR)
+        self.assertIn("database is locked", logs.output[0])
 
     def test_a_token_of_a_serial_console_does_not_open_a_vnc_console(self):
         user = get_user_model().objects.create_user("vnc-owner", password="pw")

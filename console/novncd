@@ -108,13 +108,19 @@ def end_when_refused(instance, user_id, tsock, ended):
     """Close the session's VNC socket, which ends it, once its user may no
     longer open the console (as the serial console does)."""
     while not ended.wait(ACCESS_CHECK):
-        if not may_still_open(user_id, instance):
+        try:
+            if may_still_open(user_id, instance):
+                continue
             logging.info("VNC console of VM %s closed: its user may no longer open it", instance.name)
-            try:
-                tsock.shutdown(socket.SHUT_RDWR)
-            except OSError:
-                pass  # the session ended meanwhile
-            return
+        except Exception as e:
+            # unchecked, the session would go on whoever loses the VM meanwhile
+            logging.warning("VNC console of VM %s closed: its user's access could not be checked: %s",
+                            instance.name, safe_text(e))
+        try:
+            tsock.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass  # the session ended meanwhile
+        return
 
 
 class ConsoleClient:
