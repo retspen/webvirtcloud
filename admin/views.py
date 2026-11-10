@@ -167,9 +167,11 @@ def user_update(request, pk):
         user_form.add_error(None, OWN_ACCOUNT)
         valid = False
     if valid:
-        with audit(request, None, subject, "change") as entry:
+        with audit(request, None, subject, "change") as entry, transaction.atomic():
             user_form.save()
             attributes_form.save()
+            if not user.is_active:  # as user_block
+                ApiToken.objects.filter(user=user).delete()
             fields = set(changed_fields(before, snapshot(user))) | set(changed_fields(before_attributes, snapshot(attributes)))
             fields = sorted(fields - {"password", "last_login"})
             entry.action = "change " + ", ".join(fields)
@@ -247,10 +249,12 @@ def user_block(request, pk):
     if user == request.user:
         messages.error(request, OWN_ACCOUNT)
         return redirect("admin:user_list")
-    with audit(request, None, f"User {user.username}", "block") as entry:
+    with audit(request, None, f"User {user.username}", "block") as entry, transaction.atomic():
         entry.skip = not user.is_active  # already blocked
         user.is_active = False
         user.save()
+        # an unblock must not bring back the tokens of someone who took the account over
+        ApiToken.objects.filter(user=user).delete()
     return redirect("admin:user_list")
 
 

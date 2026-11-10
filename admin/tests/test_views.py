@@ -3,11 +3,11 @@ from django.contrib.auth.models import Group, Permission, User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connection
 from django.shortcuts import reverse
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.test.utils import CaptureQueriesContext
 from lxml import html
 
-from accounts.models import UserAttributes
+from accounts.models import ApiToken, UserAttributes
 from logs.models import Logs
 
 
@@ -98,6 +98,18 @@ class AdminTestCase(TestCase):
         for i in range(5):
             User.objects.create_user(f"more-{i}").user_permissions.add(clone)
         self.assertEqual(rows()[1], count)
+
+    def test_a_block_deletes_the_api_tokens_an_unblock_would_bring_back(self):
+        user = User.objects.create_user("taken", password="Wvc-taken-9")
+        for block in (lambda: self.client.post(reverse("admin:user_block", args=[user.id])),
+                      lambda: self.client.post(reverse("admin:user_update", args=[user.id]),
+                                               {"username": "taken", "role": "user", "max_instances": 1, "max_cpus": 1,
+                                                "max_memory": 1, "max_disk_size": 1})):
+            _, token = ApiToken.objects.create(user)
+            self.assertEqual(block().status_code, 302)
+            self.client.post(reverse("admin:user_unblock", args=[user.id]))
+            self.assertEqual(Client().get("/api/v1/instances/", HTTP_AUTHORIZATION=f"Token {token}").status_code, 401)
+        self.assertFalse(ApiToken.objects.filter(user=user).exists())
 
     def test_users(self):
         response = self.client.get(reverse("admin:user_create"))
