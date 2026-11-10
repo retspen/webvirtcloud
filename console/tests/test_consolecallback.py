@@ -66,7 +66,7 @@ class ConsoleWorkerTests(TestCase):
         console.domain = MagicMock()
         console.stream = None  # from_vm dropped it at the stream's end
         console.active = True
-        console.domain.state.return_value = [self.cb.libvirt.VIR_DOMAIN_SHUTOFF]
+        console.domain.state.return_value = [self.cb.libvirt.VIR_DOMAIN_SHUTOFF, 0]
         with patch.object(self.cb, "say") as say:
             console.check()
             console.check()
@@ -77,13 +77,28 @@ class ConsoleWorkerTests(TestCase):
         console.domain, console.connection = MagicMock(), MagicMock()
         console.stream = None
         console.active = True
-        console.domain.state.return_value = [self.cb.libvirt.VIR_DOMAIN_RUNNING]
+        console.domain.state.return_value = [self.cb.libvirt.VIR_DOMAIN_RUNNING, 0]
         console.domain.openConsole.side_effect = self.cb.libvirt.libvirtError("domain is not running")
         console.domain.isActive.return_value = 0
         with patch.object(self.cb, "say") as say:
             console.check()
         say.assert_called_once_with("The VM is not running: its console opens again when it starts")
         self.assertIsNone(console.stream)
+
+    def test_a_vm_being_started_is_waited_for(self):
+        # its terminal is not assigned yet: opening its console then fails
+        console = self.cb.Console.__new__(self.cb.Console)
+        console.domain, console.connection = MagicMock(), MagicMock()
+        console.stream = None
+        console.active = False
+        console.domain.state.return_value = [self.cb.libvirt.VIR_DOMAIN_PAUSED,
+                                             self.cb.libvirt.VIR_DOMAIN_PAUSED_STARTING_UP]
+        console.check()
+        console.domain.openConsole.assert_not_called()
+        console.domain.state.return_value = [self.cb.libvirt.VIR_DOMAIN_PAUSED, self.cb.libvirt.VIR_DOMAIN_PAUSED_USER]
+        console.check()
+        console.domain.openConsole.assert_called_once()
+        self.assertTrue(console.active)
 
     def test_a_closed_client_ends_the_worker(self):
         with patch.object(self.cb.os, "read", return_value=b""):

@@ -47,7 +47,12 @@ class Console:
     def check(self):
         """Open the stream while the VM runs, drop it while it does not. The
         stream may have ended first: the VM's stop is still reported."""
-        active = self.domain.state()[0] in (libvirt.VIR_DOMAIN_RUNNING, libvirt.VIR_DOMAIN_PAUSED)
+        state, reason = self.domain.state()
+        # a VM being started is paused until its devices are set up: its
+        # console has no terminal yet
+        active = state == libvirt.VIR_DOMAIN_RUNNING or (
+            state == libvirt.VIR_DOMAIN_PAUSED and reason != libvirt.VIR_DOMAIN_PAUSED_STARTING_UP
+        )
         if active and self.stream is None:
             stream = self.connection.newStream(libvirt.VIR_STREAM_NONBLOCK)
             try:
