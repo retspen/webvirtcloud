@@ -15,8 +15,8 @@ from django.utils.translation import gettext_noop
 from django.utils.translation import gettext_noop as _
 from libvirt import (VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE, VIR_DOMAIN_JOB_NONE, VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL,
                      VIR_DOMAIN_SHUTOFF, VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_MANAGED_SAVE,
-                     VIR_DOMAIN_UNDEFINE_NVRAM, VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA, VIR_ERR_NO_DOMAIN,
-                     VIR_ERR_NO_STORAGE_VOL, libvirtError)
+                     VIR_DOMAIN_UNDEFINE_NVRAM, VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA, VIR_DOMAIN_XML_INACTIVE,
+                     VIR_ERR_NO_DOMAIN, VIR_ERR_NO_STORAGE_VOL, libvirtError)
 from lxml import etree
 from vrtManager import util
 from vrtManager.connection import NVRAM_DIR, wvmConnect
@@ -28,7 +28,7 @@ from vrtManager.storage import FILE_POOL_TYPES
 from accounts.models import UserInstance, UserSSHKey
 from appsettings.settings import app_settings
 from computes.models import Compute
-from instances import utils
+from instances import addresses, utils
 from instances.models import Instance
 from logs.audit import write
 from operations import claims
@@ -836,6 +836,23 @@ def _check_disk_name(conn, data):
             raise util.OperationError(_("Image has already exist. Please check volumes or change instance name"))
 
 
+def _check_macs(conn, data):
+    """Two NICs of one MAC on a network reach neither reliably."""
+    try:
+        macs = {addresses.parse_mac(mac) for mac in utils.nic_macs(data["mac"], data["networks"])}
+    except ValueError as err:
+        raise util.OperationError(str(err))
+    if macs:
+        used = set()
+        for dom in conn.wvm.listAllDomains():
+            used |= addresses.nic_macs(dom.XMLDesc(0))
+            if dom.isPersistent():  # a NIC added for the next boot only
+                used |= addresses.nic_macs(dom.XMLDesc(VIR_DOMAIN_XML_INACTIVE))
+        if used & macs:
+            raise util.OperationError(_("MAC address %(mac)s is a NIC's of another VM on this host"),
+                                      mac=", ".join(sorted(used & macs)))
+
+
 @register
 class CreateInstance(Kind):
     name = "instance.create"
@@ -884,10 +901,7 @@ class CreateInstance(Kind):
             pool = conn.get_storage(_seed_pool(data))
             if util.get_xml_path(pool.XMLDesc(0), "/pool/@type") not in FILE_POOL_TYPES:
                 raise util.OperationError(_("The cloud-init seed needs a directory storage pool for the disk"))
-        try:
-            utils.nic_macs(data["mac"], data["networks"])
-        except ValueError as err:
-            raise util.OperationError(str(err))
+        _check_macs(conn, data)
         if data["firmware"] and data["firmware"] not in conn.get_firmwares(data["arch"], data["machine"]):
             raise util.OperationError(_("This host offers no firmware %(firmware)s"), firmware=data["firmware"])
         if data["tpm"] and not conn.get_tpm_model(data["arch"], data["machine"]):
@@ -910,6 +924,7 @@ class CreateInstance(Kind):
         if op.params["name"] in conn.get_instances():
             raise util.OperationError(_("A virtual machine with this name already exists"))
         _check_disk_name(conn, op.params)
+        _check_macs(conn, op.params)
 
     def run(self, op, ctx):
         data = op.params

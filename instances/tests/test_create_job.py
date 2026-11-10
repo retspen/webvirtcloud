@@ -187,6 +187,23 @@ class CreateJobTestCase(TransactionTestCase):
         with self.assertRaises(PermissionDenied):
             CreateInstance().precheck(op, None)
 
+    def test_a_mac_of_another_vm_on_the_host_is_refused(self):
+        url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"
+        nic = "<domain><devices><interface><mac address='%s'/></interface></devices></domain>"
+        other = MagicMock()
+        other.isPersistent.return_value = 1
+        # its NIC is added for its next boot only
+        other.XMLDesc.side_effect = lambda flags: nic % "52:54:00:aa:bb:cc" if flags else "<domain/>"
+        self.conn.wvm.listAllDomains.return_value = [other]
+        response = self.client.post(url, {**BODY, "mac": "52:54:00:AA:BB:CC"}, content_type="application/json")
+        self.assertContains(response, "MAC address 52:54:00:aa:bb:cc is a NIC's of another VM", status_code=400)
+        response = self.client.post(url, {**BODY, "mac": "52:54:00:aa:bb:cd"}, content_type="application/json")
+        self.assertEqual(response.status_code, 202)
+        # another VM took it while the job was queued
+        other.XMLDesc.side_effect = lambda flags: nic % "52:54:00:aa:bb:cd"
+        with self.assertRaisesMessage(libvirt.libvirtError, "MAC address 52:54:00:aa:bb:cd is a NIC's of another VM"):
+            CreateInstance().precheck(Operation.objects.get(), None)
+
     def test_the_api_takes_a_body_without_a_mac_or_a_network_filter(self):
         body = {k: v for k, v in BODY.items() if k not in ("mac", "nwfilter")}
         response = self.client.post(f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/", body,
