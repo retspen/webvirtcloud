@@ -147,7 +147,8 @@ class LiveJobsTestCase(TransactionTestCase):
         self.assertTrue(livetest.volume_exists(self.conn, f"{livetest.POOL_PATH}/{P}smoke-copy.qcow2"))
         op = self.run_job(jobs.submit("instance.create", self.admin, {
             "name": P + "smoke-new", "firmware": "BIOS", "vcpu": 1, "vcpu_mode": "host-model", "memory": 256,
-            "networks": "default", "storage": livetest.POOL, "template": P + "smoke-copy.qcow2", "images": "",
+            "networks": "default", "storage": livetest.POOL, "template": P + "smoke-copy.qcow2",
+            "template_pool": livetest.POOL, "images": "",
             "hdd_size": 0, "cache_mode": "none", "meta_prealloc": False, "virtio": True, "qemu_ga": False,
             "mac": "", "nwfilter": "", "net_model": "virtio", "add_cdrom": "None", "add_input": "default",
             "video": "vga", "listener_addr": "127.0.0.1", "compute": self.compute.pk, "arch": "x86_64",
