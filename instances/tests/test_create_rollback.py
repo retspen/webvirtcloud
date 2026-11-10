@@ -5,7 +5,7 @@ from appsettings.settings import get_settings
 from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.test import TestCase
-from libvirt import libvirtError
+from libvirt import VIR_ERR_NO_DOMAIN, libvirtError
 
 from instances.jobs import CreateInstance
 from operations import jobs
@@ -37,6 +37,9 @@ class CreateRollbackTestCase(TestCase):
             conn.get_dom_capabilities.return_value = {"cpu_modes": ["host-model"]}
             conn.get_instances.return_value = []
             conn.create_volume.return_value = "/pool/rb-vm.qcow2"
+            missing = libvirtError("no domain")
+            missing.get_error_code = lambda: VIR_ERR_NO_DOMAIN
+            conn.wvm.lookupByUUIDString.side_effect = missing  # until the job defines the VM
             op = jobs.submit("instance.create", self.admin, {**PARAMS, "compute": self.compute.pk}, "key-rollback1")
             acquire("wvc-test:1:a", "wvc-test")
             Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker="wvc-test:1:a")

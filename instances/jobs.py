@@ -987,6 +987,15 @@ class CreateInstance(Kind):
                 tpm_model=conn.get_tpm_model(data["arch"], data["machine"]) if data["tpm"] else None,
             )
         except Exception as err:
+            # a definition whose answer was lost may have gone through: then, or
+            # when the host cannot tell, the volumes stay and recovery decides
+            try:
+                conn.wvm.lookupByUUIDString(op.intent["uuid"])
+                defined = True
+            except libvirtError as lookup:
+                defined = lookup.get_error_code() != VIR_ERR_NO_DOMAIN
+            if defined:
+                raise
             # the VM is not defined: its new volumes go
             leftovers = []
             for path in created:

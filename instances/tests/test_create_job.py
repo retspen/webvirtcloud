@@ -36,6 +36,9 @@ class CreateJobTestCase(TransactionTestCase):
         self.conn.get_dom_capabilities.return_value = {"cpu_modes": ["host-model", "custom"],
                                                        "cpu_custom_models": ["Skylake-Server-noTSX-IBRS"]}
         self.conn.create_volume.return_value = "/srv/default/api-vm.qcow2"
+        missing = libvirt.libvirtError("no domain")
+        missing.get_error_code = lambda: libvirt.VIR_ERR_NO_DOMAIN
+        self.conn.wvm.lookupByUUIDString.side_effect = missing  # until the job defines the VM
 
     def test_the_api_queues_the_create_and_the_worker_defines_and_records_it(self):
         url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"
@@ -117,6 +120,21 @@ class CreateJobTestCase(TransactionTestCase):
         self.assertEqual(str(raised.exception), "The panel failed unexpectedly; its log has the details. "
                          "Remove these volumes by hand: /srv/default/api-vm.qcow2")
         self.assertIn("RuntimeError: no such bus", traceback_of(raised.exception))
+
+    def test_a_definition_whose_answer_was_lost_keeps_the_disk(self):
+        # it may have gone through: recovery records the VM, its disk with it
+        self.client.post(f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/", BODY,
+                         content_type="application/json")
+        op = Operation.objects.get()
+        acquire("wvc-test:1:a", "wvc-test")
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker="wvc-test:1:a")
+        op.refresh_from_db()
+        self.conn.create_instance.side_effect = libvirt.libvirtError("End of file while reading data")
+        for lookup in (None, libvirt.libvirtError("Cannot recv data")):  # defined; the host cannot tell
+            self.conn.wvm.lookupByUUIDString.side_effect = lookup
+            with self.assertRaisesMessage(libvirt.libvirtError, "End of file while reading data"):
+                CreateInstance().run(op, Context(op, SimpleNamespace(identity="wvc-test:1:a")))
+        self.conn.delete_volume.assert_not_called()
 
     @patch("instances.jobs.wvmConnect")
     def test_a_create_that_left_nothing_failed(self, conn):

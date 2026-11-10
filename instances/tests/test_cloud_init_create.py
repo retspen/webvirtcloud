@@ -31,6 +31,9 @@ class CloudInitCreateTestCase(TransactionTestCase):
         patcher = patch("instances.jobs.wvmCreate")
         self.conn = patcher.start().return_value
         self.addCleanup(patcher.stop)
+        missing = libvirt.libvirtError("no domain")
+        missing.get_error_code = lambda: libvirt.VIR_ERR_NO_DOMAIN
+        self.conn.wvm.lookupByUUIDString.side_effect = missing  # until the job defines the VM
         self.conn.get_instances.return_value = []
         self.conn.get_cache_modes.return_value = {"none": "Disable cache"}
         self.conn.get_firmwares.return_value = ["BIOS", "UEFI", "UEFI Secure Boot"]
