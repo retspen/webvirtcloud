@@ -70,3 +70,4 @@ class ResourceJobsSerializer(serializers.Serializer):
     others = OperationSummarySerializer(many=True)
     short_operation = serializers.BooleanField()
     worker_last_seen = serializers.DateTimeField(allow_null=True)
+    worker_gone = serializers.BooleanField()

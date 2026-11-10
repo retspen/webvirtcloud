@@ -22,7 +22,7 @@ function jobPanel(element, urls, csrfToken, initialIds, states, text) {
     var cancelling = {}; // id -> true: its cancel request runs
     var notice = "";    // why the last cancel failed, until dismissed
     (initialIds || []).forEach(function (id) { pending[id] = true; });
-    var last = { jobs: [], others: [], short_operation: false, worker_last_seen: null };
+    var last = { jobs: [], others: [], short_operation: false, worker_last_seen: null, worker_gone: false };
     var rendered = null; // the panel's last html: an unchanged one is not rebuilt (focus stays)
     var holding = false; // the panel set backgroundJobRunning (the please-wait dialog sets it too)
     if (initialIds && initialIds.length) {
@@ -101,8 +101,9 @@ function jobPanel(element, urls, csrfToken, initialIds, states, text) {
         var waiting = last.jobs.some(function (j) {
             return ["queued", "running", "cancelling"].indexOf(j.state) >= 0 && !j.in_request;
         });
+        // the server tells: the browser's clock may be off
         var seen = last.worker_last_seen ? new Date(last.worker_last_seen) : null;
-        if (waiting && (!seen || Date.now() - seen.getTime() > 60000)) {
+        if (waiting && last.worker_gone) {
             html += '<div class="alert alert-warning mb-3" role="status">' + esc(text.worker_unavailable) + " "
                 + esc(seen ? seen.toLocaleString() : text.never) + ".</div>";
         }

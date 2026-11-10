@@ -330,7 +330,7 @@ class CpuPercentTestCase(UnitTestCase):
 @patch("vrtManager.hostdetails.time")
 class CpuUsageTestCase(UnitTestCase):
     def test_since_a_previous_sample_without_waiting(self, clock):
-        clock.time.return_value = 105.0
+        clock.monotonic.return_value = 105.0
         h = host((130, 70))
         usage = h.get_cpu_usage(previous=(100, 100, 100.0))
         clock.sleep.assert_not_called()
@@ -338,13 +338,20 @@ class CpuUsageTestCase(UnitTestCase):
         self.assertEqual(usage, {"usage": 70.0, "sample": (130, 200, 105.0), "window": 5.0})
 
     def test_over_one_second_without_a_sample(self, clock):
-        clock.time.side_effect = [10.0, 11.0]
+        clock.monotonic.side_effect = [10.0, 11.0]
         h = host((100, 100), (110, 190))
         self.assertEqual(h.get_cpu_usage(), {"usage": 90.0, "sample": (110, 300, 11.0), "window": 1.0})
         clock.sleep.assert_called_once_with(1)
 
+    def test_over_one_second_with_a_sample_from_before_the_panel_restarted(self, clock):
+        clock.monotonic.side_effect = [10.0, 11.0]  # the clock restarted with the server
+        h = host((100, 100), (110, 190))
+        usage = h.get_cpu_usage(previous=(50, 50, 500.0))
+        clock.sleep.assert_called_once_with(1)
+        self.assertEqual((usage["usage"], usage["window"]), (90.0, 1.0))
+
     def test_over_one_second_after_the_host_restarted(self, clock):
-        clock.time.side_effect = [10.0, 11.0]
+        clock.monotonic.side_effect = [10.0, 11.0]
         h = host((5, 5), (6, 9))
         usage = h.get_cpu_usage(previous=(1000, 5000, 5.0))
         clock.sleep.assert_called_once_with(1)

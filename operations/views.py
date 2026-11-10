@@ -1,4 +1,3 @@
-from datetime import timedelta
 from urllib.parse import urlencode
 
 from django.contrib import messages
@@ -6,14 +5,13 @@ from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.http import Http404
 from django.shortcuts import redirect, render
-from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 from vrtManager.util import OperationError
 
 from . import jobs as jobs_module
 from .api.serializers import OperationSerializer
-from .models import Operation, last_seen
+from .models import Operation, last_seen, worker_gone
 from .utils import said, words
 
 
@@ -44,7 +42,7 @@ def jobs(request):
     rows = [(op, OperationSerializer(op, context={"request": request}).data) for op in page.object_list]
     seen = last_seen()
     # a job the worker has to start, run or stop, not one a request runs (job_panel.js uses the same rule)
-    unavailable = ((seen is None or timezone.now() - seen > timedelta(seconds=60))
+    unavailable = (worker_gone(seen)
                    and _visible(request.user).filter(state__in=Operation.ACTIVE)
                    .exclude(worker=Operation.REQUEST).exists())
     return render(request, "operations/jobs.html",

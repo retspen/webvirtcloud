@@ -8,7 +8,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from operations import jobs
-from operations.models import Claim, Operation, last_seen
+from operations.models import Claim, Operation, last_seen, worker_gone
 from operations.utils import may_see, summary, visible
 
 from .serializers import OperationSerializer, ResourceJobsSerializer
@@ -52,7 +52,9 @@ class OperationViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewset
         active = list(Operation.objects.filter(claims__resource=key, state__in=SHOWN_STATES).distinct())
         mine = [op for op in active if may_see(op, request.user)]
         others = [summary(op, request.user) for op in active if not may_see(op, request.user)]
+        seen = last_seen()
         short = Claim.objects.filter(resource=key, operation__isnull=True, expires_at__gt=timezone.now()).exists()
         return Response(ResourceJobsSerializer(
-            {"jobs": mine, "others": others, "short_operation": short, "worker_last_seen": last_seen()},
+            {"jobs": mine, "others": others, "short_operation": short, "worker_last_seen": seen,
+             "worker_gone": worker_gone(seen)},
             context={"request": request}).data)

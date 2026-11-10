@@ -118,6 +118,16 @@ def last_seen():
     return lease.heartbeat_at if lease else None
 
 
+# a worker whose heartbeat is older is not running (the Jobs page and the job panel say so)
+WORKER_GONE_AFTER = timedelta(seconds=60)
+
+
+def worker_gone(seen):
+    """By the server's clock, not the browser's: one set two minutes ahead
+    took a running worker for gone."""
+    return seen is None or timezone.now() - seen > WORKER_GONE_AFTER
+
+
 @contextmanager
 def fenced(holder):
     """A transaction in which holder still holds the lease; a takeover locks

@@ -61,7 +61,7 @@ const TEXT = { cancel: "Cancel", open: "Open", refresh: "Refresh", dismiss: "Dis
 const seen = new Date(1700000000000).toISOString();
 const running = { id: "a", label: "Delete snapshot", state: "running", phase: "Merging", progress_done: 1,
                   progress_total: 4, cancellable: false, result: {}, error: "" };
-const empty = { jobs: [], others: [], short_operation: false, worker_last_seen: seen };
+const empty = { jobs: [], others: [], short_operation: false, worker_last_seen: seen, worker_gone: false };
 
 jobPanel(el, urls, "tok", undefined, STATES, TEXT);
 advance(0);
@@ -193,22 +193,26 @@ const el8 = { innerHTML: "", addEventListener() {} };
 const stale = new Date(Date.now() - 120000).toISOString();
 jobPanel(el8, urls, "tok", undefined, STATES, TEXT);
 advance(0);
-answer("/r", { ...empty, worker_last_seen: stale, jobs: [running] });
+answer("/r", { ...empty, worker_last_seen: stale, worker_gone: true, jobs: [running] });
 assert.ok(el8.innerHTML.includes("Worker unavailable"), "a running job with a stale lease warns");
 advance(3000);
-answer("/r", { ...empty, worker_last_seen: stale, jobs: [{ ...running, state: "cancelling" }] });
+answer("/r", { ...empty, worker_last_seen: stale, worker_gone: true, jobs: [{ ...running, state: "cancelling" }] });
 assert.ok(el8.innerHTML.includes("Worker unavailable"), "a cancelling job with a stale lease warns");
 advance(3000);
 answer("/r", { ...empty, worker_last_seen: new Date(Date.now()).toISOString(), jobs: [running] });
 assert.ok(!el8.innerHTML.includes("Worker unavailable"), "a fresh lease does not warn");
 advance(3000);
-answer("/r", { ...empty, worker_last_seen: stale, jobs: [{ ...running, state: "uncertain" }] });
+// the server decides: a browser clock two minutes ahead does not make a fresh lease look stale
+answer("/r", { ...empty, worker_last_seen: stale, worker_gone: false, jobs: [running] });
+assert.ok(!el8.innerHTML.includes("Worker unavailable"), "a lease the server finds fresh does not warn");
+advance(3000);
+answer("/r", { ...empty, worker_last_seen: stale, worker_gone: true, jobs: [{ ...running, state: "uncertain" }] });
 assert.ok(!el8.innerHTML.includes("Worker unavailable"), "an uncertain job waits for an administrator, not the worker");
 advance(3000);
-answer("/r", { ...empty, worker_last_seen: stale, jobs: [{ ...running, in_request: true }] });
+answer("/r", { ...empty, worker_last_seen: stale, worker_gone: true, jobs: [{ ...running, in_request: true }] });
 assert.ok(!el8.innerHTML.includes("Worker unavailable"), "a job a request runs does not wait for the worker");
 advance(3000);
-answer("/r", { ...empty, worker_last_seen: stale, jobs: [{ ...running, in_request: true },
+answer("/r", { ...empty, worker_last_seen: stale, worker_gone: true, jobs: [{ ...running, in_request: true },
                                                         { ...running, id: "w", state: "queued", in_request: false }] });
 assert.ok(el8.innerHTML.includes("Worker unavailable"), "a queued job beside it still warns");
 

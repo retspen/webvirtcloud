@@ -10,7 +10,7 @@ from accounts.models import UserInstance
 from computes.models import Compute
 from instances.models import Instance
 from operations import claims, jobs
-from operations.models import Claim, Operation
+from operations.models import Claim, Operation, WorkerLease
 from operations.tests import fakes
 from operations.utils import say
 
@@ -67,6 +67,17 @@ class OperationsApiTestCase(TransactionTestCase):
         stranger = get_user_model().objects.create_user("api_s", "s@example.com", "pw")
         self.client.force_login(stranger)
         self.assertEqual(self.client.get("/api/v1/operations/resource/", {"key": "instance:u1"}).status_code, 404)
+
+    def test_the_server_says_whether_the_worker_is_gone(self):
+        # the job panel trusts this, not the browser's clock
+        self.client.force_login(self.owner)
+        def gone():
+            return self.client.get("/api/v1/operations/resource/", {"key": "instance:u2"}).json()["worker_gone"]
+        self.assertTrue(gone())  # no worker ever ran
+        WorkerLease.objects.create(name="worker", holder="h:1:a", host="h", heartbeat_at=timezone.now())
+        self.assertFalse(gone())
+        WorkerLease.objects.update(heartbeat_at=timezone.now() - timedelta(minutes=2))
+        self.assertTrue(gone())
 
     def test_a_short_operation_is_flagged(self):
         claims.admit({"instance:u2": Claim.EXCLUSIVE}, holder="another-request")

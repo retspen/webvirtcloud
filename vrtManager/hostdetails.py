@@ -77,16 +77,16 @@ class wvmHostDetails(wvmConnect):
         the closing sample and the seconds the usage covers.
         """
         times = self._cpu_times()
-        now = time.time()
+        now = time.monotonic()  # elapsed time: a clock set back would make it negative
         usage = None
-        if previous is not None:
+        if previous is not None and previous[2] < now:  # else from before the server restarted
             usage = cpu_percent(previous[:2], times)
             start = previous[2]
         if usage is None:
             before, start = times, now
             time.sleep(1)
             times = self._cpu_times()
-            now = time.time()
+            now = time.monotonic()
             usage = cpu_percent(before, times)
         return {"usage": usage, "sample": (*times, now), "window": now - start}
 
