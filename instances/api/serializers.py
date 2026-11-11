@@ -84,6 +84,13 @@ class DestroyOptionsSerializer(serializers.Serializer):
     delete_nvram = serializers.BooleanField(default=False)
 
 
+class PowerOnSerializer(serializers.Serializer):
+    """Power On's options, from the page's form or an API body: fresh boots
+    a VM with a saved state anew and discards the saved state."""
+
+    fresh = serializers.BooleanField(default=False)
+
+
 class DestroySerializer(DestroyOptionsSerializer):
     """The API's delete: a job, which a new submission key per request names."""
 

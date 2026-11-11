@@ -61,6 +61,13 @@
                 </div>
             </div>
             </form>
+            {% if "poweron" in power_actions and instance.has_managed_save_image %}
+            <form method="post" action="{% url 'instances:poweron' instance.id %}" class="d-flex flex-wrap align-items-center gap-2 border-top mt-4 pt-3" data-please-wait>{% csrf_token %}
+                <span class="small me-auto">{% trans "The VM has a saved state: Power On resumes it as it was when saved." %}</span>
+                <button type="submit" class="btn btn-sm btn-outline-danger" name="fresh" value="1"
+                        data-confirm="{% blocktrans with name=instance.name %}Start {{ name }} without its saved state? The saved state is discarded and the VM boots anew; what it had in memory is lost.{% endblocktrans %}">{% trans "Start Without Saved State" %}</button>
+            </form>
+            {% endif %}
             {% if "force_off" in power_actions or "powercycle" in power_actions %}
             <form method="post" class="d-flex flex-wrap align-items-center gap-2 border-top mt-4 pt-3">{% csrf_token %}
                 <span class="small text-danger me-auto">{% trans "A power cut: what the guest has not written to disk is lost." %}</span>

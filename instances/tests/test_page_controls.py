@@ -51,7 +51,7 @@ class PageControls:
             UserInstance.objects.create(instance=self.instance, user=user, **owner)
         return user
 
-    def controls(self, user, status=1):
+    def controls(self, user, status=1, saved=False):
         self.client.force_login(user)
         with patch("instances.models.wvmInstance") as mock_wvm, patch.object(
             Compute, "status", new_callable=PropertyMock, return_value=True
@@ -75,6 +75,7 @@ class PageControls:
             proxy.get_hostdevs.return_value = ([], [], [])
             proxy.get_console_type.return_value = "vnc"
             proxy.get_status.return_value = status
+            proxy.get_managed_save_image.return_value = saved
             response = self.client.get(reverse("instances:instance", args=[self.instance.id]))
         self.assertEqual(response.status_code, 200)
         self.last_page = response.content.decode()
@@ -224,6 +225,16 @@ class PageControlsTestCase(PageControls, TestCase):
                     self.assertIn("An administrator can resume it.", tab.text_content())
                 if status == 5:
                     self.assertEqual(tab.xpath(".//form/@data-please-wait"), [""])
+
+    def test_a_vm_with_a_saved_state_says_so_and_can_start_without_it(self):
+        owner = self.user("power_saved_owner", owner={})
+        self.controls(owner, status=5, saved=True)
+        (tab,) = lxml_html.fromstring(self.last_page).xpath("//div[@id='power']")
+        self.assertEqual(tab.xpath(".//button/@name"), ["poweron", "fresh"])
+        self.assertIn("Power On resumes it as it was when saved.", tab.text_content())
+        (fresh,) = tab.xpath(".//button[@name='fresh']")
+        self.assertTrue(fresh.get("data-confirm"))
+        self.assertEqual(fresh.getparent().get("action"), reverse("instances:poweron", args=[self.instance.id]))
 
     def test_the_power_tab_marks_the_current_state_or_names_another(self):
         admin = get_user_model().objects.create_superuser("power_strip_admin", "ps@example.com", "x")

@@ -4,6 +4,8 @@ web forms take."""
 
 from unittest.mock import patch
 
+import libvirt
+
 from accounts.models import UserInstance
 from computes.models import Compute
 from django.contrib.auth import get_user_model
@@ -21,6 +23,15 @@ class ApiParityTests(TestCase):
                                           is_template=True)
         UserInstance.objects.create(user=self.user, instance=self.vm)
         self.url = f"/api/v1/computes/{self.compute.id}/instances/{self.vm.id}/"
+
+    def test_a_json_body_starts_a_vm_without_its_saved_state(self):
+        Instance.objects.filter(pk=self.vm.pk).update(is_template=False)
+        self.client.force_login(self.user)
+        with patch("instances.models.wvmInstance") as wvm:
+            wvm.return_value.get_status.return_value = 5
+            response = self.client.post(self.url + "poweron/", {"fresh": True}, content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        wvm.return_value.start.assert_called_once_with(libvirt.VIR_DOMAIN_START_FORCE_BOOT)
 
     def test_a_template_is_not_started(self):
         self.client.force_login(self.user)

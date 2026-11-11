@@ -43,6 +43,11 @@ class VMRowTests(TestCase):
         self.assertEqual((row.user, row.host, row.instance, row.instance_uuid, row.ip),
                          ("vm-admin", "c1", "vm", UUID, "192.0.2.50"))
 
+    def test_a_start_without_the_saved_state_boots_anew(self):
+        self.post("poweron", {"fresh": "1"})
+        self.proxy.start.assert_called_once_with(libvirt.VIR_DOMAIN_START_FORCE_BOOT)
+        self.assertEqual(self.rows(), [("VM vm: power on without the saved state", True)])
+
     def test_a_raised_failure_writes_a_failed_row(self):
         self.proxy.start.side_effect = libvirtError("Requested operation is not valid")
         self.post("poweron")

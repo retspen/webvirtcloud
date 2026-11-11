@@ -43,6 +43,7 @@ from passlib.hash import sha512_crypt
 from libvirt import (VIR_DOMAIN_PAUSED,
                      VIR_DOMAIN_RUNNING,
                      VIR_DOMAIN_SHUTOFF,
+                     VIR_DOMAIN_START_FORCE_BOOT,
                      VIR_DOMAIN_XML_INACTIVE,
                      VIR_ERR_NO_DOMAIN,
                      VIR_ERR_NO_SUPPORT,
@@ -63,7 +64,7 @@ from vrtManager.util import randomPasswd
 from instances.models import Instance
 
 from . import addresses, report, utils
-from .api.serializers import DestroyOptionsSerializer
+from .api.serializers import DestroyOptionsSerializer, PowerOnSerializer
 from .forms import ConsoleForm, FlavorForm, NewVMForm
 from .models import Flavor
 from .states import POWER_STATES, STATES, UNKNOWN, allowed_actions, state_label
@@ -800,8 +801,14 @@ def reject_disk_options(request, pk, invalid):
 @serialize_instance_mutation
 def poweron(request, pk):
     instance = _power_instance(request.user, pk)
+    # the API passes its parsed body (data), the page its form
+    options = PowerOnSerializer(data=getattr(request, "data", request.POST))
+    options.is_valid(raise_exception=True)
     if instance.is_template:
         messages.warning(request, _("Templates cannot be started."))
+    elif options.validated_data["fresh"]:  # the saved state is discarded: the VM boots anew
+        with audit_vm(request, instance, "power on without the saved state"):
+            instance.proxy.start(VIR_DOMAIN_START_FORCE_BOOT)
     else:
         with audit_vm(request, instance, "power on"):
             instance.proxy.start()

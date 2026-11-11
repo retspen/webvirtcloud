@@ -33,6 +33,7 @@ from .serializers import (
     InstanceDetailsSerializer,
     InstanceSerializer,
     MigrateSerializer,
+    PowerOnSerializer,
 )
 
 
@@ -138,7 +139,7 @@ class InstanceViewSet(viewsets.ViewSet):
         return Response(OperationSerializer(op, context={"request": request}).data, status=status.HTTP_202_ACCEPTED,
                         headers={"Location": reverse("operation-detail", args=[op.pk])})
 
-    @extend_schema(request=None, responses={200: ActionStatusSerializer, 409: ErrorSerializer})
+    @extend_schema(request=PowerOnSerializer, responses={200: ActionStatusSerializer, 409: ErrorSerializer})
     @action(detail=True, methods=["post"])
     def poweron(self, request, pk=None, compute_pk=None):
         queryset = get_instance(request.user, pk, perm_type="power")
