@@ -45,6 +45,11 @@ class MissingFieldTestCase(TestCase):
             self.client.post(reverse("instances:add_network", args=[self.instance.id]), {})
             wvm.return_value.add_network.assert_not_called()
 
+    def test_set_bootorder_with_a_device_without_its_type(self):
+        for order in ("disk", "disk:vda,", "disk:vda,:"):
+            with self.subTest(order):
+                self.assert_reported(self.post("set_bootorder", {"bootorder": order}))
+
     def test_set_qos_without_a_mac(self):
         self.assert_reported(self.post("set_qos", {"qos_direction": "inbound"}))
 

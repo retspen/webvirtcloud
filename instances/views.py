@@ -1825,7 +1825,10 @@ def set_bootorder(request, pk):
         return _back(request, pk, "boot_opt")
     order_list = {}
     for idx, val in enumerate(bootorder.split(",")):
-        dev_type, dev = val.split(":", 1)
+        dev_type, _sep, dev = val.partition(":")
+        if not dev:
+            messages.error(request, _("Invalid Device Type for boot order"))
+            return _back(request, pk, "boot_opt")
         order_list[idx] = {"type": dev_type, "dev": dev}
     try:
         with audit_vm(request, instance, "change boot order"):

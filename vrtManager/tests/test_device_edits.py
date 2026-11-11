@@ -132,6 +132,17 @@ class DeviceEditsTestCase(unittest.TestCase):
             p._defineXML.assert_called_once()
             p.wvm.defineXML.assert_not_called()
 
+    def test_a_qos_edit_of_a_nic_not_in_the_definition_changes_nothing(self):
+        # a form loaded before the NIC's MAC changed
+        for change in (
+            lambda p: p.set_qos("52:54:10:00:00:09", "outbound", 1, 2, 3),
+            lambda p: p.unset_qos("52:54:10:00:00:09", "inbound"),
+        ):
+            p = proxy()
+            with self.assertRaisesRegex(util.OperationError, "52:54:10:00:00:09 is not in the definition"):
+                change(p)
+            p._defineXML.assert_not_called()
+
     def test_a_qos_edit_keeps_the_floor(self):
         p = proxy()
         p.set_qos("52:54:10:00:00:01", "inbound", 10, 20, 30)
@@ -279,12 +290,21 @@ class ResizeMemTestCase(unittest.TestCase):
     def test_an_active_vm_changes_only_its_current_memory(self):
         # a paused VM is active too: its guest applies the balloon once resumed
         p = proxy(active=True)
+        p._XMLDesc = lambda flags: "<domain><memory>163840</memory></domain>"
         p.resize_mem(96, 160)
         self.assertEqual(
             [c.args for c in p.instance.setMemoryFlags.call_args_list],
             [(96 * 1024, VIR_DOMAIN_AFFECT_LIVE), (96 * 1024, VIR_DOMAIN_AFFECT_CONFIG)],
         )
         p._defineXML.assert_not_called()
+
+    def test_an_active_vm_whose_next_start_has_a_lower_maximum_changes_nothing(self):
+        # set with virsh --config: the running VM's maximum is higher
+        p = proxy(active=True)
+        p._XMLDesc = lambda flags: "<domain><memory>65536</memory></domain>"
+        with self.assertRaisesRegex(util.OperationError, "next start has a maximum memory"):
+            p.resize_mem(96, 160)
+        p.instance.setMemoryFlags.assert_not_called()
 
     def test_a_stopped_vm_gets_both_values_in_its_definition(self):
         p = proxy(active=False)

@@ -1701,6 +1701,12 @@ class wvmInstance(wvmConnect):
         # an active VM (running, paused, ...) changes only its current memory;
         # a paused guest's balloon driver applies it once it is resumed
         if self.instance.isActive():
+            # the next start's maximum may differ (set with virsh --config):
+            # checked before the running VM changes
+            pending = int(etree.fromstring(self._XMLDesc(PERSISTENT_XML)).findtext("memory"))
+            if cur_memory > pending:
+                raise util.OperationError(gettext_noop("The VM's next start has a maximum memory of %(max)s MiB"),
+                                          max=pending // 1024)
             self.set_memory(cur_memory, VIR_DOMAIN_AFFECT_LIVE)
             self.set_memory(cur_memory, VIR_DOMAIN_AFFECT_CONFIG)
             return
@@ -3085,6 +3091,13 @@ class wvmInstance(wvmConnect):
     def set_memory(self, size, flags=0):
         self.instance.setMemoryFlags(size, flags)
 
+    @staticmethod
+    def _persistent_nic(tree, mac):
+        """Refuses a MAC no NIC of the persistent definition has: a form
+        loaded before the NIC changed."""
+        if not tree.xpath("/domain/devices/interface[mac/@address=$mac]", mac=mac):
+            raise util.OperationError(gettext_noop("Network interface %(mac)s is not in the definition"), mac=mac)
+
     def set_qos(self, mac, direction, average, peak, burst):
         if direction not in ("inbound", "outbound"):
             raise ValueError("Direction must be inbound or outbound")
@@ -3096,6 +3109,7 @@ class wvmInstance(wvmConnect):
         xml = f"<{direction} average='{average}' peak='{peak}' burst='{burst}'/>"
 
         tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        self._persistent_nic(tree, mac)
 
         macs = tree.xpath("/domain/devices/interface/mac")
         for cur_mac in macs:
@@ -3118,6 +3132,7 @@ class wvmInstance(wvmConnect):
 
     def unset_qos(self, mac, direction):
         tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        self._persistent_nic(tree, mac)
         for direct in tree.xpath(
             "/domain/devices/interface/bandwidth/{}".format(direction)
         ):
