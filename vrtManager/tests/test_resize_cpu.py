@@ -35,6 +35,10 @@ class ResizeCpuTests(unittest.TestCase):
         for topology, count in (("<topology sockets='2' cores='2' threads='1'/>", "4"), ("", "4")):
             with self.subTest(topology):
                 inst = shut_off_vm(DOMAIN_XML.format(count=2, topology=topology))
-                inst.resize_cpu("2", count)
-                vcpu = etree.fromstring(inst.wvm.defineXML.call_args_list[1].args[0]).find("vcpu")
-                self.assertEqual((vcpu.text, vcpu.get("current")), ("4", "2"))
+                inst.resize_cpu("3", count)
+                # one definition: libvirt refusing it leaves the hotplug settings as they were
+                tree = etree.fromstring(inst.wvm.defineXML.call_args.args[0])
+                self.assertEqual(inst.wvm.defineXML.call_count, 1)
+                vcpu = tree.find("vcpu")
+                self.assertEqual((vcpu.text, vcpu.get("current")), ("4", "3"))
+                self.assertEqual(tree.xpath("vcpus/vcpu[@enabled='yes']/@id"), ["0", "1", "2"])

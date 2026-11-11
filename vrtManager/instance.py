@@ -1352,22 +1352,26 @@ class wvmInstance(wvmConnect):
         """Turns a hotpluggable vCPU of the active VM on or off, now and for its next start."""
         self.instance.setVcpu(str(cpu_id), enabled, VIR_DOMAIN_AFFECT_LIVE | VIR_DOMAIN_AFFECT_CONFIG)
 
+    @staticmethod
+    def _hotplug_vcpus(enabled):
+        """<vcpus> with the first enabled vCPUs on at boot; libvirt adds the
+        rest up to the maximum as disabled hotpluggable vCPUs."""
+        vcpus = etree.Element("vcpus")
+        etree.SubElement(vcpus, "vcpu", id="0", enabled="yes", hotpluggable="no", order="1")
+        for i in range(1, enabled):
+            etree.SubElement(vcpus, "vcpu", id=str(i), enabled="yes", hotpluggable="yes", order=str(i + 1))
+        return vcpus
+
     def set_vcpu_hotplug(self, status, vcpus_hotplug=0):
         """vcpus_hotplug: the vCPUs enabled at boot, 0 keeps the current ones;
         libvirt adds the rest up to the maximum as disabled hotpluggable vCPUs"""
         vcpus_hotplug = self.get_cur_vcpu() if vcpus_hotplug == 0 else vcpus_hotplug
         if self.get_status() == 5:  # shutoff
             if status:
-                xml = """ <vcpus>"""
-                xml += """<vcpu id='0' enabled='yes' hotpluggable='no' order='1'/>"""
-                for i in range(1, vcpus_hotplug):
-                    xml += f"""<vcpu id='{i}' enabled='yes' hotpluggable='yes' order='{i+1}'/>"""
-                xml += """</vcpus>"""
-
                 tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
                 vcpus = tree.xpath("/domain/vcpus")
                 if not vcpus:
-                    tree.append(etree.fromstring(xml))
+                    tree.append(self._hotplug_vcpus(vcpus_hotplug))
                     self._defineXML(etree.tostring(tree).decode())
             else:
                 tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
@@ -1677,22 +1681,16 @@ class wvmInstance(wvmConnect):
             if count != int(vcpu):
                 raise util.OperationError(gettext_noop("The VM's CPU topology has %(count)s vCPUs: change it in the "
                                                        "XML editor to set another maximum"), count=count)
-        is_vcpus_enabled = self.get_vcpus()
-        if is_vcpus_enabled:
-            self.set_vcpu_hotplug(False)
-
-        xml = self._XMLDesc(PERSISTENT_XML)
-        tree = etree.fromstring(xml)
-
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
         vcpu_elem = tree.find("vcpu")
         vcpu_elem.text = vcpu
         vcpu_elem.set("current", cur_vcpu)
-
-        new_xml = etree.tostring(tree).decode()
-        self._defineXML(new_xml)
-
-        if is_vcpus_enabled:
-            self.set_vcpu_hotplug(True, int(cur_vcpu))
+        # hotplug settings are of the old count: made again for the new one,
+        # in the same definition, so a refused one leaves them as they were
+        hotplug = tree.find("vcpus")
+        if hotplug is not None:
+            tree.replace(hotplug, self._hotplug_vcpus(int(cur_vcpu)))
+        self._defineXML(etree.tostring(tree).decode())
 
     def resize_mem(self, cur_memory, memory):
         """
