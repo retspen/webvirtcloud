@@ -72,7 +72,7 @@ from lxml import etree
 
 from vrtManager import util
 from vrtManager.connection import NVRAM_DIR, wvmConnect
-from vrtManager.nodedevs import pci_address, usb_selector
+from vrtManager.nodedevs import check_hostdevs, pci_address, usb_selector
 from vrtManager.storage import wvmStorage, wvmStorages
 
 logger = logging.getLogger(__name__)
@@ -651,6 +651,17 @@ class wvmInstance(wvmConnect):
 
     def start(self, flags=0):
         self.instance.createWithFlags(flags)
+
+    def check_start_hostdevs(self, restore=True):
+        """Refuses a start whose host devices the host cannot give now
+        (check_hostdevs): a device given while free may since be another
+        VM's or the host's, and libvirt takes a managed one from its host
+        driver as the VM starts. The definition checked is the one the VM
+        starts from: its saved state's when restored."""
+        dom = self.instance
+        restore = restore and dom.hasManagedSaveImage(0)
+        xml = dom.managedSaveGetXMLDesc(0) if restore else dom.XMLDesc(VIR_DOMAIN_XML_INACTIVE)
+        check_hostdevs(self, dom.name(), [etree.fromstring(xml)], restore)
 
     def shutdown(self):
         self.instance.shutdown()

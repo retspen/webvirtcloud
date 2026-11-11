@@ -48,6 +48,17 @@ class VMRowTests(TestCase):
         self.proxy.start.assert_called_once_with(libvirt.VIR_DOMAIN_START_FORCE_BOOT)
         self.assertEqual(self.rows(), [("VM vm: power on without the saved state", True)])
 
+    def test_a_start_the_host_cannot_give_the_devices_of_does_not_stop_or_start_the_vm(self):
+        self.proxy.check_start_hostdevs.side_effect = OperationError("PCI device 0000:00:0a.0 holds the host's eth0")
+        for view, restore in (("poweron", True), ("powercycle", False)):
+            self.post(view)
+            with self.subTest(view=view):
+                self.assertEqual(self.proxy.check_start_hostdevs.call_args.kwargs.get("restore", True), restore)
+        self.proxy.force_shutdown.assert_not_called()
+        self.proxy.start.assert_not_called()
+        self.assertEqual(self.rows(), [("VM vm: power on: PCI device 0000:00:0a.0 holds the host's eth0", False),
+                                       ("VM vm: power cycle: PCI device 0000:00:0a.0 holds the host's eth0", False)])
+
     def test_a_power_cycle_that_does_not_start_again_says_the_vm_stays_off(self):
         self.proxy.start.side_effect = libvirtError("Cannot access storage file")
         response = self.post("powercycle")

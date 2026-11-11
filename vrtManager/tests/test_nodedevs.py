@@ -82,6 +82,39 @@ class UsbUnmatchedTests(SimpleTestCase):
             check_hostdevs(conn, "kiosk-1", [tree])
 
 
+class StartCheckTests(SimpleTestCase):
+    """A start checks the host devices of the definition it starts from."""
+
+    def proxy(self, persistent, saved=None):
+        from vrtManager.instance import wvmInstance
+
+        proxy = wvmInstance.__new__(wvmInstance)
+        proxy.wvm = MagicMock(**{"listAllDevices.return_value": [node(*n) for n in NODES], "listAllDomains.return_value": []})
+        proxy.instance = MagicMock(**{"name.return_value": "kiosk-1", "hasManagedSaveImage.return_value": int(saved is not None),
+                                      "XMLDesc.return_value": f"<domain><devices>{persistent}</devices></domain>",
+                                      "managedSaveGetXMLDesc.return_value": f"<domain><devices>{saved}</devices></domain>"})
+        return proxy
+
+    def test_the_host_s_own_nic_refuses_the_start(self):
+        own_nic = PCI_01.replace("0x01", "0x06")
+        with self.assertRaisesRegex(util.OperationError, "holds the host's eth0"):
+            self.proxy(own_nic).check_start_hostdevs()
+        self.proxy(PCI_0A).check_start_hostdevs()  # bound to vfio-pci, alone in its group
+
+    def test_a_restore_checks_the_saved_state_a_fresh_boot_the_definition(self):
+        proxy = self.proxy(PCI_0A, saved=USB_MODEL)
+        with self.assertRaisesRegex(util.OperationError, "the host has 2 of"):
+            proxy.check_start_hostdevs()
+        proxy.check_start_hostdevs(restore=False)
+
+    def test_a_restore_drops_a_missing_requisite_device_a_boot_does_not(self):
+        gone = USB_MODEL.replace("<source>", "<source startupPolicy='requisite'>")
+        gone = gone.replace("</source>", "<address bus='1' device='9'/></source>")
+        self.proxy(gone, saved=gone).check_start_hostdevs()
+        with self.assertRaisesRegex(util.OperationError, "is not on the host"):
+            self.proxy(gone, saved=gone).check_start_hostdevs(restore=False)
+
+
 class NodeDevicesTests(SimpleTestCase):
     def test_pci_devices_by_group_with_what_the_host_has_on_them(self):
         pci_devices, _ = devices()

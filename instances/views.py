@@ -811,9 +811,11 @@ def poweron(request, pk):
         messages.warning(request, _("Templates cannot be started."))
     elif options.validated_data["fresh"]:  # the saved state is discarded: the VM boots anew
         with audit_vm(request, instance, "power on without the saved state"):
+            instance.proxy.check_start_hostdevs(restore=False)
             instance.proxy.start(VIR_DOMAIN_START_FORCE_BOOT)
     else:
         with audit_vm(request, instance, "power on"):
+            instance.proxy.check_start_hostdevs()
             instance.proxy.start()
 
     return get_safe_redirect(
@@ -829,6 +831,7 @@ def powercycle(request, pk):
         messages.warning(request, _("Templates cannot be started."))
     else:
         with audit_vm(request, instance, "power cycle") as entry:
+            instance.proxy.check_start_hostdevs(restore=False)  # before it stops
             instance.proxy.force_shutdown()
             try:
                 instance.proxy.start()
