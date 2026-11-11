@@ -7,6 +7,7 @@ from django.test import TestCase
 from django.urls import reverse
 from instances.models import Instance
 from libvirt import libvirtError
+from vrtManager.util import OperationError
 from vrtManager.instance import PERSISTENT_XML
 from logs.models import Logs
 from operations import claims
@@ -27,13 +28,13 @@ class ChangeXmlTestCase(TestCase):
         compute = Compute.objects.create(name="xml-compute", hostname="127.0.0.1", login="", password="", type=4)
         self.instance = Instance.objects.create(compute=compute, name="xml-vm", uuid=UUID)
 
-    def post(self, status=5, xml=EDITED, base=CURRENT, confirm=False, define_error=None):
+    def post(self, status=5, xml=EDITED, base=CURRENT, confirm=False, define_error=None, current=CURRENT):
         data = {"inst_xml": xml, "base": base}
         if confirm:
             data["confirm"] = "1"
         with patch("instances.models.wvmInstance") as wvm:
             wvm.return_value.get_status.return_value = status
-            wvm.return_value._XMLDesc.side_effect = lambda flags: CURRENT if flags == PERSISTENT_XML else LIVE
+            wvm.return_value._XMLDesc.side_effect = lambda flags: current if flags == PERSISTENT_XML else LIVE
             wvm.return_value._defineXML.side_effect = define_error
             response = self.client.post(reverse("instances:change_xml", args=[self.instance.id]), data)
         return response, wvm.return_value._defineXML
@@ -72,6 +73,41 @@ class ChangeXmlTestCase(TestCase):
         row = Logs.objects.get(instance_uuid=self.instance.uuid)
         self.assertEqual((row.message, row.success), ("VM xml-vm: change XML: unsupported configuration: bad memory", False))
 
+    def test_a_host_device_given_or_changed_is_checked_as_the_host_devices_tab_does(self):
+        hostdev = ("<devices><hostdev mode='subsystem' type='pci' managed='{}'><source><address domain='0x0000' "
+                   "bus='0x00' slot='0x0a' function='0x0'/></source></hostdev></devices>")
+        given = EDITED.replace("</domain>", hostdev.format("yes") + "</domain>")
+        with patch("instances.views.check_hostdevs", side_effect=OperationError("PCI device 0000:00:0a.0 is given to db-1")) \
+                as check:
+            response, define = self.post(confirm=True, xml=given)
+            define.assert_not_called()
+            self.assertIn("is given to db-1", response.json()["error"])
+            self.assertEqual(check.call_args.args[1], "xml-vm")
+            # devices as they were: not checked again, a device the host lost since does not stop an edit
+            check.reset_mock()
+            had = given.replace("2048", "1024")
+            response, define = self.post(confirm=True, xml=given, base=had, current=had)
+            define.assert_called_once_with(given)
+            check.assert_not_called()
+            # managed by libvirt from now on: the host's driver gives it up at the next start
+            self.post(confirm=True, xml=given.replace("'yes'", "'no'"), base=given, current=given)
+            check.assert_called_once()
+
+    def test_a_nic_that_is_a_host_device_and_turns_managed_is_checked(self):
+        nic = ("<devices><interface type='hostdev' managed='{}'><source><address type='pci' domain='0x0000' "
+               "bus='0x00' slot='0x0a' function='0x0'/></source></interface></devices>")
+        had = EDITED.replace("2048", "1024").replace("</domain>", nic.format("no") + "</domain>")
+        with patch("instances.views.check_hostdevs") as check:
+            self.post(confirm=True, xml=had.replace("'no'", "'yes'"), base=had, current=had)
+        check.assert_called_once()
+
+    def test_a_host_device_address_that_is_no_number_is_refused(self):
+        usb = "<devices><hostdev mode='subsystem' type='usb'><source><address device='2'/></source></hostdev></devices>"
+        response, define = self.post(confirm=True, xml=EDITED.replace("</domain>", usb + "</domain>"))
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("The XML is not valid", response.json()["error"])
+        define.assert_not_called()
+
     def test_a_running_or_paused_vm_gets_the_definition_for_its_next_start(self):
         for status in (1, 3):
             with self.subTest(status=status):
@@ -90,7 +126,7 @@ class ChangeXmlTestCase(TestCase):
 
     def test_a_busy_vm_answers_the_dialog_so_the_edit_stays(self):
         # the dialog's script sends X-Requested-With; a page form gets the redirect
-        with patch("instances.views.libvirt_instance_lock", side_effect=claims.Busy("instance:xml-vm")), \
+        with patch("instances.views.libvirt_compute_lock", side_effect=claims.Busy("compute:1")), \
                 patch("instances.models.wvmInstance") as wvm:
             url = reverse("instances:change_xml", args=[self.instance.id])
             data = {"inst_xml": EDITED, "base": CURRENT, "confirm": "1"}

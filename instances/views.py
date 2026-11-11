@@ -58,7 +58,8 @@ from vrtManager.connection import CONNECT_TIMEOUT
 from vrtManager.create import cpu_choices, wvmCreate
 from vrtManager.instance import USAGE_MAX_WINDOW, wvmInstances
 from vrtManager.interface import wvmInterface
-from vrtManager.nodedevs import device_names, hostdev_problems, node_devices, pci_problems, usb_unmatched
+from vrtManager.nodedevs import (check_hostdevs, device_names, hostdev_problems, hostdev_users, managed_pci,
+                                 node_devices, pci_problems, usb_unmatched)
 from vrtManager.storage import rbd_source_children, wvmStorage
 from vrtManager.util import randomPasswd
 
@@ -1867,7 +1868,7 @@ def set_bootorder(request, pk):
 
 @require_POST
 @superuser_only
-@serialize_instance_mutation
+@serialize_compute_mutation  # the whole compute: the XML may give the VM a host device
 def change_xml(request, pk):
     """
     The XML editor's dialog: without confirm, the lines the edited XML changes
@@ -1897,8 +1898,12 @@ def change_xml(request, pk):
         diff = difflib.unified_diff(current.splitlines(), new_xml.splitlines(), "current", "new", lineterm="")
         return JsonResponse({"diff": list(diff)})
     shut_off = instance.proxy.get_status() == 5
+    new_tree = etree.fromstring(new_xml)
     try:
         with audit_vm(request, instance, "change XML"):
+            # host devices given or changed are checked as the Host devices tab checks them
+            if _hostdevs_of(new_tree) != _hostdevs_of(etree.fromstring(current)):
+                check_hostdevs(instance.proxy, instance.name, [new_tree])
             instance.proxy._defineXML(new_xml)
     except libvirtError as err:
         return JsonResponse({"error": error_text(request, err)}, status=400)
@@ -2079,6 +2084,11 @@ def delete_network(request, pk):
     with audit_vm(request, instance, f"remove interface {mac_address}"):
         instance.proxy.delete_network(mac_address)
     return _back(request, pk, "network")
+
+
+def _hostdevs_of(tree):
+    """The host devices a definition gives its VM, and which PCI ones libvirt manages."""
+    return (*hostdev_users([tree]), managed_pci(tree))
 
 
 def _host_devices(instance):
@@ -2510,6 +2520,7 @@ def create_instance_select_type(request, compute_id):
             else:
                 with libvirt_compute_lock(compute):
                     with audit(request, compute, f"VM {name}", "define from XML", instance=name) as entry:
+                        check_hostdevs(conn, name, [etree.fromstring(xml)])
                         conn._defineXML(xml)
                         refresh_instance_database(compute)
                         instance = compute.instance_set.get(name=name)

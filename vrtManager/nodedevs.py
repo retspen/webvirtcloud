@@ -84,9 +84,23 @@ def usb_selector(source):
     the parts libvirt picks a device by. An address libvirt resolved for a
     running VM (autoAddress, in its migratable XML) is not one of them."""
     address = source.find("address")
-    given = address is not None and source.get("autoAddress") != "yes"
+    at = None if address is None else (int(address.get("bus")), int(address.get("device")))
     return (usb_id(source.xpath("string(vendor/@id)")), usb_id(source.xpath("string(product/@id)")),
-            (int(address.get("bus")), int(address.get("device"))) if given else None)
+            None if source.get("autoAddress") == "yes" else at)
+
+
+def element_address(address):
+    return pci_address(address.get("domain", "0"), address.get("bus"), address.get("slot"), address.get("function"))
+
+
+def parsed(parse, element):
+    """parse(element), a definition's host device; one whose address or IDs
+    are not numbers is refused (the XML editor and define from XML take any)."""
+    try:
+        return parse(element)
+    except (TypeError, ValueError):
+        raise util.OperationError(gettext_noop("The XML is not valid: %(err)s"),
+                                  err=etree.tostring(element, encoding=str, with_tail=False)) from None
 
 
 def hostdev_users(trees):
@@ -98,8 +112,8 @@ def hostdev_users(trees):
         for address in tree.xpath("devices/hostdev[@mode='subsystem'][@type='pci']/source/address"
                                   " | devices/interface[@type='hostdev']/source/address"
                                   " | devices/interface/actual[@type='hostdev']/source/address"):
-            pci.add(pci_address(address.get("domain", "0"), address.get("bus"), address.get("slot"), address.get("function")))
-        usb.extend(usb_selector(source) for source in tree.xpath("devices/hostdev[@mode='subsystem'][@type='usb']/source"))
+            pci.add(parsed(element_address, address))
+        usb.extend(parsed(usb_selector, source) for source in tree.xpath("devices/hostdev[@mode='subsystem'][@type='usb']/source"))
     return pci, usb
 
 
@@ -140,10 +154,12 @@ def device_problems(label, vms, resources, vm):
 
 
 def managed_pci(tree):
-    """The PCI addresses a VM's definition gives it as managed host devices:
-    libvirt takes them from their host drivers when the VM starts."""
-    return {pci_address(a.get("domain", "0"), a.get("bus"), a.get("slot"), a.get("function"))
-            for a in tree.xpath("devices/hostdev[@mode='subsystem'][@type='pci'][@managed='yes']/source/address")}
+    """The PCI addresses a VM's definition gives it as managed host devices
+    (a <hostdev> or a NIC that is one): libvirt takes them from their host
+    drivers when the VM starts."""
+    return {parsed(element_address, address)
+            for address in tree.xpath("devices/hostdev[@mode='subsystem'][@type='pci'][@managed='yes']/source/address"
+                                      " | devices/interface[@type='hostdev'][@managed='yes']/source/address")}
 
 
 def pci_problems(vm, device, by_address, managed):

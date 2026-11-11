@@ -190,6 +190,9 @@ class DefineFromXmlRowTests(TestCase):
     def post(self, xml):
         conn = libvirt.open("test:///default")
         self.addCleanup(conn.close)
+        # the test driver's VMs live as long as the process: the ones defined here go
+        before = {domain.name() for domain in conn.listAllDomains()}
+        self.addCleanup(lambda: [domain.undefine() for domain in conn.listAllDomains() if domain.name() not in before])
         compute = Compute.objects.create(name="testdrv", hostname="localhost", login="", password="", type=4)
         self.client.force_login(get_user_model().objects.create_superuser("xml", "xml@example.com", "pw"))
         Logs.objects.all().delete()
@@ -197,6 +200,14 @@ class DefineFromXmlRowTests(TestCase):
             self.client.post(reverse("instances:create_instance_select_type", args=[compute.id]),
                              {"create_xml": "", "dom_xml": xml})
         return Logs.objects.get()
+
+    def test_a_host_device_the_host_cannot_give_is_refused(self):
+        with patch("instances.views.check_hostdevs", side_effect=OperationError("PCI device 0000:00:0a.0 is given to db-1")):
+            row = self.post("<domain type='test'><name>with-device</name><memory>1024</memory><os><type>hvm</type></os>"
+                            "</domain>")
+        self.assertEqual((row.message, row.success), ("VM with-device: define from XML: PCI device 0000:00:0a.0 is given to db-1",
+                                                      False))
+        self.assertFalse(Instance.objects.filter(name="with-device").exists())
 
     def test_a_defined_vm_has_its_uuid(self):
         row = self.post("<domain type='test'><name>from-xml</name><memory>1024</memory>"
