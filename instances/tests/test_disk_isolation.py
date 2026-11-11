@@ -112,7 +112,7 @@ class DiskViewsTenantIsolationTestCase(TestCase):
             mock_wvm.return_value.get_managed_save_image.return_value = 0
             res = self._post(
                 "delete_vol",
-                {"storage": "other-pool", "name": "victim.qcow2", "dev": "vda"},
+                {"storage": "other-pool", "name": "victim.qcow2", "dev": "vda", "path": VM_DISK["path"]},
             )
         self.assertEqual(res.status_code, 302)
         mock_wvm.return_value.detach_disk.assert_called_once_with("vda")
@@ -149,6 +149,7 @@ class DiskViewsTenantIsolationTestCase(TestCase):
                 {
                     "edit_volume": "1",
                     "dev": "vda",
+                    "path": VM_DISK["path"],
                     "vol_path": VM_DISK["path"],
                     "vol_bus_old": "virtio",
                     "vol_bus": "virtio",
@@ -276,6 +277,7 @@ class DiskViewsTenantIsolationTestCase(TestCase):
                 {
                     "edit_volume": "1",
                     "dev": "vda",
+                    "path": VM_DISK["path"],
                     "vol_path": VM_DISK["path"],
                     "vol_bus_old": "virtio",
                     "vol_bus": "virtio",
@@ -297,6 +299,7 @@ class DiskViewsTenantIsolationTestCase(TestCase):
         data = {
             "edit_volume": "1",
             "dev": "vda",
+            "path": VM_DISK["path"],
             "vol_path": VM_DISK["path"],
             "vol_bus_old": "virtio",
             "vol_bus": "virtio",
@@ -305,6 +308,34 @@ class DiskViewsTenantIsolationTestCase(TestCase):
         }
         data.update(extra)
         return self._post("edit_volume", data)
+
+    def test_a_form_of_a_disk_replaced_since_changes_nothing(self):
+        # another tab moved vda to another volume after this page was loaded
+        moved = {**VM_DISK, "path": "/var/lib/libvirt/images/moved.qcow2"}
+        self.client.force_login(self.superuser)
+        for name in ("edit_volume", "detach_vol", "delete_vol"):
+            with self.subTest(name), patch("instances.models.wvmInstance") as mock_wvm, \
+                    patch("instances.views.wvmStorage") as mock_storage:
+                proxy = mock_wvm.return_value
+                proxy.get_disk_devices.return_value = [moved]
+                res = self._post(name, {"edit_volume": "1", "dev": "vda", "path": VM_DISK["path"],
+                                        "vol_path": VM_DISK["path"], "vol_bus": "virtio"})
+                self.assertIn("Disk vda has changed since the page was loaded; reload the page",
+                              [str(m) for m in get_messages(res.wsgi_request)])
+                proxy.edit_disk.assert_not_called()
+                proxy.detach_disk.assert_not_called()
+                mock_storage.return_value.del_volume.assert_not_called()
+
+    def test_a_disk_without_a_path_is_detached(self):
+        # a network disk with only a host (NBD): the form posts an empty path
+        self.client.force_login(self.superuser)
+        with patch("instances.models.wvmInstance") as mock_wvm:
+            mock_wvm.return_value.get_disk_devices.return_value = [{**VM_DISK, "path": None}]
+            self._post("detach_vol", {"dev": "vda", "path": ""})
+            mock_wvm.return_value.detach_disk.assert_called_once_with("vda")
+            mock_wvm.return_value.detach_disk.reset_mock()
+            self._post("detach_vol", {"dev": "vda"})  # a form without the path
+            mock_wvm.return_value.detach_disk.assert_not_called()
 
     def test_edit_volume_bus_change_keeps_the_disk_and_applies_options(self):
         from vrtManager.instance import wvmInstance

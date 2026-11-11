@@ -150,9 +150,9 @@ class VMRowTests(TestCase):
         self.proxy.paths_used_by_other_domains.return_value = set()
         with patch("instances.views.wvmStorage"):
             self.proxy.wait_disk_detached.return_value = False
-            self.post("delete_vol", {"dev": "vdb"})
+            self.post("delete_vol", {"dev": "vdb", "path": "/pool/data.qcow2"})
             self.proxy.wait_disk_detached.return_value = True
-            self.post("delete_vol", {"dev": "vdb"})
+            self.post("delete_vol", {"dev": "vdb", "path": "/pool/data.qcow2"})
         self.assertEqual(self.rows(), [
             ("VM vm: detach disk vdb", True),
             ("VM vm: delete volume default/data.qcow2: the guest has not released the disk", False),

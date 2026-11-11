@@ -201,7 +201,7 @@ class PendingEditsTestCase(TestCase):
             proxy = wvm.return_value
             live, pending = disk("vda", "default", ""), {**disk("vda", "default", ""), "path": "/pool/b.qcow2"}
             proxy.get_disk_devices.side_effect = lambda **kw: [pending] if kw.get("config") else [live]
-            self.client.post(reverse("instances:delete_vol", args=[self.instance.id]), {"dev": "vda"})
+            self.client.post(reverse("instances:delete_vol", args=[self.instance.id]), {"dev": "vda", "path": "/pool/b.qcow2"})
         proxy.detach_disk.assert_not_called()
         storage.return_value.del_volume.assert_not_called()
 
@@ -211,7 +211,7 @@ class PendingEditsTestCase(TestCase):
             proxy = wvm.return_value
             proxy.get_managed_save_image.return_value = 1
             proxy.get_disk_devices.side_effect = lambda **kw: [disk("vda", "default", "")]
-            response = self.client.post(reverse("instances:delete_vol", args=[self.instance.id]), {"dev": "vda"})
+            response = self.client.post(reverse("instances:delete_vol", args=[self.instance.id]), {"dev": "vda", "path": "/pool/vda.qcow2"})
         self.assertEqual([str(m) for m in get_messages(response.wsgi_request)],
                          ["The VM has a saved state; start it or remove the saved state first"])
         proxy.detach_disk.assert_not_called()

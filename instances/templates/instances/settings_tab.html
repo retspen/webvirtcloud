@@ -227,7 +227,7 @@
                             <div class="col-12 col-md-4 d-flex flex-wrap justify-content-md-end gap-2">
                                 <form class="d-inline" action="{% url 'instances:edit_volume' instance.id %}" method="post" aria-label="{% trans "Edit instance volume form" %}">
                                     {% csrf_token %}
-                                    <input type="hidden" name="path" value="{{ disk.path }}">
+                                    <input type="hidden" name="path" value="{{ disk.path|default:'' }}">
                                     <input type="hidden" name="dev" value="{{ disk.dev }}">
                                     <input type="hidden" name="storage" value="{{ disk.storage }}">
                                     <input type="hidden" name="name" value="{{ disk.image }}">
@@ -236,7 +236,7 @@
                                 {% if request.user.is_superuser %}{% include 'instances/move_disk.html' with id=forloop.counter0 %}{% endif %}
                                 <form class="d-inline" action="{% url 'instances:detach_vol' instance.id %}" method="post">
                                     {% csrf_token %}
-                                    <input type="hidden" name="path" value="{{ disk.path }}">
+                                    <input type="hidden" name="path" value="{{ disk.path|default:'' }}">
                                     <input type="hidden" name="dev" value="{{ disk.dev }}">
                                     <input type="hidden" name="storage" value="{{ disk.storage }}">
                                     <input type="hidden" name="name" value="{{ disk.image }}">
@@ -244,7 +244,7 @@
                                 </form>
                                 <form class="d-inline" action="{% url 'instances:delete_vol' instance.id %}" method="post">
                                     {% csrf_token %}
-                                    <input type="hidden" name="path" value="{{ disk.path }}">
+                                    <input type="hidden" name="path" value="{{ disk.path|default:'' }}">
                                     <input type="hidden" name="dev" value="{{ disk.dev }}">
                                     <input type="hidden" name="storage" value="{{ disk.storage }}">
                                     <input type="hidden" name="name" value="{{ disk.image }}">

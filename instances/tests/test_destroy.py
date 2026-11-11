@@ -213,7 +213,7 @@ class DestroyOrderTestCase(TransactionTestCase):
             proxy.paths_used_by_other_domains.return_value = set()
             proxy.wait_disk_detached.return_value = True
             storage.return_value.del_volume.side_effect = OperationError("Volume data.qcow2 is in use")
-            response = self.client.post(reverse("instances:delete_vol", args=[self.instance.id]), {"dev": "vdb"})
+            response = self.client.post(reverse("instances:delete_vol", args=[self.instance.id]), {"dev": "vdb", "path": "/pool/data.qcow2"})
         self.assertEqual(response.status_code, 302)
         proxy.detach_disk.assert_called_once_with("vdb")
         messages = [str(m) for m in get_messages(response.wsgi_request)]

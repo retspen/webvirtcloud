@@ -569,6 +569,18 @@ def _back(request, pk, tab):
     return redirect(same_origin_referer(request, reverse("instances:instance", args=[pk])) + "#" + tab)
 
 
+def _disk_changed(request, disks):
+    """Whether the disk a form was loaded with, its device and path, is no
+    longer one of disks: another tab or user replaced it since. The user is
+    told to reload."""
+    dev = request.POST.get("dev", "")
+    # a network disk may have no path: the form posts an empty one
+    if any(disk["dev"] == dev and (disk["path"] or "") == request.POST.get("path") for disk in disks):
+        return False
+    messages.error(request, _("Disk %(dev)s has changed since the page was loaded; reload the page") % {"dev": dev})
+    return True
+
+
 def get_instance(user, pk, perm_type="view"):
     """
     Check that instance is available for user, if not raise 404 or PermissionDenied.
@@ -1429,6 +1441,8 @@ def edit_volume(request, pk):
         shareable = bool(request.POST.get("vol_shareable", False))
         readonly = bool(request.POST.get("vol_readonly", False))
         disks = instance.proxy.get_disk_devices(config=True)
+        if _disk_changed(request, disks):
+            return _back(request, pk, "disks")
         current = next((disk for disk in disks if disk["dev"] == target_dev), {})
         new_bus = request.POST.get("vol_bus", current.get("bus"))
         serial = request.POST.get("vol_serial", "")
@@ -1458,8 +1472,6 @@ def edit_volume(request, pk):
             format=format or None,
             serial=serial,
         )
-        if not current:
-            invalid.append("dev")
         if invalid:
             return reject_disk_options(request, pk, invalid)
 
@@ -1501,6 +1513,8 @@ def delete_vol(request, pk):
 
     # Resolve the volume from the VM's own XML; never trust the posted
     # storage/name, which could point at any volume on the compute.
+    if _disk_changed(request, instance.config_disks):
+        return _back(request, pk, "disks")
     disk = next((d for d in instance.disks if d["dev"] == dev), None)
     if disk is None or not disk["storage"] or not disk["image"]:
         messages.error(
@@ -1565,6 +1579,8 @@ def delete_vol(request, pk):
 def detach_vol(request, pk):
     instance = get_instance(request.user, pk, perm_type="change")
     dev = request.POST.get("dev", "")
+    if _disk_changed(request, instance.config_disks):
+        return _back(request, pk, "disks")
     with audit_vm(request, instance, f"detach disk {dev}"):
         instance.proxy.detach_disk(dev)
 
