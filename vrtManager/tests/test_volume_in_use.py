@@ -126,6 +126,39 @@ class PathsInUseTestCase(unittest.TestCase):
                 conn.wvm.storagePoolLookupByName.return_value = conn.pool
                 self.assertIn("/pool/disk.qcow2", conn.paths_in_use())
 
+    def test_a_disk_not_running_in_an_inactive_pool_is_refused(self):
+        # its overlay's backing file is in the volume's XML, which an inactive pool does not give
+        inactive = MagicMock(**{"isActive.return_value": False, "name.return_value": "overlays",
+                                "XMLDesc.return_value": "<pool><target><path>/overlays</path></target></pool>"})
+        overlay = "<disk type='file' device='disk'><source file='/overlays/b.qcow2'/></disk>"
+        raw = "<disk type='file' device='disk'><driver type='raw'/><source file='/overlays/b.qcow2'/></disk>"
+        other = "<disk type='file' device='disk'><source file='/overlays-2/b.qcow2'/></disk>"
+
+        def check(live, config, active, refused, saved=None):
+            dom = domain("u1")
+            dom.XMLDesc.side_effect = lambda flags: f"<domain><devices>{config if flags else live}</devices></domain>"
+            dom.isActive.return_value = active
+            if saved:
+                dom.hasManagedSaveImage.return_value = 1
+                dom.managedSaveGetXMLDesc.return_value = f"<domain><devices>{saved}</devices></domain>"
+            conn, _ = storage(domains=[dom])
+            conn.wvm.listAllStoragePools.return_value = [conn.pool, inactive]
+            if refused:
+                with self.assertRaisesRegex(util.InUse, "Pool overlays is not active"):
+                    conn.paths_in_use()
+            else:
+                conn.paths_in_use()  # answers
+
+        for case, args in (("stopped", (overlay, overlay, False, True)),
+                           ("running: the live definition has the chain", (overlay, overlay, True, False)),
+                           ("the next start's disk", ("", overlay, True, True)),
+                           ("a raw disk grows from nothing", (raw, raw, False, False)),
+                           ("another directory", (other, other, False, False))):
+            with self.subTest(case):
+                check(*args)
+        with self.subTest("a saved state's disk"):
+            check("", "", False, True, saved=overlay)
+
     def test_a_volume_that_cannot_be_read_is_not_taken_as_unused(self):
         removed, unreadable = volume("/pool/gone.qcow2"), volume("/pool/top.qcow2")
         error = libvirtError("removed")

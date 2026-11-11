@@ -612,6 +612,13 @@ class LeftBehindTestCase(unittest.TestCase):
         # their own backing files do not keep each other
         in_use.assert_called_once_with(own=["/pool/a.one", "/pool/vm.one.mem"])
 
+    def test_nothing_is_reported_when_another_vm_s_files_cannot_be_read(self):
+        # a disk in an inactive pool: any file may be one it grows from; the delete itself is done
+        refused = util.InUse("Pool %(pool)s is not active", pool="overlays")
+        with patch.object(wvmInstance, "paths_in_use", side_effect=refused):
+            left = self.run_delete({"/pool/a.one", "/pool/vm.one.mem", "/pool/a.two", "/pool/a.qcow2"})
+        self.assertEqual(left, [])
+
     def test_a_file_below_one_another_vm_uses_is_not_reported(self):
         # the other VM is shut off: its definition does not list the backing
         # file, and the in-use top's own backing reference does not count

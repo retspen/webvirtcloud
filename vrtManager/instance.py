@@ -2076,8 +2076,9 @@ class wvmInstance(wvmConnect):
         an overlay on a snapshot point counts; a disk a revert detached is
         kept on purpose, and a file another VM on this host uses (or one
         below it) is not reported. A file outside every storage pool is not
-        checked, nor is anything when the pools could not be refreshed: a
-        stale pool still lists the removed files."""
+        checked, nor is anything when the pools could not be refreshed (a
+        stale pool still lists the removed files) or another VM's files cannot
+        be read (paths_in_use)."""
         disks, own, points = before
         if not self._refresh_pools_after_snapshot():
             return []
@@ -2097,7 +2098,10 @@ class wvmInstance(wvmConnect):
         if left:
             # another VM on this host may use one; their own backing files
             # do not keep each other, but a file in use keeps the files below it
-            in_use = self.paths_in_use(own=left)
+            try:
+                in_use = self.paths_in_use(own=left)
+            except util.InUse:
+                return []
             for path in [path for path in left if path in in_use]:
                 while (path := self.backing_path(path)) and path not in in_use:
                     in_use.add(path)

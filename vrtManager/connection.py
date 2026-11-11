@@ -176,6 +176,10 @@ request_finished.connect(_request_finished, dispatch_uid="vrtManager.connection.
 
 # libvirt's per-host directory of the VMs' UEFI variables (NVRAM)
 NVRAM_DIR = "/var/lib/libvirt/qemu/nvram"
+# the files and devices of a definition's disks that may grow from others; a
+# raw one does not
+UNREAD_DISKS = etree.XPath("devices/disk[@device='disk'][not(driver/@type='raw')]/source/@file|"
+                           "devices/disk[@device='disk'][not(driver/@type='raw')]/source/@dev")
 
 
 class wvmConnection(object):
@@ -1127,13 +1131,16 @@ class wvmConnect(object):
         snapshots (overlays, memory, the disks they were taken on); and the
         backing files of volumes.
         skip_uuid leaves out one domain, own the volumes whose backing files
-        do not count."""
-        used = set()
+        do not count. util.InUse when a disk not running has its file in an
+        inactive pool: the files it is made from cannot be read."""
+        used, unread = set(), set()
         for dom in self.wvm.listAllDomains():
             if dom.UUIDString() == skip_uuid:
                 continue
-            for flags in (0, libvirt.VIR_DOMAIN_XML_INACTIVE):
-                used.update(self._source_paths(etree.fromstring(dom.XMLDesc(flags))))
+            live, config = (etree.fromstring(dom.XMLDesc(flags)) for flags in (0, libvirt.VIR_DOMAIN_XML_INACTIVE))
+            used.update(self._source_paths(live), self._source_paths(config))
+            # a running disk's definition has its backing chain; the others' volumes have it
+            unread.update(set(UNREAD_DISKS(config)) - (set(UNREAD_DISKS(live)) if dom.isActive() else set()))
             # a saved state starts with the disks it was saved with, detached since or not
             if dom.hasManagedSaveImage(0):
                 try:
@@ -1145,16 +1152,24 @@ class wvmConnect(object):
                         raise
                     # the image went meanwhile: the VM may have started from it
                     saved = dom.XMLDesc(0)
-                used.update(self._source_paths(etree.fromstring(saved)))
+                saved = etree.fromstring(saved)
+                used.update(self._source_paths(saved))
+                unread.update(UNREAD_DISKS(saved))
             for snap in dom.listAllSnapshots(0):
                 tree = etree.fromstring(snap.getXMLDesc(0))
                 used.update(tree.xpath("disks/disk/source/@file|memory/@file"))
                 for saved in tree.xpath("domain|inactiveDomain"):
                     used.update(self._source_paths(saved))
+                    unread.update(UNREAD_DISKS(saved))
         # A stopped domain's XML has no backing chain; the volumes have it.
         # Any volume backed by a path keeps that path, even an unattached one.
         for pool in self.wvm.listAllStoragePools():
             if not pool.isActive():
+                target = util.get_xml_path(pool.XMLDesc(0), "/pool/target/path")
+                if target and any(path.startswith(target.rstrip("/") + "/") for path in unread):
+                    raise util.InUse(gettext_noop(
+                        "Pool %(pool)s is not active: the files the disks of the VMs in it are made from cannot be "
+                        "checked; start the pool first"), pool=pool.name())
                 continue
             with contextlib.suppress(libvirtError):
                 pool.refresh(0)
