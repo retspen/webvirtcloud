@@ -35,26 +35,38 @@ class HostUsbViewTests(TestCase):
         self.proxy.wvm.listAllDevices.return_value = [node(*n) for n in NODES]
         self.proxy.domain_trees.side_effect = lambda: [("db-1", [etree.fromstring(other.XMLDesc())])]
         self.proxy.get_hostdevs.return_value = ([], [], [])
+        self.proxy.instance.XMLDesc.return_value = domain()
 
     def test_the_form_offers_what_can_be_given_and_says_why_not(self):
         page = html.fromstring(self.client.get(reverse("instances:host_devices", args=[self.instance.id])).content)
         options = {o.get("value"): (o.get("disabled") is not None, o.text_content()) for o in page.xpath("//select[@name='usb_device']/option[@value!='']")}
-        self.assertEqual(sorted(options), ["1/1", "1/2", "1/3"])
-        self.assertTrue(options["1/1"][0] and "is a hub" in options["1/1"][1])
-        self.assertTrue(options["1/3"][0] and "is given to db-1" in options["1/3"][1])
-        self.assertFalse(options["1/2"][0])
+        self.assertEqual(sorted(options), ["1/1/1d6b:0001", "1/2/0627:0001", "1/3/0627:0001"])
+        self.assertTrue(options["1/1/1d6b:0001"][0] and "is a hub" in options["1/1/1d6b:0001"][1])
+        self.assertTrue(options["1/3/0627:0001"][0] and "is given to db-1" in options["1/3/0627:0001"][1])
+        self.assertFalse(options["1/2/0627:0001"][0])
         # a device the VM has already
         self.proxy.domain_trees.side_effect = lambda: [("kiosk-1", [etree.fromstring(domain(by_model("<address bus='1' device='2'/>")))])]
         page = html.fromstring(self.client.get(reverse("instances:host_devices", args=[self.instance.id])).content)
-        self.assertEqual(page.xpath("//option[@value='1/2']/@disabled"), ["disabled"])
+        self.assertEqual(page.xpath("//option[@value='1/2/0627:0001']/@disabled"), ["disabled"])
+
+    def test_the_form_says_which_usb_device_of_the_vm_the_host_cannot_give(self):
+        url = reverse("instances:host_devices", args=[self.instance.id])
+        for given, warning in (("<address bus='1' device='2'/>", None),
+                               ("<address bus='1' device='9'/>", "USB device 0627:0001 at 1/9 is not on the host"),
+                               ("", "the host has 2 of USB device 0627:0001: name the one to give by its address")):
+            self.proxy.instance.XMLDesc.return_value = domain(by_model(given))
+            alerts = html.fromstring(self.client.get(url).content).xpath("//div[contains(@class, 'alert-warning')]")
+            with self.subTest(given=given):
+                self.assertEqual([warning in a.text_content() for a in alerts], [True] if warning else [])
 
     def test_a_device_is_given_by_address_when_the_host_has_several_of_its_model(self):
         url = reverse("instances:add_usb_hostdev", args=[self.instance.id])
-        response = self.client.post(url, {"usb_device": "1/2"})
+        response = self.client.post(url, {"usb_device": "1/2/0627:0001"})
         self.assertEqual(response.status_code, 302)
         self.proxy.add_usb_hostdev.assert_called_once_with("0x0627", "0x0001", (1, 2))
-        # refused on the server too: another VM's device, a hub
-        for chosen, why in (("1/3", "is given to db-1"), ("1/1", "is a hub"), ("9/9", "has no USB device")):
+        # refused on the server too: another VM's device, a hub, one gone, another device at the address
+        for chosen, why in (("1/3/0627:0001", "is given to db-1"), ("1/1/1d6b:0001", "is a hub"),
+                            ("9/9/0627:0001", "has no USB device"), ("1/2/1d6b:0001", "reload the page")):
             response = self.client.post(url, {"usb_device": chosen})
             with self.subTest(chosen=chosen):
                 self.assertIn(why, " ".join(str(m) for m in get_messages(response.wsgi_request)))
@@ -62,7 +74,7 @@ class HostUsbViewTests(TestCase):
 
     def test_a_device_is_given_by_model_when_the_host_has_one_of_it(self):
         self.proxy.wvm.listAllDevices.return_value = [node(*n) for n in NODES if n[0] not in ("usb_1_2", "usb_1_2_1_0")]
-        self.client.post(reverse("instances:add_usb_hostdev", args=[self.instance.id]), {"usb_device": "1/2"})
+        self.client.post(reverse("instances:add_usb_hostdev", args=[self.instance.id]), {"usb_device": "1/2/0627:0001"})
         self.proxy.add_usb_hostdev.assert_called_once_with("0x0627", "0x0001", None)
 
     def test_a_pci_device_is_given_when_it_can_be(self):

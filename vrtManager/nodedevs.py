@@ -68,13 +68,24 @@ def host_resources(name, nodes, children):
     return found
 
 
+def usb_id(text):
+    """A USB vendor or product ID of a definition, read as libvirt reads it
+    (C's strtoul: 0x hex, a leading 0 octal, else decimal) and written as a
+    node device writes it (0x0627); empty when not given."""
+    text = text.strip().removeprefix("+")
+    if not text:
+        return ""
+    base = 16 if text.lower().startswith("0x") else 8 if text.startswith("0") and text != "0" else 10
+    return f"0x{int(text, base):04x}"
+
+
 def usb_selector(source):
     """(vendor, product, (bus, device) or None) of a USB <hostdev>'s <source>,
     the parts libvirt picks a device by. An address libvirt resolved for a
     running VM (autoAddress, in its migratable XML) is not one of them."""
     address = source.find("address")
     given = address is not None and source.get("autoAddress") != "yes"
-    return (source.xpath("string(vendor/@id)").lower(), source.xpath("string(product/@id)").lower(),
+    return (usb_id(source.xpath("string(vendor/@id)")), usb_id(source.xpath("string(product/@id)")),
             (int(address.get("bus")), int(address.get("device"))) if given else None)
 
 
@@ -174,6 +185,50 @@ def pci_problems(vm, device, by_address, managed):
             problems.append(util.message(gettext_noop(
                 "%(device)s shares IOMMU group %(group)s with %(member)s (%(product)s), which the host "
                 "(driver %(driver)s) uses"), **group, member=member, product=other["product"], driver=other["driver"]))
+    return problems
+
+
+USB_SOURCES = "devices/hostdev[@mode='subsystem'][@type='usb']/source"
+
+
+def usb_picked(source, usb):
+    """The selector (usb_selector) libvirt picks a device of the host's usb by
+    for a USB <hostdev>'s <source>: an address it resolved before
+    (autoAddress) while a device of the model is still there, else the model."""
+    vendor, product, given = usb_selector(source)
+    address = source.find("address")
+    if given is None and address is not None:
+        at = (int(address.get("bus")), int(address.get("device")))
+        if any(usb_named((vendor, product, at), device["model"], (device["bus"], device["device"])) for device in usb):
+            return vendor, product, at
+    return vendor, product, given
+
+
+def usb_unmatched(trees, usb, restore=False):
+    """Why the host cannot give the USB devices the definitions trees name
+    as they name them (libvirt then does not start the VM): a device it does
+    not have, unless optional, or requisite on a restore (a saved state or a
+    snapshot), as libvirt drops those; or a model it has more than one of,
+    named without an address (usb_picked)."""
+    dropped = ("optional", "requisite") if restore else ("optional",)
+    problems = []
+    for tree in trees:
+        for source in tree.xpath(USB_SOURCES):
+            picked = usb_picked(source, usb)
+            matches = [device for device in usb if usb_named(picked, device["model"], (device["bus"], device["device"]))]
+            vendor, product, given = usb_selector(source)
+            ids = f"{vendor[2:]}:{product[2:]}"
+            if given is None:
+                label = [util.message(gettext_noop("USB device %(ids)s"), ids=ids)]
+            else:
+                label = [util.message(gettext_noop("USB device %(ids)s at %(bus)s/%(device)s"), ids=ids,
+                                      bus=given[0], device=given[1])]
+            if not matches and source.get("startupPolicy") not in dropped:
+                problems.append(util.message(gettext_noop("%(device)s is not on the host"), device=label))
+            elif len(matches) > 1:
+                problems.append(util.message(gettext_noop(
+                    "the host has %(count)s of %(device)s: name the one to give by its address"),
+                    device=label, count=len(matches)))
     return problems
 
 
@@ -316,17 +371,19 @@ def device_names(conn):
     return names
 
 
-def check_hostdevs(conn, vm, trees):
+def check_hostdevs(conn, vm, trees, restore=False):
     """Refuses the host devices the definitions trees give the VM named vm,
     on the host of conn, when they cannot be (hostdev_problems): each
-    definition on its own, as the VM starts from one of them."""
+    definition on its own, as the VM starts from one of them, restored from
+    it when restore (usb_unmatched)."""
     wanted = [(tree, hostdev_users([tree])) for tree in trees]
     if not any(pci or usb for tree, (pci, usb) in wanted):
         return
     pci, usb = node_devices(conn)
-    problems = []
-    for tree, (wanted_pci, wanted_usb) in wanted:
-        problems += hostdev_problems(vm, pci, usb, wanted_pci, wanted_usb, managed_pci(tree))
+    problems = usb_unmatched(trees, usb, restore)
+    for tree, (wanted_pci, _selectors) in wanted:
+        picked = [usb_picked(source, usb) for source in tree.xpath(USB_SOURCES)]
+        problems += hostdev_problems(vm, pci, usb, wanted_pci, picked, managed_pci(tree))
     if problems:
         unique = list({util.render(m["text"], m["values"], str): m for m in problems}.values())
         raise util.OperationError(gettext_noop("%(problems)s"), problems=unique)

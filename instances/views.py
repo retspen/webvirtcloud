@@ -49,6 +49,7 @@ from libvirt import (VIR_DOMAIN_PAUSED,
                      VIR_ERR_NO_SUPPORT,
                      libvirtError)
 from logs.audit import audit, audit_vm, failed_vm
+from lxml import etree
 from operations import claims, jobs
 from operations.utils import HOST_BUSY, busy_message, summary
 from webvirtcloud.middleware import error_text, same_origin_referer
@@ -57,7 +58,7 @@ from vrtManager.connection import CONNECT_TIMEOUT
 from vrtManager.create import cpu_choices, wvmCreate
 from vrtManager.instance import USAGE_MAX_WINDOW, wvmInstances
 from vrtManager.interface import wvmInterface
-from vrtManager.nodedevs import device_names, hostdev_problems, node_devices, pci_problems
+from vrtManager.nodedevs import device_names, hostdev_problems, node_devices, pci_problems, usb_unmatched
 from vrtManager.storage import rbd_source_children, wvmStorage
 from vrtManager.util import randomPasswd
 
@@ -2118,7 +2119,10 @@ def host_devices(request, pk):
         pci, usb = _host_devices(instance)
         domain = instance.proxy.instance
         state = domain.info()[0]
+        # the VM's next start takes its USB devices as its definition names them
+        unmatched = usb_unmatched([etree.fromstring(domain.XMLDesc(VIR_DOMAIN_XML_INACTIVE))], usb)
         context = {"instance": instance, "host_pci": pci, "host_usb": usb, "running": state == VIR_DOMAIN_RUNNING,
+                   "unmatched": [util.render(m["text"], m["values"], _) for m in unmatched],
                    # paused, or with a saved state the VM would start from without the change
                    "pci_frozen": state not in (VIR_DOMAIN_RUNNING, VIR_DOMAIN_SHUTOFF) or domain.hasManagedSaveImage(0)}
     except libvirtError as err:
@@ -2134,9 +2138,10 @@ def add_usb_hostdev(request, pk):
     claim, so no other VM gets it meanwhile."""
     instance = get_instance(request.user, pk)
     chosen = request.POST.get("usb_device", "")
-    device = next((d for d in _host_devices(instance)[1] if f"{d['bus']}/{d['device']}" == chosen), None)
+    # the address and the IDs: a device replugged meanwhile may have another's address
+    device = next((d for d in _host_devices(instance)[1] if f"{d['bus']}/{d['device']}/{d['ids']}" == chosen), None)
     if device is None:
-        messages.error(request, _("The host has no USB device %(device)s") % {"device": chosen})
+        messages.error(request, _("The host has no USB device %(device)s; reload the page") % {"device": chosen})
     elif device["problems"]:
         messages.error(request, "; ".join(device["problems"]))
     else:

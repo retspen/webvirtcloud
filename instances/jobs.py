@@ -533,7 +533,7 @@ class RevertSnapshot(Kind):
         # a revert gives the VM the host devices it had then: not one given since to another VM
         has_hostdevs, definitions = _snapshot_definitions(proxy, op.params)
         if has_hostdevs:
-            check_hostdevs(proxy, proxy.instance.name(), definitions)
+            check_hostdevs(proxy, proxy.instance.name(), definitions, restore=True)
 
     def run(self, op, ctx):
         proxy = _proxy(_instance(op.params["instance"]))

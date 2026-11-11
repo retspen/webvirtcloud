@@ -6,11 +6,12 @@ is a mock, libvirt's test driver has no node devices."""
 from unittest.mock import MagicMock
 
 import libvirt
+from lxml import etree
 from django.test import SimpleTestCase
 
 from vrtManager import util
 from vrtManager.connection import wvmConnect
-from vrtManager.nodedevs import hostdev_problems, node_devices, pci_address
+from vrtManager.nodedevs import check_hostdevs, hostdev_problems, node_devices, pci_address, usb_unmatched
 from vrtManager.tests.fakes import NODES, PCI_0A, USB_1_3, node, pci, vm
 
 PCI_01 = "<hostdev mode='subsystem' type='pci'><source><address domain='0x0000' bus='0x00' slot='0x01' function='0x0'/></source></hostdev>"
@@ -24,6 +25,61 @@ def devices(nodes=NODES, domains=()):
     conn.wvm = MagicMock(**{"listAllDevices.return_value": [node(*n) for n in nodes],
                             "listAllDomains.return_value": list(domains)})
     return node_devices(conn)
+
+
+class UsbUnmatchedTests(SimpleTestCase):
+    """libvirt does not start a VM whose USB device the host does not have
+    as named: one replugged gets another address, a second of a model makes
+    a model-only name ambiguous."""
+
+    def problems(self, source, restore=False):
+        tree = etree.fromstring(f"<domain><devices>{source}</devices></domain>")
+        return [util.render(m["text"], m["values"], str) for m in usb_unmatched([tree], devices()[1], restore)]
+
+    def test_a_device_named_as_the_host_has_it_is_fine(self):
+        self.assertEqual(self.problems(USB_1_3), [])
+
+    def test_a_device_not_at_its_address_is_not_on_the_host(self):
+        gone = USB_MODEL.replace("</source>", "<address bus='1' device='9'/></source>")
+        self.assertEqual(self.problems(gone), ["USB device 0627:0001 at 1/9 is not on the host"])
+        optional = gone.replace("<source>", "<source startupPolicy='optional'>")
+        self.assertEqual(self.problems(optional), [])
+
+    def test_a_model_the_host_has_two_of_needs_an_address(self):
+        self.assertEqual(self.problems(USB_MODEL),
+                         ["the host has 2 of USB device 0627:0001: name the one to give by its address"])
+
+    def test_a_restore_drops_a_missing_requisite_device(self):
+        requisite = USB_MODEL.replace("<source>", "<source startupPolicy='requisite'>")
+        requisite = requisite.replace("</source>", "<address bus='1' device='9'/></source>")
+        self.assertEqual(self.problems(requisite), ["USB device 0627:0001 at 1/9 is not on the host"])
+        self.assertEqual(self.problems(requisite, restore=True), [])
+
+    def test_an_address_libvirt_found_is_tried_then_the_model(self):
+        found = USB_MODEL.replace("<source>", "<source autoAddress='yes'>")
+        self.assertEqual(self.problems(found.replace("</source>", "<address bus='1' device='3'/></source>")), [])
+        self.assertEqual(self.problems(found.replace("</source>", "<address bus='1' device='9'/></source>")),
+                         ["the host has 2 of USB device 0627:0001: name the one to give by its address"])
+
+    def test_a_found_address_still_there_is_the_device_checked(self):
+        conn = wvmConnect.__new__(wvmConnect)
+        conn.wvm = MagicMock(**{"listAllDevices.return_value": [node(*n) for n in NODES],
+                                "listAllDomains.return_value": [vm("db-1", USB_1_3)]})
+        found = USB_MODEL.replace("<source>", "<source autoAddress='yes'>").replace("</source>", "<address bus='1' device='2'/></source>")
+        check_hostdevs(conn, "kiosk-1", [etree.fromstring(f"<domain><devices>{found}</devices></domain>")], restore=True)
+
+    def test_ids_in_decimal_are_read_as_libvirt_reads_them(self):
+        decimal = "<hostdev mode='subsystem' type='usb'><source><vendor id='1575'/><product id='1'/>" \
+                  "<address bus='1' device='3'/></source></hostdev>"
+        self.assertEqual(self.problems(decimal), [])
+        self.assertEqual(self.problems(decimal.replace("'1575'", "' +0x0627'")), [])
+
+    def test_a_revert_checks_them_too(self):
+        conn = wvmConnect.__new__(wvmConnect)
+        conn.wvm = MagicMock(**{"listAllDevices.return_value": [node(*n) for n in NODES], "listAllDomains.return_value": []})
+        tree = etree.fromstring(f"<domain><devices>{USB_MODEL}</devices></domain>")
+        with self.assertRaisesRegex(util.OperationError, "the host has 2 of USB device 0627:0001"):
+            check_hostdevs(conn, "kiosk-1", [tree])
 
 
 class NodeDevicesTests(SimpleTestCase):
