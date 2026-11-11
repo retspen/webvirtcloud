@@ -87,6 +87,10 @@ class Instance(models.Model):
         return self.proxy.get_autostart()
 
     @cached_property
+    def persistent(self) -> bool:
+        return self.proxy.instance.isPersistent()
+
+    @cached_property
     def bootmenu(self) -> bool:
         return self.proxy.get_bootmenu()
 

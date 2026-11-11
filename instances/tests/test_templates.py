@@ -87,7 +87,7 @@ class TemplateFlagTestCase(TestCase):
         for user in (self.owner, self.staff_owner):
             UserInstance.objects.create(instance=self.instance, user=user, is_change=True)
 
-    def _post(self, user, action, data, status=302):
+    def _post(self, user, action, data, status=302, autostart=0):
         self.client.force_login(user)
         with patch("instances.models.wvmInstance") as wvm:
             wvm.return_value.get_status.return_value = 5
@@ -95,9 +95,11 @@ class TemplateFlagTestCase(TestCase):
             wvm.return_value.get_vcpu.return_value = 1
             wvm.return_value.get_memory.return_value = 1024
             wvm.return_value.get_disk_devices.return_value = []
+            wvm.return_value.get_autostart.return_value = autostart
             res = self.client.post(reverse(f"instances:{action}", args=[self.instance.id]), data)
         self.assertEqual(res.status_code, status)
         self.instance.refresh_from_db()
+        return wvm.return_value
 
     def _make_template(self):
         self.instance.is_template = True
@@ -121,6 +123,13 @@ class TemplateFlagTestCase(TestCase):
         self.assertFalse(self.instance.is_template)
         self.assertEqual(list(Logs.objects.filter(message__startswith="VM").order_by("id").values_list("message", "success")),
                          [("VM tpl-vm: mark as template", True), ("VM tpl-vm: unmark as template", True)])
+
+    def test_a_template_does_not_start_with_the_host(self):
+        proxy = self._post(self.superuser, "set_template", {"is_template": "True"}, autostart=1)
+        self.assertTrue(self.instance.is_template)
+        proxy.set_autostart.assert_called_once_with(0)
+        proxy = self._post(self.superuser, "set_autostart", {})
+        proxy.set_autostart.assert_not_called()
 
     def test_superuser_can_unmark_template(self):
         self._make_template()

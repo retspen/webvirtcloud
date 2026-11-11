@@ -48,6 +48,15 @@ class VMRowTests(TestCase):
         self.proxy.start.assert_called_once_with(libvirt.VIR_DOMAIN_START_FORCE_BOOT)
         self.assertEqual(self.rows(), [("VM vm: power on without the saved state", True)])
 
+    def test_a_power_cycle_that_does_not_start_again_says_the_vm_stays_off(self):
+        self.proxy.start.side_effect = libvirtError("Cannot access storage file")
+        response = self.post("powercycle")
+        self.proxy.force_shutdown.assert_called_once_with()
+        self.assertEqual(self.rows(), [("VM vm: power cycle: forced off, the start failed: Cannot access storage file",
+                                        False)])
+        self.assertIn("The VM was forced off but did not start again: it stays off.",
+                      [m.message for m in get_messages(response.wsgi_request)])
+
     def test_a_raised_failure_writes_a_failed_row(self):
         self.proxy.start.side_effect = libvirtError("Requested operation is not valid")
         self.post("poweron")

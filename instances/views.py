@@ -825,9 +825,14 @@ def powercycle(request, pk):
     if instance.is_template:
         messages.warning(request, _("Templates cannot be started."))
     else:
-        with audit_vm(request, instance, "power cycle"):
+        with audit_vm(request, instance, "power cycle") as entry:
             instance.proxy.force_shutdown()
-            instance.proxy.start()
+            try:
+                instance.proxy.start()
+            except Exception:
+                entry.action = "power cycle: forced off, the start failed"
+                messages.warning(request, _("The VM was forced off but did not start again: it stays off."))
+                raise
     return get_safe_redirect(
         request, default=reverse("instances:instance", args=[instance.id])
     )
@@ -1786,6 +1791,9 @@ def set_vcpu_hotplug(request, pk):
 @serialize_instance_mutation
 def set_autostart(request, pk):
     instance = get_instance(request.user, pk)
+    if instance.is_template:
+        messages.error(request, _("Templates cannot be started."))
+        return _back(request, pk, "boot_opt")
     with audit_vm(request, instance, "enable autostart"):
         instance.proxy.set_autostart(1)
     return _back(request, pk, "boot_opt")
@@ -2406,6 +2414,8 @@ def set_template(request, pk):
                                                   instance_name=instance.name))
             return _back(request, pk, "options")
     with audit_vm(request, instance, "mark as template" if is_template else "unmark as template"):
+        if is_template and instance.autostart:  # the host would start it
+            instance.proxy.set_autostart(0)
         instance.is_template = is_template
         instance.save(update_fields=["is_template"])
     return _back(request, pk, "options")

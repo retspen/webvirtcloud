@@ -51,7 +51,7 @@ class PageControls:
             UserInstance.objects.create(instance=self.instance, user=user, **owner)
         return user
 
-    def controls(self, user, status=1, saved=False):
+    def controls(self, user, status=1, saved=False, persistent=True):
         self.client.force_login(user)
         with patch("instances.models.wvmInstance") as mock_wvm, patch.object(
             Compute, "status", new_callable=PropertyMock, return_value=True
@@ -76,6 +76,8 @@ class PageControls:
             proxy.get_console_type.return_value = "vnc"
             proxy.get_status.return_value = status
             proxy.get_managed_save_image.return_value = saved
+            proxy.get_autostart.return_value = 0
+            proxy.instance.isPersistent.return_value = persistent
             response = self.client.get(reverse("instances:instance", args=[self.instance.id]))
         self.assertEqual(response.status_code, 200)
         self.last_page = response.content.decode()
@@ -235,6 +237,15 @@ class PageControlsTestCase(PageControls, TestCase):
         (fresh,) = tab.xpath(".//button[@name='fresh']")
         self.assertTrue(fresh.get("data-confirm"))
         self.assertEqual(fresh.getparent().get("action"), reverse("instances:poweron", args=[self.instance.id]))
+
+    def test_autostart_is_off_for_a_template_and_a_vm_defined_only_while_it_runs(self):
+        admin = get_user_model().objects.create_superuser("autostart_admin", "as@example.com", "x")
+        for template, persistent, disabled in ((False, True, False), (True, True, True), (False, False, True)):
+            with self.subTest(template=template, persistent=persistent):
+                Instance.objects.filter(pk=self.instance.pk).update(is_template=template)
+                self.controls(admin, status=5, persistent=persistent)
+                (switch,) = lxml_html.fromstring(self.last_page).xpath("//input[@id='autostart']")
+                self.assertEqual(switch.get("disabled") is not None, disabled)
 
     def test_the_power_tab_marks_the_current_state_or_names_another(self):
         admin = get_user_model().objects.create_superuser("power_strip_admin", "ps@example.com", "x")

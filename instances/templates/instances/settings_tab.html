@@ -117,10 +117,10 @@
                 <div class="row g-3">
                     <form class="col-12 col-md-6" action="{% if instance.autostart %}{% url 'instances:unset_autostart' instance.id %}{% else %}{% url 'instances:set_autostart' instance.id %}{% endif %}" method="post">{% csrf_token %}
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" id="autostart" aria-describedby="autostart-help"{% if instance.autostart %} checked{% endif %} data-submit-on-change>
+                            <input class="form-check-input" type="checkbox" role="switch" id="autostart" aria-describedby="autostart-help"{% if instance.autostart %} checked{% elif instance.is_template or not instance.persistent %} disabled{% endif %} data-submit-on-change>
                             <label class="form-check-label" for="autostart">{% trans "Autostart" %}</label>
                         </div>
-                        <p class="small text-body-secondary mb-0" id="autostart-help">{% trans "Start this VM when the host starts." %}</p>
+                        <p class="small text-body-secondary mb-0" id="autostart-help">{% if instance.autostart %}{% trans "Start this VM when the host starts." %}{% elif instance.is_template %}{% trans "A template is not started: clone it to make a VM." %}{% elif not instance.persistent %}{% trans "A VM that exists only while it runs does not start with the host." %}{% else %}{% trans "Start this VM when the host starts." %}{% endif %}</p>
                     </form>
                     <form class="col-12 col-md-6" action="{% if instance.config_bootmenu %}{% url 'instances:unset_bootmenu' instance.id %}{% else %}{% url 'instances:set_bootmenu' instance.id %}{% endif %}" method="post">{% csrf_token %}
                         <div class="form-check form-switch">
