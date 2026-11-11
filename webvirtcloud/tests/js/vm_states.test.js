@@ -32,12 +32,18 @@ eval(fs.readFileSync(process.argv[2], "utf8"));
 eval(fs.readFileSync(process.argv[3], "utf8"));
 
 const base = { "1": { ok: true, vms: { "u-a": ["web", 1], "u-b": ["db", 5] } }, "2": { ok: false } };
-followVmStates("/instances/states/?compute=1");
-
-// the first answer, asked at once, is where it starts; the same VMs in another order change nothing
+// a change made while the page was read: the first answer, asked at once, reloads
+followVmStates("/instances/states/?compute=1", { "1": { ok: true, vms: { "u-a": ["web", 1] } }, "2": { ok: false } });
 answer = { computes: base };
 advance(0);
+assert.strictEqual(window.reloads, 1, "the first answer differs from the page");
+timers = []; window.reloads = 0; asked = [];
+
+// the page's states are where it starts; the same VMs in another order change nothing
+followVmStates("/instances/states/?compute=1", base);
+advance(0);
 assert.strictEqual(asked.length, 1, "asks at once");
+assert.strictEqual(window.reloads, 0, "the first answer is the page");
 answer = { computes: { "2": { ok: false }, "1": { ok: true, vms: { "u-b": ["db", 5], "u-a": ["web", 1] } } } };
 advance(5000);
 assert.deepStrictEqual(asked, ["/instances/states/?compute=1", "/instances/states/?compute=1"], "asks every 5 s");

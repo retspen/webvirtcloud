@@ -58,7 +58,7 @@ class StateTests(TestCase):
 
         self.client.force_login(user)
         props = {"status": True, "connection_error": None, "cpu_count": 1, "ram_size": 1, "ram_usage": 0,
-                 "proxy": SimpleNamespace(get_domain_rows=lambda uuids=None: rows)}
+                 "proxy": SimpleNamespace(get_domain_rows=lambda uuids=None: rows, get_domain_states=dict)}
         patches = [patch.object(Compute, k, new_callable=PropertyMock, return_value=v) for k, v in props.items()]
         patches += [patch("instances.views.refresh_instance_database"), patch("computes.views.utils.refresh_instance_database")]
         for p in patches:

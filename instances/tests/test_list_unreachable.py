@@ -50,7 +50,7 @@ class UnreachableListTests(TestCase):
             patch("instances.views.refresh_instance_database"),
             patch("computes.views.utils.refresh_instance_database"),
             patch.object(Compute, "proxy", new_callable=PropertyMock,
-                         return_value=SimpleNamespace(get_domain_rows=domain_rows)),
+                         return_value=SimpleNamespace(get_domain_rows=domain_rows, get_domain_states=dict)),
         ]
         for p in patches:
             p.start()
@@ -85,7 +85,7 @@ class UnreachableListTests(TestCase):
                 patch.object(Compute, "connection_error", new_callable=PropertyMock, return_value=None), \
                 patch("instances.views.refresh_instance_database"), \
                 patch.object(Compute, "proxy", new_callable=PropertyMock, return_value=type("P", (), {
-                    "get_domain_rows": lambda self, uuids=None: {}, "get_memory_usage": lambda self: gone(),
+                    "get_domain_rows": lambda self, uuids=None: {}, "get_domain_states": lambda self: {}, "get_memory_usage": lambda self: gone(),
                     "host_info": property(lambda self: gone())})()):
             response = self.client.get(reverse("instances:index"))
         self.assertEqual(response.status_code, 200)

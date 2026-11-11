@@ -11,7 +11,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.debug import sensitive_post_parameters
 from instances.models import Instance
-from instances.utils import read_list_rows
+from instances.utils import read_list_rows, vm_states
 from libvirt import libvirtError
 from logs.audit import audit, changed_fields, snapshot
 from operations import claims
@@ -136,7 +136,8 @@ def overview(request, compute_id):
 @superuser_only
 def instances(request, compute_id):
     compute = get_object_or_404(Compute, pk=compute_id)
-
+    # read first: the poll's first answer then tells a change made while the page was read
+    states = vm_states(request.user, [compute])
     utils.refresh_instance_database(compute)
     instances = list(Instance.objects.filter(compute=compute).order_by("name").prefetch_related("userinstance_set"))
     read_list_rows(instances)
@@ -144,7 +145,7 @@ def instances(request, compute_id):
     return render(
         request, "computes/instances.html",
         {"compute": compute, "instances": instances, "job_resource": claims.compute_key(compute.id),
-         "states_url": reverse("instances:states") + f"?compute={compute.id}"},
+         "states_url": reverse("instances:states") + f"?compute={compute.id}", "vm_states": states},
     )
 
 

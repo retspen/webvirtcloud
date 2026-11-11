@@ -80,6 +80,8 @@ def index(request):
 
     # a user who sees no hosts makes the panel read only those of their own VMs
     computes = _listed_computes(request.user, list(Compute.objects.all().order_by("name")))
+    # read first: the poll's first answer then tells a change made while the page was read
+    vm_states = utils.vm_states(request.user, computes)
     for compute in computes:
         refresh_instance_database(compute)
 
@@ -109,7 +111,7 @@ def index(request):
          "reachable_computes": [c for c in computes if c.status is True and c.ram_usage is not None],
          "unreachable_computes": [c for c in computes if c.status is not True],
          "states": [label for label, _color in STATES.values()] + [UNKNOWN[0]],
-         "states_url": reverse("instances:states")},
+         "states_url": reverse("instances:states"), "vm_states": vm_states},
     )
 
 
