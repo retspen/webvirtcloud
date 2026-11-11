@@ -72,6 +72,37 @@ class UsbHostdevTests(SimpleTestCase):
                 proxy.add_usb_hostdev("0x0627", "0x0001")
             proxy.instance.attachDeviceFlags.assert_not_called()
 
+    def test_a_vm_with_a_saved_state_keeps_its_usb_devices(self):
+        proxy = vm(domain(CONTROLLER), domain(CONTROLLER, by_model()), active=False)
+        proxy.instance.hasManagedSaveImage.return_value = 1
+        for change in (lambda: proxy.add_usb_hostdev("0x0627", "0x0001"),
+                       lambda: proxy.delete_usb_hostdev(("0x0627", "0x0001", None))):
+            with self.assertRaisesRegex(OperationError, "saved state does not change its USB devices"):
+                change()
+        proxy.instance.attachDeviceFlags.assert_not_called()
+        proxy.instance.detachDeviceFlags.assert_not_called()
+
+    def test_a_usb_change_that_fails_half_way_says_where_the_device_is(self):
+        # the running VM let it go, its next start's removal failed
+        xml = {"running": domain(CONTROLLER, by_model("<address bus='1' device='3'/>")),
+               "saved": domain(CONTROLLER, by_model("<address bus='1' device='3'/>"))}
+        proxy = vm("", "")
+        proxy.instance.XMLDesc.side_effect = lambda flags=0: xml["saved" if flags & libvirt.VIR_DOMAIN_XML_INACTIVE else "running"]
+
+        def detach(_xml, affect):
+            if affect == libvirt.VIR_DOMAIN_AFFECT_CONFIG:
+                raise libvirt.libvirtError("cannot save the definition")
+            xml["running"] = domain(CONTROLLER)
+        proxy.instance.detachDeviceFlags.side_effect = detach
+        with self.assertRaisesRegex(OperationError, "cannot save the definition; USB device 0627:0001 at 1/3: "
+                                                    "the running VM does not have it, its next start has it"):
+            proxy.delete_usb_hostdev(("0x0627", "0x0001", (1, 3)))
+        # a hot plug: the running VM got it, its next start did not
+        xml["running"], xml["saved"] = domain(CONTROLLER, by_model("<address bus='1' device='3'/>")), domain(CONTROLLER)
+        proxy.instance.attachDeviceFlags.side_effect = libvirt.libvirtError("cannot save the definition")
+        with self.assertRaisesRegex(OperationError, "the running VM has it, its next start does not have it"):
+            proxy.add_usb_hostdev("0x0627", "0x0001", (1, 3))
+
     def test_a_device_the_host_has_one_of_is_given_by_model(self):
         proxy = vm(domain(CONTROLLER), domain(CONTROLLER))
         proxy.add_usb_hostdev("0x0627", "0x0001")

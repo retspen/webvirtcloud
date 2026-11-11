@@ -22,6 +22,7 @@ from libvirt import libvirtError
 from accounts.models import UserInstance
 from appsettings.models import AppSettings
 from instances.models import Instance
+from vrtManager.nodedevs import HostDevicesRefused
 from vrtManager.util import ConnectionFailed, HostBusy, OperationError, render
 
 from . import jobs
@@ -57,6 +58,8 @@ HOST_BUSY = gettext_noop("The host of this virtual machine is busy with other re
 # a job's checks in the worker (precheck) refuse with Django's exceptions, which have no text
 NOT_ALLOWED = gettext_noop("You may no longer do this.")
 NOT_FOUND = gettext_noop("The virtual machine is no longer in the panel.")
+DEVICES_REFUSED = gettext_noop("A host device of this virtual machine is not free on its host now; an administrator "
+                               "can see why on its Host devices tab.")
 
 BOUNDS = {"WORKER_CONCURRENCY": (1, 16, 4), "JOB_RETENTION_DAYS": (1, 3650, 30), "LOG_RETENTION_DAYS": (1, 3650, 365)}
 
@@ -103,7 +106,8 @@ def words(messages):
 
 def public_error(exception):
     """The error for users who do not see the hosts: a connection error names
-    the host and how it is reached, so they learn only that it cannot be reached."""
+    the host and how it is reached, so they learn only that it cannot be
+    reached; a host device refusal names other VMs and what the host has."""
     connection_error = isinstance(exception, ConnectionFailed) or (
         isinstance(exception, libvirtError)
         and exception.get_error_domain() in TRANSPORT_ERROR_DOMAINS
@@ -115,6 +119,8 @@ def public_error(exception):
         return say(NOT_ALLOWED)
     if isinstance(exception, Http404):
         return say(NOT_FOUND)
+    if isinstance(exception, HostDevicesRefused):
+        return say(DEVICES_REFUSED)
     return say(UNREACHABLE) if connection_error else said(exception)
 
 

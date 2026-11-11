@@ -63,7 +63,8 @@ def host_resources(name, nodes, children):
         elif cap.get("type") == "drm" and cap.findtext("type") == "primary":
             found.append(nodes[child].xpath("string(devnode[@type='dev'])"))
         elif cap.get("type") == "usb_device" and not usb_hub(child, nodes, children):
-            found.append(f"USB device {cap.findtext('bus')}/{cap.findtext('device')} ({cap.findtext('product')})")
+            found.append(_("USB device %(bus)s/%(device)s (%(product)s)") % {
+                "bus": cap.findtext("bus"), "device": cap.findtext("device"), "product": cap.findtext("product")})
         found.extend(host_resources(child, nodes, children))
     return found
 
@@ -134,6 +135,15 @@ def usb_named(selector, model, address):
 # device's label is one too, put in each problem of it
 def pci_label(address):
     return [util.message(gettext_noop("PCI device %(address)s"), address=address)]
+
+
+def usb_selector_label(selector):
+    """How a VM's definition names a USB device (usb_selector): by its IDs, and its address where given."""
+    vendor, product, address = selector
+    ids = f"{vendor[2:]}:{product[2:]}"
+    if address is None:
+        return [util.message(gettext_noop("USB device %(ids)s"), ids=ids)]
+    return [util.message(gettext_noop("USB device %(ids)s at %(bus)s/%(device)s"), ids=ids, bus=address[0], device=address[1])]
 
 
 def usb_label(device):
@@ -232,13 +242,7 @@ def usb_unmatched(trees, usb, restore=False):
         for source in tree.xpath(USB_SOURCES):
             picked = usb_picked(source, usb)
             matches = [device for device in usb if usb_named(picked, device["model"], (device["bus"], device["device"]))]
-            vendor, product, given = usb_selector(source)
-            ids = f"{vendor[2:]}:{product[2:]}"
-            if given is None:
-                label = [util.message(gettext_noop("USB device %(ids)s"), ids=ids)]
-            else:
-                label = [util.message(gettext_noop("USB device %(ids)s at %(bus)s/%(device)s"), ids=ids,
-                                      bus=given[0], device=given[1])]
+            label = usb_selector_label(usb_selector(source))
             if not matches and source.get("startupPolicy") not in dropped:
                 problems.append(util.message(gettext_noop("%(device)s is not on the host"), device=label))
             elif len(matches) > 1:
@@ -387,6 +391,11 @@ def device_names(conn):
     return names
 
 
+class HostDevicesRefused(util.OperationError):
+    """check_hostdevs's refusal: its reasons name other VMs and what the host
+    has, for administrators only (operations.utils.public_error)."""
+
+
 def check_hostdevs(conn, vm, trees, restore=False):
     """Refuses the host devices the definitions trees give the VM named vm,
     on the host of conn, when they cannot be (hostdev_problems): each
@@ -402,4 +411,4 @@ def check_hostdevs(conn, vm, trees, restore=False):
         problems += hostdev_problems(vm, pci, usb, wanted_pci, picked, managed_pci(tree))
     if problems:
         unique = list({util.render(m["text"], m["values"], str): m for m in problems}.values())
-        raise util.OperationError(gettext_noop("%(problems)s"), problems=unique)
+        raise HostDevicesRefused(gettext_noop("%(problems)s"), problems=unique)

@@ -115,6 +115,15 @@ class StartCheckTests(SimpleTestCase):
             self.proxy(gone, saved=gone).check_start_hostdevs(restore=False)
 
 
+class ResourceLanguageTests(SimpleTestCase):
+    def test_a_usb_device_the_host_has_is_named_in_the_reader_s_language(self):
+        from django.utils import translation
+
+        with translation.override("tr"):
+            pci_devices, _ = devices()
+        self.assertEqual(pci_devices[-1]["resources"], ["USB aygıtı 1/2 (QEMU Tablet)", "USB aygıtı 1/3 (QEMU Tablet)"])
+
+
 class NodeDevicesTests(SimpleTestCase):
     def test_pci_devices_by_group_with_what_the_host_has_on_them(self):
         pci_devices, _ = devices()

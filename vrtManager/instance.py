@@ -72,7 +72,7 @@ from lxml import etree
 
 from vrtManager import util
 from vrtManager.connection import NVRAM_DIR, wvmConnect
-from vrtManager.nodedevs import check_hostdevs, pci_address, usb_selector
+from vrtManager.nodedevs import check_hostdevs, pci_address, pci_label, usb_selector, usb_selector_label
 from vrtManager.storage import wvmStorage, wvmStorages
 
 logger = logging.getLogger(__name__)
@@ -2903,28 +2903,34 @@ class wvmInstance(wvmConnect):
         return status == VIR_DOMAIN_RUNNING
 
     def _pci_outcome(self, address, err):
-        """An OperationError with err and where the PCI device at address is
-        now: in the running VM, in its next start; the outcome is unknown
-        when the VM cannot be read."""
+        """_hostdev_outcome of the PCI device at address."""
+        return self._hostdev_outcome(pci_label(address), lambda flags: self._pci_hostdev(address, flags) is not None, err)
+
+    def _usb_outcome(self, selector, err):
+        """_hostdev_outcome of the USB device of selector (usb_selector)."""
+        return self._hostdev_outcome(usb_selector_label(selector),
+                                     lambda flags: any(own == selector for _e, own in self._usb_hostdevs(flags)), err)
+
+    def _hostdev_outcome(self, device, has, err):
+        """An OperationError with err and where the host device (its label)
+        is now, as has(XMLDesc flags) tells: in the running VM, in its next
+        start; the outcome is unknown when the VM cannot be read."""
         try:
             running = self.instance.isActive()
-            now = running and self._pci_hostdev(address, VIR_DOMAIN_XML_SECURE) is not None
-            later = self._pci_hostdev(address) is not None
+            now = running and has(VIR_DOMAIN_XML_SECURE)
+            later = has(PERSISTENT_XML)
         except libvirtError:
-            return util.OperationError(gettext_noop("%(err)s; whether the VM has PCI device %(address)s now is not known"), err=err, address=address)
+            return util.OperationError(gettext_noop("%(err)s; whether the VM has %(device)s now is not known"), err=err, device=device)
         outcome = {
-            (False, True): gettext_noop("%(err)s; PCI device %(address)s: the VM is not running, its next start has it"),
-            (False, False): gettext_noop(
-                "%(err)s; PCI device %(address)s: the VM is not running, its next start does not have it"),
-            (True, True): gettext_noop("%(err)s; PCI device %(address)s: the running VM has it, its next start has it"),
-            (True, False): gettext_noop(
-                "%(err)s; PCI device %(address)s: the running VM has it, its next start does not have it"),
-            (None, True): gettext_noop(
-                "%(err)s; PCI device %(address)s: the running VM does not have it, its next start has it"),
+            (False, True): gettext_noop("%(err)s; %(device)s: the VM is not running, its next start has it"),
+            (False, False): gettext_noop("%(err)s; %(device)s: the VM is not running, its next start does not have it"),
+            (True, True): gettext_noop("%(err)s; %(device)s: the running VM has it, its next start has it"),
+            (True, False): gettext_noop("%(err)s; %(device)s: the running VM has it, its next start does not have it"),
+            (None, True): gettext_noop("%(err)s; %(device)s: the running VM does not have it, its next start has it"),
             (None, False): gettext_noop(
-                "%(err)s; PCI device %(address)s: the running VM does not have it, its next start does not have it"),
+                "%(err)s; %(device)s: the running VM does not have it, its next start does not have it"),
         }[(now or None) if running else False, later]
-        return util.OperationError(outcome, err=err, address=address)
+        return util.OperationError(outcome, err=err, device=device)
 
     def add_pci_hostdev(self, address):
         """Gives the VM the host's PCI device at address (0000:05:00.0), for
@@ -2971,7 +2977,10 @@ class wvmInstance(wvmConnect):
     def add_usb_hostdev(self, vendor, product, address=None):
         """Gives the VM the host's USB device of vendor and product, at
         address (bus, device) when given: the host has more than one of the
-        model. Refused without a USB controller."""
+        model. Refused without a USB controller, and with a saved state (it
+        would start without the change). A hot plug that fails says where
+        the device is."""
+        self._refuse_saved_usb()
         for xml_flags, _ in self._definitions():
             if not etree.fromstring(self._XMLDesc(xml_flags)).xpath("devices/controller[@type='usb'][not(@model='none')]"):
                 raise util.OperationError(gettext_noop("The VM has no USB controller"))
@@ -2981,17 +2990,32 @@ class wvmInstance(wvmConnect):
         etree.SubElement(source, "product", id=product)
         if address:
             etree.SubElement(source, "address", bus=str(address[0]), device=str(address[1]))
-        self._attach_device(etree.tostring(hostdev, encoding="unicode"))
+        try:
+            self._attach_device(etree.tostring(hostdev, encoding="unicode"))
+        except libvirtError as err:
+            if not self.instance.isActive():
+                raise  # one definition: unchanged
+            raise self._usb_outcome(usb_selector(source), err) from None
+
+    def _refuse_saved_usb(self):
+        if self.instance.hasManagedSaveImage(0):
+            raise util.OperationError(gettext_noop(
+                "A VM with a saved state does not change its USB devices: start it, or start it without its saved state"))
 
     def delete_usb_hostdev(self, selector):
         """Takes the USB host device of selector (usb_selector) from each
-        definition that has it, as that definition describes it."""
+        definition that has it, as that definition describes it; one that
+        fails says where the device is."""
+        self._refuse_saved_usb()
         found = False
         for xml_flags, affect in self._definitions():
             for element, own in self._usb_hostdevs(xml_flags):
                 if own == selector:
                     found = True
-                    self.instance.detachDeviceFlags(etree.tostring(element, encoding="unicode"), affect)
+                    try:
+                        self.instance.detachDeviceFlags(etree.tostring(element, encoding="unicode"), affect)
+                    except libvirtError as err:
+                        raise self._usb_outcome(selector, err) from None
         if not found:
             raise util.OperationError(gettext_noop("The VM has no such USB device"))
 

@@ -12,3 +12,12 @@ class PublicErrorTests(SimpleTestCase):
         self.assertEqual(public_error_text(PermissionDenied()), "You may no longer do this.")
         self.assertEqual(public_error_text(Http404("No Instance matches the given query.")),
                          "The virtual machine is no longer in the panel.")
+
+    def test_a_host_device_refusal_names_no_other_vm(self):
+        from vrtManager.nodedevs import HostDevicesRefused
+        from vrtManager.util import message
+
+        refused = HostDevicesRefused("%(problems)s", problems=[message("%(device)s is given to %(vms)s",
+                                                                       device="PCI device 0000:00:0a.0", vms="private-db-1")])
+        self.assertNotIn("private-db-1", public_error_text(refused))
+        self.assertIn("Host devices tab", public_error_text(refused))

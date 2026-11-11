@@ -2134,10 +2134,10 @@ def host_devices(request, pk):
         state = domain.info()[0]
         # the VM's next start takes its USB devices as its definition names them
         unmatched = usb_unmatched([etree.fromstring(domain.XMLDesc(VIR_DOMAIN_XML_INACTIVE))], usb)
+        saved = domain.hasManagedSaveImage(0)  # the VM would start from it without the change
         context = {"instance": instance, "host_pci": pci, "host_usb": usb, "running": state == VIR_DOMAIN_RUNNING,
-                   "unmatched": [util.render(m["text"], m["values"], _) for m in unmatched],
-                   # paused, or with a saved state the VM would start from without the change
-                   "pci_frozen": state not in (VIR_DOMAIN_RUNNING, VIR_DOMAIN_SHUTOFF) or domain.hasManagedSaveImage(0)}
+                   "unmatched": [util.render(m["text"], m["values"], _) for m in unmatched], "usb_frozen": saved,
+                   "pci_frozen": state not in (VIR_DOMAIN_RUNNING, VIR_DOMAIN_SHUTOFF) or saved}
     except libvirtError as err:
         context = {"instance": instance, "error": err}
     return render(request, "instances/host_devices_form.html", context)
