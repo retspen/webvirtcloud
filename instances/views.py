@@ -1508,6 +1508,10 @@ def delete_vol(request, pk):
             _("Disk %(dev)s is not a storage volume of this instance") % {"dev": dev},
         )
         return _back(request, pk, "disks")
+    # its saved state starts with the disk: the volume must stay until then
+    if instance.proxy.get_managed_save_image():
+        messages.error(request, _("The VM has a saved state; start it or remove the saved state first"))
+        return _back(request, pk, "disks")
     # the page lists the persistent disks: delete only a volume both definitions use there
     if not any(d["dev"] == dev and d["path"] == disk["path"] for d in instance.config_disks):
         messages.error(

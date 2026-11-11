@@ -205,6 +205,18 @@ class PendingEditsTestCase(TestCase):
         proxy.detach_disk.assert_not_called()
         storage.return_value.del_volume.assert_not_called()
 
+    def test_the_disk_of_a_saved_state_is_not_deleted(self):
+        # the saved state starts with it
+        with patch("instances.models.wvmInstance") as wvm, patch("instances.views.wvmStorage") as storage:
+            proxy = wvm.return_value
+            proxy.get_managed_save_image.return_value = 1
+            proxy.get_disk_devices.side_effect = lambda **kw: [disk("vda", "default", "")]
+            response = self.client.post(reverse("instances:delete_vol", args=[self.instance.id]), {"dev": "vda"})
+        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)],
+                         ["The VM has a saved state; start it or remove the saved state first"])
+        proxy.detach_disk.assert_not_called()
+        storage.return_value.del_volume.assert_not_called()
+
     def test_the_options_and_cpu_forms_show_the_pending_definition(self):
         doc = self.page(get_vcpu=(2, 4), get_cur_vcpu=(1, 3), get_title=("old", "new"),
                         get_description=("live text", "pending text"))

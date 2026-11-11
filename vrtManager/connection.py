@@ -1123,8 +1123,9 @@ class wvmConnect(object):
 
     def paths_in_use(self, skip_uuid=None, own=()):
         """Paths (names for network disks) a domain uses as a disk or a
-        backing file of one, or as a file of its snapshots (overlays, memory,
-        the disks they were taken on); and the backing files of volumes.
+        backing file of one, in its saved state too, or as a file of its
+        snapshots (overlays, memory, the disks they were taken on); and the
+        backing files of volumes.
         skip_uuid leaves out one domain, own the volumes whose backing files
         do not count."""
         used = set()
@@ -1133,6 +1134,18 @@ class wvmConnect(object):
                 continue
             for flags in (0, libvirt.VIR_DOMAIN_XML_INACTIVE):
                 used.update(self._source_paths(etree.fromstring(dom.XMLDesc(flags))))
+            # a saved state starts with the disks it was saved with, detached since or not
+            if dom.hasManagedSaveImage(0):
+                try:
+                    saved = dom.managedSaveGetXMLDesc(0)
+                except libvirtError as err:
+                    if err.get_error_code() == libvirt.VIR_ERR_NO_DOMAIN:
+                        continue
+                    if err.get_error_code() != libvirt.VIR_ERR_OPERATION_INVALID:
+                        raise
+                    # the image went meanwhile: the VM may have started from it
+                    saved = dom.XMLDesc(0)
+                used.update(self._source_paths(etree.fromstring(saved)))
             for snap in dom.listAllSnapshots(0):
                 tree = etree.fromstring(snap.getXMLDesc(0))
                 used.update(tree.xpath("disks/disk/source/@file|memory/@file"))

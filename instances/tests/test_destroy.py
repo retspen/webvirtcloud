@@ -209,6 +209,7 @@ class DestroyOrderTestCase(TransactionTestCase):
         with patch("instances.models.wvmInstance") as wvm, patch("instances.views.wvmStorage") as storage:
             proxy = wvm.return_value
             proxy.get_disk_devices.return_value = [disk]
+            proxy.get_managed_save_image.return_value = 0
             proxy.paths_used_by_other_domains.return_value = set()
             proxy.wait_disk_detached.return_value = True
             storage.return_value.del_volume.side_effect = OperationError("Volume data.qcow2 is in use")

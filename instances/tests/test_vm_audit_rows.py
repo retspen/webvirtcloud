@@ -146,6 +146,7 @@ class VMRowTests(TestCase):
     def test_a_disk_delete_logs_the_detach_and_the_volume(self):
         disk = {"dev": "vdb", "path": "/pool/data.qcow2", "storage": "default", "image": "data.qcow2"}
         self.proxy.get_disk_devices.return_value = [disk]
+        self.proxy.get_managed_save_image.return_value = 0
         self.proxy.paths_used_by_other_domains.return_value = set()
         with patch("instances.views.wvmStorage"):
             self.proxy.wait_disk_detached.return_value = False

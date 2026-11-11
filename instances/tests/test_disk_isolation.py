@@ -109,6 +109,7 @@ class DiskViewsTenantIsolationTestCase(TestCase):
             "instances.views.wvmStorage"
         ) as mock_storage:
             mock_wvm.return_value.get_disk_devices.return_value = [VM_DISK]
+            mock_wvm.return_value.get_managed_save_image.return_value = 0
             res = self._post(
                 "delete_vol",
                 {"storage": "other-pool", "name": "victim.qcow2", "dev": "vda"},

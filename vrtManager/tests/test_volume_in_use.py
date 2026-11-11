@@ -15,6 +15,7 @@ from vrtManager.storage import wvmStorage
 def domain(uuid, disks=(), snapshots=()):
     dom = MagicMock()
     dom.UUIDString.return_value = uuid
+    dom.hasManagedSaveImage.return_value = 0
     devices = "".join(f"<disk type='file' device='disk'><source file='{d}'/></disk>" for d in disks)
     dom.XMLDesc.return_value = f"<domain><devices>{devices}</devices></domain>"
     snaps = []
@@ -65,6 +66,30 @@ class PathsInUseTestCase(unittest.TestCase):
             conn.paths_in_use(),
             {"/pool/vm.now", "/pool/vm.s", "/pool/vm.s.mem", "/pool/vm.qcow2", "/pool/template.qcow2"},
         )
+
+    def test_a_disk_detached_since_the_vm_was_saved_is_in_use(self):
+        dom = domain("u1", ["/pool/vm.qcow2"])
+        dom.hasManagedSaveImage.return_value = 1
+        dom.managedSaveGetXMLDesc.return_value = (
+            "<domain><devices><disk type='file' device='disk'><source file='/pool/vm.qcow2'/></disk>"
+            "<disk type='file' device='disk'><source file='/pool/data.qcow2'/></disk></devices></domain>")
+        conn, _ = storage(domains=[dom])
+        self.assertEqual(conn.paths_in_use(), {"/pool/vm.qcow2", "/pool/data.qcow2"})
+
+    def test_a_saved_state_gone_meanwhile_counts_the_disks_the_vm_started_with(self):
+        dom = domain("u1", ["/pool/vm.qcow2"])
+        dom.hasManagedSaveImage.return_value = 1
+        error = libvirtError("no saved state")
+        error.get_error_code = lambda: libvirt.VIR_ERR_OPERATION_INVALID
+        dom.managedSaveGetXMLDesc.side_effect = error
+        conn, _ = storage(domains=[dom])
+        self.assertEqual(conn.paths_in_use(), {"/pool/vm.qcow2"})
+        self.assertEqual(dom.XMLDesc.call_args_list[-1].args, (0,))
+        # a VM removed meanwhile uses nothing
+        error.get_error_code = lambda: libvirt.VIR_ERR_NO_DOMAIN
+        dom.XMLDesc.reset_mock()
+        self.assertEqual(conn.paths_in_use(), {"/pool/vm.qcow2"})
+        self.assertEqual(dom.XMLDesc.call_count, 2)
 
     def test_one_domain_and_the_backing_files_of_own_volumes_can_be_left_out(self):
         conn, _ = storage(
