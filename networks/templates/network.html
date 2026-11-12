@@ -346,6 +346,8 @@
         <div class="modal-dialog">
             <form method="post" class="modal-content">{% csrf_token %}
                 <input type="hidden" name="original">
+                <input type="hidden" name="original_id">
+                <input type="hidden" name="original_name">
                 <div class="modal-header">
                     <h5 class="modal-title" id="FixedAddressLabel">{% trans "Fixed address" %}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>

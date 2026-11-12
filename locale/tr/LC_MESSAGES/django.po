@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-12 06:17+0000\n"
+"POT-Creation-Date: 2026-11-12 09:51+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -70,7 +70,7 @@ msgstr "Geçersiz anahtar"
 #: instances/templates/allinstances_index_nongrouped.html:6
 #: instances/templates/create_instance_w2.html:42
 #: interfaces/templates/interface.html:119 networks/templates/network.html:145
-#: networks/templates/network.html:370 nwfilters/templates/nwfilters.html:29
+#: networks/templates/network.html:372 nwfilters/templates/nwfilters.html:29
 #: storages/templates/storage.html:123 virtsecrets/forms.py:25
 #: virtsecrets/forms.py:27
 msgid "Name"
@@ -304,8 +304,8 @@ msgstr "Burada oturumunuz açık kalır; diğer oturumlarınız kapanır."
 #: interfaces/templates/create_iface_block.html:147
 #: networks/templates/add_network_qos.html:35
 #: networks/templates/create_net_block.html:126
-#: networks/templates/network.html:375 networks/templates/network.html:402
-#: networks/templates/network.html:441
+#: networks/templates/network.html:377 networks/templates/network.html:404
+#: networks/templates/network.html:443
 #: nwfilters/templates/create_nwfilter_block.html:33
 #: nwfilters/templates/nwfilter.html:178 nwfilters/templates/nwfilters.html:93
 #: operations/templates/operations/job.html:31
@@ -1907,12 +1907,12 @@ msgstr ""
 "sanal makinenin root parolasını ve SSH anahtarını bununla ayarlar; boş: bu "
 "sunucuda ayarlanamazlar"
 
-#: computes/models.py:176
+#: computes/models.py:179
 #, python-format
 msgid "This host is already added as %(name)s"
 msgstr "Bu sunucu zaten %(name)s olarak ekli"
 
-#: computes/models.py:179
+#: computes/models.py:182
 #, python-format
 msgid ""
 "The panel cannot reach the host to tell that its VMs are there: %(error)s"
@@ -1920,7 +1920,7 @@ msgstr ""
 "Panel sunucuya ulaşamadığı için VM'lerinin orada olduğunu doğrulayamıyor: "
 "%(error)s"
 
-#: computes/models.py:186
+#: computes/models.py:189
 msgid ""
 "The host its VMs are on is not known yet: change the connection when the "
 "panel has reached the host at its current one"
@@ -1928,7 +1928,7 @@ msgstr ""
 "VM'lerinin bulunduğu sunucu henüz bilinmiyor: bağlantıyı, panel sunucuya "
 "mevcut bağlantısından ulaştıktan sonra değiştirin"
 
-#: computes/models.py:189
+#: computes/models.py:192
 msgid "This is another host than the one its VMs are on: add it as a new host"
 msgstr ""
 "Bu, VM'lerinin bulunduğu sunucudan başka bir sunucu: yeni bir sunucu olarak "
@@ -2091,8 +2091,8 @@ msgstr "hiçbiri"
 #: instances/templates/instances/settings_tab.html:653
 #: instances/templates/instances/settings_tab.html:907
 #: networks/templates/add_network_qos.html:36
-#: networks/templates/network.html:336 networks/templates/network.html:376
-#: networks/templates/network.html:403 networks/templates/network.html:442
+#: networks/templates/network.html:336 networks/templates/network.html:378
+#: networks/templates/network.html:405 networks/templates/network.html:444
 #: nwfilters/templates/nwfilter.html:153 templates/common/form.html:28
 msgid "Save"
 msgstr "Kaydet"
@@ -2437,17 +2437,17 @@ msgstr ""
 "Sunucudaki /etc/default/webvirt-gstfsd içindeki GSTFSD_KEY değerinin 64 "
 "onaltılık karakterini girin"
 
-#: computes/views.py:108
+#: computes/views.py:122
 #, python-format
 msgid "The host did not answer within %(seconds)s seconds"
 msgstr "Sunucu %(seconds)s saniye içinde yanıt vermedi"
 
-#: computes/views.py:196
+#: computes/views.py:210
 #, python-format
 msgid "The host was saved, but the panel cannot connect to it: %(error)s"
 msgstr "Sunucu kaydedildi, ancak panel ona bağlanamıyor: %(error)s"
 
-#: computes/views.py:252
+#: computes/views.py:266
 #, python-format
 msgid ""
 "Its VMs keep running on the host and leave the panel; their owners are kept "
@@ -2626,8 +2626,8 @@ msgstr "Bağlan"
 #: interfaces/templates/create_iface_block.html:20
 #: networks/templates/add_network_qos.html:8
 #: networks/templates/create_net_block.html:20
-#: networks/templates/network.html:351 networks/templates/network.html:389
-#: networks/templates/network.html:415
+#: networks/templates/network.html:353 networks/templates/network.html:391
+#: networks/templates/network.html:417
 #: nwfilters/templates/create_nwfilter_block.html:17
 #: nwfilters/templates/nwfilter.html:165 nwfilters/templates/nwfilters.html:85
 #: storages/templates/create_stg_block.html:21
@@ -3609,7 +3609,7 @@ msgstr "Bul"
 
 #: instances/templates/allinstances.html:104
 #: interfaces/templates/interface.html:101 networks/templates/network.html:143
-#: networks/templates/network.html:199 networks/templates/network.html:361
+#: networks/templates/network.html:199 networks/templates/network.html:363
 #: nodedevs/templates/nodedevs.html:32
 msgid "Address"
 msgstr "Adres"
@@ -5316,12 +5316,12 @@ msgid "Migration route"
 msgstr "Taşıma yolu"
 
 #: instances/templates/instances/settings_tab.html:526
-#: networks/templates/network.html:393
+#: networks/templates/network.html:395
 msgid "From"
 msgstr "Başlangıç"
 
 #: instances/templates/instances/settings_tab.html:531
-#: networks/templates/network.html:397
+#: networks/templates/network.html:399
 msgid "To"
 msgstr "Bitiş"
 
@@ -6489,11 +6489,11 @@ msgstr ""
 msgid "Select a network interface and a QoS direction"
 msgstr "Bir ağ arabirimi ve bir QoS yönü seçin"
 
-#: instances/views.py:2244 vrtManager/network.py:454
+#: instances/views.py:2244 vrtManager/network.py:463
 msgid "QoS rates must be whole numbers"
 msgstr "QoS hızları tam sayı olmalıdır"
 
-#: instances/views.py:2251 networks/views.py:229
+#: instances/views.py:2251 networks/views.py:230
 #, python-format
 msgid "%(qos_dir)s QoS is set"
 msgstr "%(qos_dir)s QoS ayarlandı"
@@ -6506,7 +6506,7 @@ msgstr ""
 "%(qos_dir)s QoS ayarlandı. Çalışan bir sanal makine, kapatılıp açıldıktan "
 "sonra bunu alır."
 
-#: instances/views.py:2278 networks/views.py:255
+#: instances/views.py:2278 networks/views.py:256
 #, python-format
 msgid "%(qos_dir)s QoS is deleted"
 msgstr "%(qos_dir)s QoS silindi"
@@ -7045,7 +7045,7 @@ msgid "Bandwidth limit of eth%(nic)s"
 msgstr "eth%(nic)s bant genişliği sınırı"
 
 #: networks/templates/add_network_qos.html:13
-#: networks/templates/network.html:282 networks/templates/network.html:419
+#: networks/templates/network.html:282 networks/templates/network.html:421
 #: nwfilters/templates/nwfilter.html:97
 msgid "Direction"
 msgstr "Yön"
@@ -7059,17 +7059,17 @@ msgid "Outbound: from the VM"
 msgstr "Giden: sanal makineden"
 
 #: networks/templates/add_network_qos.html:20
-#: networks/templates/network.html:427
+#: networks/templates/network.html:429
 msgid "Average (KiB/s)"
 msgstr "Ortalama (KiB/s)"
 
 #: networks/templates/add_network_qos.html:24
-#: networks/templates/network.html:431
+#: networks/templates/network.html:433
 msgid "Peak (KiB/s)"
 msgstr "Tepe (KiB/s)"
 
 #: networks/templates/add_network_qos.html:28
-#: networks/templates/network.html:435
+#: networks/templates/network.html:437
 msgid "Burst (KiB)"
 msgstr "Ani yük (KiB)"
 
@@ -7258,11 +7258,11 @@ msgstr ""
 msgid "Stop the network to change its range"
 msgstr "Aralığını değiştirmek için ağı durdurun"
 
-#: networks/templates/network.html:89 networks/templates/network.html:388
+#: networks/templates/network.html:89 networks/templates/network.html:390
 msgid "DHCP range"
 msgstr "DHCP aralığı"
 
-#: networks/templates/network.html:95 networks/templates/network.html:355
+#: networks/templates/network.html:95 networks/templates/network.html:357
 msgid "Subnet"
 msgstr "Alt ağ"
 
@@ -7423,31 +7423,31 @@ msgstr ""
 msgid "Network XML"
 msgstr "Ağ XML'i"
 
-#: networks/templates/network.html:350
+#: networks/templates/network.html:352
 msgid "Fixed address"
 msgstr "Sabit adres"
 
-#: networks/templates/network.html:365
+#: networks/templates/network.html:367
 msgid "MAC (IPv4) or DUID (IPv6)"
 msgstr "MAC (IPv4) veya DUID (IPv6)"
 
-#: networks/templates/network.html:367
+#: networks/templates/network.html:369
 msgid "The VM's network card; without it, the VM is known by its name."
 msgstr "Sanal makinenin ağ kartı; o olmadan sanal makine adıyla tanınır."
 
-#: networks/templates/network.html:414
+#: networks/templates/network.html:416
 msgid "Bandwidth limit"
 msgstr "Bant genişliği sınırı"
 
-#: networks/templates/network.html:422
+#: networks/templates/network.html:424
 msgid "Inbound: to the VMs"
 msgstr "Gelen: sanal makinelere"
 
-#: networks/templates/network.html:423
+#: networks/templates/network.html:425
 msgid "Outbound: from the VMs"
 msgstr "Giden: sanal makinelerden"
 
-#: networks/templates/network.html:438
+#: networks/templates/network.html:440
 msgid "Linux applies a peak to inbound traffic only."
 msgstr "Linux tepe değerini yalnızca gelen trafiğe uygular."
 
@@ -7505,35 +7505,35 @@ msgstr "SR-IOV"
 msgid "VMs get a virtual function of the host's network card."
 msgstr "Sanal makineler sunucunun ağ kartının bir sanal işlevini alır."
 
-#: networks/views.py:166
+#: networks/views.py:167
 msgid "The fixed address is unchanged"
 msgstr "Sabit adres değişmedi"
 
-#: networks/views.py:168
+#: networks/views.py:169
 #, python-format
 msgid "The fixed address %(address)s is set"
 msgstr "%(address)s sabit adresi ayarlandı"
 
-#: networks/views.py:177
+#: networks/views.py:178
 #, python-format
 msgid "The fixed address %(address)s is deleted"
 msgstr "%(address)s sabit adresi silindi"
 
-#: networks/views.py:185
+#: networks/views.py:186
 msgid "The DHCP range is changed"
 msgstr "DHCP aralığı değiştirildi"
 
-#: networks/views.py:202
+#: networks/views.py:203
 msgid "Network XML is changed. Stop and start network to activate new config."
 msgstr ""
 "Ağ XML'i değiştirildi. Yeni yapılandırmayı etkinleştirmek için ağı durdurup "
 "başlatın."
 
-#: networks/views.py:207
+#: networks/views.py:208
 msgid "Network XML is changed."
 msgstr "Ağ XML i değiştirildi."
 
-#: networks/views.py:222
+#: networks/views.py:223
 #, python-format
 msgid ""
 "%(qos_dir)s QoS is updated. Network XML is changed. Stop and start network to"
@@ -7542,7 +7542,7 @@ msgstr ""
 "%(qos_dir)s QoS is updated.Ağ XML i değiştirildi. \\ Aktifleştirmek için "
 "durdurun ve yeniden başlatın."
 
-#: networks/views.py:247
+#: networks/views.py:248
 #, python-format
 msgid ""
 "%(qos_dir)s QoS is deleted. Network XML is changed. Stop and start network to"
@@ -9750,7 +9750,7 @@ msgstr ""
 "%(iface)s köprüsünün adresleri ve birden fazla üyesi var: önce adresleri "
 "sunucuda üyelerden birine verin"
 
-#: vrtManager/network.py:299
+#: vrtManager/network.py:300
 #, python-format
 msgid ""
 "Network %(net)s is in use by the running VMs %(vms)s; shut them down or "
@@ -9759,7 +9759,7 @@ msgstr ""
 "%(net)s ağı çalışan %(vms)s sanal makineleri tarafından kullanılıyor; önce "
 "onları kapatın veya ağ kartlarını kaldırın"
 
-#: vrtManager/network.py:305
+#: vrtManager/network.py:306
 #, python-format
 msgid ""
 "VMs %(vms)s use network %(net)s and would no longer start; remove their "
@@ -9768,7 +9768,7 @@ msgstr ""
 "%(vms)s sanal makineleri %(net)s ağını kullanıyor ve artık başlamaz; önce ağ "
 "kartlarını kaldırın"
 
-#: vrtManager/network.py:314
+#: vrtManager/network.py:315
 #, python-format
 msgid ""
 "Network %(net)s runs with other addresses than it has saved; stop and start "
@@ -9777,108 +9777,117 @@ msgstr ""
 "%(net)s ağı kayıtlı olandan farklı adreslerle çalışıyor; önce durdurup "
 "başlatın"
 
-#: vrtManager/network.py:334
+#: vrtManager/network.py:335
 #, python-format
 msgid "Network %(net)s has no such address"
 msgstr "%(net)s ağında böyle bir adres yok"
 
-#: vrtManager/network.py:339
+#: vrtManager/network.py:340
 #, python-format
 msgid "The range start %(address)s is not in %(subnet)s"
 msgstr "Aralık başlangıcı %(address)s, %(subnet)s içinde değil"
 
-#: vrtManager/network.py:340
+#: vrtManager/network.py:341
 #, python-format
 msgid "The range start %(address)s is not in the network"
 msgstr "Aralık başlangıcı %(address)s ağın içinde değil"
 
-#: vrtManager/network.py:341
+#: vrtManager/network.py:342
 #, python-format
 msgid "The range end %(address)s is not in %(subnet)s"
 msgstr "Aralık sonu %(address)s, %(subnet)s içinde değil"
 
-#: vrtManager/network.py:342
+#: vrtManager/network.py:343
 #, python-format
 msgid "The range end %(address)s is not in the network"
 msgstr "Aralık sonu %(address)s ağın içinde değil"
 
-#: vrtManager/network.py:343
+#: vrtManager/network.py:344
 #, python-format
 msgid "The fixed address %(address)s is not in %(subnet)s"
 msgstr "Sabit adres %(address)s, %(subnet)s içinde değil"
 
-#: vrtManager/network.py:344
+#: vrtManager/network.py:345
 #, python-format
 msgid "The fixed address %(address)s is not in the network"
 msgstr "Sabit adres %(address)s ağın içinde değil"
 
-#: vrtManager/network.py:353
+#: vrtManager/network.py:354
 #, python-format
 msgid "%(address)s is not an IP address"
 msgstr "%(address)s bir IP adresi değil"
 
-#: vrtManager/network.py:358
+#: vrtManager/network.py:359
 #, python-format
 msgid "%(address)s is the host's own address on the network"
 msgstr "%(address)s sunucunun bu ağdaki kendi adresi"
 
-#: vrtManager/network.py:364
+#: vrtManager/network.py:362
+#, python-format
+msgid "%(address)s is not a host address of %(subnet)s"
+msgstr "%(address)s, %(subnet)s ağında bir makine adresi değil"
+
+#: vrtManager/network.py:368
 #, python-format
 msgid "Stop network %(net)s to change its DHCP range"
 msgstr "DHCP aralığını değiştirmek için %(net)s ağını durdurun"
 
-#: vrtManager/network.py:368
+#: vrtManager/network.py:372
 #, python-format
 msgid "This address of network %(net)s has no DHCP range"
 msgstr "%(net)s ağının bu adresinin DHCP aralığı yok"
 
-#: vrtManager/network.py:372
+#: vrtManager/network.py:376
 #, python-format
 msgid "The range starts at %(start)s, after its end %(end)s"
 msgstr ""
 "Aralık, sonu olan %(end)s adresinden sonra, %(start)s adresinde başlıyor"
 
-#: vrtManager/network.py:374
+#: vrtManager/network.py:378
 #, python-format
 msgid "The range takes in %(address)s, the host's own address"
 msgstr "Aralık, sunucunun kendi adresi olan %(address)s adresini içeriyor"
 
-#: vrtManager/network.py:383
+#: vrtManager/network.py:387
 #, python-format
 msgid "Network %(net)s has no fixed address %(address)s"
 msgstr "%(net)s ağında %(address)s sabit adresi yok"
 
 #: vrtManager/network.py:405
 #, python-format
-msgid "The fixed address %(original)s is gone meanwhile; reload the page"
-msgstr ""
-"%(original)s sabit adresi bu arada kaldırılmış; sayfayı yeniden yükleyin"
+msgid "The name %(name)s may have only letters, digits, '.', '_' and '-'"
+msgstr "%(name)s adında yalnızca harf, rakam, '.', '_' ve '-' olabilir"
 
-#: vrtManager/network.py:410
+#: vrtManager/network.py:414
+#, python-format
+msgid "The fixed address %(original)s has changed meanwhile; reload the page"
+msgstr "%(original)s sabit adresi bu arada değişti; sayfayı yeniden yükleyin"
+
+#: vrtManager/network.py:419
 #, python-format
 msgid "%(address)s is another entry's fixed address"
 msgstr "%(address)s başka bir kaydın sabit adresi"
 
-#: vrtManager/network.py:412
+#: vrtManager/network.py:421
 #, python-format
 msgid "%(mac_duid)s has another fixed address, %(other)s"
 msgstr "%(mac_duid)s için başka bir sabit adres var: %(other)s"
 
-#: vrtManager/network.py:414
+#: vrtManager/network.py:423
 #, python-format
 msgid "The name %(name)s has another fixed address, %(other)s"
 msgstr "%(name)s adı için başka bir sabit adres var: %(other)s"
 
-#: vrtManager/network.py:450
+#: vrtManager/network.py:459
 msgid "Direction must be inbound or outbound"
 msgstr "Yön gelen ya da giden olmalı"
 
-#: vrtManager/network.py:477
+#: vrtManager/network.py:486
 #, python-format
 msgid "The XML must define network %(net)s"
 msgstr "XML, %(net)s ağını tanımlamalıdır"
 
-#: vrtManager/network.py:479
+#: vrtManager/network.py:488
 msgid "The XML must keep the network's UUID"
 msgstr "XML, ağın UUID değerini korumalıdır"
 

@@ -111,9 +111,33 @@ class NetworkChangeTests(SimpleTestCase):
         self.assertEqual([dict(h.attrib) for h in saved.xpath("ip/dhcp/host")], [{"id": "00:01:00:01:aa:bb", "ip": "2001:db8:5::11"}])
 
     def test_an_entry_gone_meanwhile_is_not_added_anew(self):
-        with self.assertRaisesRegex(OperationError, "is gone meanwhile"):
+        with self.assertRaisesRegex(OperationError, "has changed meanwhile"):
             self.network().modify_fixed_address(1, "192.0.2.99", "x", "192.0.2.40", "")
         self.assertEqual(self.saved().xpath("ip[2]/dhcp/host/@ip"), ["192.0.2.30", "192.0.2.31"])
+
+    def test_an_entry_changed_meanwhile_is_not_changed_back(self):
+        # another admin gave 192.0.2.31 a name after this page showed it without one
+        net = self.network()
+        with self.assertRaisesRegex(OperationError, "192.0.2.31 has changed meanwhile"):
+            net.modify_fixed_address(1, "192.0.2.31", "db", "192.0.2.31", "52:54:00:00:00:32", ("52:54:00:00:00:31", "web"))
+        net.modify_fixed_address(1, "192.0.2.31", "db", "192.0.2.31", "52:54:00:00:00:32", ("52:54:00:00:00:31", ""))
+        self.assertEqual(self.saved().xpath("ip[2]/dhcp/host[@ip='192.0.2.31']/@mac"), ["52:54:00:00:00:32"])
+
+    def test_a_name_dnsmasq_would_drop_is_refused(self):
+        # dnsmasq skips an entry whose name is not a host name: the VM would get no fixed address
+        with self.assertRaisesRegex(OperationError, "may have only letters"):
+            self.network().modify_fixed_address(1, "", "vm one", "192.0.2.40", "52:54:00:00:00:40")
+        self.network().modify_fixed_address(1, "", "vm_1.lab", "192.0.2.40", "52:54:00:00:00:40")
+        self.assertEqual(self.saved().xpath("ip[2]/dhcp/host[@ip='192.0.2.40']/@name"), ["vm_1.lab"])
+
+    def test_a_name_set_outside_the_panel_stays_editable(self):
+        # dnsmasq may take an internationalized name the panel would not give
+        conn = self.conn.networkLookupByName("lab")
+        conn.destroy()
+        self.conn.networkDefineXML(conn.XMLDesc(0).replace(
+            "<host name='paul'", "<host mac='52:54:00:00:00:41' name='vm.münchen' ip='192.0.2.41'/><host name='paul'"))
+        self.network().modify_fixed_address(1, "192.0.2.41", "vm.münchen", "192.0.2.42", "52:54:00:00:00:41")
+        self.assertEqual(self.saved().xpath("ip[2]/dhcp/host[@mac='52:54:00:00:00:41']/@ip"), ["192.0.2.42"])
 
     def test_a_running_network_saved_with_other_addresses_is_not_changed_live(self):
         # parentIndex would name another <ip> of the running network
@@ -142,7 +166,8 @@ class NetworkChangeTests(SimpleTestCase):
     def test_a_fixed_address_is_of_the_subnet_and_its_own(self):
         net = self.network()
         for address, why in (("198.51.100.5", "is not in 192.0.2.0/24"), ("192.0.2.1", "the host's own address"),
-                             ("192.0.2.31", "another entry's fixed address"), ("x", "is not an IP address")):
+                             ("192.0.2.31", "another entry's fixed address"), ("x", "is not an IP address"),
+                             ("192.0.2.0", "not a host address of 192.0.2.0/24"), ("192.0.2.255", "not a host address")):
             with self.subTest(address=address), self.assertRaisesRegex(OperationError, why):
                 net.modify_fixed_address(1, "192.0.2.30", "paul", address, "")
         self.assertIs(net.modify_fixed_address(1, "192.0.2.30", "paul", "192.0.2.30", ""), False)

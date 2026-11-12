@@ -1,6 +1,7 @@
 from django.utils.translation import gettext_noop
 import copy
 import ipaddress
+import re
 from datetime import datetime, timezone
 from functools import cached_property
 
@@ -356,6 +357,9 @@ class wvmNetwork(wvmConnect):
             raise util.OperationError(outside, address=address, subnet=ip["subnet"])
         if address == ipaddress.ip_address(ip["address"]):
             raise util.OperationError(gettext_noop("%(address)s is the host's own address on the network"), address=address)
+        subnet = ip["subnet"]
+        if subnet.version == 4 and subnet.prefixlen < 31 and address in (subnet.network_address, subnet.broadcast_address):
+            raise util.OperationError(gettext_noop("%(address)s is not a host address of %(subnet)s"), address=address, subnet=subnet)
         return address
 
     def modify_dhcp_range(self, index, range_start, range_end):
@@ -385,14 +389,17 @@ class wvmNetwork(wvmConnect):
         self.update(VIR_NETWORK_UPDATE_COMMAND_DELETE, VIR_NETWORK_SECTION_IP_DHCP_HOST,
                     etree.tostring(host, with_tail=False).decode(), index)
 
-    def modify_fixed_address(self, index, original, name, address, mac_duid):
+    def modify_fixed_address(self, index, original, name, address, mac_duid, seen=None):
         """Adds a fixed address, or changes the one that had the address
         original, keeping what the page does not show of it (a client id, a
         lease time). The address must be of the subnet, not the host's, and
         neither it, the MAC (IPv4) or DUID (IPv6) nor the name another entry's.
         A change deletes the entry and adds it anew, put back if that fails:
         libvirt's own change finds an entry by any of its MAC, address or name,
-        another entry's too, and an IPv6 one never by its DUID. Returns False
+        another entry's too, and an IPv6 one never by its DUID. seen: the
+        entry's MAC or DUID and name as the page showed them, refused when
+        another change has made them different meanwhile. A new name must be
+        a host name: dnsmasq drops an entry with another one. Returns False
         when nothing changes."""
         _tree, ip, info = self._ip(index)
         address = self._checked_address(info, address, "fixed address")
@@ -401,8 +408,11 @@ class wvmNetwork(wvmConnect):
         old = None
         if original:
             old = next((h for h in hosts if h.get("ip") == original), None)
-            if old is None:
-                raise util.OperationError(gettext_noop("The fixed address %(original)s is gone meanwhile; reload the page"), original=original)
+            if old is None or (seen is not None and seen != ((old.get("mac") or old.get("id") or "").lower(), old.get("name", ""))):
+                raise util.OperationError(gettext_noop("The fixed address %(original)s has changed meanwhile; reload the page"), original=original)
+        # a new name must be one dnsmasq takes; one set outside the panel stays as it is
+        if name and (old is None or name != old.get("name")) and not re.fullmatch(r"[A-Za-z0-9_.-]+", name):
+            raise util.OperationError(gettext_noop("The name %(name)s may have only letters, digits, '.', '_' and '-'"), name=name)
         for other in hosts:
             if other is old:
                 continue

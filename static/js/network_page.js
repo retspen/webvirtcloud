@@ -17,6 +17,9 @@ function fillFrom(dialogId, fill) {
 }
 fillFrom("FixedAddress", function (form, data) {
     form.elements.original.value = data.original || "";
+    // the entry as shown: a change made meanwhile is not undone
+    form.elements.original_id.value = data.original ? data.mac : "";
+    form.elements.original_name.value = data.original ? data.name : "";
     form.elements.address.value = data.address || "";
     form.elements.mac.value = data.mac || "";
     form.elements.name.value = data.name || "";

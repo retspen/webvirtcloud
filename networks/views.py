@@ -159,8 +159,9 @@ def network(request, compute_id, pool):
             mac_duid = request.POST.get("mac") or request.POST.get("id", "")
             try:
                 with audit(request, compute, subject, f"set fixed address {address}") as entry:
+                    seen = (request.POST.get("original_id", "").lower(), request.POST.get("original_name", ""))
                     changed = conn.modify_fixed_address(ip_index, request.POST.get("original", ""),
-                                                        request.POST.get("name", ""), address, mac_duid)
+                                                        request.POST.get("name", ""), address, mac_duid, seen)
                     entry.skip = changed is False  # nothing was done
                 if changed is False:
                     messages.info(request, _("The fixed address is unchanged"))
