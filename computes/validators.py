@@ -9,6 +9,12 @@ _hostname = re.compile(r"[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-
 _login = re.compile(r"[A-Za-z0-9._][A-Za-z0-9._-]*")
 
 
+def _is_name(value):
+    """A host name: its last label is never all digits ("192.0.2.1." is no
+    address and no name, libvirt cannot resolve it)."""
+    return bool(_hostname.fullmatch(value)) and not value.rstrip(".").rsplit(".", 1)[-1].isdigit()
+
+
 def validate_hostname(value):
     """An IPv4 address or a host name that goes safely into a libvirt
     connection URI. No scheme, port, path, query, whitespace or IPv6 literal:
@@ -19,7 +25,7 @@ def validate_hostname(value):
         if ip_address(value).version == 4:
             return
     except ValueError:
-        if _hostname.fullmatch(value):
+        if _is_name(value):
             return
     raise ValidationError(_("Enter an IPv4 address or a host name, without a scheme, port or path"))
 
@@ -42,7 +48,7 @@ def validate_migration_address(value):
         if not getattr(ip_address(value), "scope_id", None):
             return
     except ValueError:
-        if _hostname.fullmatch(value):
+        if _is_name(value):
             return
     raise ValidationError(_("Enter an IP address or a host name, without a scheme or port"))
 

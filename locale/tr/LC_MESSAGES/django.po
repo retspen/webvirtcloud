@@ -1813,11 +1813,11 @@ msgstr "Hiçbir şey değişmedi"
 msgid "Other"
 msgstr "Diğer"
 
-#: computes/forms.py:18
+#: computes/forms.py:21
 msgid "Stored, leave empty to keep"
 msgstr "Kayıtlı, korumak için boş bırakın"
 
-#: computes/forms.py:28 computes/templates/computes/instances.html:45
+#: computes/forms.py:31 computes/templates/computes/instances.html:45
 #: instances/templates/instances/settings_tab.html:871
 #: instances/templates/instances/settings_tab.html:903
 #: instances/templates/instances/snapshots_tab.html:27
@@ -1825,43 +1825,43 @@ msgstr "Kayıtlı, korumak için boş bırakın"
 msgid "Description"
 msgstr "Tanım"
 
-#: computes/forms.py:29
+#: computes/forms.py:32
 msgid "Shown on the hosts list"
 msgstr "Sunucu listesinde gösterilir"
 
-#: computes/forms.py:30
+#: computes/forms.py:33
 msgid "SASL login"
 msgstr "SASL kullanıcı adı"
 
-#: computes/forms.py:30
+#: computes/forms.py:33
 msgid "SASL password"
 msgstr "SASL parolası"
 
-#: computes/forms.py:35 computes/templates/create_comp_block.html:10
+#: computes/forms.py:39 computes/templates/create_comp_block.html:10
 msgid "libvirt over TCP, with a SASL login"
 msgstr "TCP üzerinden libvirt, SASL girişiyle"
 
-#: computes/forms.py:49 computes/templates/create_comp_block.html:14
+#: computes/forms.py:53 computes/templates/create_comp_block.html:14
 msgid "libvirt over SSH, with the panel's SSH key"
 msgstr "SSH üzerinden libvirt, panelin SSH anahtarıyla"
 
-#: computes/forms.py:50
+#: computes/forms.py:54
 msgid "FQDN/IP"
 msgstr "FQDN/IP"
 
-#: computes/forms.py:56
+#: computes/forms.py:59
 msgid "SSH user"
 msgstr "SSH kullanıcısı"
 
-#: computes/forms.py:63 computes/templates/create_comp_block.html:18
+#: computes/forms.py:67 computes/templates/create_comp_block.html:18
 msgid "libvirt over TLS, with certificates"
 msgstr "TLS üzerinden libvirt, sertifikalarla"
 
-#: computes/forms.py:76 computes/templates/create_comp_block.html:21
+#: computes/forms.py:80 computes/templates/create_comp_block.html:21
 msgid "Local"
 msgstr "Yerel"
 
-#: computes/forms.py:77 computes/templates/create_comp_block.html:22
+#: computes/forms.py:81 computes/templates/create_comp_block.html:22
 msgid "the libvirt of the host the panel runs on, by its socket"
 msgstr "panelin çalıştığı sunucunun libvirt'i, soketi üzerinden"
 
@@ -1907,12 +1907,12 @@ msgstr ""
 "sanal makinenin root parolasını ve SSH anahtarını bununla ayarlar; boş: bu "
 "sunucuda ayarlanamazlar"
 
-#: computes/models.py:176
+#: computes/models.py:179
 #, python-format
 msgid "This host is already added as %(name)s"
 msgstr "Bu sunucu zaten %(name)s olarak ekli"
 
-#: computes/models.py:179
+#: computes/models.py:182
 #, python-format
 msgid ""
 "The panel cannot reach the host to tell that its VMs are there: %(error)s"
@@ -1920,7 +1920,7 @@ msgstr ""
 "Panel sunucuya ulaşamadığı için VM'lerinin orada olduğunu doğrulayamıyor: "
 "%(error)s"
 
-#: computes/models.py:186
+#: computes/models.py:189
 msgid ""
 "The host its VMs are on is not known yet: change the connection when the "
 "panel has reached the host at its current one"
@@ -1928,7 +1928,7 @@ msgstr ""
 "VM'lerinin bulunduğu sunucu henüz bilinmiyor: bağlantıyı, panel sunucuya "
 "mevcut bağlantısından ulaştıktan sonra değiştirin"
 
-#: computes/models.py:189
+#: computes/models.py:192
 msgid "This is another host than the one its VMs are on: add it as a new host"
 msgstr ""
 "Bu, VM'lerinin bulunduğu sunucudan başka bir sunucu: yeni bir sunucu olarak "
@@ -2413,11 +2413,11 @@ msgstr "Konuk mimarileri"
 msgid "Emulator"
 msgstr "Emülatör"
 
-#: computes/validators.py:24
+#: computes/validators.py:30
 msgid "Enter an IPv4 address or a host name, without a scheme, port or path"
 msgstr "Şema, port veya yol olmadan bir IPv4 adresi ya da sunucu adı girin"
 
-#: computes/validators.py:35
+#: computes/validators.py:41
 msgid ""
 "The login may contain only letters, digits, '.', '_' and '-', and may not "
 "start with '-'"
@@ -2425,11 +2425,11 @@ msgstr ""
 "Kullanıcı adı yalnızca harf, rakam, '.', '_' ve '-' içerebilir ve '-' ile "
 "başlayamaz"
 
-#: computes/validators.py:47
+#: computes/validators.py:53
 msgid "Enter an IP address or a host name, without a scheme or port"
 msgstr "Şema veya port olmadan bir IP adresi ya da sunucu adı girin"
 
-#: computes/validators.py:54
+#: computes/validators.py:60
 msgid ""
 "Enter the 64 hexadecimal characters of GSTFSD_KEY in the host's "
 "/etc/default/webvirt-gstfsd"
@@ -2437,7 +2437,12 @@ msgstr ""
 "Sunucudaki /etc/default/webvirt-gstfsd içindeki GSTFSD_KEY değerinin 64 "
 "onaltılık karakterini girin"
 
-#: computes/views.py:217
+#: computes/views.py:166
+#, python-format
+msgid "The host was saved, but the panel cannot connect to it: %(error)s"
+msgstr "Sunucu kaydedildi, ancak panel ona bağlanamıyor: %(error)s"
+
+#: computes/views.py:222
 #, python-format
 msgid ""
 "Its VMs keep running on the host and leave the panel; their owners are kept "
@@ -9085,17 +9090,17 @@ msgstr "Bağlantı başarısız: %(error)s"
 msgid "Connection closed (%(reason)s)"
 msgstr "Bağlantı kapandı (%(reason)s)"
 
-#: vrtManager/connection.py:469
+#: vrtManager/connection.py:476
 #, python-format
 msgid "Connection Failed: %(host)s is not connected"
 msgstr "Bağlantı başarısız: %(host)s bağlı değil"
 
-#: vrtManager/connection.py:521
+#: vrtManager/connection.py:528
 #, python-format
 msgid "This host has no architecture %(arch)s"
 msgstr "Bu sunucuda %(arch)s mimarisi yok"
 
-#: vrtManager/connection.py:1171
+#: vrtManager/connection.py:1178
 #, python-format
 msgid ""
 "Pool %(pool)s is not active: the files the disks of the VMs in it are made "

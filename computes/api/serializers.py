@@ -10,6 +10,7 @@ class ComputeSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         style={"input_type": "password"},
         write_only=True,
+        trim_whitespace=False,
         required=False,
         allow_blank=True,
         allow_null=True,

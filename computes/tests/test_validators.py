@@ -16,6 +16,13 @@ class HostnameValidatorTestCase(unittest.TestCase):
             with self.subTest(value=value):
                 validate_hostname(value)
 
+    def test_rejects_what_is_neither_an_address_nor_a_name(self):
+        # a name's last label is never all digits: libvirt cannot resolve these
+        for value in ("192.0.2.10.", "192.0.2.1.5", "999.1.1.1"):
+            with self.subTest(value=value):
+                with self.assertRaises(ValidationError):
+                    validate_hostname(value)
+
     def test_rejects_uri_and_option_injection(self):
         for value in (
             "-x",

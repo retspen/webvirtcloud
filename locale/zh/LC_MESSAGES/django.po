@@ -1756,11 +1756,11 @@ msgstr "没有任何更改"
 msgid "Other"
 msgstr "其他"
 
-#: computes/forms.py:18
+#: computes/forms.py:21
 msgid "Stored, leave empty to keep"
 msgstr "已保存，留空则保持不变"
 
-#: computes/forms.py:28 computes/templates/computes/instances.html:45
+#: computes/forms.py:31 computes/templates/computes/instances.html:45
 #: instances/templates/instances/settings_tab.html:871
 #: instances/templates/instances/settings_tab.html:903
 #: instances/templates/instances/snapshots_tab.html:27
@@ -1768,43 +1768,43 @@ msgstr "已保存，留空则保持不变"
 msgid "Description"
 msgstr "描述"
 
-#: computes/forms.py:29
+#: computes/forms.py:32
 msgid "Shown on the hosts list"
 msgstr "显示在主机列表中"
 
-#: computes/forms.py:30
+#: computes/forms.py:33
 msgid "SASL login"
 msgstr "SASL 登录名"
 
-#: computes/forms.py:30
+#: computes/forms.py:33
 msgid "SASL password"
 msgstr "SASL 密码"
 
-#: computes/forms.py:35 computes/templates/create_comp_block.html:10
+#: computes/forms.py:39 computes/templates/create_comp_block.html:10
 msgid "libvirt over TCP, with a SASL login"
 msgstr "通过 TCP 连接 libvirt，使用 SASL 登录"
 
-#: computes/forms.py:49 computes/templates/create_comp_block.html:14
+#: computes/forms.py:53 computes/templates/create_comp_block.html:14
 msgid "libvirt over SSH, with the panel's SSH key"
 msgstr "通过 SSH 连接 libvirt，使用面板的 SSH 密钥"
 
-#: computes/forms.py:50
+#: computes/forms.py:54
 msgid "FQDN/IP"
 msgstr "FQDN/IP"
 
-#: computes/forms.py:56
+#: computes/forms.py:59
 msgid "SSH user"
 msgstr "SSH 用户"
 
-#: computes/forms.py:63 computes/templates/create_comp_block.html:18
+#: computes/forms.py:67 computes/templates/create_comp_block.html:18
 msgid "libvirt over TLS, with certificates"
 msgstr "通过 TLS 连接 libvirt，使用证书"
 
-#: computes/forms.py:76 computes/templates/create_comp_block.html:21
+#: computes/forms.py:80 computes/templates/create_comp_block.html:21
 msgid "Local"
 msgstr "本地"
 
-#: computes/forms.py:77 computes/templates/create_comp_block.html:22
+#: computes/forms.py:81 computes/templates/create_comp_block.html:22
 msgid "the libvirt of the host the panel runs on, by its socket"
 msgstr "面板所在主机的 libvirt，通过其套接字连接"
 
@@ -1847,24 +1847,24 @@ msgstr ""
 "主机 /etc/default/webvirt-gstfsd 中的 GSTFSD_KEY：面板用它为已关机的虚拟机设置 root 密码和 SSH "
 "密钥；留空：无法在此设置"
 
-#: computes/models.py:176
+#: computes/models.py:179
 #, python-format
 msgid "This host is already added as %(name)s"
 msgstr "此主机已作为 %(name)s 添加"
 
-#: computes/models.py:179
+#: computes/models.py:182
 #, python-format
 msgid ""
 "The panel cannot reach the host to tell that its VMs are there: %(error)s"
 msgstr "面板无法连接该主机，因此无法确认其虚拟机在那里：%(error)s"
 
-#: computes/models.py:186
+#: computes/models.py:189
 msgid ""
 "The host its VMs are on is not known yet: change the connection when the "
 "panel has reached the host at its current one"
 msgstr "其虚拟机所在的主机尚不明确：请在面板通过当前连接访问到该主机后再更改连接"
 
-#: computes/models.py:189
+#: computes/models.py:192
 msgid "This is another host than the one its VMs are on: add it as a new host"
 msgstr "这不是其虚拟机所在的主机：请将其添加为新主机"
 
@@ -2331,27 +2331,32 @@ msgstr "客户机架构"
 msgid "Emulator"
 msgstr "模拟器"
 
-#: computes/validators.py:24
+#: computes/validators.py:30
 msgid "Enter an IPv4 address or a host name, without a scheme, port or path"
 msgstr "请输入 IPv4 地址或主机名，不带协议、端口或路径"
 
-#: computes/validators.py:35
+#: computes/validators.py:41
 msgid ""
 "The login may contain only letters, digits, '.', '_' and '-', and may not "
 "start with '-'"
 msgstr "登录名只能包含字母、数字、'.'、'_' 和 '-'，且不能以 '-' 开头"
 
-#: computes/validators.py:47
+#: computes/validators.py:53
 msgid "Enter an IP address or a host name, without a scheme or port"
 msgstr "请输入 IP 地址或主机名，不带协议或端口"
 
-#: computes/validators.py:54
+#: computes/validators.py:60
 msgid ""
 "Enter the 64 hexadecimal characters of GSTFSD_KEY in the host's "
 "/etc/default/webvirt-gstfsd"
 msgstr "请输入主机 /etc/default/webvirt-gstfsd 中 GSTFSD_KEY 的 64 个十六进制字符"
 
-#: computes/views.py:217
+#: computes/views.py:166
+#, python-format
+msgid "The host was saved, but the panel cannot connect to it: %(error)s"
+msgstr "主机已保存，但面板无法连接到它：%(error)s"
+
+#: computes/views.py:222
 #, python-format
 msgid ""
 "Its VMs keep running on the host and leave the panel; their owners are kept "
@@ -8586,17 +8591,17 @@ msgstr "连接失败：%(error)s"
 msgid "Connection closed (%(reason)s)"
 msgstr "连接已关闭（%(reason)s）"
 
-#: vrtManager/connection.py:469
+#: vrtManager/connection.py:476
 #, python-format
 msgid "Connection Failed: %(host)s is not connected"
 msgstr "连接失败：%(host)s 未连接"
 
-#: vrtManager/connection.py:521
+#: vrtManager/connection.py:528
 #, python-format
 msgid "This host has no architecture %(arch)s"
 msgstr "此主机没有 %(arch)s 架构"
 
-#: vrtManager/connection.py:1171
+#: vrtManager/connection.py:1178
 #, python-format
 msgid ""
 "Pool %(pool)s is not active: the files the disks of the VMs in it are made "

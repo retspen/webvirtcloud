@@ -4,6 +4,7 @@ from contextlib import suppress
 
 from admin.decorators import superuser_only
 from django.conf import settings
+from django.contrib import messages
 from django.core import signing
 from django.db import IntegrityError
 from django.http import HttpResponse, JsonResponse
@@ -155,6 +156,18 @@ def instances(request, compute_id):
     )
 
 
+# the form of each kind of compute, by Compute.type
+FORMS = {form.conn_type: form for form in (TcpComputeForm, SshComputeForm, TlsComputeForm, SocketComputeForm)}
+
+
+def saved(request, form):
+    """Tells that the panel cannot connect to the compute the form saved, and why (Compute.clean)."""
+    if form.instance.unreachable:
+        messages.warning(request, _("The host was saved, but the panel cannot connect to it: %(error)s")
+                         % {"error": form.instance.unreachable})
+    return redirect(reverse("computes"))
+
+
 @sensitive_post_parameters()
 @superuser_only
 def compute_create(request, FormClass):
@@ -165,7 +178,7 @@ def compute_create(request, FormClass):
                 compute = form.instance
                 with audit(request, compute, f"Compute {compute.name} ({compute.hostname})", "add"):
                     form.save()
-                return redirect(reverse("computes"))
+                return saved(request, form)
 
     return render(request, "computes/form.html", {"form": form})
 
@@ -175,15 +188,7 @@ def compute_create(request, FormClass):
 def compute_update(request, compute_id):
     compute = get_object_or_404(Compute, pk=compute_id)
 
-    if compute.type == 1:
-        FormClass = TcpComputeForm
-    elif compute.type == 2:
-        FormClass = SshComputeForm
-    elif compute.type == 3:
-        FormClass = TlsComputeForm
-    elif compute.type == 4:
-        FormClass = SocketComputeForm
-
+    FormClass = FORMS[compute.type]
     subject = f"Compute {compute.name} ({compute.hostname})"
     before = snapshot(compute)
     form = FormClass(request.POST or None, instance=compute)
@@ -197,7 +202,7 @@ def compute_update(request, compute_id):
                 entry.action = "change " + ", ".join(fields)
                 entry.skip = not fields
         if form.is_valid():
-            return redirect(reverse("computes"))
+            return saved(request, form)
 
     return render(request, "computes/form.html", {"form": form})
 
