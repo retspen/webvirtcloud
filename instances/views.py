@@ -807,7 +807,9 @@ def poweron(request, pk):
     instance = _power_instance(request.user, pk)
     # the API passes its parsed body (data), the page its form
     options = PowerOnSerializer(data=getattr(request, "data", request.POST))
-    options.is_valid(raise_exception=True)
+    if not options.is_valid(raise_exception=hasattr(request, "data")):  # the API answers 400
+        messages.error(request, _("Invalid options: %(options)s") % {"options": ", ".join(options.errors)})
+        return redirect(reverse("instances:instance", args=[instance.id]))
     if instance.is_template:
         messages.warning(request, _("Templates cannot be started."))
     elif options.validated_data["fresh"]:  # the saved state is discarded: the VM boots anew
@@ -896,7 +898,9 @@ def destroy(request, pk):
     if request.method in ["POST", "DELETE"]:
         get_instance(request.user, pk, perm_type="delete")
         options = DestroyOptionsSerializer(data=request.POST)
-        options.is_valid(raise_exception=True)
+        if not options.is_valid():
+            messages.error(request, _("Invalid options: %(options)s") % {"options": ", ".join(options.errors)})
+            return redirect(reverse("instances:destroy", args=[pk]))
         try:
             op = jobs.submit("instance.delete", request.user, {"instance": pk, **options.validated_data},
                              request.POST.get("submission_key", ""))
