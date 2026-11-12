@@ -1,5 +1,6 @@
 {% load i18n %}
 {% load bootstrap_icons %}
+{% load vm_states %}
 <div class="tab-pane" id="resize" role="tabpanel">
     {# each resource on its own tab: how much the VM has now within its maximum, and the form that changes it #}
     <div class="card">
@@ -113,6 +114,7 @@
                         <div class="col-12 col-sm-4">
                             <div class="input-group">
                                 <input class="form-control" type="number" id="disk_size_{{ disk.dev }}" name="disk_size_{{ disk.dev }}" min="1" step="1" placeholder="{% trans "New size" %}" aria-describedby="disks-grow-help">
+                                <input type="hidden" name="disk_seen_{{ disk.dev }}" value="{{ disk|disk_seen }}">
                                 <span class="input-group-text">GiB</span>
                             </div>
                         </div>

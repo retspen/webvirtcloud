@@ -64,6 +64,7 @@ from vrtManager.storage import rbd_source_children, wvmStorage
 from vrtManager.util import randomPasswd
 
 from instances.models import Instance
+from instances.templatetags.vm_states import disk_seen
 
 from . import addresses, report, utils
 from .api.serializers import DestroyOptionsSerializer, PowerOnSerializer
@@ -1246,6 +1247,10 @@ def resize_disk(request, pk):
             continue
         if not _is_int(size):
             messages.error(request, _("Enter disk sizes as whole GiB"))
+            return redirect(reverse("instances:instance", args=[instance.id]) + "#resizevm_disk")
+        # the form names the disk by its device: another disk there now is not grown in its place
+        if request.POST.get("disk_seen_" + disk["dev"]) != disk_seen(disk):
+            messages.error(request, _("Disk %(dev)s was changed meanwhile; reload the page") % {"dev": disk["dev"]})
             return redirect(reverse("instances:instance", args=[instance.id]) + "#resizevm_disk")
         # a disk does not shrink: one smaller size refuses them all
         if int(size) << 30 < disk["size"]:

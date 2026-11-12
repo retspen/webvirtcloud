@@ -11,6 +11,7 @@ import os
 import unittest
 
 import libvirt
+from instances.templatetags.vm_states import disk_seen
 from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
@@ -161,7 +162,7 @@ class LiveLvmTestCase(TestCase):
                 if state == "paused":
                     dom.suspend()
 
-                response = self.post("resize_disk", inst, {"disk_size_vda": "2"})
+                response = self.post("resize_disk", inst, {"disk_size_vda": "2", "disk_seen_vda": disk_seen(inst.disks[0])})
 
                 self.assertRedirects(response, reverse("instances:instance", args=[inst.id]) + "#resizevm_disk",
                                      fetch_redirect_response=False)

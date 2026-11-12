@@ -2,6 +2,7 @@ import os
 import re
 import unittest
 
+from instances.templatetags.vm_states import disk_seen
 from accounts.models import UserAttributes, UserInstance, UserSSHKey
 from appsettings.models import AppSettings
 from computes.models import Compute
@@ -353,6 +354,7 @@ class InstancesTestCase(TestCase):
             reverse("instances:resize_disk", args=[self.instance.id]),
             {
                 "disk_size_vda": 2,
+                "disk_seen_vda": disk_seen(self.instance.disks[0]),
             },
         )
         self.assertRedirects(
@@ -375,6 +377,7 @@ class InstancesTestCase(TestCase):
             reverse("instances:resize_disk", args=[self.instance.id]),
             {
                 "disk_size_vda": 3,
+                "disk_seen_vda": disk_seen(self.instance.disks[0]),
             },
         )
         self.assertRedirects(

@@ -12,6 +12,7 @@ from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 from instances.models import Instance
 from libvirt import VIR_DOMAIN_RUNNING
+from instances.templatetags.vm_states import disk_seen
 
 GIB = 1 << 30
 
@@ -35,8 +36,11 @@ class ResizeInputTests(TestCase):
             proxy.get_cur_memory.return_value = 2048
             proxy.get_status.return_value = status
             proxy.instance.isActive.return_value = status != 5
-            proxy.get_disk_devices.return_value = [dict(disk) for disk in disks]
-            response = self.client.post(reverse(view, args=[self.vm.id]), data)
+            disks = [{"path": f"/pool/{disk['dev']}.qcow2", **disk} for disk in disks]
+            proxy.get_disk_devices.return_value = disks
+            # the form sends each disk's fingerprint as it showed it
+            seen = {f"disk_seen_{disk['dev']}": disk_seen(disk) for disk in disks}
+            response = self.client.post(reverse(view, args=[self.vm.id]), {**seen, **data})
         self.assertEqual(response.status_code, 302)
         return [str(m) for m in get_messages(response.wsgi_request)], proxy
 
@@ -67,6 +71,13 @@ class ResizeInputTests(TestCase):
         messages, proxy = self.post("instances:resizevm_cpu", {"vcpu": "4", "cur_vcpu": "2"})
         proxy.resize_cpu.assert_called_once_with("2", "4")
         self.assertEqual(messages, ["vCPUs set to 2 (maximum 4)"])
+
+    def test_a_disk_replaced_meanwhile_is_not_grown(self):
+        # the form showed another disk at vda: an administrator replaced it
+        messages, proxy = self.post("instances:resize_disk", {"disk_size_vda": "30", "disk_seen_vda": disk_seen({"path": "/pool/old.qcow2"})},
+                                    disks=[{"dev": "vda", "size": 20 * GIB}])
+        proxy.resize_disk.assert_not_called()
+        self.assertEqual(messages, ["Disk vda was changed meanwhile; reload the page"])
 
     def test_a_disk_size_that_is_not_a_whole_number_is_refused(self):
         messages, proxy = self.post("instances:resize_disk", {"disk_size_vda": "4.5"}, disks=[{"dev": "vda", "size": GIB}])
