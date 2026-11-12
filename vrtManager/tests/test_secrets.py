@@ -76,6 +76,11 @@ class SecretValueTests(SimpleTestCase):
                 self.set_value("ceph", value)
             self.assertNotIn(value, str(refused.exception))
 
+    def test_an_empty_value_is_refused_in_words(self):
+        # libvirt says "value in virSecretSetValue must not be NULL"
+        with self.assertRaisesRegex(OperationError, "Type the secret's value"):
+            self.set_value("iscsi", "")
+
 
 ISCSI = "8f2c0000-0000-4000-8000-000000000002"
 
@@ -177,8 +182,17 @@ class DeleteTests(SimpleTestCase):
     def test_a_secret_a_vm_or_a_pool_names_is_not_deleted(self):
         conn = connection(domains=[vm("db-2", f"<disk><auth><secret type='ceph' uuid='{CEPH}'/></auth></disk>")],
                           pools=[pool("ceph-rbd", "<auth type='ceph'><secret usage='client.libvirt'/></auth>")])
+        conn.wvm.secretLookupByUUIDString.return_value.UUIDString.return_value = CEPH
         with self.assertRaisesRegex(OperationError, f"Secret {CEPH} is used by VMs db-2; pools ceph-rbd"):
             conn.delete_secret(CEPH)
+        conn.wvm.secretLookupByUUIDString.return_value.undefine.assert_not_called()
+
+    def test_a_secret_in_use_named_in_capitals_is_not_deleted(self):
+        # libvirt finds it by the UUID in capitals, its users name it in small letters
+        conn = connection(domains=[vm("db-2", f"<disk><auth><secret type='ceph' uuid='{CEPH}'/></auth></disk>")])
+        conn.wvm.secretLookupByUUIDString.return_value.UUIDString.return_value = CEPH
+        with self.assertRaisesRegex(OperationError, "is used by VMs db-2"):
+            conn.delete_secret(CEPH.upper())
         conn.wvm.secretLookupByUUIDString.return_value.undefine.assert_not_called()
 
     def test_an_unused_secret_is_deleted(self):

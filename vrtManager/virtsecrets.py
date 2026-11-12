@@ -101,6 +101,8 @@ class wvmSecrets(wvmConnect):
     def set_secret_value(self, uuid, value):
         """value as typed on the page; its bytes follow the secret's usage
         type (value_bytes)."""
+        if not value:  # libvirt takes none
+            raise util.OperationError(gettext_noop("Type the secret's value"))
         secret = self.wvm.secretLookupByUUIDString(uuid)
         usage_type = etree.fromstring(secret.XMLDesc(0)).xpath("string(usage/@type)")
         secret.setValue(value_bytes(usage_type, value))
@@ -109,6 +111,7 @@ class wvmSecrets(wvmConnect):
         """Refused while a VM or a pool names it (get_users): without it that
         VM or pool would no longer start."""
         secret = self.wvm.secretLookupByUUIDString(uuid)
+        uuid = secret.UUIDString()  # as its users name it: libvirt takes it in capitals too
         if users := self.get_users(self.get_secrets_info()).get(uuid):
             named = []
             if users["vms"]:

@@ -6,11 +6,20 @@ class AddSecret(forms.Form):
     usage_type = forms.ChoiceField(
         choices=(("ceph", "Ceph"), ("iscsi", "iSCSI"), ("volume", _("Volume")), ("tls", "TLS"), ("vtpm", "vTPM")),
     )
-    usage = forms.CharField()
+    usage = forms.CharField(strip=False)  # stripped once checked: a line break at its end too
     # a password keeps its spaces; none defines the secret without a value
     value = forms.CharField(required=False, strip=False)
     ephemeral = forms.BooleanField(required=False)
     private = forms.BooleanField(required=False)
+
+    def clean_usage(self):
+        usage = self.cleaned_data["usage"]
+        # XML text cannot hold them, and libvirt drops a line break
+        if any(ord(char) < 32 for char in usage):
+            raise forms.ValidationError(_("The usage cannot have control characters or line breaks"))
+        if not usage.strip():
+            raise forms.ValidationError(self.fields["usage"].error_messages["required"], code="required")
+        return usage.strip()
 
 
 # what a secret's usage and value are, per usage type, for the page's labels

@@ -20,6 +20,19 @@ class CreateSecretFormTests(SimpleTestCase):
         self.assertEqual((form.cleaned_data["value"], form.cleaned_data["ephemeral"], form.cleaned_data["private"]),
                          (" pw ", False, True))
 
+    def test_a_usage_with_a_control_character_is_refused(self):
+        # lxml refuses it in XML text (a 500); libvirt drops a line break
+        # at its ends too, which stripping would hide
+        for usage in ("iqn.test\x01", "a\nb", "iqn.test\n", "\tiqn.test"):
+            with self.subTest(usage=usage):
+                form = AddSecret({"usage_type": "iscsi", "usage": usage})
+                self.assertIn("control characters", str(form.errors["usage"]))
+        form = AddSecret({"usage_type": "iscsi", "usage": "   "})
+        self.assertEqual(form.errors["usage"].as_data()[0].code, "required")
+        form = AddSecret({"usage_type": "iscsi", "usage": " iqn.test "})
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["usage"], "iqn.test")
+
 
 class CreateSecretDialogTests(TestCase):
     def test_the_dialog_offers_the_usage_types_the_form_takes(self):

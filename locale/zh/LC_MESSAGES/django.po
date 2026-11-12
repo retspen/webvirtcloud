@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-12 12:21+0000\n"
+"POT-Creation-Date: 2026-11-12 12:49+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -68,8 +68,8 @@ msgstr "无效的密钥"
 #: instances/templates/create_instance_w2.html:42
 #: interfaces/templates/interface.html:119 networks/templates/network.html:145
 #: networks/templates/network.html:373 nwfilters/templates/nwfilters.html:29
-#: storages/templates/storage.html:123 virtsecrets/forms.py:25
-#: virtsecrets/forms.py:27
+#: storages/templates/storage.html:123 virtsecrets/forms.py:32
+#: virtsecrets/forms.py:34
 msgid "Name"
 msgstr "名称"
 
@@ -4159,7 +4159,7 @@ msgid "The VM is running: the changes apply at its next start."
 msgstr "虚拟机正在运行：更改将在下次启动时生效。"
 
 #: instances/templates/instances/edit_instance_volume.html:24
-#: virtsecrets/forms.py:23
+#: virtsecrets/forms.py:30
 msgid "Volume path"
 msgstr "卷路径"
 
@@ -8420,74 +8420,78 @@ msgstr "退出登录"
 msgid "Processing"
 msgstr "处理中"
 
-#: virtsecrets/forms.py:18
+#: virtsecrets/forms.py:19
+msgid "The usage cannot have control characters or line breaks"
+msgstr "用途不能包含控制字符或换行符"
+
+#: virtsecrets/forms.py:25
 msgid "Ceph secret name"
 msgstr "Ceph 机密名称"
 
-#: virtsecrets/forms.py:19
+#: virtsecrets/forms.py:26
 msgid ""
 "The name a disk or pool names it by, e.g. client.libvirt secret, not the Ceph"
 " user; one secret per name."
 msgstr "磁盘或存储池引用它时使用的名称，例如 client.libvirt secret，而不是 Ceph 用户；每个名称一个机密。"
 
-#: virtsecrets/forms.py:20
+#: virtsecrets/forms.py:27
 msgid "Key"
 msgstr "密钥"
 
-#: virtsecrets/forms.py:20
+#: virtsecrets/forms.py:27
 msgid "The key as ceph auth get-key prints it."
 msgstr "ceph auth get-key 输出的密钥。"
 
-#: virtsecrets/forms.py:21
+#: virtsecrets/forms.py:28
 msgid "iSCSI target"
 msgstr "iSCSI 目标"
 
-#: virtsecrets/forms.py:21
+#: virtsecrets/forms.py:28
 msgid "The name a disk or pool names it by, e.g. the target IQN."
 msgstr "磁盘或存储池引用它时使用的名称，例如目标 IQN。"
 
-#: virtsecrets/forms.py:22
+#: virtsecrets/forms.py:29
 msgid "CHAP password"
 msgstr "CHAP 密码"
 
-#: virtsecrets/forms.py:22
+#: virtsecrets/forms.py:29
 msgid "The password as it is typed."
 msgstr "按原样输入的密码。"
 
-#: virtsecrets/forms.py:23
+#: virtsecrets/forms.py:30
 msgid "The path of the encrypted volume it unlocks."
 msgstr "它所解锁的加密卷的路径。"
 
-#: virtsecrets/forms.py:24 virtsecrets/forms.py:26 virtsecrets/forms.py:28
+#: virtsecrets/forms.py:31 virtsecrets/forms.py:33 virtsecrets/forms.py:35
 msgid "Passphrase"
 msgstr "口令"
 
-#: virtsecrets/forms.py:24 virtsecrets/forms.py:28
+#: virtsecrets/forms.py:31 virtsecrets/forms.py:35
 msgid "The passphrase as it is typed."
 msgstr "按原样输入的口令。"
 
-#: virtsecrets/forms.py:25
+#: virtsecrets/forms.py:32
 msgid "A name for it; qemu.conf names it by its UUID."
 msgstr "为它起个名称；qemu.conf 通过其 UUID 引用它。"
 
-#: virtsecrets/forms.py:26
+#: virtsecrets/forms.py:33
 msgid "The passphrase of the TLS key, as it is typed."
 msgstr "TLS 密钥的口令，按原样输入。"
 
-#: virtsecrets/forms.py:27
+#: virtsecrets/forms.py:34
 msgid "A name for it; a VM's vTPM names it by its UUID."
 msgstr "为它起个名称；虚拟机的 vTPM 通过其 UUID 引用它。"
 
-#: virtsecrets/forms.py:29 virtsecrets/templates/create_secret_block.html:32
+#: virtsecrets/forms.py:36 virtsecrets/templates/create_secret_block.html:32
 #: virtsecrets/templates/secrets.html:100
 msgid "Value"
 msgstr "值"
 
-#: virtsecrets/forms.py:29
+#: virtsecrets/forms.py:36
 msgid "The value as it is typed."
 msgstr "按原样输入的值。"
 
-#: virtsecrets/forms.py:30
+#: virtsecrets/forms.py:37
 msgid "Leave it blank to give it later."
 msgstr "留空则稍后再设置。"
 
@@ -9635,17 +9639,21 @@ msgstr "MAC 地址的格式必须为 AA:BB:CC:DD:EE:FF，实际为 %(mac)s"
 msgid "A Ceph key is base64 text, as `ceph auth get-key` prints it"
 msgstr "Ceph 密钥是 base64 文本，即 `ceph auth get-key` 输出的内容"
 
-#: vrtManager/virtsecrets.py:115
+#: vrtManager/virtsecrets.py:105
+msgid "Type the secret's value"
+msgstr "请输入机密的值"
+
+#: vrtManager/virtsecrets.py:118
 #, python-format
 msgid "VMs %(names)s"
 msgstr "虚拟机 %(names)s"
 
-#: vrtManager/virtsecrets.py:117
+#: vrtManager/virtsecrets.py:120
 #, python-format
 msgid "pools %(names)s"
 msgstr "存储池 %(names)s"
 
-#: vrtManager/virtsecrets.py:118
+#: vrtManager/virtsecrets.py:121
 #, python-format
 msgid "Secret %(uuid)s is used by %(named)s; remove it from them first"
 msgstr "机密 %(uuid)s 正被 %(named)s 使用；请先从中移除它"
