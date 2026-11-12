@@ -7,12 +7,14 @@ from unittest.mock import PropertyMock, patch
 
 import libvirt
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
 from lxml import html as lxml_html
 from vrtManager import util
 
+from accounts.models import UserInstance
 from appsettings.models import AppSettings
 from appsettings.settings import get_settings
 from computes.models import Compute
@@ -135,6 +137,16 @@ class SnapshotTabTestCase(TestCase):
         text = button.get("data-confirm")
         self.assertIn("vdb (/pool/later.qcow2)", text)
         self.assertIn("NVRAM", text)
+
+    def test_an_owner_is_told_detached_disks_by_device(self):
+        owner = get_user_model().objects.create_user("snap_owner", "o@example.com", "pw")
+        owner.user_permissions.add(Permission.objects.get(codename="snapshot_instances"))
+        UserInstance.objects.create(user=owner, instance=self.instance, is_change=True)
+        self.client.force_login(owner)
+        doc = self.page(external=[self.snap("e", detaches=[{"dev": "vdb", "path": "/pool/later.qcow2"}])])
+        [button] = doc.xpath("//button[@name='revert_external_snapshot']")
+        self.assertIn("vdb.", button.get("data-confirm"))
+        self.assertNotIn("/pool/later.qcow2", button.get("data-confirm"))
 
     def test_each_kind_is_listed_once_per_page(self):
         doc = self.page(internal=[self.snap("i")], external=[self.snap("e")])

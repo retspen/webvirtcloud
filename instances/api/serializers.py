@@ -12,6 +12,10 @@ class InstanceSerializer(serializers.ModelSerializer):
         fields = ["id", "compute", "name", "uuid", "is_template", "created", "drbd"]
 
 
+# what a VM's device dicts tell of the host: its files and pools
+HOST_KEYS = {"image", "storage", "path", "backing_file", "loader"}
+
+
 class InstanceDetailsSerializer(serializers.ModelSerializer):
     networks = serializers.SerializerMethodField()
 
@@ -24,13 +28,27 @@ class InstanceDetailsSerializer(serializers.ModelSerializer):
             found = {}
         return [{**nic, **dict(zip(("ipv4", "ipv6"), found.get(nic["mac"], (None, None))))} for nic in instance.networks]
 
+    def superuser(self):
+        request = self.context.get("request")
+        return bool(request and request.user.is_superuser)
+
     def get_fields(self):
         fields = super().get_fields()
-        # the host's ISO images are a superuser's, as on the VM page
-        request = self.context.get("request")
-        if not (request and request.user.is_superuser):
-            del fields["media_iso"]
+        # the host's files are a superuser's, as on the VM page: its ISO images and the VM's NVRAM file
+        if not self.superuser():
+            del fields["media_iso"], fields["nvram"]
         return fields
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if not self.superuser():  # a disk's, CD-ROM's and firmware's file and pool too
+            for field in ("disks", "media"):
+                data[field] = [{key: value for key, value in device.items() if key not in HOST_KEYS}
+                               for device in data[field]]
+            data["firmware"] = {key: value for key, value in data["firmware"].items() if key not in HOST_KEYS}
+            for snap in data["snapshots"]:  # the disks a revert detaches, by device
+                snap["detaches"] = [{"dev": disk["dev"]} for disk in snap.get("detaches", [])]
+        return data
 
     class Meta:
         model = Instance

@@ -33,7 +33,7 @@
     <p class="small fw-semibold mb-1">{% trans "Disks" %}</p>
     <ul class="small ps-3">
         {% for disk in instance.config_disks %}
-        <li><strong>{{ disk.dev }}</strong> <span class="text-break">{{ disk.path|default:_("no file") }}</span></li>
+        <li><strong>{{ disk.dev }}</strong>{% if request.user.is_superuser %} <span class="text-break">{{ disk.path|default:_("no file") }}</span>{% endif %}</li>
         {% endfor %}
     </ul>
     {% endif %}

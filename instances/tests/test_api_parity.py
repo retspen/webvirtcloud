@@ -50,6 +50,25 @@ class ApiParityTests(TestCase):
             fields = InstanceDetailsSerializer(self.vm, context={"request": Request(user)}).fields
             self.assertEqual("media_iso" in fields, shown, user)
 
+    def test_the_hosts_files_and_pools_are_a_superusers(self):
+        # the VM page shows an owner none of them: a disk is its device, size and settings
+        class Request:
+            def __init__(self, user):
+                self.user = user
+
+        read = {"disks": [{"dev": "vda", "size": 1, "image": "a.qcow2", "storage": "default", "path": "/pool/a.qcow2",
+                           "backing_file": "/pool/base.qcow2"}],
+                "media": [{"dev": "sda", "image": "x.iso", "storage": "iso", "path": "/iso/x.iso"}],
+                "firmware": {"loader": "/usr/share/OVMF/OVMF_CODE.fd", "type": "pflash"},
+                "snapshots": [{"name": "s", "detaches": [{"dev": "vdb", "path": "/pool/b.qcow2"}]}, {"name": "i"}]}
+        with patch("rest_framework.serializers.ModelSerializer.to_representation", return_value=read):
+            owner = InstanceDetailsSerializer(self.vm, context={"request": Request(self.user)}).data
+            admin = InstanceDetailsSerializer(self.vm, context={"request": Request(self.admin)}).data
+        self.assertEqual(owner, {"disks": [{"dev": "vda", "size": 1}], "media": [{"dev": "sda"}], "firmware": {"type": "pflash"},
+                                 "snapshots": [{"name": "s", "detaches": [{"dev": "vdb"}]}, {"name": "i", "detaches": []}]})
+        self.assertEqual(admin, read)
+        self.assertNotIn("nvram", InstanceDetailsSerializer(self.vm, context={"request": Request(self.user)}).fields)
+
     def test_a_flavor_is_at_least_one_of_each_and_has_its_id(self):
         self.client.force_login(self.admin)
         response = self.client.post("/api/v1/flavor/", {"label": "zero", "memory": 0, "vcpu": -1, "disk": 0},
