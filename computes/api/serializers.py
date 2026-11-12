@@ -1,3 +1,5 @@
+from copy import copy
+
 from computes.models import Compute
 from computes.validators import validate_gstfsd_key
 from rest_framework import serializers
@@ -34,6 +36,14 @@ class ComputeSerializer(serializers.ModelSerializer):
 
     def validate_gstfsd_key(self, value):
         return value or (self.instance.gstfsd_key if self.instance else value)
+
+    def validate(self, attrs):
+        # as the web form: the connection is tried and its host checked (Compute.clean)
+        compute = copy(self.instance) if self.instance else Compute()
+        for field, value in attrs.items():
+            setattr(compute, field, value)
+        compute.clean()
+        return {**attrs, "host_uuid": compute.host_uuid}
 
     class Meta:
         model = Compute

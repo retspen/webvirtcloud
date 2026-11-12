@@ -6,11 +6,13 @@ from django.test import TestCase
 from django.urls import reverse
 
 from computes.models import Compute
+from computes.tests.fakes import no_host_answers
 
 
 class ComputePasswordTests(TestCase):
     def setUp(self):
         self.client.force_login(get_user_model().objects.create_superuser("cp-admin", "cp@example.com", "pw"))
+        no_host_answers(self)
 
     def edit(self, compute, password):
         data = {"name": compute.name, "hostname": compute.hostname, "login": "admin", "password": password,

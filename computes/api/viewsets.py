@@ -1,6 +1,6 @@
 from admin.permissions import IsSuperUser
 from computes.models import Compute
-from computes.utils import libvirt_compute_lock
+from computes.utils import hosts_lock
 from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -22,20 +22,30 @@ class ComputeViewSet(viewsets.ModelViewSet):
     serializer_class = ComputeSerializer
     permission_classes = [IsSuperUser]
 
+    # checked and saved under hosts_lock, as on the web (Compute.clean)
+    def create(self, request, *args, **kwargs):
+        with hosts_lock():
+            return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        # the row is written here, as on the web: a busy compute is refused with one too
+        compute = self.get_object()
+        with audit(request, compute, f"Compute {compute.name} ({compute.hostname})", "change") as self.entry, \
+                hosts_lock(compute):
+            self.entry.skip = True  # until a change is saved
+            return super().update(request, *args, **kwargs)
+
     def perform_create(self, serializer):
         data = serializer.validated_data
         with audit(self.request, data["name"], f"Compute {data['name']} ({data['hostname']})", "add"):
             serializer.save()
 
     def perform_update(self, serializer):
-        compute = serializer.instance
-        subject = f"Compute {compute.name} ({compute.hostname})"
-        before = snapshot(compute)
-        with audit(self.request, compute, subject, "change") as entry, libvirt_compute_lock(compute):
-            serializer.save()
-            fields = changed_fields(before, snapshot(compute))
-            entry.action = "change " + ", ".join(fields)
-            entry.skip = not fields
+        before = snapshot(serializer.instance)
+        serializer.save()
+        fields = changed_fields(before, snapshot(serializer.instance))
+        self.entry.action = "change " + ", ".join(fields)
+        self.entry.skip = not fields
 
     def perform_destroy(self, instance):
         with audit(self.request, instance, f"Compute {instance.name} ({instance.hostname})", "delete"):

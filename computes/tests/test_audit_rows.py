@@ -9,6 +9,7 @@ from operations.models import Claim
 from operations.utils import busy_message
 
 from computes.models import Compute
+from computes.tests.fakes import no_host_answers
 
 
 class ComputeAuditRowTests(TestCase):
@@ -16,6 +17,7 @@ class ComputeAuditRowTests(TestCase):
         self.admin = get_user_model().objects.create_superuser("audit-admin", "audit@example.com", "pw")
         self.client.force_login(self.admin)
         Logs.objects.all().delete()  # the login's row
+        no_host_answers(self)
 
     def messages(self):
         return list(Logs.objects.order_by("id").values_list("message", flat=True))

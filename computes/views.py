@@ -1,9 +1,11 @@
 import json
 import logging
+from contextlib import suppress
 
 from admin.decorators import superuser_only
 from django.conf import settings
 from django.core import signing
+from django.db import IntegrityError
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -85,6 +87,10 @@ def computes(request):
               "vcpus": 0, "cpus": 0, "assigned": 0, "memory": 0}
     for compute in computes:
         compute.connection_name = CONNECTIONS.get(compute.type, "")
+        if compute.status is True and not compute.host_uuid:
+            # one added before host UUIDs were kept (Compute.clean); none for a second record of a host
+            with suppress(IntegrityError):
+                compute.record_host()
         compute.shown_capacity = given = shown_capacity(compute)
         totals["connected"] += compute.status is True
         if given:
@@ -153,11 +159,13 @@ def instances(request, compute_id):
 @superuser_only
 def compute_create(request, FormClass):
     form = FormClass(request.POST or None)
-    if form.is_valid():
-        compute = form.instance
-        with audit(request, compute, f"Compute {compute.name} ({compute.hostname})", "add"):
-            form.save()
-        return redirect(reverse("computes"))
+    if request.method == "POST":
+        with utils.hosts_lock():
+            if form.is_valid():
+                compute = form.instance
+                with audit(request, compute, f"Compute {compute.name} ({compute.hostname})", "add"):
+                    form.save()
+                return redirect(reverse("computes"))
 
     return render(request, "computes/form.html", {"form": form})
 
@@ -179,14 +187,17 @@ def compute_update(request, compute_id):
     subject = f"Compute {compute.name} ({compute.hostname})"
     before = snapshot(compute)
     form = FormClass(request.POST or None, instance=compute)
-    if form.is_valid():
+    if request.method == "POST":
         # held as a delete holds it: a job on the compute keeps the host it was admitted for
-        with audit(request, compute, subject, "change") as entry, utils.libvirt_compute_lock(compute):
-            form.save()
-            fields = changed_fields(before, snapshot(compute))
-            entry.action = "change " + ", ".join(fields)
-            entry.skip = not fields
-        return redirect(reverse("computes"))
+        with audit(request, compute, subject, "change") as entry, utils.hosts_lock(compute):
+            entry.skip = True  # a refused form changes nothing
+            if form.is_valid():
+                form.save()
+                fields = changed_fields(before, snapshot(compute))
+                entry.action = "change " + ", ".join(fields)
+                entry.skip = not fields
+        if form.is_valid():
+            return redirect(reverse("computes"))
 
     return render(request, "computes/form.html", {"form": form})
 

@@ -9,6 +9,7 @@ from libvirt import libvirtError
 
 from vrtManager.connection import CONN_SOCKET, connection_manager
 from computes.models import Compute
+from computes.tests.fakes import no_host_answers
 from vrtManager.tests import livetest
 
 TEST_COMPUTE_HOST = os.environ.get("TEST_LIBVIRT_HOST", "localhost")
@@ -58,6 +59,7 @@ class ComputesTestCase(TestCase):
 
     @patch.object(Compute, "connection", new_callable=PropertyMock, return_value=libvirtError("unreachable"))
     def test_create_update_delete(self, connection):
+        no_host_answers(self)
         response = self.client.get(reverse("add_socket_host"))
         self.assertEqual(response.status_code, 200)
 

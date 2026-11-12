@@ -32,6 +32,11 @@ def compute_key(compute_id):
     return f"compute:{compute_id}"
 
 
+def hosts_key():
+    """The computes' connections: one add or change of one is checked and saved at a time."""
+    return "hosts"
+
+
 def reconcile_key(compute_id):
     return f"reconcile:{compute_id}"
 

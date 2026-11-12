@@ -6,6 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from computes.models import Compute
+from computes.tests.fakes import no_host_answers
 
 KEY, OTHER = "5e" * 32, "a1" * 32
 
@@ -13,6 +14,7 @@ KEY, OTHER = "5e" * 32, "a1" * 32
 class GstfsdKeyTests(TestCase):
     def setUp(self):
         self.client.force_login(get_user_model().objects.create_superuser("gk-admin", "gk@example.com", "pw"))
+        no_host_answers(self)
 
     def edit(self, compute, key):
         data = {"name": compute.name, "hostname": compute.hostname, "login": "admin", "password": "",

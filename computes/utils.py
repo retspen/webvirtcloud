@@ -29,6 +29,18 @@ def libvirt_compute_lock(compute, *, shared=False):
 
 
 @contextmanager
+def hosts_lock(compute=None):
+    """A compute added or its connection changed: checked (Compute.clean)
+    and saved one at a time, so two cannot be one host; a compute changed
+    is held exclusive, so its VMs are not listed from the old host meanwhile."""
+    wanted = {claims.hosts_key(): Claim.EXCLUSIVE}
+    if compute is not None:
+        wanted[claims.compute_key(compute.pk)] = Claim.EXCLUSIVE
+    with claims.hold(wanted):
+        yield
+
+
+@contextmanager
 def user_quota_lock(user):
     """One user's quota check and the change it allows run one at a time."""
     with claims.hold({claims.quota_key(user.pk): Claim.EXCLUSIVE}):

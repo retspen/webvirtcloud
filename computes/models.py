@@ -1,7 +1,8 @@
 from ipaddress import ip_address
 
-from django.db import transaction
-from django.db.models import CharField, IntegerField, Model
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
+from django.db.models import CharField, IntegerField, Model, Q, UniqueConstraint
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError, virConnect
@@ -9,6 +10,10 @@ from libvirt import libvirtError, virConnect
 from computes.validators import validate_gstfsd_key, validate_hostname, validate_login, validate_migration_address
 from vrtManager.connection import connection_manager
 from vrtManager.hostdetails import wvmHostDetails
+
+
+# what the panel connects to a compute with
+ENDPOINT = ("hostname", "login", "password", "type")
 
 
 class Compute(Model):
@@ -40,6 +45,13 @@ class Compute(Model):
             "of a shut-off VM with it; empty: they cannot be set there"
         ),
     )
+
+    # the libvirt host's UUID (its capabilities), read when the panel first
+    # reaches it: one host is one compute, and a compute's VMs stay on it
+    host_uuid = CharField(max_length=36, blank=True, default="", editable=False)
+
+    class Meta:
+        constraints = [UniqueConstraint(fields=["host_uuid"], condition=~Q(host_uuid=""), name="one_compute_per_host")]
 
     @property
     def migration_uri(self):
@@ -128,6 +140,55 @@ class Compute(Model):
 
     def __str__(self):
         return self.name
+
+    def record_host(self):
+        """Reads and keeps the UUID of the host the compute reaches (host_uuid)
+        while its connection is still the one read with; its UUID, or ""
+        when it cannot be read. IntegrityError when another compute is that host."""
+        try:
+            uuid = self.proxy.host_uuid()
+        except libvirtError:
+            return ""
+        with transaction.atomic():
+            same = {field: getattr(self, field) for field in ENDPOINT}
+            if not Compute.objects.filter(pk=self.pk, host_uuid="", **same).update(host_uuid=uuid):
+                return ""
+        self.host_uuid = uuid
+        return uuid
+
+    # why a new or changed connection could not be tried (clean), for the form to tell
+    unreachable = None
+
+    def clean(self):
+        """A host is one compute, and a compute's VMs stay on their host: a
+        new or changed connection is tried and its host UUID read
+        (host_uuid). Refused when another compute is that host, or when the
+        compute has VMs and the host is not theirs, cannot be reached, or
+        theirs is not known. Callers hold hosts_lock (computes.utils)."""
+        before = Compute.objects.filter(pk=self.pk).values(*ENDPOINT, "host_uuid").first() if self.pk else None
+        if before and all(before[field] == getattr(self, field) for field in ENDPOINT):
+            return
+        try:
+            uuid = wvmHostDetails(self.hostname, self.login, self.password, self.type).host_uuid()
+        except libvirtError as error:
+            uuid, self.unreachable = "", str(error)
+        if uuid and (other := Compute.objects.exclude(pk=self.pk).filter(host_uuid=uuid).first()):
+            raise ValidationError(_("This host is already added as %(name)s"), params={"name": other.name})
+        if before and self.instance_set.exists():
+            if not uuid:
+                raise ValidationError(_("The panel cannot reach the host to tell that its VMs are there: %(error)s"),
+                                      params={"error": self.unreachable})
+            try:
+                recorded = before["host_uuid"] or Compute.objects.get(pk=self.pk).record_host()
+            except IntegrityError:
+                recorded = ""
+            if not recorded:
+                raise ValidationError(_("The host its VMs are on is not known yet: change the connection when "
+                                        "the panel has reached the host at its current one"))
+            if uuid != recorded:
+                raise ValidationError(_("This is another host than the one its VMs are on: "
+                                        "add it as a new host"))
+        self.host_uuid = uuid
 
     def delete(self, *args, **kwargs):
         """Its VMs keep running on the host: their owners wait in tombstones,
