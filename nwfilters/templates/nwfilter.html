@@ -148,6 +148,7 @@
                 <form method="post" class="accordion-body" aria-label="{% trans "Change the filter's XML" %}">{% csrf_token %}
                     <p class="small text-body-secondary">{% trans "A change applies at once, also to the running VMs that use the filter; it keeps the filter's name and UUID." %}</p>
                     <input type="hidden" name="edit_xml">
+                    <input type="hidden" name="seen" value="{{ seen }}">
                     <div class="xmlheight mb-3"><textarea id="edit_editor" aria-label="{% trans "Filter XML" %}">{{ xml }}</textarea></div>
                     <div class="d-flex justify-content-end">
                         <button type="submit" class="btn btn-primary" name="edit_nwfilter">{% trans "Save" %}</button>

@@ -1,4 +1,5 @@
 from django.utils.translation import gettext_noop
+import hashlib
 import ipaddress
 import secrets
 import re
@@ -28,6 +29,12 @@ def render(text, values, translate):
         return value
     text = translate(text)
     return text % {key: shown(value) for key, value in values.items()} if values else text
+
+
+def digest(text):
+    """A fingerprint of a definition: a page sends back the one of the
+    definition it showed, and a change made meanwhile is not overwritten."""
+    return hashlib.sha256(text.encode()).hexdigest()
 
 
 class OperationError(libvirt.libvirtError):

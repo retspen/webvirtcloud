@@ -70,7 +70,7 @@ msgstr "Geçersiz anahtar"
 #: instances/templates/allinstances_index_nongrouped.html:6
 #: instances/templates/create_instance_w2.html:42
 #: interfaces/templates/interface.html:119 networks/templates/network.html:145
-#: networks/templates/network.html:372 nwfilters/templates/nwfilters.html:29
+#: networks/templates/network.html:373 nwfilters/templates/nwfilters.html:29
 #: storages/templates/storage.html:123 virtsecrets/forms.py:25
 #: virtsecrets/forms.py:27
 msgid "Name"
@@ -304,10 +304,10 @@ msgstr "Burada oturumunuz açık kalır; diğer oturumlarınız kapanır."
 #: interfaces/templates/create_iface_block.html:147
 #: networks/templates/add_network_qos.html:35
 #: networks/templates/create_net_block.html:126
-#: networks/templates/network.html:377 networks/templates/network.html:404
-#: networks/templates/network.html:443
+#: networks/templates/network.html:378 networks/templates/network.html:405
+#: networks/templates/network.html:444
 #: nwfilters/templates/create_nwfilter_block.html:33
-#: nwfilters/templates/nwfilter.html:178 nwfilters/templates/nwfilters.html:93
+#: nwfilters/templates/nwfilter.html:179 nwfilters/templates/nwfilters.html:93
 #: operations/templates/operations/job.html:31
 #: operations/templatetags/operations.py:83
 #: storages/templates/create_stg_block.html:183
@@ -2091,9 +2091,9 @@ msgstr "hiçbiri"
 #: instances/templates/instances/settings_tab.html:653
 #: instances/templates/instances/settings_tab.html:907
 #: networks/templates/add_network_qos.html:36
-#: networks/templates/network.html:336 networks/templates/network.html:378
-#: networks/templates/network.html:405 networks/templates/network.html:444
-#: nwfilters/templates/nwfilter.html:153 templates/common/form.html:28
+#: networks/templates/network.html:337 networks/templates/network.html:379
+#: networks/templates/network.html:406 networks/templates/network.html:445
+#: nwfilters/templates/nwfilter.html:154 templates/common/form.html:28
 msgid "Save"
 msgstr "Kaydet"
 
@@ -2626,10 +2626,10 @@ msgstr "Bağlan"
 #: interfaces/templates/create_iface_block.html:20
 #: networks/templates/add_network_qos.html:8
 #: networks/templates/create_net_block.html:20
-#: networks/templates/network.html:353 networks/templates/network.html:391
-#: networks/templates/network.html:417
+#: networks/templates/network.html:354 networks/templates/network.html:392
+#: networks/templates/network.html:418
 #: nwfilters/templates/create_nwfilter_block.html:17
-#: nwfilters/templates/nwfilter.html:165 nwfilters/templates/nwfilters.html:85
+#: nwfilters/templates/nwfilter.html:166 nwfilters/templates/nwfilters.html:85
 #: storages/templates/create_stg_block.html:21
 #: storages/templates/create_stg_vol_block.html:16
 #: storages/templates/create_stg_vol_block.html:54
@@ -3623,7 +3623,7 @@ msgstr "Bul"
 
 #: instances/templates/allinstances.html:104
 #: interfaces/templates/interface.html:101 networks/templates/network.html:143
-#: networks/templates/network.html:199 networks/templates/network.html:363
+#: networks/templates/network.html:199 networks/templates/network.html:364
 #: nodedevs/templates/nodedevs.html:32
 msgid "Address"
 msgstr "Adres"
@@ -5330,12 +5330,12 @@ msgid "Migration route"
 msgstr "Taşıma yolu"
 
 #: instances/templates/instances/settings_tab.html:526
-#: networks/templates/network.html:395
+#: networks/templates/network.html:396
 msgid "From"
 msgstr "Başlangıç"
 
 #: instances/templates/instances/settings_tab.html:531
-#: networks/templates/network.html:399
+#: networks/templates/network.html:400
 msgid "To"
 msgstr "Bitiş"
 
@@ -7063,7 +7063,7 @@ msgid "Bandwidth limit of eth%(nic)s"
 msgstr "eth%(nic)s bant genişliği sınırı"
 
 #: networks/templates/add_network_qos.html:13
-#: networks/templates/network.html:282 networks/templates/network.html:421
+#: networks/templates/network.html:282 networks/templates/network.html:422
 #: nwfilters/templates/nwfilter.html:97
 msgid "Direction"
 msgstr "Yön"
@@ -7077,17 +7077,17 @@ msgid "Outbound: from the VM"
 msgstr "Giden: sanal makineden"
 
 #: networks/templates/add_network_qos.html:20
-#: networks/templates/network.html:429
+#: networks/templates/network.html:430
 msgid "Average (KiB/s)"
 msgstr "Ortalama (KiB/s)"
 
 #: networks/templates/add_network_qos.html:24
-#: networks/templates/network.html:433
+#: networks/templates/network.html:434
 msgid "Peak (KiB/s)"
 msgstr "Tepe (KiB/s)"
 
 #: networks/templates/add_network_qos.html:28
-#: networks/templates/network.html:437
+#: networks/templates/network.html:438
 msgid "Burst (KiB)"
 msgstr "Ani yük (KiB)"
 
@@ -7276,11 +7276,11 @@ msgstr ""
 msgid "Stop the network to change its range"
 msgstr "Aralığını değiştirmek için ağı durdurun"
 
-#: networks/templates/network.html:89 networks/templates/network.html:390
+#: networks/templates/network.html:89 networks/templates/network.html:391
 msgid "DHCP range"
 msgstr "DHCP aralığı"
 
-#: networks/templates/network.html:95 networks/templates/network.html:357
+#: networks/templates/network.html:95 networks/templates/network.html:358
 msgid "Subnet"
 msgstr "Alt ağ"
 
@@ -7437,35 +7437,35 @@ msgstr ""
 "Kayıtlı tanım: çalışan bir ağ, değişikliği durdurulup yeniden başlatıldığında"
 " alır."
 
-#: networks/templates/network.html:334
+#: networks/templates/network.html:335
 msgid "Network XML"
 msgstr "Ağ XML'i"
 
-#: networks/templates/network.html:352
+#: networks/templates/network.html:353
 msgid "Fixed address"
 msgstr "Sabit adres"
 
-#: networks/templates/network.html:367
+#: networks/templates/network.html:368
 msgid "MAC (IPv4) or DUID (IPv6)"
 msgstr "MAC (IPv4) veya DUID (IPv6)"
 
-#: networks/templates/network.html:369
+#: networks/templates/network.html:370
 msgid "The VM's network card; without it, the VM is known by its name."
 msgstr "Sanal makinenin ağ kartı; o olmadan sanal makine adıyla tanınır."
 
-#: networks/templates/network.html:416
+#: networks/templates/network.html:417
 msgid "Bandwidth limit"
 msgstr "Bant genişliği sınırı"
 
-#: networks/templates/network.html:424
+#: networks/templates/network.html:425
 msgid "Inbound: to the VMs"
 msgstr "Gelen: sanal makinelere"
 
-#: networks/templates/network.html:425
+#: networks/templates/network.html:426
 msgid "Outbound: from the VMs"
 msgstr "Giden: sanal makinelerden"
 
-#: networks/templates/network.html:440
+#: networks/templates/network.html:441
 msgid "Linux applies a peak to inbound traffic only."
 msgstr "Linux tepe değerini yalnızca gelen trafiğe uygular."
 
@@ -7669,7 +7669,7 @@ msgid "libvirt's filter format"
 msgstr "libvirt'in filtre biçimi"
 
 #: nwfilters/templates/create_nwfilter_block.html:25
-#: nwfilters/templates/nwfilter.html:151
+#: nwfilters/templates/nwfilter.html:152
 msgid "Filter XML"
 msgstr "Filtre XML'i"
 
@@ -7741,8 +7741,8 @@ msgstr "Başka bir filtreye başvurmuyor."
 msgid "Rules"
 msgstr "Kurallar"
 
-#: nwfilters/templates/nwfilter.html:88 nwfilters/templates/nwfilter.html:164
-#: nwfilters/templates/nwfilter.html:179
+#: nwfilters/templates/nwfilter.html:88 nwfilters/templates/nwfilter.html:165
+#: nwfilters/templates/nwfilter.html:180
 msgid "Add rule"
 msgstr "Kural ekle"
 
@@ -7803,7 +7803,7 @@ msgstr ""
 "Değişiklik hemen, filtreyi kullanan çalışan sanal makinelere de uygulanır; "
 "filtrenin adı ve UUID'si korunur."
 
-#: nwfilters/templates/nwfilter.html:169
+#: nwfilters/templates/nwfilter.html:170
 msgid ""
 "One rule: in is traffic to the VM, out from it; a lower priority applies "
 "first (500 if none is given)."
@@ -7811,11 +7811,11 @@ msgstr ""
 "Tek kural: in sanal makineye gelen, out ondan çıkan trafiktir; düşük öncelik "
 "önce uygulanır (verilmezse 500)."
 
-#: nwfilters/templates/nwfilter.html:170
+#: nwfilters/templates/nwfilter.html:171
 msgid "The protocols and their attributes"
 msgstr "Protokoller ve öznitelikleri"
 
-#: nwfilters/templates/nwfilter.html:173
+#: nwfilters/templates/nwfilter.html:174
 msgid "Rule XML"
 msgstr "Kural XML'i"
 
@@ -9922,10 +9922,15 @@ msgstr "Yön gelen ya da giden olmalı"
 
 #: vrtManager/network.py:493
 #, python-format
+msgid "Network %(net)s was changed meanwhile; reload the page"
+msgstr "%(net)s ağı bu arada değişti; sayfayı yeniden yükleyin"
+
+#: vrtManager/network.py:496
+#, python-format
 msgid "The XML must define network %(net)s"
 msgstr "XML, %(net)s ağını tanımlamalıdır"
 
-#: vrtManager/network.py:495
+#: vrtManager/network.py:498
 msgid "The XML must keep the network's UUID"
 msgstr "XML, ağın UUID değerini korumalıdır"
 
@@ -9998,7 +10003,7 @@ msgstr "Üreticiye özgü"
 msgid "USB device %(bus)s/%(device)s (%(product)s)"
 msgstr "USB aygıtı %(bus)s/%(device)s (%(product)s)"
 
-#: vrtManager/nodedevs.py:103 vrtManager/util.py:91
+#: vrtManager/nodedevs.py:103 vrtManager/util.py:98
 #, python-format
 msgid "The XML is not valid: %(err)s"
 msgstr "XML geçerli değil: %(err)s"
@@ -10147,14 +10152,19 @@ msgstr "Filtre değişti; sayfayı yeniden yükleyip tekrar deneyin"
 
 #: vrtManager/nwfilters.py:169
 #, python-format
+msgid "Filter %(name)s was changed meanwhile; reload the page"
+msgstr "%(name)s filtresi bu arada değişti; sayfayı yeniden yükleyin"
+
+#: vrtManager/nwfilters.py:172
+#, python-format
 msgid "The XML must define filter %(name)s"
 msgstr "XML, %(name)s filtresini tanımlamalıdır"
 
-#: vrtManager/nwfilters.py:171
+#: vrtManager/nwfilters.py:174
 msgid "The XML must keep the filter's UUID"
 msgstr "XML, filtrenin UUID değerini korumalıdır"
 
-#: vrtManager/nwfilters.py:183
+#: vrtManager/nwfilters.py:186
 #, python-format
 msgid ""
 "Filter %(name)s cannot be referenced: it is this one, referenced already or "
@@ -10163,7 +10173,7 @@ msgstr ""
 "%(name)s filtresine başvurulamaz: bu filtrenin kendisi, zaten başvurulmuş "
 "veya sunucuda yok"
 
-#: vrtManager/nwfilters.py:193
+#: vrtManager/nwfilters.py:196
 msgid "Enter one <rule> element"
 msgstr "Tek bir <rule> öğesi girin"
 
@@ -10199,11 +10209,11 @@ msgstr ""
 "Çalışan %(vms)s sanal makineleri %(name)s birimini kullanıyor; kopyalamak "
 "için onları kapatın"
 
-#: vrtManager/util.py:93
+#: vrtManager/util.py:100
 msgid "The XML may not declare a DTD"
 msgstr "XML bir DTD bildiremez"
 
-#: vrtManager/util.py:139
+#: vrtManager/util.py:146
 #, python-format
 msgid "MAC address must be of the format AA:BB:CC:DD:EE:FF, was %(mac)s"
 msgstr "MAC adresi AA:BB:CC:DD:EE:FF biçiminde olmalı; girilen: %(mac)s"

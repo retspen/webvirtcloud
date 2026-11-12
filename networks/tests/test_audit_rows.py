@@ -56,7 +56,7 @@ class NetworkRowTests(TestCase):
         self.post({"delete_fixed_address": "", "original": "192.0.2.31", "ip_index": "0"})
         self.post({"set_qos": "", "qos_direction": "inbound", "qos_average": "100"})
         self.post({"unset_qos": "", "qos_direction": "inbound"})
-        self.post({"edit_network": "", "edit_xml": xml})
+        self.post({"edit_network": "", "edit_xml": xml, "seen": self.client.get(self.url).context["seen"]})
         self.post({"stop": ""})
         self.post({"delete": ""})
         self.assertEqual(rows(), [

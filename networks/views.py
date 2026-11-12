@@ -11,7 +11,7 @@ from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
 from logs.audit import audit, failed
 from vrtManager.network import network_size, wvmNetwork, wvmNetworks
-from vrtManager.util import OperationError
+from vrtManager.util import OperationError, digest
 
 from networks.forms import AddNetPool
 
@@ -192,7 +192,7 @@ def network(request, compute_id, pool):
             if edit_xml:
                 try:
                     with audit(request, compute, subject, "change XML"):
-                        conn.edit_network(edit_xml)
+                        conn.edit_network(edit_xml, request.POST.get("seen", ""))
                 except (libvirtError, OperationError) as err:
                     messages.error(request, err)
                     return HttpResponseRedirect(here)
@@ -279,6 +279,7 @@ def network(request, compute_id, pool):
         for vm in vms:
             vm["id"] = vm_ids.get(vm["name"])
         xml = conn.saved_xml
+        seen = digest(xml)
     except libvirtError as lib_err:
         messages.error(request, lib_err)
         return HttpResponseRedirect(reverse("networks", args=[compute_id]))

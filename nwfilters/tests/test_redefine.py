@@ -75,7 +75,8 @@ class FilterRedefineTests(TestCase):
         page = html.fromstring(self.client.get(self.url).content)
         edited = page.get_element_by_id("edit_editor").text
         self.assertIn(UUID, edited)
-        tree, _ = self.defined({"edit_nwfilter": "", "edit_xml": edited})
+        seen = page.xpath("//input[@name='seen']/@value")[0]
+        tree, _ = self.defined({"edit_nwfilter": "", "edit_xml": edited, "seen": seen})
         self.assertEqual(tree.findtext("uuid"), UUID)
 
     def test_one_change_a_post(self):

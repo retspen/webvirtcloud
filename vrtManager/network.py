@@ -485,9 +485,12 @@ class wvmNetwork(wvmConnect):
             limit.getparent().remove(limit)
         self._define(tree)
 
-    def edit_network(self, new_xml):
+    def edit_network(self, new_xml, seen):
         """Defines this network anew from new_xml: of the same name and, if it
-        names one, the same UUID, not another network."""
+        names one, the same UUID, not another network; seen is the digest of
+        the saved definition the editor showed."""
+        if seen != util.digest(self.saved_xml):
+            raise util.OperationError(gettext_noop("Network %(net)s was changed meanwhile; reload the page"), net=self.net.name())
         tree = util.parse_xml(new_xml)
         if tree.tag != "network" or tree.findtext("name") != self.net.name():
             raise util.OperationError(gettext_noop("The XML must define network %(net)s"), net=self.net.name())

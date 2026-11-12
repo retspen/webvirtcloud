@@ -161,9 +161,12 @@ class wvmNWFilter(wvmNWFilters):
         self._define(tree)
         return elements[index]
 
-    def edit(self, xml):
+    def edit(self, xml, seen):
         """Define the filter anew from the XML entered: the same filter, of
-        its name and UUID."""
+        its name and UUID; seen is the digest of the XML (get_xml) the editor
+        showed."""
+        if seen != util.digest(self.get_xml()):
+            raise util.OperationError(gettext_noop("Filter %(name)s was changed meanwhile; reload the page"), name=self.get_name())
         tree = util.parse_xml(xml)
         if tree.tag != "filter" or tree.get("name") != self.get_name():
             raise util.OperationError(gettext_noop("The XML must define filter %(name)s"), name=self.get_name())

@@ -15,7 +15,7 @@ from lxml import etree
 from vrtManager.network import network_size, wvmNetwork, wvmNetworks
 from vrtManager.tests.driver import without_inactive_flag
 from vrtManager.tests.fakes import DUID, lease
-from vrtManager.util import OperationError
+from vrtManager.util import OperationError, digest
 
 NODE = """<node>
   <network><name>lab</name><bridge name='virbr9'/>
@@ -155,12 +155,13 @@ class NetworkChangeTests(SimpleTestCase):
         xml = ('<!DOCTYPE network [<!ENTITY name SYSTEM "file:///etc/hostname">]>'
                "<network><name>&name;</name></network>")
         with self.assertRaisesRegex(OperationError, "may not declare a DTD"):
-            net.edit_network(xml)
+            net.edit_network(xml, digest(net.saved_xml))
 
     def test_the_xml_editor_takes_an_encoding_declaration(self):
         self.conn.networkLookupByName("lab").destroy()
         net = self.network()
-        net.edit_network('<?xml version="1.0" encoding="UTF-8"?>\n' + net.saved_xml.replace("virbr9", "virbr6"))
+        net.edit_network('<?xml version="1.0" encoding="UTF-8"?>\n' + net.saved_xml.replace("virbr9", "virbr6"),
+                         digest(net.saved_xml))
         self.assertEqual(self.saved().xpath("bridge/@name"), ["virbr6"])
 
     def test_a_fixed_address_is_of_the_subnet_and_its_own(self):
@@ -180,9 +181,20 @@ class NetworkChangeTests(SimpleTestCase):
                            (xml.replace(net.net.UUIDString(), "11111111-2222-3333-4444-555555555555"), "keep the network's UUID"),
                            ("<network>", "not valid")):
             with self.subTest(why=why), self.assertRaisesRegex(OperationError, why):
-                net.edit_network(other)
-        net.edit_network(xml.replace("virbr9", "virbr7"))
+                net.edit_network(other, digest(xml))
+        net.edit_network(xml.replace("virbr9", "virbr7"), digest(xml))
         self.assertEqual(self.saved().xpath("bridge/@name"), ["virbr7"])
+
+    def test_the_xml_editor_does_not_undo_a_change_made_meanwhile(self):
+        # another admin set a limit after this editor showed the definition
+        self.conn.networkLookupByName("lab").destroy()
+        net = self.network()
+        shown = net.saved_xml
+        net.set_qos("inbound", 100, 200, 300)
+        with self.assertRaisesRegex(OperationError, "Network lab was changed meanwhile"):
+            net.edit_network(shown.replace("virbr9", "virbr7"), digest(shown))
+        self.assertEqual((self.saved().xpath("bridge/@name"), self.saved().xpath("bandwidth/inbound/@average")),
+                         (["virbr9"], ["100"]))
 
     def test_a_network_that_does_not_start_is_undefined(self):
         gateway, mask, dhcp = network_size("192.0.2.0/24", True)

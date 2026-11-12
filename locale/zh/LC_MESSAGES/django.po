@@ -67,7 +67,7 @@ msgstr "无效的密钥"
 #: instances/templates/allinstances_index_nongrouped.html:6
 #: instances/templates/create_instance_w2.html:42
 #: interfaces/templates/interface.html:119 networks/templates/network.html:145
-#: networks/templates/network.html:372 nwfilters/templates/nwfilters.html:29
+#: networks/templates/network.html:373 nwfilters/templates/nwfilters.html:29
 #: storages/templates/storage.html:123 virtsecrets/forms.py:25
 #: virtsecrets/forms.py:27
 msgid "Name"
@@ -299,10 +299,10 @@ msgstr "您在此处保持登录；您的其他会话将结束。"
 #: interfaces/templates/create_iface_block.html:147
 #: networks/templates/add_network_qos.html:35
 #: networks/templates/create_net_block.html:126
-#: networks/templates/network.html:377 networks/templates/network.html:404
-#: networks/templates/network.html:443
+#: networks/templates/network.html:378 networks/templates/network.html:405
+#: networks/templates/network.html:444
 #: nwfilters/templates/create_nwfilter_block.html:33
-#: nwfilters/templates/nwfilter.html:178 nwfilters/templates/nwfilters.html:93
+#: nwfilters/templates/nwfilter.html:179 nwfilters/templates/nwfilters.html:93
 #: operations/templates/operations/job.html:31
 #: operations/templatetags/operations.py:83
 #: storages/templates/create_stg_block.html:183
@@ -2013,9 +2013,9 @@ msgstr "无"
 #: instances/templates/instances/settings_tab.html:653
 #: instances/templates/instances/settings_tab.html:907
 #: networks/templates/add_network_qos.html:36
-#: networks/templates/network.html:336 networks/templates/network.html:378
-#: networks/templates/network.html:405 networks/templates/network.html:444
-#: nwfilters/templates/nwfilter.html:153 templates/common/form.html:28
+#: networks/templates/network.html:337 networks/templates/network.html:379
+#: networks/templates/network.html:406 networks/templates/network.html:445
+#: nwfilters/templates/nwfilter.html:154 templates/common/form.html:28
 msgid "Save"
 msgstr "保存"
 
@@ -2535,10 +2535,10 @@ msgstr "连接"
 #: interfaces/templates/create_iface_block.html:20
 #: networks/templates/add_network_qos.html:8
 #: networks/templates/create_net_block.html:20
-#: networks/templates/network.html:353 networks/templates/network.html:391
-#: networks/templates/network.html:417
+#: networks/templates/network.html:354 networks/templates/network.html:392
+#: networks/templates/network.html:418
 #: nwfilters/templates/create_nwfilter_block.html:17
-#: nwfilters/templates/nwfilter.html:165 nwfilters/templates/nwfilters.html:85
+#: nwfilters/templates/nwfilter.html:166 nwfilters/templates/nwfilters.html:85
 #: storages/templates/create_stg_block.html:21
 #: storages/templates/create_stg_vol_block.html:16
 #: storages/templates/create_stg_vol_block.html:54
@@ -3472,7 +3472,7 @@ msgstr "查找"
 
 #: instances/templates/allinstances.html:104
 #: interfaces/templates/interface.html:101 networks/templates/network.html:143
-#: networks/templates/network.html:199 networks/templates/network.html:363
+#: networks/templates/network.html:199 networks/templates/network.html:364
 #: nodedevs/templates/nodedevs.html:32
 msgid "Address"
 msgstr "地址"
@@ -5076,12 +5076,12 @@ msgid "Migration route"
 msgstr "迁移路径"
 
 #: instances/templates/instances/settings_tab.html:526
-#: networks/templates/network.html:395
+#: networks/templates/network.html:396
 msgid "From"
 msgstr "源"
 
 #: instances/templates/instances/settings_tab.html:531
-#: networks/templates/network.html:399
+#: networks/templates/network.html:400
 msgid "To"
 msgstr "目标"
 
@@ -6673,7 +6673,7 @@ msgid "Bandwidth limit of eth%(nic)s"
 msgstr "eth%(nic)s 的带宽限制"
 
 #: networks/templates/add_network_qos.html:13
-#: networks/templates/network.html:282 networks/templates/network.html:421
+#: networks/templates/network.html:282 networks/templates/network.html:422
 #: nwfilters/templates/nwfilter.html:97
 msgid "Direction"
 msgstr "方向"
@@ -6687,17 +6687,17 @@ msgid "Outbound: from the VM"
 msgstr "出站：来自虚拟机"
 
 #: networks/templates/add_network_qos.html:20
-#: networks/templates/network.html:429
+#: networks/templates/network.html:430
 msgid "Average (KiB/s)"
 msgstr "平均（KiB/s）"
 
 #: networks/templates/add_network_qos.html:24
-#: networks/templates/network.html:433
+#: networks/templates/network.html:434
 msgid "Peak (KiB/s)"
 msgstr "峰值（KiB/s）"
 
 #: networks/templates/add_network_qos.html:28
-#: networks/templates/network.html:437
+#: networks/templates/network.html:438
 msgid "Burst (KiB)"
 msgstr "突发（KiB）"
 
@@ -6873,11 +6873,11 @@ msgstr "此网络上的虚拟机从外部网络获取地址：libvirt 不分配�
 msgid "Stop the network to change its range"
 msgstr "停止网络后才能更改其范围"
 
-#: networks/templates/network.html:89 networks/templates/network.html:390
+#: networks/templates/network.html:89 networks/templates/network.html:391
 msgid "DHCP range"
 msgstr "DHCP 范围"
 
-#: networks/templates/network.html:95 networks/templates/network.html:357
+#: networks/templates/network.html:95 networks/templates/network.html:358
 msgid "Subnet"
 msgstr "子网"
 
@@ -7025,35 +7025,35 @@ msgid ""
 " started again."
 msgstr "已保存的定义：运行中的网络需停止并重新启动后才应用更改。"
 
-#: networks/templates/network.html:334
+#: networks/templates/network.html:335
 msgid "Network XML"
 msgstr "网络 XML"
 
-#: networks/templates/network.html:352
+#: networks/templates/network.html:353
 msgid "Fixed address"
 msgstr "固定地址"
 
-#: networks/templates/network.html:367
+#: networks/templates/network.html:368
 msgid "MAC (IPv4) or DUID (IPv6)"
 msgstr "MAC（IPv4）或 DUID（IPv6）"
 
-#: networks/templates/network.html:369
+#: networks/templates/network.html:370
 msgid "The VM's network card; without it, the VM is known by its name."
 msgstr "虚拟机的网卡；不填写时，按虚拟机名称识别。"
 
-#: networks/templates/network.html:416
+#: networks/templates/network.html:417
 msgid "Bandwidth limit"
 msgstr "带宽限制"
 
-#: networks/templates/network.html:424
+#: networks/templates/network.html:425
 msgid "Inbound: to the VMs"
 msgstr "入站：发往虚拟机"
 
-#: networks/templates/network.html:425
+#: networks/templates/network.html:426
 msgid "Outbound: from the VMs"
 msgstr "出站：来自虚拟机"
 
-#: networks/templates/network.html:440
+#: networks/templates/network.html:441
 msgid "Linux applies a peak to inbound traffic only."
 msgstr "Linux 仅对入站流量应用峰值。"
 
@@ -7239,7 +7239,7 @@ msgid "libvirt's filter format"
 msgstr "libvirt 的过滤器格式"
 
 #: nwfilters/templates/create_nwfilter_block.html:25
-#: nwfilters/templates/nwfilter.html:151
+#: nwfilters/templates/nwfilter.html:152
 msgid "Filter XML"
 msgstr "过滤器 XML"
 
@@ -7309,8 +7309,8 @@ msgstr "未引用其他过滤器。"
 msgid "Rules"
 msgstr "规则"
 
-#: nwfilters/templates/nwfilter.html:88 nwfilters/templates/nwfilter.html:164
-#: nwfilters/templates/nwfilter.html:179
+#: nwfilters/templates/nwfilter.html:88 nwfilters/templates/nwfilter.html:165
+#: nwfilters/templates/nwfilter.html:180
 msgid "Add rule"
 msgstr "添加规则"
 
@@ -7369,17 +7369,17 @@ msgid ""
 "keeps the filter's name and UUID."
 msgstr "更改立即生效，也作用于使用该过滤器的运行中虚拟机；过滤器的名称和 UUID 保持不变。"
 
-#: nwfilters/templates/nwfilter.html:169
+#: nwfilters/templates/nwfilter.html:170
 msgid ""
 "One rule: in is traffic to the VM, out from it; a lower priority applies "
 "first (500 if none is given)."
 msgstr "一条规则：in 表示发往虚拟机的流量，out 表示来自虚拟机的流量；优先级数值越低越先应用（未指定时为 500）。"
 
-#: nwfilters/templates/nwfilter.html:170
+#: nwfilters/templates/nwfilter.html:171
 msgid "The protocols and their attributes"
 msgstr "协议及其属性"
 
-#: nwfilters/templates/nwfilter.html:173
+#: nwfilters/templates/nwfilter.html:174
 msgid "Rule XML"
 msgstr "规则 XML"
 
@@ -9340,10 +9340,15 @@ msgstr "方向必须是入站或出站"
 
 #: vrtManager/network.py:493
 #, python-format
+msgid "Network %(net)s was changed meanwhile; reload the page"
+msgstr "网络 %(net)s 在此期间已更改；请重新加载页面"
+
+#: vrtManager/network.py:496
+#, python-format
 msgid "The XML must define network %(net)s"
 msgstr "XML 必须定义网络 %(net)s"
 
-#: vrtManager/network.py:495
+#: vrtManager/network.py:498
 msgid "The XML must keep the network's UUID"
 msgstr "XML 必须保留网络的 UUID"
 
@@ -9416,7 +9421,7 @@ msgstr "厂商自定义"
 msgid "USB device %(bus)s/%(device)s (%(product)s)"
 msgstr "USB 设备 %(bus)s/%(device)s (%(product)s)"
 
-#: vrtManager/nodedevs.py:103 vrtManager/util.py:91
+#: vrtManager/nodedevs.py:103 vrtManager/util.py:98
 #, python-format
 msgid "The XML is not valid: %(err)s"
 msgstr "XML 无效：%(err)s"
@@ -9556,21 +9561,26 @@ msgstr "过滤器已更改；请重新加载页面后重试"
 
 #: vrtManager/nwfilters.py:169
 #, python-format
+msgid "Filter %(name)s was changed meanwhile; reload the page"
+msgstr "过滤器 %(name)s 在此期间已更改；请重新加载页面"
+
+#: vrtManager/nwfilters.py:172
+#, python-format
 msgid "The XML must define filter %(name)s"
 msgstr "XML 必须定义过滤器 %(name)s"
 
-#: vrtManager/nwfilters.py:171
+#: vrtManager/nwfilters.py:174
 msgid "The XML must keep the filter's UUID"
 msgstr "XML 必须保留过滤器的 UUID"
 
-#: vrtManager/nwfilters.py:183
+#: vrtManager/nwfilters.py:186
 #, python-format
 msgid ""
 "Filter %(name)s cannot be referenced: it is this one, referenced already or "
 "not on the host"
 msgstr "无法引用过滤器 %(name)s：它就是本过滤器、已被引用或不在主机上"
 
-#: vrtManager/nwfilters.py:193
+#: vrtManager/nwfilters.py:196
 msgid "Enter one <rule> element"
 msgstr "请输入一个 <rule> 元素"
 
@@ -9598,11 +9608,11 @@ msgstr "卷 %(name)s 正在使用中：它是虚拟机的磁盘、后备文件�
 msgid "The running VMs %(vms)s use volume %(name)s; shut them down to copy it"
 msgstr "正在运行的虚拟机 %(vms)s 使用卷 %(name)s；请先将其关闭再复制"
 
-#: vrtManager/util.py:93
+#: vrtManager/util.py:100
 msgid "The XML may not declare a DTD"
 msgstr "XML 不能声明 DTD"
 
-#: vrtManager/util.py:139
+#: vrtManager/util.py:146
 #, python-format
 msgid "MAC address must be of the format AA:BB:CC:DD:EE:FF, was %(mac)s"
 msgstr "MAC 地址的格式必须为 AA:BB:CC:DD:EE:FF，实际为 %(mac)s"

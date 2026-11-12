@@ -10,7 +10,7 @@ import libvirt
 from django.test import SimpleTestCase
 from lxml import etree
 from vrtManager.nwfilters import wvmNWFilter, wvmNWFilters
-from vrtManager.util import OperationError
+from vrtManager.util import OperationError, digest
 
 UUID = "6d1f7a10-0000-4000-8000-00000000c0de"
 WEB = (f"<filter name='web' chain='root'><uuid>{UUID}</uuid>"
@@ -132,9 +132,12 @@ class IdentityTests(SimpleTestCase):
                          (WEB.replace(f"<uuid>{UUID}</uuid>", ""), "keep the filter's UUID"),
                          (WEB.replace(UUID, "11111111-2222-3333-4444-555555555555"), "keep the filter's UUID")):
             with self.subTest(why=why), self.assertRaisesRegex(OperationError, why):
-                conn.edit(xml)
+                conn.edit(xml, digest(conn.get_xml()))
         conn.wvm.nwfilterDefineXML.assert_not_called()
-        conn.edit(WEB.replace("priority='500'", "priority='400'"))
+        # an editor that showed the filter as it was before another change
+        with self.assertRaisesRegex(OperationError, "Filter web was changed meanwhile"):
+            conn.edit(WEB, digest(WEB.replace("priority='500'", "priority='300'")))
+        conn.edit(WEB.replace("priority='500'", "priority='400'"), digest(conn.get_xml()))
         conn.wvm.nwfilterDefineXML.assert_called_once()
 
 

@@ -85,7 +85,7 @@ class FilterRowTests(TestCase):
         self.assertEqual(rows(), [("Network filter web: delete: Filter web is used by VM web-1", False)])
 
     def test_filter_page_actions(self):
-        self.client.post(self.url, {"edit_nwfilter": "", "edit_xml": XML})
+        self.client.post(self.url, {"edit_nwfilter": "", "edit_xml": XML, "seen": self.client.get(self.url).context["seen"]})
         self.client.post(self.url, {"add_nwfilter_rule": "",
                                     "nwfilterrule_xml": "<rule action='accept' direction='in' priority='500'><all/></rule>"})
         tree = etree.fromstring(XML)

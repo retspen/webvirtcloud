@@ -68,7 +68,7 @@ def nwfilter(request, compute_id, nwfltr):
             try:
                 if "edit_nwfilter" in post:
                     with audit(request, compute, subject, "change XML"):
-                        nwfilter.edit(post.get("edit_xml", ""))
+                        nwfilter.edit(post.get("edit_xml", ""), post.get("seen", ""))
                 elif "add_nwfilter_rule" in post:
                     with audit(request, compute, subject, "add rule"):
                         nwfilter.add_rule(post.get("nwfilterrule_xml", ""))
@@ -89,6 +89,7 @@ def nwfilter(request, compute_id, nwfltr):
         name = nwfilter.get_name()
         uuid = nwfilter.get_uuid()
         xml = nwfilter.get_xml()
+        seen = util.digest(xml)
         chain = nwfilter.tree.get("chain")
         priority = nwfilter.tree.get("priority")
         rules = nwfilter.get_rules()
