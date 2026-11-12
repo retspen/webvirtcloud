@@ -192,6 +192,22 @@ class NetworkChangeTests(SimpleTestCase):
                     "n1", "nat", True, gateway, mask, dhcp, False, None, None, None, "", False)
         self.assertNotIn("n1", self.conn.listDefinedNetworks() + self.conn.listNetworks())
 
+    def test_a_rollback_that_fails_is_said_with_the_first_error(self):
+        gateway, mask, dhcp = network_size("192.0.2.0/24", True)
+        with patch.object(libvirt.virNetwork, "setAutostart", side_effect=libvirt.libvirtError("cannot create symlink")), \
+             patch.object(libvirt.virNetwork, "destroy", side_effect=libvirt.libvirtError("device busy")):
+            with self.assertRaisesRegex(OperationError, "cannot create symlink; rolling the change back failed too.*device busy"):
+                wvmNetworks("localhost", "", "", 4).create_network(
+                    "n1", "nat", True, gateway, mask, dhcp, False, None, None, None, "", False)
+
+    def test_a_network_whose_autostart_fails_is_not_left_running(self):
+        gateway, mask, dhcp = network_size("192.0.2.0/24", True)
+        with patch.object(libvirt.virNetwork, "setAutostart", side_effect=libvirt.libvirtError("cannot create symlink")):
+            with self.assertRaises(libvirt.libvirtError):
+                wvmNetworks("localhost", "", "", 4).create_network(
+                    "n1", "nat", True, gateway, mask, dhcp, False, None, None, None, "", False)
+        self.assertNotIn("n1", self.conn.listDefinedNetworks() + self.conn.listNetworks())
+
 
 class LeasesTests(SimpleTestCase):
     def network(self, leases, active=True):

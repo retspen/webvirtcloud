@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-12 09:58+0000\n"
+"POT-Creation-Date: 2026-11-12 10:25+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -2856,7 +2856,7 @@ msgstr "无法解冻客户机的文件系统（%(error)s）；请用以下命令
 msgid "Clone VM"
 msgstr "克隆虚拟机"
 
-#: instances/jobs.py:637 instances/jobs.py:644 instances/jobs.py:953
+#: instances/jobs.py:637 instances/jobs.py:644 instances/jobs.py:967
 msgid "Copying disks"
 msgstr "正在复制磁盘"
 
@@ -2922,181 +2922,195 @@ msgstr "磁盘已复制，但无法定义克隆：%(error)s；请检查这些卷
 msgid "Image has already exist. Please check volumes or change instance name"
 msgstr "镜像已存在。请检查卷或更改虚拟机名称"
 
-#: instances/jobs.py:852
+#: instances/jobs.py:844
+msgid "Each network card needs a network"
+msgstr "每个网卡都需要一个网络"
+
+#: instances/jobs.py:846 vrtManager/instance.py:2767
+#, python-format
+msgid "This host has no network %(name)s"
+msgstr "此主机没有网络 %(name)s"
+
+#: instances/jobs.py:848 vrtManager/instance.py:2769
+#, python-format
+msgid "This host has no network filter %(name)s"
+msgstr "此主机没有网络过滤器 %(name)s"
+
+#: instances/jobs.py:864
 #, python-format
 msgid "MAC address %(mac)s is a NIC's of another VM on this host"
 msgstr "MAC 地址 %(mac)s 已属于此主机上另一台虚拟机的网卡"
 
-#: instances/jobs.py:859 instances/templates/create_instance_w1.html:60
+#: instances/jobs.py:871 instances/templates/create_instance_w1.html:60
 #: instances/templates/create_instance_w2.html:356
 msgid "Create VM"
 msgstr "创建虚拟机"
 
-#: instances/jobs.py:883 instances/jobs.py:925 instances/views.py:2519
+#: instances/jobs.py:895 instances/jobs.py:938 instances/views.py:2519
 msgid "A virtual machine with this name already exists"
 msgstr "同名虚拟机已存在"
 
-#: instances/jobs.py:885 instances/jobs.py:921
+#: instances/jobs.py:897 instances/jobs.py:934
 msgid "There is an instance with same name. Remove it and try again!"
 msgstr "已存在同名虚拟机。请删除后重试！"
 
-#: instances/jobs.py:888
+#: instances/jobs.py:900
 msgid "First you need to create or select an image"
 msgstr "请先创建或选择一个镜像"
 
-#: instances/jobs.py:890
+#: instances/jobs.py:902
 msgid "Choose one disk source: a new disk, existing volumes or a template"
 msgstr "请选择一种磁盘来源：新磁盘、现有卷或模板"
 
-#: instances/jobs.py:893
+#: instances/jobs.py:905
 msgid "Invalid cache mode"
 msgstr "无效的缓存模式"
 
-#: instances/jobs.py:895
+#: instances/jobs.py:907
 #, python-format
 msgid "This host offers no CPU mode or model %(mode)s"
 msgstr "此主机不提供 CPU 模式或型号 %(mode)s"
 
-#: instances/jobs.py:897
+#: instances/jobs.py:909
 #, python-format
 msgid "A CD-ROM cannot use the %(bus)s bus"
 msgstr "CD-ROM 不能使用 %(bus)s 总线"
 
-#: instances/jobs.py:900
+#: instances/jobs.py:912
 msgid "The cloud-init seed is read from a CD-ROM: choose its bus"
 msgstr "cloud-init 种子从 CD-ROM 读取：请选择其总线"
 
-#: instances/jobs.py:903
+#: instances/jobs.py:915
 msgid "The cloud-init seed needs a directory storage pool for the disk"
 msgstr "cloud-init 种子需要为磁盘使用目录类型的存储池"
 
-#: instances/jobs.py:906
+#: instances/jobs.py:919
 #, python-format
 msgid "This host offers no firmware %(firmware)s"
 msgstr "此主机不提供固件 %(firmware)s"
 
-#: instances/jobs.py:908 vrtManager/instance.py:3116
+#: instances/jobs.py:921 vrtManager/instance.py:3116
 msgid "This host offers no TPM 2.0: install swtpm on it"
 msgstr "此主机不提供 TPM 2.0：请在主机上安装 swtpm"
 
-#: instances/jobs.py:973
+#: instances/jobs.py:987
 msgid "Writing the cloud-init seed"
 msgstr "正在写入 cloud-init 种子"
 
-#: instances/jobs.py:980
+#: instances/jobs.py:994
 msgid "Defining the VM"
 msgstr "正在定义虚拟机"
 
-#: instances/jobs.py:1022
+#: instances/jobs.py:1036
 #, python-format
 msgid ""
 "The panel failed unexpectedly; its log has the details. Remove these volumes "
 "by hand: %(volumes)s"
 msgstr "面板发生意外错误；详细信息见面板日志。请手动删除这些卷：%(volumes)s"
 
-#: instances/jobs.py:1026
+#: instances/jobs.py:1040
 #, python-format
 msgid "%(error)s. Remove these volumes by hand: %(volumes)s"
 msgstr "%(error)s。请手动删除这些卷：%(volumes)s"
 
-#: instances/jobs.py:1053
+#: instances/jobs.py:1067
 #, python-format
 msgid "The instance is already on %(compute)s"
 msgstr "虚拟机已在 %(compute)s 上"
 
-#: instances/jobs.py:1055
+#: instances/jobs.py:1069
 #, python-format
 msgid "%(compute)s is not reachable"
 msgstr "无法连接 %(compute)s"
 
-#: instances/jobs.py:1057
+#: instances/jobs.py:1071
 #, python-format
 msgid "%(compute)s is the VM's own host under another name"
 msgstr "%(compute)s 是该虚拟机所在主机的另一个名称"
 
-#: instances/jobs.py:1114
+#: instances/jobs.py:1128
 #, python-format
 msgid ""
 "The VM migrated, but autostart could not be set on the destination: %(error)s"
 msgstr "虚拟机已迁移，但无法在目标主机上设置自动启动：%(error)s"
 
-#: instances/jobs.py:1121
+#: instances/jobs.py:1135
 #, python-format
 msgid "The VM migrated, but its NVRAM file stays on the source: %(error)s"
 msgstr "虚拟机已迁移，但其 NVRAM 文件仍留在源主机上：%(error)s"
 
-#: instances/jobs.py:1129
+#: instances/jobs.py:1143
 msgid "Migrate VM"
 msgstr "迁移虚拟机"
 
-#: instances/jobs.py:1176
+#: instances/jobs.py:1190
 msgid "Migrating the VM"
 msgstr "正在迁移虚拟机"
 
-#: instances/jobs.py:1225
+#: instances/jobs.py:1239
 msgid "libvirt is still migrating the VM"
 msgstr "libvirt 仍在迁移虚拟机"
 
-#: instances/jobs.py:1237
+#: instances/jobs.py:1251
 msgid "The VM stayed on the source host"
 msgstr "虚拟机留在了源主机上"
 
-#: instances/jobs.py:1239
+#: instances/jobs.py:1253
 msgid ""
 "The VM is on both computes or on neither; check them, then resolve this job."
 msgstr "虚拟机同时位于两个计算节点上，或都不在；请检查后处理此任务。"
 
-#: instances/jobs.py:1258
+#: instances/jobs.py:1272
 msgid "Move disk"
 msgstr "移动磁盘"
 
-#: instances/jobs.py:1265
+#: instances/jobs.py:1279
 msgid "Choose a disk of the VM"
 msgstr "请选择虚拟机的一个磁盘"
 
-#: instances/jobs.py:1289
+#: instances/jobs.py:1303
 msgid "Copying the disk"
 msgstr "正在复制磁盘"
 
-#: instances/jobs.py:1331
+#: instances/jobs.py:1345
 #, python-format
 msgid "Another block job runs on %(dev)s; check the VM"
 msgstr "%(dev)s 上正在运行另一个块任务；请检查虚拟机"
 
-#: instances/jobs.py:1337
+#: instances/jobs.py:1351
 #, python-format
 msgid "The disk stayed in %(path)s; remove %(dest)s if it is there"
 msgstr "磁盘仍在 %(path)s；如果 %(dest)s 存在，请将其删除"
 
-#: instances/jobs.py:1339
+#: instances/jobs.py:1353
 #, python-format
 msgid "The definitions of %(dev)s name %(paths)s; check the VM"
 msgstr "%(dev)s 的定义指向 %(paths)s；请检查虚拟机"
 
-#: instances/jobs.py:1346
+#: instances/jobs.py:1360
 #, python-format
 msgid "Disk %(path)s was kept: a disk file that stays needs it"
 msgstr "磁盘 %(path)s 已保留：某个保留的磁盘文件依赖它"
 
-#: instances/jobs.py:1347
+#: instances/jobs.py:1361
 #, python-format
 msgid "The VM is removed, but disk %(path)s was not deleted: %(err)s"
 msgstr "虚拟机已删除，但磁盘 %(path)s 未被删除：%(err)s"
 
-#: instances/jobs.py:1348
+#: instances/jobs.py:1362
 #, python-format
 msgid "Disk %(path)s is used by another VM and was kept"
 msgstr "磁盘 %(path)s 正被另一台虚拟机使用，已保留"
 
-#: instances/jobs.py:1402
+#: instances/jobs.py:1416
 msgid "Delete VM"
 msgstr "删除虚拟机"
 
-#: instances/jobs.py:1432
+#: instances/jobs.py:1446
 msgid "Deleting the VM"
 msgstr "正在删除虚拟机"
 
-#: instances/jobs.py:1444
+#: instances/jobs.py:1458
 msgid "The VM was not deleted; it may have been shut off"
 msgstr "虚拟机未被删除；它可能已被关闭"
 
@@ -6126,7 +6140,7 @@ msgstr "已请求移除 PCI 设备 %(address)s：客户机尚未释放它；在�
 msgid "Select a network interface and a QoS direction"
 msgstr "请选择网络接口和 QoS 方向"
 
-#: instances/views.py:2244 vrtManager/network.py:463
+#: instances/views.py:2244 vrtManager/network.py:470
 msgid "QoS rates must be whole numbers"
 msgstr "QoS 速率必须为整数"
 
@@ -6632,19 +6646,23 @@ msgid "The pool name must not contain any special characters"
 msgstr "地址池名称不能包含特殊字符"
 
 #: networks/forms.py:59
+msgid "The name must have a character other than '.'"
+msgstr "名称必须包含 '.' 以外的字符"
+
+#: networks/forms.py:61
 msgid "This host has a network of that name"
 msgstr "此主机已有同名网络"
 
-#: networks/forms.py:72
+#: networks/forms.py:74
 msgid "The pool bridge name must not contain any special characters"
 msgstr "地址池网桥名称不能包含特殊字符"
 
-#: networks/forms.py:83 networks/forms.py:87 networks/forms.py:91
+#: networks/forms.py:85 networks/forms.py:89 networks/forms.py:93
 #: storages/forms.py:82
 msgid "This field is required."
 msgstr "此字段为必填项。"
 
-#: networks/forms.py:101
+#: networks/forms.py:103
 #, python-format
 msgid "Network %(net)s has %(subnet)s"
 msgstr "网络 %(net)s 已使用 %(subnet)s"
@@ -9074,16 +9092,6 @@ msgstr ""
 msgid "Volume %(name)s already exists in storage pool %(pool)s"
 msgstr "卷 %(name)s 已存在于存储池 %(pool)s 中"
 
-#: vrtManager/instance.py:2767
-#, python-format
-msgid "This host has no network %(name)s"
-msgstr "此主机没有网络 %(name)s"
-
-#: vrtManager/instance.py:2769
-#, python-format
-msgid "This host has no network filter %(name)s"
-msgstr "此主机没有网络过滤器 %(name)s"
-
 #: vrtManager/instance.py:2806
 msgid "A network interface that is a host device is removed in the XML editor"
 msgstr "作为主机设备的网络接口需在 XML 编辑器中删除"
@@ -9179,156 +9187,163 @@ msgstr "未知的崩溃操作 %(action)s"
 msgid "Network interface %(mac)s is not in the definition"
 msgstr "网络接口 %(mac)s 不在定义中"
 
-#: vrtManager/interface.py:35
+#: vrtManager/interface.py:35 vrtManager/network.py:194
 #, python-format
 msgid ""
 "%(err)s; rolling the change back failed too, the host's configuration may be "
 "changed: %(rollback_err)s"
 msgstr "%(err)s；回滚更改也失败了，主机的配置可能已被更改：%(rollback_err)s"
 
-#: vrtManager/interface.py:269
+#: vrtManager/interface.py:260
+#, python-format
+msgid ""
+"Interface %(iface)s is in use by the running VMs %(vms)s; shut them down or "
+"move their network cards first"
+msgstr "接口 %(iface)s 正被运行中的虚拟机 %(vms)s 使用；请先关闭它们或移走其网卡"
+
+#: vrtManager/interface.py:275
 #, python-format
 msgid "Stop interface %(iface)s before deleting it"
 msgstr "删除接口 %(iface)s 前请先停止它"
 
-#: vrtManager/interface.py:273
+#: vrtManager/interface.py:279
 #, python-format
 msgid ""
 "Bridge %(iface)s has addresses and several members: give the addresses to one"
 " of them on the host first"
 msgstr "网桥 %(iface)s 有地址和多个成员：请先在主机上把地址分配给其中一个成员"
 
-#: vrtManager/network.py:300
+#: vrtManager/network.py:306
 #, python-format
 msgid ""
 "Network %(net)s is in use by the running VMs %(vms)s; shut them down or "
 "remove their network cards first"
 msgstr "网络 %(net)s 正被运行中的虚拟机 %(vms)s 使用；请先关闭它们或移除其网卡"
 
-#: vrtManager/network.py:306
+#: vrtManager/network.py:312
 #, python-format
 msgid ""
 "VMs %(vms)s use network %(net)s and would no longer start; remove their "
 "network cards first"
 msgstr "虚拟机 %(vms)s 使用网络 %(net)s，将无法再启动；请先移除其网卡"
 
-#: vrtManager/network.py:315
+#: vrtManager/network.py:321
 #, python-format
 msgid ""
 "Network %(net)s runs with other addresses than it has saved; stop and start "
 "it first"
 msgstr "网络 %(net)s 运行时的地址与其保存的地址不同；请先停止再启动它"
 
-#: vrtManager/network.py:335
+#: vrtManager/network.py:341
 #, python-format
 msgid "Network %(net)s has no such address"
 msgstr "网络 %(net)s 没有此地址"
 
-#: vrtManager/network.py:340
+#: vrtManager/network.py:346
 #, python-format
 msgid "The range start %(address)s is not in %(subnet)s"
 msgstr "范围起始 %(address)s 不在 %(subnet)s 中"
 
-#: vrtManager/network.py:341
+#: vrtManager/network.py:347
 #, python-format
 msgid "The range start %(address)s is not in the network"
 msgstr "范围起始 %(address)s 不在网络中"
 
-#: vrtManager/network.py:342
+#: vrtManager/network.py:348
 #, python-format
 msgid "The range end %(address)s is not in %(subnet)s"
 msgstr "范围结束 %(address)s 不在 %(subnet)s 中"
 
-#: vrtManager/network.py:343
+#: vrtManager/network.py:349
 #, python-format
 msgid "The range end %(address)s is not in the network"
 msgstr "范围结束 %(address)s 不在网络中"
 
-#: vrtManager/network.py:344
+#: vrtManager/network.py:350
 #, python-format
 msgid "The fixed address %(address)s is not in %(subnet)s"
 msgstr "固定地址 %(address)s 不在 %(subnet)s 中"
 
-#: vrtManager/network.py:345
+#: vrtManager/network.py:351
 #, python-format
 msgid "The fixed address %(address)s is not in the network"
 msgstr "固定地址 %(address)s 不在网络中"
 
-#: vrtManager/network.py:354
+#: vrtManager/network.py:360
 #, python-format
 msgid "%(address)s is not an IP address"
 msgstr "%(address)s 不是 IP 地址"
 
-#: vrtManager/network.py:359
+#: vrtManager/network.py:365
 #, python-format
 msgid "%(address)s is the host's own address on the network"
 msgstr "%(address)s 是主机自己在该网络上的地址"
 
-#: vrtManager/network.py:362
+#: vrtManager/network.py:368
 #, python-format
 msgid "%(address)s is not a host address of %(subnet)s"
 msgstr "%(address)s 不是 %(subnet)s 中的主机地址"
 
-#: vrtManager/network.py:368
+#: vrtManager/network.py:374
 #, python-format
 msgid "Stop network %(net)s to change its DHCP range"
 msgstr "请停止网络 %(net)s 后再更改其 DHCP 范围"
 
-#: vrtManager/network.py:372
+#: vrtManager/network.py:378
 #, python-format
 msgid "This address of network %(net)s has no DHCP range"
 msgstr "网络 %(net)s 的此地址没有 DHCP 范围"
 
-#: vrtManager/network.py:376
+#: vrtManager/network.py:382
 #, python-format
 msgid "The range starts at %(start)s, after its end %(end)s"
 msgstr "范围起始 %(start)s 在其结束 %(end)s 之后"
 
-#: vrtManager/network.py:378
+#: vrtManager/network.py:384
 #, python-format
 msgid "The range takes in %(address)s, the host's own address"
 msgstr "范围包含主机自己的地址 %(address)s"
 
-#: vrtManager/network.py:387
+#: vrtManager/network.py:393
 #, python-format
 msgid "Network %(net)s has no fixed address %(address)s"
 msgstr "网络 %(net)s 没有固定地址 %(address)s"
 
-#: vrtManager/network.py:405
-#, python-format
-msgid "The name %(name)s may have only letters, digits, '.', '_' and '-'"
-msgstr "名称 %(name)s 只能包含字母、数字、'.'、'_' 和 '-'"
-
-#: vrtManager/network.py:414
+#: vrtManager/network.py:418
 #, python-format
 msgid "The fixed address %(original)s has changed meanwhile; reload the page"
 msgstr "固定地址 %(original)s 在此期间已更改；请重新加载页面"
 
-#: vrtManager/network.py:419
+#: vrtManager/network.py:421
+#, python-format
+msgid "The name %(name)s may have only letters, digits, '.', '_' and '-'"
+msgstr "名称 %(name)s 只能包含字母、数字、'.'、'_' 和 '-'"
+
+#: vrtManager/network.py:426
 #, python-format
 msgid "%(address)s is another entry's fixed address"
 msgstr "%(address)s 是另一条目的固定地址"
 
-#: vrtManager/network.py:421
+#: vrtManager/network.py:428
 #, python-format
 msgid "%(mac_duid)s has another fixed address, %(other)s"
 msgstr "%(mac_duid)s 已有另一个固定地址 %(other)s"
 
-#: vrtManager/network.py:423
+#: vrtManager/network.py:430
 #, python-format
 msgid "The name %(name)s has another fixed address, %(other)s"
 msgstr "名称 %(name)s 已有另一个固定地址 %(other)s"
 
-#: vrtManager/network.py:459
+#: vrtManager/network.py:466
 msgid "Direction must be inbound or outbound"
 msgstr "方向必须是入站或出站"
 
-#: vrtManager/network.py:486
+#: vrtManager/network.py:493
 #, python-format
 msgid "The XML must define network %(net)s"
 msgstr "XML 必须定义网络 %(net)s"
 
-#: vrtManager/network.py:488
+#: vrtManager/network.py:495
 msgid "The XML must keep the network's UUID"
 msgstr "XML 必须保留网络的 UUID"
 

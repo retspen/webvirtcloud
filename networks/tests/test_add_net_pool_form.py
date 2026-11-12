@@ -71,3 +71,12 @@ class ModeTests(SimpleTestCase):
         self.assertEqual(errors(forward="nat", subnet="192.0.2.0/24"), [])
         f = AddNetPool({"name": "default", "forward": "none"}, networks=NETWORKS)
         self.assertTrue(f.has_error("name", "taken"))
+
+
+class NameTests(SimpleTestCase):
+    def test_a_name_of_dots_only_is_refused(self):
+        # its page address /network/../ would be another page
+        for name in (".", "..", "..."):
+            with self.subTest(name=name):
+                self.assertIn("other than '.'", form(name=name, subnet="192.0.2.0/24").errors["name"][0])
+        self.assertTrue(form(name=".lab", subnet="192.0.2.0/24").is_valid())

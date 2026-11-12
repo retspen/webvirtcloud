@@ -234,9 +234,10 @@ class wvmInterface(wvmConnect):
         return info
 
     def get_vms(self, networks=()):
-        """The running VMs' network cards on this bridge, directly or through
-        the libvirt networks of networks (which use it): VM, tap device and
-        the VM's MAC. One listing, one XML read per running VM."""
+        """The running VMs' network cards on this interface, directly (a
+        bridge's, or a macvtap card's) or through the libvirt networks of
+        networks (which use it): VM, tap device and the VM's MAC. One
+        listing, one XML read per running VM."""
         name = self.iface.name()
         cards = []
         for dom in self.wvm.listAllDomains(VIR_CONNECT_LIST_DOMAINS_ACTIVE):
@@ -248,11 +249,16 @@ class wvmInterface(wvmConnect):
                 continue
             for card in tree.findall("devices/interface"):
                 source = card.find("source")
-                if source is not None and (source.get("bridge") == name or source.get("network") in networks):
+                if source is not None and (name in (source.get("bridge"), source.get("dev")) or source.get("network") in networks):
                     cards.append({"vm": dom.name(), "tap": attribute(card, "target", "dev"), "mac": attribute(card, "mac", "address")})
         return sorted(cards, key=lambda card: (card["vm"], card["tap"] or ""))
 
     def stop_iface(self):
+        """Refused while a running VM has a card on it (get_vms): that VM would be cut off."""
+        name = self.iface.name()
+        if cards := self.get_vms(networks_by_device(self.wvm).get(name, [])):
+            raise util.OperationError(gettext_noop("Interface %(iface)s is in use by the running VMs %(vms)s; shut them down or move their network cards first"),
+                                      iface=name, vms=", ".join(sorted({card["vm"] for card in cards})))
         self.iface.destroy()
 
     def start_iface(self):

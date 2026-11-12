@@ -30,6 +30,8 @@ class CreateJobTestCase(TransactionTestCase):
         self.conn = patcher.start().return_value
         self.addCleanup(patcher.stop)
         self.conn.get_instances.return_value = []
+        self.conn.get_networks.return_value = ["default"]
+        self.conn.get_nwfilters.return_value = ["clean-traffic"]
         self.conn.get_cache_modes.return_value = {"none": "Disable cache"}
         self.conn.get_firmwares.return_value = ["BIOS", "UEFI", "UEFI Secure Boot"]
         self.conn.get_disk_bus_types.return_value = ["virtio", "sata"]
@@ -186,6 +188,29 @@ class CreateJobTestCase(TransactionTestCase):
         op.user.save()
         with self.assertRaises(PermissionDenied):
             CreateInstance().precheck(op, None)
+
+    def test_a_network_or_filter_deleted_while_queued_is_refused(self):
+        # the VM would be defined with a card it cannot start with
+        response = self.client.post(f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/",
+                                    {**BODY, "nwfilter": "clean-traffic"}, content_type="application/json")
+        self.assertEqual(response.status_code, 202)
+        op = Operation.objects.get()
+        CreateInstance().precheck(op, None)
+        self.conn.get_nwfilters.return_value = []
+        with self.assertRaisesMessage(libvirt.libvirtError, "This host has no network filter clean-traffic"):
+            CreateInstance().precheck(op, None)
+        self.conn.get_networks.return_value = []
+        with self.assertRaisesMessage(libvirt.libvirtError, "This host has no network default"):
+            CreateInstance().precheck(op, None)
+
+    def test_a_network_card_without_a_network_is_refused(self):
+        # else the VM would be defined with <source network=''/> once its disks are made
+        url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"
+        for networks in ("default,", ","):
+            with self.subTest(networks=networks):
+                response = self.client.post(url, {**BODY, "networks": networks}, content_type="application/json")
+                self.assertContains(response, "Each network card needs a network", status_code=400)
+        self.assertFalse(Operation.objects.exists())
 
     def test_a_mac_of_another_vm_on_the_host_is_refused(self):
         url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"

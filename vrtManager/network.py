@@ -184,10 +184,16 @@ class wvmNetworks(wvmConnect):
         net = self.wvm.networkDefineXML(xml)
         try:
             net.create()
-        except libvirtError:  # e.g. the subnet is in use: the name stays free for another try
-            net.undefine()
+            net.setAutostart(1)
+        except libvirtError as err:  # e.g. the subnet is in use: the name stays free for another try
+            try:
+                if net.isActive():
+                    net.destroy()
+                net.undefine()
+            except libvirtError as rollback_err:
+                raise util.OperationError(gettext_noop("%(err)s; rolling the change back failed too, the host's configuration may be changed: %(rollback_err)s"),
+                                          err=err, rollback_err=rollback_err) from err
             raise
-        net.setAutostart(1)
 
 
 class wvmNetwork(wvmConnect):

@@ -117,3 +117,22 @@ class BridgeUseTests(SimpleTestCase):
             {"vm": "db", "tap": "vnet7", "mac": "52:54:00:00:00:02"},
             {"vm": "web", "tap": "vnet3", "mac": "52:54:00:00:00:01"},
         ])
+
+    def test_an_interface_a_running_vm_uses_is_not_stopped(self):
+        # a macvtap card on it, or a card on a network that uses it: stopping it would cut the VM off
+        from vrtManager.util import OperationError
+
+        for cards, nets in (("<interface type='direct'><source dev='eno2' mode='bridge'/></interface>", []),
+                            ("<interface type='network'><source network='direct'/></interface>",
+                             [MagicMock(**{"name.return_value": "direct", "XMLDesc.return_value":
+                                           "<network><forward mode='bridge'><interface dev='eno2'/></forward></network>"})])):
+            dom = MagicMock(**{"name.return_value": "web", "XMLDesc.return_value": f"<domain><devices>{cards}</devices></domain>"})
+            conn = wvmInterface.__new__(wvmInterface)
+            conn.iface = MagicMock(**{"name.return_value": "eno2"})
+            conn.wvm = MagicMock(**{"listAllDomains.return_value": [dom], "listAllNetworks.return_value": nets})
+            with self.subTest(cards), self.assertRaisesRegex(OperationError, "in use by the running VMs web"):
+                conn.stop_iface()
+            conn.iface.destroy.assert_not_called()
+        conn.wvm.listAllDomains.return_value = []
+        conn.stop_iface()
+        conn.iface.destroy.assert_called_once()

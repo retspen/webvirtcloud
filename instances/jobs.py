@@ -836,6 +836,18 @@ def _check_disk_name(conn, data):
             raise util.OperationError(_("Image has already exist. Please check volumes or change instance name"))
 
 
+def _check_networks(conn, data):
+    """Each NIC's network and the filter must be the host's: the VM would
+    not start."""
+    networks = data["networks"].split(",")
+    if "" in networks:
+        raise util.OperationError(_("Each network card needs a network"))
+    for network in sorted(set(networks) - set(conn.get_networks())):
+        raise util.OperationError(_("This host has no network %(name)s"), name=network)
+    if data["nwfilter"] and data["nwfilter"] not in conn.get_nwfilters():
+        raise util.OperationError(_("This host has no network filter %(name)s"), name=data["nwfilter"])
+
+
 def _check_macs(conn, data):
     """Two NICs of one MAC on a network reach neither reliably."""
     try:
@@ -902,6 +914,7 @@ class CreateInstance(Kind):
             if util.get_xml_path(pool.XMLDesc(0), "/pool/@type") not in FILE_POOL_TYPES:
                 raise util.OperationError(_("The cloud-init seed needs a directory storage pool for the disk"))
         _check_macs(conn, data)
+        _check_networks(conn, data)
         if data["firmware"] and data["firmware"] not in conn.get_firmwares(data["arch"], data["machine"]):
             raise util.OperationError(_("This host offers no firmware %(firmware)s"), firmware=data["firmware"])
         if data["tpm"] and not conn.get_tpm_model(data["arch"], data["machine"]):
@@ -925,6 +938,7 @@ class CreateInstance(Kind):
             raise util.OperationError(_("A virtual machine with this name already exists"))
         _check_disk_name(conn, op.params)
         _check_macs(conn, op.params)
+        _check_networks(conn, op.params)  # one deleted since the job was queued
 
     def run(self, op, ctx):
         data = op.params

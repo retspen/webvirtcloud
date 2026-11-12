@@ -55,6 +55,8 @@ class AddNetPool(forms.Form):
             raise forms.ValidationError(
                 _("The pool name must not contain any special characters")
             )
+        if not name.strip("."):  # "." and ".." would be no page address of their own
+            raise forms.ValidationError(_("The name must have a character other than '.'"))
         if any(net["name"] == name for net in self.networks):
             raise forms.ValidationError(_("This host has a network of that name"), code="taken")
         return name

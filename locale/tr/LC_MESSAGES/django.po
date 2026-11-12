@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-12 09:58+0000\n"
+"POT-Creation-Date: 2026-11-12 10:25+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -2975,7 +2975,7 @@ msgstr ""
 msgid "Clone VM"
 msgstr "Sanal makineyi klonla"
 
-#: instances/jobs.py:637 instances/jobs.py:644 instances/jobs.py:953
+#: instances/jobs.py:637 instances/jobs.py:644 instances/jobs.py:967
 msgid "Copying disks"
 msgstr "Diskler kopyalanıyor"
 
@@ -3055,74 +3055,88 @@ msgstr ""
 "İmaj zaten mevcut. Lütfen ya makine adını değişin ya da disk alanlarını "
 "kontrol edin"
 
-#: instances/jobs.py:852
+#: instances/jobs.py:844
+msgid "Each network card needs a network"
+msgstr "Her ağ kartının bir ağı olmalı"
+
+#: instances/jobs.py:846 vrtManager/instance.py:2767
+#, python-format
+msgid "This host has no network %(name)s"
+msgstr "Bu sunucuda %(name)s ağı yok"
+
+#: instances/jobs.py:848 vrtManager/instance.py:2769
+#, python-format
+msgid "This host has no network filter %(name)s"
+msgstr "Bu sunucuda %(name)s ağ filtresi yok"
+
+#: instances/jobs.py:864
 #, python-format
 msgid "MAC address %(mac)s is a NIC's of another VM on this host"
 msgstr ""
 "%(mac)s MAC adresi bu sunucudaki başka bir sanal makinenin ağ kartının adresi"
 
-#: instances/jobs.py:859 instances/templates/create_instance_w1.html:60
+#: instances/jobs.py:871 instances/templates/create_instance_w1.html:60
 #: instances/templates/create_instance_w2.html:356
 msgid "Create VM"
 msgstr "Sanal makine oluştur"
 
-#: instances/jobs.py:883 instances/jobs.py:925 instances/views.py:2519
+#: instances/jobs.py:895 instances/jobs.py:938 instances/views.py:2519
 msgid "A virtual machine with this name already exists"
 msgstr "Bu isimde bir sanal makine mevcut"
 
-#: instances/jobs.py:885 instances/jobs.py:921
+#: instances/jobs.py:897 instances/jobs.py:934
 msgid "There is an instance with same name. Remove it and try again!"
 msgstr "Aynı isimde başka bir sanal makine var. Onu silip yeniden deneyin!"
 
-#: instances/jobs.py:888
+#: instances/jobs.py:900
 msgid "First you need to create or select an image"
 msgstr "Öncelikle bir imaj oluşturun ya da mevcut bir imajı seçin"
 
-#: instances/jobs.py:890
+#: instances/jobs.py:902
 msgid "Choose one disk source: a new disk, existing volumes or a template"
 msgstr ""
 "Tek bir disk kaynağı seçin: yeni bir disk, mevcut birimler ya da bir şablon"
 
-#: instances/jobs.py:893
+#: instances/jobs.py:905
 msgid "Invalid cache mode"
 msgstr "Geçersiz önbellek modu"
 
-#: instances/jobs.py:895
+#: instances/jobs.py:907
 #, python-format
 msgid "This host offers no CPU mode or model %(mode)s"
 msgstr "Bu sunucu %(mode)s CPU modunu veya modelini sunmuyor"
 
-#: instances/jobs.py:897
+#: instances/jobs.py:909
 #, python-format
 msgid "A CD-ROM cannot use the %(bus)s bus"
 msgstr "CD-ROM %(bus)s veri yolunu kullanamaz"
 
-#: instances/jobs.py:900
+#: instances/jobs.py:912
 msgid "The cloud-init seed is read from a CD-ROM: choose its bus"
 msgstr "cloud-init tohumu bir CD-ROM'dan okunur: veri yolunu seçin"
 
-#: instances/jobs.py:903
+#: instances/jobs.py:915
 msgid "The cloud-init seed needs a directory storage pool for the disk"
 msgstr "cloud-init tohumu, disk için bir dizin depolama havuzu gerektirir"
 
-#: instances/jobs.py:906
+#: instances/jobs.py:919
 #, python-format
 msgid "This host offers no firmware %(firmware)s"
 msgstr "Bu sunucu %(firmware)s firmware'ini sunmuyor"
 
-#: instances/jobs.py:908 vrtManager/instance.py:3116
+#: instances/jobs.py:921 vrtManager/instance.py:3116
 msgid "This host offers no TPM 2.0: install swtpm on it"
 msgstr "Bu sunucu TPM 2.0 sunmuyor: üzerine swtpm kurun"
 
-#: instances/jobs.py:973
+#: instances/jobs.py:987
 msgid "Writing the cloud-init seed"
 msgstr "cloud-init tohumu yazılıyor"
 
-#: instances/jobs.py:980
+#: instances/jobs.py:994
 msgid "Defining the VM"
 msgstr "Sanal makine tanımlanıyor"
 
-#: instances/jobs.py:1022
+#: instances/jobs.py:1036
 #, python-format
 msgid ""
 "The panel failed unexpectedly; its log has the details. Remove these volumes "
@@ -3131,114 +3145,114 @@ msgstr ""
 "Panel beklenmedik bir hatayla karşılaştı; ayrıntılar panelin günlüğünde. Bu "
 "birimleri elle kaldırın: %(volumes)s"
 
-#: instances/jobs.py:1026
+#: instances/jobs.py:1040
 #, python-format
 msgid "%(error)s. Remove these volumes by hand: %(volumes)s"
 msgstr "%(error)s. Şu birimleri elle silin: %(volumes)s"
 
-#: instances/jobs.py:1053
+#: instances/jobs.py:1067
 #, python-format
 msgid "The instance is already on %(compute)s"
 msgstr "Sanal makine zaten %(compute)s üzerinde"
 
-#: instances/jobs.py:1055
+#: instances/jobs.py:1069
 #, python-format
 msgid "%(compute)s is not reachable"
 msgstr "%(compute)s sunucusuna ulaşılamıyor"
 
-#: instances/jobs.py:1057
+#: instances/jobs.py:1071
 #, python-format
 msgid "%(compute)s is the VM's own host under another name"
 msgstr "%(compute)s, sanal makinenin kendi sunucusunun başka bir adı"
 
-#: instances/jobs.py:1114
+#: instances/jobs.py:1128
 #, python-format
 msgid ""
 "The VM migrated, but autostart could not be set on the destination: %(error)s"
 msgstr ""
 "Sanal makine taşındı, ancak hedefte otomatik başlatma ayarlanamadı: %(error)s"
 
-#: instances/jobs.py:1121
+#: instances/jobs.py:1135
 #, python-format
 msgid "The VM migrated, but its NVRAM file stays on the source: %(error)s"
 msgstr "Sanal makine taşındı, ancak NVRAM dosyası kaynakta kaldı: %(error)s"
 
-#: instances/jobs.py:1129
+#: instances/jobs.py:1143
 msgid "Migrate VM"
 msgstr "Sanal makineyi taşı"
 
-#: instances/jobs.py:1176
+#: instances/jobs.py:1190
 msgid "Migrating the VM"
 msgstr "Sanal makine taşınıyor"
 
-#: instances/jobs.py:1225
+#: instances/jobs.py:1239
 msgid "libvirt is still migrating the VM"
 msgstr "libvirt sanal makineyi hâlâ taşıyor"
 
-#: instances/jobs.py:1237
+#: instances/jobs.py:1251
 msgid "The VM stayed on the source host"
 msgstr "Sanal makine kaynak sunucuda kaldı"
 
-#: instances/jobs.py:1239
+#: instances/jobs.py:1253
 msgid ""
 "The VM is on both computes or on neither; check them, then resolve this job."
 msgstr ""
 "Sanal makine ya iki sunucuda da var ya da hiçbirinde yok; kontrol edin, sonra"
 " bu işi çözün."
 
-#: instances/jobs.py:1258
+#: instances/jobs.py:1272
 msgid "Move disk"
 msgstr "Diski taşı"
 
-#: instances/jobs.py:1265
+#: instances/jobs.py:1279
 msgid "Choose a disk of the VM"
 msgstr "Sanal makinenin bir diskini seçin"
 
-#: instances/jobs.py:1289
+#: instances/jobs.py:1303
 msgid "Copying the disk"
 msgstr "Disk kopyalanıyor"
 
-#: instances/jobs.py:1331
+#: instances/jobs.py:1345
 #, python-format
 msgid "Another block job runs on %(dev)s; check the VM"
 msgstr ""
 "%(dev)s üzerinde başka bir blok işi çalışıyor; sanal makineyi kontrol edin"
 
-#: instances/jobs.py:1337
+#: instances/jobs.py:1351
 #, python-format
 msgid "The disk stayed in %(path)s; remove %(dest)s if it is there"
 msgstr "Disk %(path)s içinde kaldı; varsa %(dest)s dosyasını silin"
 
-#: instances/jobs.py:1339
+#: instances/jobs.py:1353
 #, python-format
 msgid "The definitions of %(dev)s name %(paths)s; check the VM"
 msgstr "%(dev)s tanımları %(paths)s gösteriyor; sanal makineyi kontrol edin"
 
-#: instances/jobs.py:1346
+#: instances/jobs.py:1360
 #, python-format
 msgid "Disk %(path)s was kept: a disk file that stays needs it"
 msgstr "%(path)s diski korundu: kalan bir disk dosyası ona ihtiyaç duyuyor"
 
-#: instances/jobs.py:1347
+#: instances/jobs.py:1361
 #, python-format
 msgid "The VM is removed, but disk %(path)s was not deleted: %(err)s"
 msgstr "Sanal makine kaldırıldı, ancak %(path)s diski silinmedi: %(err)s"
 
-#: instances/jobs.py:1348
+#: instances/jobs.py:1362
 #, python-format
 msgid "Disk %(path)s is used by another VM and was kept"
 msgstr ""
 "%(path)s diski başka bir sanal makine tarafından kullanılıyor ve korundu"
 
-#: instances/jobs.py:1402
+#: instances/jobs.py:1416
 msgid "Delete VM"
 msgstr "Sanal makineyi sil"
 
-#: instances/jobs.py:1432
+#: instances/jobs.py:1446
 msgid "Deleting the VM"
 msgstr "Sanal makine siliniyor"
 
-#: instances/jobs.py:1444
+#: instances/jobs.py:1458
 msgid "The VM was not deleted; it may have been shut off"
 msgstr "Sanal makine silinmedi; kapatılmış olabilir"
 
@@ -6489,7 +6503,7 @@ msgstr ""
 msgid "Select a network interface and a QoS direction"
 msgstr "Bir ağ arabirimi ve bir QoS yönü seçin"
 
-#: instances/views.py:2244 vrtManager/network.py:463
+#: instances/views.py:2244 vrtManager/network.py:470
 msgid "QoS rates must be whole numbers"
 msgstr "QoS hızları tam sayı olmalıdır"
 
@@ -7022,19 +7036,23 @@ msgid "The pool name must not contain any special characters"
 msgstr "Havuz adı herhangi bir özel karakter içermemelidir"
 
 #: networks/forms.py:59
+msgid "The name must have a character other than '.'"
+msgstr "Adda '.' dışında bir karakter olmalı"
+
+#: networks/forms.py:61
 msgid "This host has a network of that name"
 msgstr "Bu sunucuda bu adda bir ağ var"
 
-#: networks/forms.py:72
+#: networks/forms.py:74
 msgid "The pool bridge name must not contain any special characters"
 msgstr "Havuz köprü adı herhangi bir özel karakter içeremez"
 
-#: networks/forms.py:83 networks/forms.py:87 networks/forms.py:91
+#: networks/forms.py:85 networks/forms.py:89 networks/forms.py:93
 #: storages/forms.py:82
 msgid "This field is required."
 msgstr "Bu alan gerekli."
 
-#: networks/forms.py:101
+#: networks/forms.py:103
 #, python-format
 msgid "Network %(net)s has %(subnet)s"
 msgstr "%(net)s ağı %(subnet)s alt ağını kullanıyor"
@@ -9636,16 +9654,6 @@ msgstr ""
 msgid "Volume %(name)s already exists in storage pool %(pool)s"
 msgstr "%(name)s birimi %(pool)s depolama havuzunda zaten var"
 
-#: vrtManager/instance.py:2767
-#, python-format
-msgid "This host has no network %(name)s"
-msgstr "Bu sunucuda %(name)s ağı yok"
-
-#: vrtManager/instance.py:2769
-#, python-format
-msgid "This host has no network filter %(name)s"
-msgstr "Bu sunucuda %(name)s ağ filtresi yok"
-
 #: vrtManager/instance.py:2806
 msgid "A network interface that is a host device is removed in the XML editor"
 msgstr "Sunucu aygıtı olan bir ağ arabirimi XML düzenleyicide kaldırılır"
@@ -9748,7 +9756,7 @@ msgstr "Bilinmeyen çökme eylemi %(action)s"
 msgid "Network interface %(mac)s is not in the definition"
 msgstr "%(mac)s ağ arayüzü tanımda yok"
 
-#: vrtManager/interface.py:35
+#: vrtManager/interface.py:35 vrtManager/network.py:194
 #, python-format
 msgid ""
 "%(err)s; rolling the change back failed too, the host's configuration may be "
@@ -9757,12 +9765,21 @@ msgstr ""
 "%(err)s; değişikliğin geri alınması da başarısız oldu, sunucunun "
 "yapılandırması değişmiş olabilir: %(rollback_err)s"
 
-#: vrtManager/interface.py:269
+#: vrtManager/interface.py:260
+#, python-format
+msgid ""
+"Interface %(iface)s is in use by the running VMs %(vms)s; shut them down or "
+"move their network cards first"
+msgstr ""
+"%(iface)s arayüzünü çalışan %(vms)s VM'leri kullanıyor; önce onları kapatın "
+"veya ağ kartlarını başka yere taşıyın"
+
+#: vrtManager/interface.py:275
 #, python-format
 msgid "Stop interface %(iface)s before deleting it"
 msgstr "%(iface)s arabirimini silmeden önce durdurun"
 
-#: vrtManager/interface.py:273
+#: vrtManager/interface.py:279
 #, python-format
 msgid ""
 "Bridge %(iface)s has addresses and several members: give the addresses to one"
@@ -9771,7 +9788,7 @@ msgstr ""
 "%(iface)s köprüsünün adresleri ve birden fazla üyesi var: önce adresleri "
 "sunucuda üyelerden birine verin"
 
-#: vrtManager/network.py:300
+#: vrtManager/network.py:306
 #, python-format
 msgid ""
 "Network %(net)s is in use by the running VMs %(vms)s; shut them down or "
@@ -9780,7 +9797,7 @@ msgstr ""
 "%(net)s ağı çalışan %(vms)s sanal makineleri tarafından kullanılıyor; önce "
 "onları kapatın veya ağ kartlarını kaldırın"
 
-#: vrtManager/network.py:306
+#: vrtManager/network.py:312
 #, python-format
 msgid ""
 "VMs %(vms)s use network %(net)s and would no longer start; remove their "
@@ -9789,7 +9806,7 @@ msgstr ""
 "%(vms)s sanal makineleri %(net)s ağını kullanıyor ve artık başlamaz; önce ağ "
 "kartlarını kaldırın"
 
-#: vrtManager/network.py:315
+#: vrtManager/network.py:321
 #, python-format
 msgid ""
 "Network %(net)s runs with other addresses than it has saved; stop and start "
@@ -9798,117 +9815,117 @@ msgstr ""
 "%(net)s ağı kayıtlı olandan farklı adreslerle çalışıyor; önce durdurup "
 "başlatın"
 
-#: vrtManager/network.py:335
+#: vrtManager/network.py:341
 #, python-format
 msgid "Network %(net)s has no such address"
 msgstr "%(net)s ağında böyle bir adres yok"
 
-#: vrtManager/network.py:340
+#: vrtManager/network.py:346
 #, python-format
 msgid "The range start %(address)s is not in %(subnet)s"
 msgstr "Aralık başlangıcı %(address)s, %(subnet)s içinde değil"
 
-#: vrtManager/network.py:341
+#: vrtManager/network.py:347
 #, python-format
 msgid "The range start %(address)s is not in the network"
 msgstr "Aralık başlangıcı %(address)s ağın içinde değil"
 
-#: vrtManager/network.py:342
+#: vrtManager/network.py:348
 #, python-format
 msgid "The range end %(address)s is not in %(subnet)s"
 msgstr "Aralık sonu %(address)s, %(subnet)s içinde değil"
 
-#: vrtManager/network.py:343
+#: vrtManager/network.py:349
 #, python-format
 msgid "The range end %(address)s is not in the network"
 msgstr "Aralık sonu %(address)s ağın içinde değil"
 
-#: vrtManager/network.py:344
+#: vrtManager/network.py:350
 #, python-format
 msgid "The fixed address %(address)s is not in %(subnet)s"
 msgstr "Sabit adres %(address)s, %(subnet)s içinde değil"
 
-#: vrtManager/network.py:345
+#: vrtManager/network.py:351
 #, python-format
 msgid "The fixed address %(address)s is not in the network"
 msgstr "Sabit adres %(address)s ağın içinde değil"
 
-#: vrtManager/network.py:354
+#: vrtManager/network.py:360
 #, python-format
 msgid "%(address)s is not an IP address"
 msgstr "%(address)s bir IP adresi değil"
 
-#: vrtManager/network.py:359
+#: vrtManager/network.py:365
 #, python-format
 msgid "%(address)s is the host's own address on the network"
 msgstr "%(address)s sunucunun bu ağdaki kendi adresi"
 
-#: vrtManager/network.py:362
+#: vrtManager/network.py:368
 #, python-format
 msgid "%(address)s is not a host address of %(subnet)s"
 msgstr "%(address)s, %(subnet)s ağında bir makine adresi değil"
 
-#: vrtManager/network.py:368
+#: vrtManager/network.py:374
 #, python-format
 msgid "Stop network %(net)s to change its DHCP range"
 msgstr "DHCP aralığını değiştirmek için %(net)s ağını durdurun"
 
-#: vrtManager/network.py:372
+#: vrtManager/network.py:378
 #, python-format
 msgid "This address of network %(net)s has no DHCP range"
 msgstr "%(net)s ağının bu adresinin DHCP aralığı yok"
 
-#: vrtManager/network.py:376
+#: vrtManager/network.py:382
 #, python-format
 msgid "The range starts at %(start)s, after its end %(end)s"
 msgstr ""
 "Aralık, sonu olan %(end)s adresinden sonra, %(start)s adresinde başlıyor"
 
-#: vrtManager/network.py:378
+#: vrtManager/network.py:384
 #, python-format
 msgid "The range takes in %(address)s, the host's own address"
 msgstr "Aralık, sunucunun kendi adresi olan %(address)s adresini içeriyor"
 
-#: vrtManager/network.py:387
+#: vrtManager/network.py:393
 #, python-format
 msgid "Network %(net)s has no fixed address %(address)s"
 msgstr "%(net)s ağında %(address)s sabit adresi yok"
 
-#: vrtManager/network.py:405
-#, python-format
-msgid "The name %(name)s may have only letters, digits, '.', '_' and '-'"
-msgstr "%(name)s adında yalnızca harf, rakam, '.', '_' ve '-' olabilir"
-
-#: vrtManager/network.py:414
+#: vrtManager/network.py:418
 #, python-format
 msgid "The fixed address %(original)s has changed meanwhile; reload the page"
 msgstr "%(original)s sabit adresi bu arada değişti; sayfayı yeniden yükleyin"
 
-#: vrtManager/network.py:419
+#: vrtManager/network.py:421
+#, python-format
+msgid "The name %(name)s may have only letters, digits, '.', '_' and '-'"
+msgstr "%(name)s adında yalnızca harf, rakam, '.', '_' ve '-' olabilir"
+
+#: vrtManager/network.py:426
 #, python-format
 msgid "%(address)s is another entry's fixed address"
 msgstr "%(address)s başka bir kaydın sabit adresi"
 
-#: vrtManager/network.py:421
+#: vrtManager/network.py:428
 #, python-format
 msgid "%(mac_duid)s has another fixed address, %(other)s"
 msgstr "%(mac_duid)s için başka bir sabit adres var: %(other)s"
 
-#: vrtManager/network.py:423
+#: vrtManager/network.py:430
 #, python-format
 msgid "The name %(name)s has another fixed address, %(other)s"
 msgstr "%(name)s adı için başka bir sabit adres var: %(other)s"
 
-#: vrtManager/network.py:459
+#: vrtManager/network.py:466
 msgid "Direction must be inbound or outbound"
 msgstr "Yön gelen ya da giden olmalı"
 
-#: vrtManager/network.py:486
+#: vrtManager/network.py:493
 #, python-format
 msgid "The XML must define network %(net)s"
 msgstr "XML, %(net)s ağını tanımlamalıdır"
 
-#: vrtManager/network.py:488
+#: vrtManager/network.py:495
 msgid "The XML must keep the network's UUID"
 msgstr "XML, ağın UUID değerini korumalıdır"
 
