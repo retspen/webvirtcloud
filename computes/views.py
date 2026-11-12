@@ -1,6 +1,9 @@
 import json
 import logging
+import threading
 from contextlib import suppress
+from concurrent import futures
+from copy import copy
 
 from admin.decorators import superuser_only
 from django.conf import settings
@@ -79,6 +82,46 @@ def host_pools(compute):
 CONNECTIONS = {CONN_TCP: "TCP", CONN_SSH: "SSH", CONN_TLS: "TLS", CONN_SOCKET: "Socket"}
 
 
+# the Computes page reads its hosts side by side, and waits this long for them in all
+LIST_WAIT = 10
+LIST_WORKERS = 8
+
+
+def _read_host(compute):
+    """Whether the panel reaches the compute, why not, and its capacity (shown_capacity)."""
+    return compute.status, compute.connection_error, shown_capacity(compute)
+
+
+# the reads of the Computes pages of this process: one pool, and one read of a host at a time,
+# so a host that hangs holds one thread however often the page is loaded
+_pool = None
+_reading = {}  # compute pk: its last read
+_reading_lock = threading.Lock()
+
+
+def read_hosts(computes):
+    """Reads each of computes (_read_host) on its own thread: a slow host
+    holds back only itself, and one not read within LIST_WAIT is shown as
+    not answering. A host whose read of an earlier load still runs is not
+    read again: that read is waited for. Each thread reads a copy: one still
+    running later does not change what the page shows."""
+    global _pool
+    with _reading_lock:
+        if _pool is None:  # in the process that serves: a pool's threads do not survive a fork
+            _pool = futures.ThreadPoolExecutor(max_workers=LIST_WORKERS, thread_name_prefix="wvc-hosts")
+        for compute in computes:
+            if compute.pk not in _reading or _reading[compute.pk].done():
+                _reading[compute.pk] = _pool.submit(_read_host, copy(compute))
+        reads = {compute: _reading[compute.pk] for compute in computes}
+    futures.wait(reads.values(), timeout=LIST_WAIT)
+    for compute, read in reads.items():
+        if read.done():
+            compute.status, compute.connection_error, compute.shown_capacity = read.result()
+        else:
+            compute.status, compute.shown_capacity = False, None
+            compute.connection_error = _("The host did not answer within %(seconds)s seconds") % {"seconds": LIST_WAIT}
+
+
 @superuser_only
 def computes(request):
     """The computes, with what each has given its VMs, and the totals of the
@@ -86,13 +129,14 @@ def computes(request):
     computes = list(Compute.objects.order_by("name"))
     totals = {"hosts": len(computes), "connected": 0, "vms": 0, "running": 0,
               "vcpus": 0, "cpus": 0, "assigned": 0, "memory": 0}
+    read_hosts(computes)
     for compute in computes:
         compute.connection_name = CONNECTIONS.get(compute.type, "")
         if compute.status is True and not compute.host_uuid:
             # one added before host UUIDs were kept (Compute.clean); none for a second record of a host
             with suppress(IntegrityError):
                 compute.record_host()
-        compute.shown_capacity = given = shown_capacity(compute)
+        given = compute.shown_capacity
         totals["connected"] += compute.status is True
         if given:
             totals["vms"] += given["vm_count"]

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-12 06:19+0000\n"
+"POT-Creation-Date: 2026-11-12 06:17+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -1847,24 +1847,24 @@ msgstr ""
 "主机 /etc/default/webvirt-gstfsd 中的 GSTFSD_KEY：面板用它为已关机的虚拟机设置 root 密码和 SSH "
 "密钥；留空：无法在此设置"
 
-#: computes/models.py:179
+#: computes/models.py:176
 #, python-format
 msgid "This host is already added as %(name)s"
 msgstr "此主机已作为 %(name)s 添加"
 
-#: computes/models.py:182
+#: computes/models.py:179
 #, python-format
 msgid ""
 "The panel cannot reach the host to tell that its VMs are there: %(error)s"
 msgstr "面板无法连接该主机，因此无法确认其虚拟机在那里：%(error)s"
 
-#: computes/models.py:189
+#: computes/models.py:186
 msgid ""
 "The host its VMs are on is not known yet: change the connection when the "
 "panel has reached the host at its current one"
 msgstr "其虚拟机所在的主机尚不明确：请在面板通过当前连接访问到该主机后再更改连接"
 
-#: computes/models.py:192
+#: computes/models.py:189
 msgid "This is another host than the one its VMs are on: add it as a new host"
 msgstr "这不是其虚拟机所在的主机：请将其添加为新主机"
 
@@ -2351,12 +2351,17 @@ msgid ""
 "/etc/default/webvirt-gstfsd"
 msgstr "请输入主机 /etc/default/webvirt-gstfsd 中 GSTFSD_KEY 的 64 个十六进制字符"
 
-#: computes/views.py:166
+#: computes/views.py:108
+#, python-format
+msgid "The host did not answer within %(seconds)s seconds"
+msgstr "主机未在 %(seconds)s 秒内响应"
+
+#: computes/views.py:196
 #, python-format
 msgid "The host was saved, but the panel cannot connect to it: %(error)s"
 msgstr "主机已保存，但面板无法连接到它：%(error)s"
 
-#: computes/views.py:222
+#: computes/views.py:252
 #, python-format
 msgid ""
 "Its VMs keep running on the host and leave the panel; their owners are kept "

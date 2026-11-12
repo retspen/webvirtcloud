@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-12 06:19+0000\n"
+"POT-Creation-Date: 2026-11-12 06:17+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -1907,12 +1907,12 @@ msgstr ""
 "sanal makinenin root parolasını ve SSH anahtarını bununla ayarlar; boş: bu "
 "sunucuda ayarlanamazlar"
 
-#: computes/models.py:179
+#: computes/models.py:176
 #, python-format
 msgid "This host is already added as %(name)s"
 msgstr "Bu sunucu zaten %(name)s olarak ekli"
 
-#: computes/models.py:182
+#: computes/models.py:179
 #, python-format
 msgid ""
 "The panel cannot reach the host to tell that its VMs are there: %(error)s"
@@ -1920,7 +1920,7 @@ msgstr ""
 "Panel sunucuya ulaşamadığı için VM'lerinin orada olduğunu doğrulayamıyor: "
 "%(error)s"
 
-#: computes/models.py:189
+#: computes/models.py:186
 msgid ""
 "The host its VMs are on is not known yet: change the connection when the "
 "panel has reached the host at its current one"
@@ -1928,7 +1928,7 @@ msgstr ""
 "VM'lerinin bulunduğu sunucu henüz bilinmiyor: bağlantıyı, panel sunucuya "
 "mevcut bağlantısından ulaştıktan sonra değiştirin"
 
-#: computes/models.py:192
+#: computes/models.py:189
 msgid "This is another host than the one its VMs are on: add it as a new host"
 msgstr ""
 "Bu, VM'lerinin bulunduğu sunucudan başka bir sunucu: yeni bir sunucu olarak "
@@ -2437,12 +2437,17 @@ msgstr ""
 "Sunucudaki /etc/default/webvirt-gstfsd içindeki GSTFSD_KEY değerinin 64 "
 "onaltılık karakterini girin"
 
-#: computes/views.py:166
+#: computes/views.py:108
+#, python-format
+msgid "The host did not answer within %(seconds)s seconds"
+msgstr "Sunucu %(seconds)s saniye içinde yanıt vermedi"
+
+#: computes/views.py:196
 #, python-format
 msgid "The host was saved, but the panel cannot connect to it: %(error)s"
 msgstr "Sunucu kaydedildi, ancak panel ona bağlanamıyor: %(error)s"
 
-#: computes/views.py:222
+#: computes/views.py:252
 #, python-format
 msgid ""
 "Its VMs keep running on the host and leave the panel; their owners are kept "
