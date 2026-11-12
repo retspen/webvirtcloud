@@ -71,8 +71,9 @@ class UserSSHKeyForm(ModelForm):
         return self.cleaned_data["keyname"]
 
     def clean_keypublic(self):
+        # the same key with another comment is the same key
         for key in self.publickeys:
-            if self.cleaned_data["keypublic"] == key.keypublic:
+            if self.cleaned_data["keypublic"].split()[:2] == key.keypublic.split()[:2]:
                 raise ValidationError(_("Public key already exist"))
 
         if not validate_ssh_key(self.cleaned_data["keypublic"]):

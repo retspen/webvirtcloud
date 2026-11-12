@@ -11,6 +11,8 @@ from django.core import mail
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django_otp.plugins.otp_totp.models import TOTPDevice
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from lxml import html
 
 from accounts.utils import (OTP_LINK, OTP_LINK_MAX_AGE, get_existing_totp_device, get_user_totp_device, otp_qr_svg,
@@ -25,20 +27,30 @@ class AccountsUtilsTestCase(TestCase):
         )
 
     def test_validate_ssh_key_valid(self):
-        blob = (
-            struct.pack(">I", 7)
-            + b"ssh-rsa"
-            + struct.pack(">I", 3)
-            + b"\x01\x00\x01"
-            + struct.pack(">I", 8)
-            + b"\x00" * 8
-        )
-        b64 = base64.b64encode(blob).decode()
-        valid_key = f"ssh-rsa {b64} user@example.com"
-        self.assertTrue(validate_ssh_key(valid_key))
+        key = Ed25519PrivateKey.generate().public_key().public_bytes(Encoding.OpenSSH, PublicFormat.OpenSSH).decode()
+        self.assertTrue(validate_ssh_key(f"{key} user@example.com"))
         # ssh-keygen -C "John Doe laptop": the comment holds spaces
-        self.assertTrue(validate_ssh_key(f"ssh-rsa {b64} John Doe laptop"))
-        self.assertTrue(validate_ssh_key(f"ssh-rsa {b64}"))
+        self.assertTrue(validate_ssh_key(f"{key} John Doe laptop"))
+        self.assertTrue(validate_ssh_key(key))
+        # a security key (ssh-keygen -t ed25519-sk): its type, key and application
+        blob = b"".join(struct.pack(">I", len(part)) + part
+                        for part in (b"sk-ssh-ed25519@openssh.com", b"\x01" * 32, b"ssh:"))
+        self.assertTrue(validate_ssh_key(f"sk-ssh-ed25519@openssh.com {base64.b64encode(blob).decode()} yubikey"))
+
+    def test_validate_ssh_key_truncated(self):
+        # the type alone, or a key cut short: nothing a VM could let in
+        key = Ed25519PrivateKey.generate().public_key().public_bytes(Encoding.OpenSSH, PublicFormat.OpenSSH).decode()
+        for truncated in ("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5", key[:-8]):
+            with self.subTest(truncated):
+                self.assertFalse(validate_ssh_key(truncated))
+
+    def test_validate_ssh_key_one_line(self):
+        # authorized_keys holds a key per line: a key split over two, or two keys, is not one key
+        key = Ed25519PrivateKey.generate().public_key().public_bytes(Encoding.OpenSSH, PublicFormat.OpenSSH).decode()
+        for text in (key.replace(" ", "\r\n", 1), f"{key} a\n{key} b"):
+            with self.subTest(text):
+                self.assertFalse(validate_ssh_key(text))
+        self.assertTrue(validate_ssh_key(f"{key} laptop\r\n"))
 
     def test_validate_ssh_key_invalid_parts(self):
         self.assertFalse(validate_ssh_key("only_two parts"))

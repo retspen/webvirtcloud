@@ -1,9 +1,8 @@
-import base64
-import binascii
-import struct
 from decimal import Decimal
 
 import segno
+from cryptography.exceptions import UnsupportedAlgorithm
+from cryptography.hazmat.primitives.serialization import load_ssh_public_key
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.core.signing import TimestampSigner
@@ -38,25 +37,14 @@ def get_user_totp_device(user):
 
 
 def validate_ssh_key(key):
-    # An OpenSSH public key is a type, a key and an optional comment, which may hold spaces
-    array = key.strip().encode().split(maxsplit=2)
-    if len(array) < 2:
+    """An OpenSSH public key: its type, a whole key of that type (security
+    keys too) and an optional comment, which may hold spaces: one line, as
+    authorized_keys holds it."""
+    if "\n" in key.strip() or "\r" in key.strip():
         return False
-    typeofkey = array[0]
-    string = array[1]
-
-    # must have only valid rsa-ssh key characters ie binascii characters
     try:
-        data = base64.decodebytes(string)
-    except binascii.Error:
-        return False
-    # unpack the contents of data, from data[:4] , property of ssh key .
-    try:
-        str_len = struct.unpack(">I", data[:4])[0]
-    except struct.error:
-        return False
-    # data[4:str_len] must have string which matches with the typeofkey, another ssh key property.
-    if data[4 : 4 + str_len] != typeofkey:
+        load_ssh_public_key(" ".join(key.split(maxsplit=2)[:2]).encode())
+    except (ValueError, UnsupportedAlgorithm):
         return False
     return True
 
