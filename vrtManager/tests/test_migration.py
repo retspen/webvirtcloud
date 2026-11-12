@@ -83,6 +83,29 @@ class ShutOffMigrationTestCase(unittest.TestCase):
         destination(host).moveto(FakeSource(5, xml=card), "vm", live=False, unsafe=False, offline=True)
         self.assertEqual(host.defined, [card])
 
+    def test_a_secret_the_destination_does_not_have_is_refused(self):
+        # libvirt defines the VM there without it: its disk or vTPM would not open
+        key = "8f2c0000-0000-4000-8000-000000000001"
+        tpm = "8f2c0000-0000-4000-8000-000000000003"
+        xml = (f"<domain><name>vm</name><devices><disk type='network'><auth username='libvirt'>"
+               f"<secret type='ceph' uuid='{key.upper()}'/></auth></disk><disk type='network'><auth username='u'>"
+               f"<secret type='iscsi' usage='iqn.2026-11.test:lun'/></auth></disk><tpm model='tpm-crb'>"
+               f"<backend type='emulator'><encryption secret='{tpm}'/></backend></tpm></devices></domain>")
+        for host, why in ((FakeHost(), f"these secrets of the VM: {key.upper()}, {tpm}, iqn.2026-11.test:lun"),
+                          # the usage of another type is another secret
+                          (FakeHost(secrets=[(key, "ceph", "x"), (tpm, "vtpm", "t"), ("u-9", "ceph", "iqn.2026-11.test:lun")]),
+                           "these secrets of the VM: iqn.2026-11.test:lun$")):
+            source = FakeSource(5, xml=xml)
+            with self.subTest(why), self.assertRaisesRegex(util.OperationError, why):
+                destination(host).moveto(source, "vm", live=False, unsafe=False, offline=True)
+            self.assertEqual(host.defined, [])
+            self.assertIsNone(source.instance.undefined)
+        # moved as its definition: without the vTPM, whose state a shut-off VM carries by starting
+        xml = xml.replace(xml[xml.index("<tpm"):xml.index("</devices>")], "")
+        host = FakeHost(secrets=[(key, "ceph", "x"), ("u-9", "iscsi", "iqn.2026-11.test:lun")])
+        destination(host).moveto(FakeSource(5, xml=xml), "vm", live=False, unsafe=False, offline=True)
+        self.assertEqual(host.defined, [xml])
+
     def test_a_failed_source_undefine_removes_the_new_definition(self):
         host = FakeHost()
         source = FakeSource(5, undefine_fails=True)

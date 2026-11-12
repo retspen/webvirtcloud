@@ -74,6 +74,7 @@ from vrtManager import util
 from vrtManager.connection import NVRAM_DIR, wvmConnect
 from vrtManager.nodedevs import check_hostdevs, pci_address, pci_label, usb_selector, usb_selector_label
 from vrtManager.storage import wvmStorage, wvmStorages
+from vrtManager.virtsecrets import REF_USAGE_TYPES
 
 logger = logging.getLogger(__name__)
 
@@ -179,6 +180,9 @@ class wvmInstances(wvmConnect):
         if filters:
             raise util.OperationError(gettext_noop("The destination host does not have these network filters of the VM: %(names)s"),
                                       names=", ".join(filters))
+        if secrets := self.unknown_secrets([etree.fromstring(xml) for xml in definitions]):
+            raise util.OperationError(gettext_noop("The destination host does not have these secrets of the VM: %(names)s"),
+                                      names=", ".join(secrets))
         copies = self.disk_copies(conn, definitions, pools or {})
         if copies:
             mode.append("disks copied: " + ", ".join(f"{copy['target']} to {copy['pool'].name()}" for copy in copies))
@@ -465,6 +469,21 @@ class wvmInstances(wvmConnect):
         if name:
             with self._nvram_pool() as pool:
                 pool.storageVolLookupByName(name).delete(0)
+
+    def unknown_secrets(self, trees):
+        """The secrets that the VM definitions in trees name (in their disks,
+        host devices and vTPM) and this host does not have, by UUID or usage,
+        sorted: libvirt defines such a VM, and it then does not start."""
+        refs = {(ref.get("uuid"), REF_USAGE_TYPES.get(ref.get("type")), ref.get("usage"))
+                for tree in trees for ref in tree.xpath("devices//secret")}
+        refs |= {(uuid, None, None) for tree in trees for uuid in tree.xpath("devices/tpm/backend/encryption/@secret")}
+        if not refs:  # the host is asked only when the VM names one
+            return []
+        have = self.get_secrets_info()
+        uuids = {secret["uuid"] for secret in have}
+        usages = {(secret["usage_type"], secret["usage"]) for secret in have}
+        return sorted(uuid or usage for uuid, usage_type, usage in refs
+                      if (uuid.lower() not in uuids if uuid else (usage_type, usage) not in usages))
 
     def missing_disks(self, definitions, copied=()):
         """(target, source) of the disks in the VM definitions (XML) that are

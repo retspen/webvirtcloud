@@ -124,11 +124,13 @@ class FakePool:
 class FakeHost:
     """The destination's libvirt connection. volumes: the paths its pools
     list; unlisted: files its pools show after a refresh; networks and
-    nwfilters: the names of its networks and network filters."""
+    nwfilters: the names of its networks and network filters; secrets: the
+    UUID, usage type and usage of each of its secrets."""
 
     def __init__(self, existing=(), volumes=(), unlisted=(), backing=None, inactive_pools=(), pool_types=None,
-                 networks=(), nwfilters=()):
+                 networks=(), nwfilters=(), secrets=()):
         self.existing = set(existing)
+        self.secrets = list(secrets)
         self.networks = list(networks)
         self.nwfilters = list(nwfilters)
         self.defined = []
@@ -148,6 +150,11 @@ class FakeHost:
 
     def listNWFilters(self):
         return self.nwfilters
+
+    def listAllSecrets(self, flags=0):
+        return [MagicMock(**{"UUIDString.return_value": uuid, "XMLDesc.return_value":
+                             f"<secret><usage type='{usage_type}'><name>{usage}</name></usage></secret>"})
+                for uuid, usage_type, usage in self.secrets]
 
     def storageVolLookupByPath(self, path):
         if path not in self.volumes:
