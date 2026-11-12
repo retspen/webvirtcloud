@@ -63,6 +63,16 @@ class ReadTests(SimpleTestCase):
         for listed in conn.wvm.listAllInterfaces.return_value:
             listed.XMLDesc.assert_called_with(libvirt.VIR_INTERFACE_XML_INACTIVE)
 
+    def test_a_device_a_vm_or_a_network_uses_is_taken(self):
+        # a VM's macvtap card, running or not, and a network forwarding to it would be cut off
+        conn = self.interfaces(networks=["<network><forward mode='bridge'><interface dev='eno6'/></forward></network>"])
+        conn.wvm.listAllNetworks.return_value[0].name.return_value = "direct"
+        conn.wvm.listAllDomains.return_value = [MagicMock(**{
+            "name.return_value": "web-1", "isPersistent.return_value": False,
+            "XMLDesc.return_value": "<domain><devices><interface type='direct'><source dev='eno5' mode='bridge'/>"
+                                    "</interface></devices></domain>"})]
+        self.assertEqual(conn.get_member_candidates(["eno5", "eno6", "eno7"]), ["eno7"])
+
     def test_a_device_in_a_bond_of_a_bridge_is_taken(self):
         nested = ("<interface type='bridge' name='br1'><mac address='52:54:00:aa:01:05'/><bridge><interface type='bond' name='bond0'><bond>"
                   "<interface type='ethernet' name='eno3'/><interface type='ethernet' name='eno4'/></bond></interface>"
@@ -97,12 +107,12 @@ class BridgeUseTests(SimpleTestCase):
         from vrtManager.interface import networks_by_device
 
         nets = [MagicMock(**{"name.return_value": name, "XMLDesc.return_value": xml}) for name, xml in (
-            ("default", "<network><bridge name='virbr0'/></network>"),
+            ("default", "<network><forward mode='nat' dev='eth3'/><bridge name='virbr0'/></network>"),
             ("lan", "<network><forward mode='bridge'/><bridge name='br0'/></network>"),
             ("direct", "<network><forward mode='bridge'><interface dev='eth0'/><interface dev='eth1'/></forward></network>"),
             ("sriov", "<network><forward mode='hostdev'><pf dev='eth2'/></forward></network>"))]
         self.assertEqual(networks_by_device(MagicMock(**{"listAllNetworks.return_value": nets})),
-                         {"virbr0": ["default"], "br0": ["lan"], "eth0": ["direct"], "eth1": ["direct"], "eth2": ["sriov"]})
+                         {"virbr0": ["default"], "eth3": ["default"], "br0": ["lan"], "eth0": ["direct"], "eth1": ["direct"], "eth2": ["sriov"]})
         doms = [MagicMock(**{"name.return_value": name, "XMLDesc.return_value": xml}) for name, xml in (
             ("web", "<domain><devices><interface type='bridge'><mac address='52:54:00:00:00:01'/><source bridge='br0'/>"
                     "<target dev='vnet3'/></interface></devices></domain>"),

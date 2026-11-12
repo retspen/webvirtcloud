@@ -80,13 +80,14 @@ def interface_info(iface, tree):
 
 
 def networks_by_device(conn):
-    """The host's libvirt networks by the devices they use: their bridge, or
-    every interface or physical function they forward to. One listing, one
+    """The host's libvirt networks by the devices they use: their bridge, the
+    device NAT or routing goes out by, or every interface or physical
+    function they forward to. One listing, one
     XML read per network."""
     by_device = {}
     for net in conn.listAllNetworks(0):
         tree = ElementTree.fromstring(net.XMLDesc(0))
-        devices = {attribute(tree, "bridge", "name")}
+        devices = {attribute(tree, "bridge", "name"), attribute(tree, "forward", "dev")}
         for forward in tree.findall("forward/interface") + tree.findall("forward/pf"):
             devices.add(forward.get("dev"))
         devices.discard(None)
@@ -109,15 +110,18 @@ class wvmInterfaces(wvmConnect):
     def get_member_candidates(self, netdevs):
         """The devices of netdevs a new bridge can take: not the loopback, a
         bridge, bond or VLAN of the host nor a device in one as configured, at
-        any depth (a bridge's bond's devices), not the bridge of a libvirt
-        network and not a VM's tap (libvirt names them vnetN and macvtapN)."""
+        any depth (a bridge's bond's devices), not a device a libvirt network
+        or a VM's macvtap card uses and not a VM's tap (libvirt names them
+        vnetN and macvtapN)."""
         taken = {"lo"}
         for iface in self.wvm.listAllInterfaces(0):
             tree = ElementTree.fromstring(iface.XMLDesc(VIR_INTERFACE_XML_INACTIVE))
             if tree.get("type") in ("bridge", "bond", "vlan"):
                 taken.update(element.get("name") for element in tree.iter("interface"))
-        for net in self.wvm.listAllNetworks(0):
-            taken.add(util.get_xml_path(net.XMLDesc(0), "/network/bridge/@name"))
+        taken.update(networks_by_device(self.wvm))
+        for _name, trees in self.domain_trees():
+            for tree in trees:
+                taken.update(tree.xpath("devices/interface[@type='direct']/source/@dev"))
         return [dev for dev in netdevs if dev not in taken and not dev.startswith(("vnet", "macvtap"))]
 
     def define_iface(self, xml, flag=0):
@@ -264,6 +268,24 @@ class wvmInterface(wvmConnect):
     def start_iface(self):
         self.iface.create()
 
+    def check_unused(self):
+        """Refused while a VM's network card (in any of its definitions, the
+        VM running or not) or a libvirt network names the interface: that VM
+        or network would no longer start."""
+        name = self.iface.name()
+        networks = networks_by_device(self.wvm).get(name, [])
+        vms = self.domains_using(lambda tree: any(
+            name in (source.get("bridge"), source.get("dev")) or source.get("network") in networks
+            for source in tree.xpath("devices/interface/source")))
+        named = []
+        if vms:
+            named.append(util.message(gettext_noop("VMs %(names)s"), names=", ".join(vms)))
+        if networks:
+            named.append(util.message(gettext_noop("networks %(names)s"), names=", ".join(networks)))
+        if named:
+            raise util.OperationError(gettext_noop("Interface %(iface)s is used by %(named)s; remove it from them first"),
+                                      iface=name, named=named)
+
     def delete_iface(self):
         """Undefine the interface, stopped first. netcf removes a bridge's
         members with it, so each member is defined again on its own, as virsh
@@ -273,6 +295,7 @@ class wvmInterface(wvmConnect):
         All of it is one change of the host's configuration."""
         if self.iface.isActive():
             raise util.OperationError(gettext_noop("Stop interface %(iface)s before deleting it"), iface=self.iface.name())
+        self.check_unused()
         tree = ElementTree.fromstring(self.iface.XMLDesc(VIR_INTERFACE_XML_INACTIVE))
         members = tree.findall("bridge/interface")
         if len(members) > 1 and tree.findall("protocol"):

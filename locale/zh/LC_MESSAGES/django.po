@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-12 12:50+0000\n"
+"POT-Creation-Date: 2026-11-12 12:53+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -9217,19 +9217,34 @@ msgid ""
 "changed: %(rollback_err)s"
 msgstr "%(err)s；回滚更改也失败了，主机的配置可能已被更改：%(rollback_err)s"
 
-#: vrtManager/interface.py:260
+#: vrtManager/interface.py:263
 #, python-format
 msgid ""
 "Interface %(iface)s is in use by the running VMs %(vms)s; shut them down or "
 "move their network cards first"
 msgstr "接口 %(iface)s 正被运行中的虚拟机 %(vms)s 使用；请先关闭它们或移走其网卡"
 
-#: vrtManager/interface.py:275
+#: vrtManager/interface.py:281 vrtManager/virtsecrets.py:118
+#, python-format
+msgid "VMs %(names)s"
+msgstr "虚拟机 %(names)s"
+
+#: vrtManager/interface.py:283
+#, python-format
+msgid "networks %(names)s"
+msgstr "网络 %(names)s"
+
+#: vrtManager/interface.py:285
+#, python-format
+msgid "Interface %(iface)s is used by %(named)s; remove it from them first"
+msgstr "接口 %(iface)s 正被 %(named)s 使用；请先从中移除它"
+
+#: vrtManager/interface.py:296
 #, python-format
 msgid "Stop interface %(iface)s before deleting it"
 msgstr "删除接口 %(iface)s 前请先停止它"
 
-#: vrtManager/interface.py:279
+#: vrtManager/interface.py:301
 #, python-format
 msgid ""
 "Bridge %(iface)s has addresses and several members: give the addresses to one"
@@ -9647,11 +9662,6 @@ msgstr "Ceph 密钥是 base64 文本，即 `ceph auth get-key` 输出的内容"
 #: vrtManager/virtsecrets.py:105
 msgid "Type the secret's value"
 msgstr "请输入机密的值"
-
-#: vrtManager/virtsecrets.py:118
-#, python-format
-msgid "VMs %(names)s"
-msgstr "虚拟机 %(names)s"
 
 #: vrtManager/virtsecrets.py:120
 #, python-format

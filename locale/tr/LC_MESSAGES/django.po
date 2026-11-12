@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-12 12:50+0000\n"
+"POT-Creation-Date: 2026-11-12 12:53+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -9789,7 +9789,7 @@ msgstr ""
 "%(err)s; değişikliğin geri alınması da başarısız oldu, sunucunun "
 "yapılandırması değişmiş olabilir: %(rollback_err)s"
 
-#: vrtManager/interface.py:260
+#: vrtManager/interface.py:263
 #, python-format
 msgid ""
 "Interface %(iface)s is in use by the running VMs %(vms)s; shut them down or "
@@ -9798,12 +9798,28 @@ msgstr ""
 "%(iface)s arayüzünü çalışan %(vms)s VM'leri kullanıyor; önce onları kapatın "
 "veya ağ kartlarını başka yere taşıyın"
 
-#: vrtManager/interface.py:275
+#: vrtManager/interface.py:281 vrtManager/virtsecrets.py:118
+#, python-format
+msgid "VMs %(names)s"
+msgstr "%(names)s sanal makineleri"
+
+#: vrtManager/interface.py:283
+#, python-format
+msgid "networks %(names)s"
+msgstr "%(names)s ağları"
+
+#: vrtManager/interface.py:285
+#, python-format
+msgid "Interface %(iface)s is used by %(named)s; remove it from them first"
+msgstr ""
+"%(iface)s arayüzü %(named)s tarafından kullanılıyor; önce onlardan kaldırın"
+
+#: vrtManager/interface.py:296
 #, python-format
 msgid "Stop interface %(iface)s before deleting it"
 msgstr "%(iface)s arabirimini silmeden önce durdurun"
 
-#: vrtManager/interface.py:279
+#: vrtManager/interface.py:301
 #, python-format
 msgid ""
 "Bridge %(iface)s has addresses and several members: give the addresses to one"
@@ -10250,11 +10266,6 @@ msgstr ""
 #: vrtManager/virtsecrets.py:105
 msgid "Type the secret's value"
 msgstr "Parolanın değerini yazın"
-
-#: vrtManager/virtsecrets.py:118
-#, python-format
-msgid "VMs %(names)s"
-msgstr "%(names)s sanal makineleri"
 
 #: vrtManager/virtsecrets.py:120
 #, python-format

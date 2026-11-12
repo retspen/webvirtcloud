@@ -64,6 +64,22 @@ class DeleteInterfaceTestCase(SimpleTestCase):
             conn.delete_iface()
         conn.iface.undefine.assert_not_called()
 
+    def test_an_interface_a_vm_or_a_network_names_is_refused(self):
+        # the VM is shut off: its saved definition names the bridge, and it would not start
+        vm = MagicMock(**{"name.return_value": "web-1", "isPersistent.return_value": True,
+                          "XMLDesc.return_value": "<domain><devices><interface type='bridge'><source bridge='br1'/>"
+                                                  "</interface></devices></domain>"})
+        lab = MagicMock(**{"name.return_value": "lab",
+                           "XMLDesc.return_value": "<network><forward mode='bridge'/><bridge name='br1'/></network>"})
+        for domains, networks, why in (([vm], [], "used by VMs web-1;"), ([], [lab], "used by networks lab;"),
+                                       ([vm], [lab], "used by VMs web-1; networks lab;")):
+            conn = interface("<interface type='bridge' name='br1'><bridge/></interface>")
+            conn.wvm.listAllDomains.return_value = domains
+            conn.wvm.listAllNetworks.return_value = networks
+            with self.subTest(why), self.assertRaisesRegex(OperationError, why):
+                conn.delete_iface()
+            conn.iface.undefine.assert_not_called()
+
     def test_a_member_libvirt_refuses_rolls_the_whole_change_back(self):
         conn = interface(f"<interface type='bridge' name='br1'><bridge>{BOND}</bridge></interface>")
         conn.wvm.interfaceDefineXML.side_effect = libvirt.libvirtError("netcf: cannot write")
