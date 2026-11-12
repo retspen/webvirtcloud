@@ -73,6 +73,8 @@ class AppSettingsTestCase(TestCase):
 
     def post(self, key, value):
         response = self.client.post(reverse("appsettings"), {key: value})
+        # not followed: the messages would stay in the cookie for the next post
+        self.client.cookies.pop("messages", None)
         return [str(m) for m in get_messages(response.wsgi_request)]
 
     def test_a_listed_setting_takes_only_its_choices(self):
@@ -98,6 +100,30 @@ class AppSettingsTestCase(TestCase):
         self.assertEqual(AppSettings.objects.get(key="CLONE_INSTANCE_DEFAULT_PREFIX").value, "web-")
         page = self.client.get(reverse("appsettings")).content.decode()
         self.assertIn('name="CLONE_INSTANCE_DEFAULT_PREFIX" value="web-"', page)
+
+    def test_the_clone_name_prefix_makes_clone_names(self):
+        # every name offered to a user who is not a superuser would be refused
+        for bad in ("bad prefix", "web_"):
+            with self.subTest(bad=bad):
+                self.assertTrue(any("letters, digits and '-' only" in m for m in self.post("CLONE_INSTANCE_DEFAULT_PREFIX", bad)))
+                self.assertEqual(AppSettings.objects.get(key="CLONE_INSTANCE_DEFAULT_PREFIX").value, "instance")
+
+    def test_native_disk_io_needs_a_cache_libvirt_takes_with_it(self):
+        # libvirt: "io='native' needs either no disk cache or directsync cache mode"
+        self.post("INSTANCE_VOLUME_DEFAULT_CACHE", "writeback")
+        self.assertTrue(any("needs disk cache none or directsync" in m
+                            for m in self.post("INSTANCE_VOLUME_DEFAULT_IO", "native")))
+        self.assertEqual(AppSettings.objects.get(key="INSTANCE_VOLUME_DEFAULT_IO").value, "default")
+        response = self.client.post(reverse("appsettings"), {"INSTANCE_VOLUME_DEFAULT_CACHE": "none",
+                                                             "INSTANCE_VOLUME_DEFAULT_IO": "native"})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(AppSettings.objects.get(key="INSTANCE_VOLUME_DEFAULT_IO").value, "native")
+        self.assertTrue(any("needs disk cache" in m for m in self.post("INSTANCE_VOLUME_DEFAULT_CACHE", "unsafe")))
+        self.assertEqual(AppSettings.objects.get(key="INSTANCE_VOLUME_DEFAULT_CACHE").value, "none")
+        # a pair saved before does not block another setting
+        AppSettings.objects.filter(key="INSTANCE_VOLUME_DEFAULT_CACHE").update(value="writeback")
+        self.post("LOGS_PER_PAGE", "50")
+        self.assertEqual(AppSettings.objects.get(key="LOGS_PER_PAGE").value, "50")
 
     def page(self):
         from lxml import html

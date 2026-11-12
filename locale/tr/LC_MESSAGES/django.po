@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-12 10:25+0000\n"
+"POT-Creation-Date: 2026-11-12 12:21+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -1736,79 +1736,89 @@ msgstr "Temayı değiştir"
 msgid "Save %(group_title)s"
 msgstr "%(group_title)s kaydet"
 
-#: appsettings/views.py:37
+#: appsettings/views.py:38
 msgid "New VM defaults"
 msgstr "Yeni sanal makine varsayılanları"
 
-#: appsettings/views.py:40 instances/templates/instance.html:70
+#: appsettings/views.py:41 instances/templates/instance.html:70
 #: instances/templates/instances/destroy_instance_form.html:33
 #: instances/templates/instances/resize_tab.html:20
 #: instances/templates/instances/settings_tab.html:197
 msgid "Disks"
 msgstr "Diskler"
 
-#: appsettings/views.py:44
+#: appsettings/views.py:45
 msgid "Clones"
 msgstr "Klonlar"
 
-#: appsettings/views.py:45 console/templates/console-base.html:10
+#: appsettings/views.py:46 console/templates/console-base.html:10
 #: console/templates/console-base.html:23
 #: instances/templates/instance_actions.html:11
 #: instances/templates/instances/settings_tab.html:32
 msgid "Console"
 msgstr "Konsol"
 
-#: appsettings/views.py:46
+#: appsettings/views.py:47
 msgid "VM access and owners"
 msgstr "Sanal makine erişimi ve sahipleri"
 
-#: appsettings/views.py:48
+#: appsettings/views.py:49
 msgid "Snapshots and jobs"
 msgstr "Anlık görüntüler ve işler"
 
-#: appsettings/views.py:50
+#: appsettings/views.py:51
 msgid "Login"
 msgstr "Oturum açma"
 
-#: appsettings/views.py:51
+#: appsettings/views.py:52
 msgid "Lists and pages"
 msgstr "Listeler ve sayfalar"
 
-#: appsettings/views.py:59
+#: appsettings/views.py:60
 #, python-format
 msgid "%(setting)s takes at most %(length)s characters"
 msgstr "%(setting)s en fazla %(length)s karakter alır"
 
-#: appsettings/views.py:64
+#: appsettings/views.py:65
 #, python-format
 msgid "%(setting)s must be a whole number between %(low)s and %(high)s"
 msgstr "%(setting)s, %(low)s ile %(high)s arasında bir tam sayı olmalıdır"
 
-#: appsettings/views.py:67
+#: appsettings/views.py:68
 #, python-format
 msgid "%(setting)s must be one of %(choices)s"
 msgstr "%(setting)s şunlardan biri olmalıdır: %(choices)s"
 
-#: appsettings/views.py:85
+#: appsettings/views.py:72
+#, python-format
+msgid "%(setting)s takes letters, digits and '-' only"
+msgstr "%(setting)s yalnızca harf, rakam ve '-' alır"
+
+#: appsettings/views.py:81
+msgid "Disk I/O native needs disk cache none or directsync"
+msgstr ""
+"Disk G/Ç native, disk önbelleği none veya directsync olmasını gerektirir"
+
+#: appsettings/views.py:98
 #, python-format
 msgid "Unknown theme: %(theme)s"
 msgstr "Bilinmeyen tema: %(theme)s"
 
-#: appsettings/views.py:91
+#: appsettings/views.py:104
 #, python-format
 msgid "Theme is changed. Now: %(theme)s"
 msgstr "Tema değiştirildi. Şimdi: %(theme)s"
 
-#: appsettings/views.py:114
+#: appsettings/views.py:132
 #, python-format
 msgid "Saved: %(settings)s"
 msgstr "Kaydedildi: %(settings)s"
 
-#: appsettings/views.py:116
+#: appsettings/views.py:134
 msgid "Nothing changed"
 msgstr "Hiçbir şey değişmedi"
 
-#: appsettings/views.py:123 vrtManager/nodedevs.py:294
+#: appsettings/views.py:141 vrtManager/nodedevs.py:294
 #: vrtManager/nodedevs.py:333
 msgid "Other"
 msgstr "Diğer"

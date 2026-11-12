@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 from admin.decorators import superuser_only
@@ -66,6 +67,18 @@ def refusal(setting, value):
     elif setting.choices and value not in setting.choices_as_list():
         return _("%(setting)s must be one of %(choices)s") % {
             "setting": setting.name, "choices": ", ".join(setting.choices_as_list())}
+    elif setting.key == "CLONE_INSTANCE_DEFAULT_PREFIX" and not re.fullmatch(r"[a-zA-Z0-9-]+", value):
+        # a clone's name is the prefix and a number, and takes only these
+        return _("%(setting)s takes letters, digits and '-' only") % {"setting": setting.name}
+    return None
+
+
+def combined_refusal(values):
+    """Why settings that work only together cannot be saved as values
+    (key: value, saved or new), or None."""
+    # libvirt refuses such a disk: every new VM would fail
+    if values["INSTANCE_VOLUME_DEFAULT_IO"] == "native" and values["INSTANCE_VOLUME_DEFAULT_CACHE"] not in ("none", "directsync"):
+        return _("Disk I/O native needs disk cache none or directsync")
     return None
 
 
@@ -98,6 +111,11 @@ def appsettings(request):
                         key=lambda item: item[0].name)
         changed = [(s, value) for s, value in posted if value != request.POST.get(f"was-{s.key}", s.value)]
         refusals = [refused for refused in (refusal(s, value) for s, value in changed) if refused]
+        # checked only when the pair changes: a pair saved before does not block other settings
+        pair = {"INSTANCE_VOLUME_DEFAULT_IO", "INSTANCE_VOLUME_DEFAULT_CACHE"}
+        if not refusals and pair & {s.key for s, _v in changed} and (refused := combined_refusal(
+                {key: s.value for key, s in settings_by_key.items()} | {s.key: value for s, value in changed})):
+            refusals = [refused]
         for refused in refusals:
             messages.error(request, refused)
         if changed and not refusals:
