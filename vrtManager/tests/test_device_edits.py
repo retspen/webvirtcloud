@@ -34,7 +34,7 @@ def proxy(active=True):
     p.instance = MagicMock(**{"isActive.return_value": active})
     p._XMLDesc = lambda flags: PERSISTENT if flags == PERSISTENT_XML else LIVE
     p._defineXML = MagicMock()
-    p.wvm = MagicMock()
+    p.wvm = MagicMock(**{"listNetworks.return_value": ["default"]})
     return p
 
 

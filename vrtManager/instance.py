@@ -172,6 +172,13 @@ class wvmInstances(wvmConnect):
         # a host device is of the source host: the destination may have none, or another one
         if any(etree.fromstring(xml).xpath(HOST_DEVICES) for xml in definitions):
             raise util.OperationError(gettext_noop("A VM with host devices cannot be migrated; remove them first"))
+        networks, filters = self.unknown_networks([etree.fromstring(xml) for xml in definitions])
+        if networks:
+            raise util.OperationError(gettext_noop("The destination host does not have these networks of the VM: %(names)s"),
+                                      names=", ".join(networks))
+        if filters:
+            raise util.OperationError(gettext_noop("The destination host does not have these network filters of the VM: %(names)s"),
+                                      names=", ".join(filters))
         copies = self.disk_copies(conn, definitions, pools or {})
         if copies:
             mode.append("disks copied: " + ", ".join(f"{copy['target']} to {copy['pool'].name()}" for copy in copies))
@@ -2750,7 +2757,16 @@ class wvmInstance(wvmConnect):
             etree.SubElement(iface, "model", type=model)
         if nwfilter:
             etree.SubElement(iface, "filterref", filter=nwfilter)
+        self.check_card(iface)
         self._attach_device(etree.tostring(iface).decode())
+
+    def check_card(self, iface):
+        """Refuses a network card whose network or filter this host does not have."""
+        networks, filters = self.unknown_networks([iface])
+        if networks:
+            raise util.OperationError(gettext_noop("This host has no network %(name)s"), name=networks[0])
+        if filters:
+            raise util.OperationError(gettext_noop("This host has no network filter %(name)s"), name=filters[0])
 
     def _attach_device(self, xml):
         """Attach to the persistent definition and, when the VM is active, to
@@ -2829,6 +2845,7 @@ class wvmInstance(wvmConnect):
                 iface.remove(old_filter)
         if nwfilter and iface.find("filterref") is None:
             etree.SubElement(iface, "filterref", filter=nwfilter)
+        self.check_card(iface)
 
         self._defineXML(etree.tostring(tree).decode())
 

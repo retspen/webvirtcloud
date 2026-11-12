@@ -88,6 +88,7 @@ class DeviceEditsByStateTestCase(unittest.TestCase):
             vm = wvmInstance.__new__(wvmInstance)
             vm.instance = MagicMock()
             vm.instance.isActive.return_value = active
+            vm.wvm = MagicMock(**{"listNetworks.return_value": ["default"]})
             vm.get_status = MagicMock(return_value=state)
             # an agent channel is added where there is none, removed where there is one
             vm._XMLDesc = MagicMock(return_value=DOMAIN if name == "add_guest_agent" else AGENT_DOMAIN)
@@ -115,6 +116,7 @@ class DeviceEditsByStateTestCase(unittest.TestCase):
                 vm = wvmInstance.__new__(wvmInstance)
                 vm.instance = MagicMock()
                 vm.instance.isActive.return_value = True
+                vm.wvm = MagicMock(**{"listNetworks.return_value": ["default"]})
                 vm._XMLDesc = MagicMock(return_value=DOMAIN)
                 vm.instance.attachDeviceFlags.side_effect = libvirtError("target sda already exists")
                 with self.assertRaises(libvirtError):

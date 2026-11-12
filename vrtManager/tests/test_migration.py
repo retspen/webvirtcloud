@@ -68,6 +68,21 @@ class ShutOffMigrationTestCase(unittest.TestCase):
                 self.assertEqual(host.defined, [])
                 self.assertIsNone(source.instance.undefined)
 
+    def test_a_network_or_filter_the_destination_does_not_have_is_refused(self):
+        # libvirt defines the VM there without them: it would not start
+        card = ("<domain><name>vm</name><devices><interface type='network'><source network='lab'/>"
+                "<filterref filter='clean-traffic'/></interface></devices></domain>")
+        for host, why in ((FakeHost(nwfilters=["clean-traffic"]), "does not have these networks of the VM: lab"),
+                          (FakeHost(networks=["lab"]), "does not have these network filters of the VM: clean-traffic")):
+            source = FakeSource(5, xml=card)
+            with self.subTest(why), self.assertRaisesRegex(util.OperationError, why):
+                destination(host).moveto(source, "vm", live=False, unsafe=False, offline=True)
+            self.assertEqual(host.defined, [])
+            self.assertIsNone(source.instance.undefined)
+        host = FakeHost(networks=["lab"], nwfilters=["clean-traffic"])
+        destination(host).moveto(FakeSource(5, xml=card), "vm", live=False, unsafe=False, offline=True)
+        self.assertEqual(host.defined, [card])
+
     def test_a_failed_source_undefine_removes_the_new_definition(self):
         host = FakeHost()
         source = FakeSource(5, undefine_fails=True)

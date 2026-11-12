@@ -16,7 +16,9 @@ DOMAIN_XML = """<domain><devices>
 def stopped_instance():
     inst = wvmInstance.__new__(wvmInstance)
     inst.instance = MagicMock()
-    inst.wvm = MagicMock()
+    # the host's networks and filters: a card naming another is refused
+    inst.wvm = MagicMock(**{"listNetworks.return_value": ["default"], "listDefinedNetworks.return_value": ["lab"],
+                            "listNWFilters.return_value": ["clean-traffic", "no-mac-spoofing", "f'/><evil/>"]})
     inst._XMLDesc = MagicMock(return_value=DOMAIN_XML)
     inst.get_status = MagicMock(return_value=5)
     return inst
@@ -76,6 +78,21 @@ class TestChangeNetwork(unittest.TestCase):
         with self.assertRaises(libvirtError):
             inst.change_network("52:54:00:00:00:09", "52:54:00:00:00:03", "default", "net", "virtio", "")
         inst.wvm.defineXML.assert_not_called()
+
+    def test_a_network_or_filter_the_host_does_not_have_is_refused(self):
+        # libvirt saves such a card: the VM would then not start
+        inst = stopped_instance()
+        for args, why in ((("missing", "net", "virtio", ""), "This host has no network missing"),
+                          (("default", "net", "virtio", "gone"), "This host has no network filter gone")):
+            with self.subTest(why), self.assertRaisesRegex(libvirtError, why):
+                inst.change_network("52:54:00:00:00:01", "52:54:00:00:00:01", *args)
+        inst.wvm.defineXML.assert_not_called()
+        with self.assertRaisesRegex(libvirtError, "This host has no network missing"):
+            inst.add_network("", "missing")
+        inst.instance.attachDeviceFlags.assert_not_called()
+        # a stopped network is the host's too
+        inst.add_network("", "lab")
+        inst.instance.attachDeviceFlags.assert_called_once()
 
 
 class TestAddNetworkXml(unittest.TestCase):

@@ -123,10 +123,14 @@ class FakePool:
 
 class FakeHost:
     """The destination's libvirt connection. volumes: the paths its pools
-    list; unlisted: files its pools show after a refresh."""
+    list; unlisted: files its pools show after a refresh; networks and
+    nwfilters: the names of its networks and network filters."""
 
-    def __init__(self, existing=(), volumes=(), unlisted=(), backing=None, inactive_pools=(), pool_types=None):
+    def __init__(self, existing=(), volumes=(), unlisted=(), backing=None, inactive_pools=(), pool_types=None,
+                 networks=(), nwfilters=()):
         self.existing = set(existing)
+        self.networks = list(networks)
+        self.nwfilters = list(nwfilters)
         self.defined = []
         self.new = []
         self.volumes = set(volumes)
@@ -135,6 +139,15 @@ class FakeHost:
         self.inactive_pools = set(inactive_pools)
         self.pool_types = pool_types or {}  # path: the type of its volume's pool, dir if not named
         self.refreshes = 0
+
+    def listNetworks(self):
+        return self.networks
+
+    def listDefinedNetworks(self):
+        return []
+
+    def listNWFilters(self):
+        return self.nwfilters
 
     def storageVolLookupByPath(self, path):
         if path not in self.volumes:

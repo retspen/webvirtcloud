@@ -663,6 +663,18 @@ class wvmConnect(object):
             nwfilters.append(nwfilter)
         return nwfilters
 
+    def unknown_networks(self, trees):
+        """The networks and the network filters that the network cards in
+        trees (VM definitions or cards) name and this host does not have,
+        each sorted: libvirt saves such a card, and the VM then does not
+        start."""
+        networks = {name for tree in trees for name in tree.xpath(
+            "descendant-or-self::interface[@type='network']/source/@network")}
+        filters = {name for tree in trees for name in tree.xpath("descendant-or-self::interface/filterref/@filter")}
+        # the host is asked only about what the cards name
+        return (sorted(networks - set(self.get_networks())) if networks else [],
+                sorted(filters - set(self.get_nwfilters())) if filters else [])
+
     def get_cache_modes(self):
         """
         :return: Get cache available modes
