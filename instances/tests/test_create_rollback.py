@@ -37,6 +37,7 @@ class CreateRollbackTestCase(TestCase):
             conn.get_dom_capabilities.return_value = {"cpu_modes": ["host-model"]}
             conn.get_instances.return_value = []
             conn.get_networks.return_value = ["default"]
+            conn.get_network_models.return_value = ["default", "virtio"]
             conn.create_volume.return_value = "/pool/rb-vm.qcow2"
             missing = libvirtError("no domain")
             missing.get_error_code = lambda: VIR_ERR_NO_DOMAIN

@@ -893,10 +893,11 @@ class wvmConnect(object):
 
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_hostdev_list)
 
-    def get_network_models(self):
-        """
-        :return: network card models
-        """
+    def get_network_models(self, arch):
+        """The network card models for a VM of arch: s390x machines have no
+        PCI bus for the emulated ones."""
+        if arch == "s390x":
+            return ["default", "virtio"]
         return ["default", "e1000", "e1000e", "rtl8139", "virtio"]
 
     def get_image_formats(self):

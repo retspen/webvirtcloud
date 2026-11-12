@@ -36,6 +36,7 @@ class CloudInitCreateTestCase(TransactionTestCase):
         self.conn.wvm.lookupByUUIDString.side_effect = missing  # until the job defines the VM
         self.conn.get_instances.return_value = []
         self.conn.get_networks.return_value = ["default"]
+        self.conn.get_network_models.return_value = ["default", "virtio"]
         self.conn.get_cache_modes.return_value = {"none": "Disable cache"}
         self.conn.get_firmwares.return_value = ["BIOS", "UEFI", "UEFI Secure Boot"]
         self.conn.get_dom_capabilities.return_value = {"cpu_modes": ["host-model"]}

@@ -181,15 +181,15 @@ class CreateFormValuesTests(TestCase):
         page = self.page(networks="")
         self.assertIn("Networks: This field is required.", self.summary(page))
 
-    def test_a_firmware_error_without_a_firmware_choice_is_in_the_summary(self):
-        # an architecture with no firmware choice renders no firmware select
+    def test_an_architecture_without_a_firmware_choice_needs_none(self):
+        # its page renders no firmware select: the machine's own firmware is used
         with patch("vrtManager.connection.wvmConnect.get_firmwares", return_value=[]):
             fields = valid()
             del fields["firmware"]
             _, response = render_create_page(self, fields)
         page = html.fromstring(response.content)
         self.assertEqual(page.xpath("//select[@name='firmware']"), [])
-        self.assertIn("Firmware: This field is required.", self.summary(page))
+        self.assertNotIn("Firmware", self.summary(page))
 
 
 class FlavorPresetTests(TestCase):

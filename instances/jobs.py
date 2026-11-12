@@ -905,6 +905,8 @@ class CreateInstance(Kind):
             raise util.OperationError(_("Invalid cache mode"))
         if data["vcpu_mode"] not in cpu_choices(conn.get_dom_capabilities(data["arch"], data["machine"])):
             raise util.OperationError(_("This host offers no CPU mode or model %(mode)s"), mode=data["vcpu_mode"])
+        if data["net_model"] and data["net_model"] not in conn.get_network_models(data["arch"]):
+            raise util.OperationError(_("A %(arch)s VM cannot have a %(model)s network card"), arch=data["arch"], model=data["net_model"])
         if data["add_cdrom"] != "None" and data["add_cdrom"] not in cdrom_buses:
             raise util.OperationError(_("A CD-ROM cannot use the %(bus)s bus"), bus=data["add_cdrom"])
         if data["cloud_init"]:

@@ -13,6 +13,7 @@ from appsettings.settings import get_settings
 from computes.models import Compute
 from instances.jobs import CreateInstance
 from instances.models import Instance
+from vrtManager.connection import wvmConnect
 from instances.tests.create_page import BODY
 from operations.jobs import Context
 from operations.models import Operation, acquire
@@ -31,6 +32,7 @@ class CreateJobTestCase(TransactionTestCase):
         self.addCleanup(patcher.stop)
         self.conn.get_instances.return_value = []
         self.conn.get_networks.return_value = ["default"]
+        self.conn.get_network_models.side_effect = lambda arch: wvmConnect.get_network_models(None, arch)
         self.conn.get_nwfilters.return_value = ["clean-traffic"]
         self.conn.get_cache_modes.return_value = {"none": "Disable cache"}
         self.conn.get_firmwares.return_value = ["BIOS", "UEFI", "UEFI Secure Boot"]
@@ -211,6 +213,15 @@ class CreateJobTestCase(TransactionTestCase):
                 response = self.client.post(url, {**BODY, "networks": networks}, content_type="application/json")
                 self.assertContains(response, "Each network card needs a network", status_code=400)
         self.assertFalse(Operation.objects.exists())
+
+    def test_a_network_card_model_the_architecture_lacks_is_refused(self):
+        # s390x machines have no PCI bus for an emulated card
+        admin = get_user_model().objects.get(username="create_admin")
+        params = CreateInstance().normalize({**BODY, "compute": self.compute.pk, "arch": "s390x",
+                                             "machine": "s390-ccw-virtio", "net_model": "e1000"})
+        with self.assertRaisesMessage(libvirt.libvirtError, "A s390x VM cannot have a e1000 network card"):
+            CreateInstance().validate(admin, params)
+        CreateInstance().validate(admin, {**params, "net_model": "virtio"})
 
     def test_a_mac_of_another_vm_on_the_host_is_refused(self):
         url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"

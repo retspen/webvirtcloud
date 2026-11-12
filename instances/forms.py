@@ -104,7 +104,8 @@ class NewVMForm(forms.Form):
     """The new VM form (create_instance_w2.html); the API takes CreateInstanceSerializer."""
 
     name = forms.CharField(max_length=64)
-    firmware = forms.CharField(max_length=64)
+    # empty: the machine's own, for an architecture with no firmware choice
+    firmware = forms.CharField(max_length=64, required=False)
     # an emulated TPM 2.0, as Windows 11 needs
     tpm = forms.BooleanField(required=False)
     vcpu = forms.IntegerField(min_value=1)

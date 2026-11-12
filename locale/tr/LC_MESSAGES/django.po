@@ -2803,7 +2803,7 @@ msgstr ""
 "Konsol localhost dışında da dinliyor; parolasını yalnızca bir yönetici "
 "kaldırabilir."
 
-#: instances/forms.py:141
+#: instances/forms.py:142
 msgid "The name of the virtual machine must not contain any special characters"
 msgstr "Sanal makine adı özel karakterler içeremez"
 
@@ -2985,7 +2985,7 @@ msgstr ""
 msgid "Clone VM"
 msgstr "Sanal makineyi klonla"
 
-#: instances/jobs.py:637 instances/jobs.py:644 instances/jobs.py:967
+#: instances/jobs.py:637 instances/jobs.py:644 instances/jobs.py:969
 msgid "Copying disks"
 msgstr "Diskler kopyalanıyor"
 
@@ -3090,11 +3090,11 @@ msgstr ""
 msgid "Create VM"
 msgstr "Sanal makine oluştur"
 
-#: instances/jobs.py:895 instances/jobs.py:938 instances/views.py:2519
+#: instances/jobs.py:895 instances/jobs.py:940 instances/views.py:2519
 msgid "A virtual machine with this name already exists"
 msgstr "Bu isimde bir sanal makine mevcut"
 
-#: instances/jobs.py:897 instances/jobs.py:934
+#: instances/jobs.py:897 instances/jobs.py:936
 msgid "There is an instance with same name. Remove it and try again!"
 msgstr "Aynı isimde başka bir sanal makine var. Onu silip yeniden deneyin!"
 
@@ -3118,35 +3118,40 @@ msgstr "Bu sunucu %(mode)s CPU modunu veya modelini sunmuyor"
 
 #: instances/jobs.py:909
 #, python-format
+msgid "A %(arch)s VM cannot have a %(model)s network card"
+msgstr "Bir %(arch)s VM'inde %(model)s ağ kartı olamaz"
+
+#: instances/jobs.py:911
+#, python-format
 msgid "A CD-ROM cannot use the %(bus)s bus"
 msgstr "CD-ROM %(bus)s veri yolunu kullanamaz"
 
-#: instances/jobs.py:912
+#: instances/jobs.py:914
 msgid "The cloud-init seed is read from a CD-ROM: choose its bus"
 msgstr "cloud-init tohumu bir CD-ROM'dan okunur: veri yolunu seçin"
 
-#: instances/jobs.py:915
+#: instances/jobs.py:917
 msgid "The cloud-init seed needs a directory storage pool for the disk"
 msgstr "cloud-init tohumu, disk için bir dizin depolama havuzu gerektirir"
 
-#: instances/jobs.py:919
+#: instances/jobs.py:921
 #, python-format
 msgid "This host offers no firmware %(firmware)s"
 msgstr "Bu sunucu %(firmware)s firmware'ini sunmuyor"
 
-#: instances/jobs.py:921 vrtManager/instance.py:3116
+#: instances/jobs.py:923 vrtManager/instance.py:3116
 msgid "This host offers no TPM 2.0: install swtpm on it"
 msgstr "Bu sunucu TPM 2.0 sunmuyor: üzerine swtpm kurun"
 
-#: instances/jobs.py:987
+#: instances/jobs.py:989
 msgid "Writing the cloud-init seed"
 msgstr "cloud-init tohumu yazılıyor"
 
-#: instances/jobs.py:994
+#: instances/jobs.py:996
 msgid "Defining the VM"
 msgstr "Sanal makine tanımlanıyor"
 
-#: instances/jobs.py:1036
+#: instances/jobs.py:1038
 #, python-format
 msgid ""
 "The panel failed unexpectedly; its log has the details. Remove these volumes "
@@ -3155,114 +3160,114 @@ msgstr ""
 "Panel beklenmedik bir hatayla karşılaştı; ayrıntılar panelin günlüğünde. Bu "
 "birimleri elle kaldırın: %(volumes)s"
 
-#: instances/jobs.py:1040
+#: instances/jobs.py:1042
 #, python-format
 msgid "%(error)s. Remove these volumes by hand: %(volumes)s"
 msgstr "%(error)s. Şu birimleri elle silin: %(volumes)s"
 
-#: instances/jobs.py:1067
+#: instances/jobs.py:1069
 #, python-format
 msgid "The instance is already on %(compute)s"
 msgstr "Sanal makine zaten %(compute)s üzerinde"
 
-#: instances/jobs.py:1069
+#: instances/jobs.py:1071
 #, python-format
 msgid "%(compute)s is not reachable"
 msgstr "%(compute)s sunucusuna ulaşılamıyor"
 
-#: instances/jobs.py:1071
+#: instances/jobs.py:1073
 #, python-format
 msgid "%(compute)s is the VM's own host under another name"
 msgstr "%(compute)s, sanal makinenin kendi sunucusunun başka bir adı"
 
-#: instances/jobs.py:1128
+#: instances/jobs.py:1130
 #, python-format
 msgid ""
 "The VM migrated, but autostart could not be set on the destination: %(error)s"
 msgstr ""
 "Sanal makine taşındı, ancak hedefte otomatik başlatma ayarlanamadı: %(error)s"
 
-#: instances/jobs.py:1135
+#: instances/jobs.py:1137
 #, python-format
 msgid "The VM migrated, but its NVRAM file stays on the source: %(error)s"
 msgstr "Sanal makine taşındı, ancak NVRAM dosyası kaynakta kaldı: %(error)s"
 
-#: instances/jobs.py:1143
+#: instances/jobs.py:1145
 msgid "Migrate VM"
 msgstr "Sanal makineyi taşı"
 
-#: instances/jobs.py:1190
+#: instances/jobs.py:1192
 msgid "Migrating the VM"
 msgstr "Sanal makine taşınıyor"
 
-#: instances/jobs.py:1239
+#: instances/jobs.py:1241
 msgid "libvirt is still migrating the VM"
 msgstr "libvirt sanal makineyi hâlâ taşıyor"
 
-#: instances/jobs.py:1251
+#: instances/jobs.py:1253
 msgid "The VM stayed on the source host"
 msgstr "Sanal makine kaynak sunucuda kaldı"
 
-#: instances/jobs.py:1253
+#: instances/jobs.py:1255
 msgid ""
 "The VM is on both computes or on neither; check them, then resolve this job."
 msgstr ""
 "Sanal makine ya iki sunucuda da var ya da hiçbirinde yok; kontrol edin, sonra"
 " bu işi çözün."
 
-#: instances/jobs.py:1272
+#: instances/jobs.py:1274
 msgid "Move disk"
 msgstr "Diski taşı"
 
-#: instances/jobs.py:1279
+#: instances/jobs.py:1281
 msgid "Choose a disk of the VM"
 msgstr "Sanal makinenin bir diskini seçin"
 
-#: instances/jobs.py:1303
+#: instances/jobs.py:1305
 msgid "Copying the disk"
 msgstr "Disk kopyalanıyor"
 
-#: instances/jobs.py:1345
+#: instances/jobs.py:1347
 #, python-format
 msgid "Another block job runs on %(dev)s; check the VM"
 msgstr ""
 "%(dev)s üzerinde başka bir blok işi çalışıyor; sanal makineyi kontrol edin"
 
-#: instances/jobs.py:1351
+#: instances/jobs.py:1353
 #, python-format
 msgid "The disk stayed in %(path)s; remove %(dest)s if it is there"
 msgstr "Disk %(path)s içinde kaldı; varsa %(dest)s dosyasını silin"
 
-#: instances/jobs.py:1353
+#: instances/jobs.py:1355
 #, python-format
 msgid "The definitions of %(dev)s name %(paths)s; check the VM"
 msgstr "%(dev)s tanımları %(paths)s gösteriyor; sanal makineyi kontrol edin"
 
-#: instances/jobs.py:1360
+#: instances/jobs.py:1362
 #, python-format
 msgid "Disk %(path)s was kept: a disk file that stays needs it"
 msgstr "%(path)s diski korundu: kalan bir disk dosyası ona ihtiyaç duyuyor"
 
-#: instances/jobs.py:1361
+#: instances/jobs.py:1363
 #, python-format
 msgid "The VM is removed, but disk %(path)s was not deleted: %(err)s"
 msgstr "Sanal makine kaldırıldı, ancak %(path)s diski silinmedi: %(err)s"
 
-#: instances/jobs.py:1362
+#: instances/jobs.py:1364
 #, python-format
 msgid "Disk %(path)s is used by another VM and was kept"
 msgstr ""
 "%(path)s diski başka bir sanal makine tarafından kullanılıyor ve korundu"
 
-#: instances/jobs.py:1416
+#: instances/jobs.py:1418
 msgid "Delete VM"
 msgstr "Sanal makineyi sil"
 
-#: instances/jobs.py:1446
+#: instances/jobs.py:1448
 msgid "Deleting the VM"
 msgstr "Sanal makine siliniyor"
 
-#: instances/jobs.py:1458
+#: instances/jobs.py:1460
 msgid "The VM was not deleted; it may have been shut off"
 msgstr "Sanal makine silinmedi; kapatılmış olabilir"
 
@@ -9133,7 +9138,7 @@ msgstr "Bağlantı başarısız: %(host)s bağlı değil"
 msgid "This host has no architecture %(arch)s"
 msgstr "Bu sunucuda %(arch)s mimarisi yok"
 
-#: vrtManager/connection.py:1190
+#: vrtManager/connection.py:1191
 #, python-format
 msgid ""
 "Pool %(pool)s is not active: the files the disks of the VMs in it are made "

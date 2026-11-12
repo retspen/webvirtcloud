@@ -343,7 +343,7 @@ def _instance_page(request, pk, instance, compute):
     interfaces_host = sorted(instance.proxy.get_ifaces())
     nwfilters_host = instance.proxy.get_nwfilters()
     storages_host = sorted(instance.proxy.get_storages(True))
-    net_models_host = instance.proxy.get_network_models()
+    net_models_host = instance.proxy.get_network_models(instance.arch)
 
     if app_settings.VM_DRBD_STATUS == "True":
         instance.drbd = drbd_status(request, pk)
@@ -2602,7 +2602,7 @@ def create_instance(request, compute_id, arch, machine):
         default_bus = app_settings.INSTANCE_VOLUME_DEFAULT_BUS
         networks = sorted(conn.get_networks())
         nwfilters = conn.get_nwfilters()
-        net_models_host = conn.get_network_models()
+        net_models_host = conn.get_network_models(arch)
         default_nic_type = app_settings.INSTANCE_NIC_DEFAULT_TYPE
         storages = sorted(conn.get_storages(only_actives=True))
         default_cdrom = app_settings.INSTANCE_CDROM_ADD
