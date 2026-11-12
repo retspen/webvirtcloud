@@ -40,6 +40,12 @@ class DeleteInterfaceTestCase(SimpleTestCase):
         self.assertEqual(bond.xpath("start/@mode"), ["onboot"])
         self.assertEqual(bond.xpath("protocol/ip/@address"), ["192.0.2.10"])
 
+    def test_the_members_take_the_bridge_mtu(self):
+        # the bridge held it for them: jumbo frames go on
+        (eth1,) = delete("<interface type='bridge' name='br1'><start mode='onboot'/><mtu size='9000'/><bridge>"
+                         "<interface type='ethernet' name='eth1'/></bridge></interface>")
+        self.assertEqual(eth1.xpath("mtu/@size"), ["9000"])
+
     def test_several_members_take_the_start_mode(self):
         members = delete(
             "<interface type='bridge' name='br1'><start mode='onboot'/><bridge>"

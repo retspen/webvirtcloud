@@ -1,5 +1,7 @@
 from django.utils.translation import gettext_noop
 import contextlib
+import ipaddress
+import socket
 from functools import cached_property
 from xml.etree import ElementTree
 
@@ -96,6 +98,36 @@ def networks_by_device(conn):
     return by_device
 
 
+def panel_addresses(host):
+    """The addresses the panel reaches host by, as resolved here."""
+    try:
+        return {ipaddress.ip_address(info[4][0]) for info in socket.getaddrinfo(host, None)}
+    except OSError:  # not resolved here: libvirt reached it otherwise
+        return set()
+
+
+def panel_devices(conn, addresses):
+    """The host's interfaces that carry one of addresses (panel_addresses),
+    with the devices in them at any depth: stopping or rebuilding one cuts
+    the panel off the host. One whose addresses libvirt cannot tell (netcf
+    and a virtio card, running_xml) and that leases them may carry them."""
+    remote = any(not address.is_loopback for address in addresses)
+    devices = set()
+    for iface in conn.listAllInterfaces(0):
+        try:
+            tree = ElementTree.fromstring(iface.XMLDesc(0))
+            carries = addresses & {ipaddress.ip_address(ip.get("address")) for ip in tree.iter("ip")}
+        except libvirtError as err:
+            if err.get_error_code() != VIR_ERR_XML_ERROR:
+                raise
+            tree = ElementTree.fromstring(iface.XMLDesc(VIR_INTERFACE_XML_INACTIVE))
+            carries = remote and (tree.find("protocol/dhcp") is not None or tree.find("protocol/autoconf") is not None
+                                  or addresses & {ipaddress.ip_address(ip.get("address")) for ip in tree.iter("ip")})
+        if carries:
+            devices.update(element.get("name") for element in tree.iter("interface"))
+    return devices
+
+
 class wvmInterfaces(wvmConnect):
     def get_ifaces_info(self):
         """Every interface of the host (interface_info) and whether libvirt
@@ -130,17 +162,20 @@ class wvmInterfaces(wvmConnect):
     def bridge_member_xml(self, netdev):
         """netdev as a bridge member: as the host defines it (a bond keeps its
         mode and devices, a vlan its tag), without what only a top-level
-        interface has. A device the host does not define is ethernet."""
+        interface has; and its MTU, which the bridge takes (netcf gives the
+        bridge's to its members). A device the host does not define is
+        ethernet."""
         try:
             member = ElementTree.fromstring(self.get_iface(netdev).XMLDesc(VIR_INTERFACE_XML_INACTIVE))
         except libvirtError as err:
             if err.get_error_code() != VIR_ERR_NO_INTERFACE:
                 raise
-            return f"<interface type='ethernet' name='{netdev}'/>"
+            return f"<interface type='ethernet' name='{netdev}'/>", None
+        mtu = attribute(member, "mtu", "size")
         for tag in ("start", "mtu", "protocol"):
             for child in member.findall(tag):
                 member.remove(child)
-        return ElementTree.tostring(member, encoding="unicode")
+        return ElementTree.tostring(member, encoding="unicode"), mtu
 
     def create_iface(
         self,
@@ -157,8 +192,20 @@ class wvmInterfaces(wvmConnect):
         stp,
         delay,
     ):
+        if itype == "bridge":
+            member, mtu = self.bridge_member_xml(netdev)
+            # the bridge takes its device's addresses away: without the panel's, the host is cut off
+            addresses = panel_addresses(self.host)
+            static = {ipaddress.ip_address(address.split("/")[0])
+                      for kind, address in ((ipv4_type, ipv4_addr), (ipv6_type, ipv6_addr)) if kind == "static"}
+            leased = {version for version, kind in ((4, ipv4_type), (6, ipv6_type)) if kind == "dhcp"}
+            if netdev in panel_devices(self.wvm, addresses) and not any(
+                    address in static or address.version in leased for address in addresses):
+                raise util.OperationError(gettext_noop("Device %(dev)s carries the address this panel reaches the host by: give the bridge that address or DHCP, or the host is cut off"), dev=netdev)
         xml = f"""<interface type='{itype}' name='{name}'>
                     <start mode='{mode}'/>"""
+        if itype == "bridge" and mtu:
+            xml += f"<mtu size='{mtu}'/>"
         if ipv4_type == "dhcp":
             xml += """<protocol family='ipv4'>
                         <dhcp/>
@@ -183,7 +230,7 @@ class wvmInterfaces(wvmConnect):
             xml += """</protocol>"""
         if itype == "bridge":
             xml += f"""<bridge stp='{stp}' delay='{delay}'>
-                        {self.bridge_member_xml(netdev)}
+                        {member}
                       </bridge>"""
         xml += """</interface>"""
         # the form refuses a name the host defines, so nothing is replaced;
@@ -258,8 +305,11 @@ class wvmInterface(wvmConnect):
         return sorted(cards, key=lambda card: (card["vm"], card["tap"] or ""))
 
     def stop_iface(self):
-        """Refused while a running VM has a card on it (get_vms): that VM would be cut off."""
+        """Refused while a running VM has a card on it (get_vms): that VM would
+        be cut off; and when it carries the panel's way to the host."""
         name = self.iface.name()
+        if name in panel_devices(self.wvm, panel_addresses(self.host)):
+            raise util.OperationError(gettext_noop("Interface %(iface)s carries the address this panel reaches the host by; stopping it would cut the host off"), iface=name)
         if cards := self.get_vms(networks_by_device(self.wvm).get(name, [])):
             raise util.OperationError(gettext_noop("Interface %(iface)s is in use by the running VMs %(vms)s; shut them down or move their network cards first"),
                                       iface=name, vms=", ".join(sorted({card["vm"] for card in cards})))
@@ -289,7 +339,7 @@ class wvmInterface(wvmConnect):
     def delete_iface(self):
         """Undefine the interface, stopped first. netcf removes a bridge's
         members with it, so each member is defined again on its own, as virsh
-        iface-unbridge does: with the bridge's start mode and, when it is the
+        iface-unbridge does: with the bridge's start mode and MTU and, when it is the
         only one, addresses; a bridge with addresses and several members is
         refused, which of them takes the addresses being the user's choice.
         All of it is one change of the host's configuration."""
@@ -303,5 +353,5 @@ class wvmInterface(wvmConnect):
         with changes(self.wvm):
             self.iface.undefine()
             for member in members:
-                member.extend(tree.findall("start") + tree.findall("protocol"))
+                member.extend(tree.findall("start") + tree.findall("mtu") + tree.findall("protocol"))
                 self.wvm.interfaceDefineXML(ElementTree.tostring(member, encoding="unicode"), 0)

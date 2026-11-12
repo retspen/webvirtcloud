@@ -138,6 +138,7 @@ class BridgeUseTests(SimpleTestCase):
                                            "<network><forward mode='bridge'><interface dev='eno2'/></forward></network>"})])):
             dom = MagicMock(**{"name.return_value": "web", "XMLDesc.return_value": f"<domain><devices>{cards}</devices></domain>"})
             conn = wvmInterface.__new__(wvmInterface)
+            conn.host = "192.0.2.1"
             conn.iface = MagicMock(**{"name.return_value": "eno2"})
             conn.wvm = MagicMock(**{"listAllDomains.return_value": [dom], "listAllNetworks.return_value": nets})
             with self.subTest(cards), self.assertRaisesRegex(OperationError, "in use by the running VMs web"):
