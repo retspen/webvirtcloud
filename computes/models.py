@@ -168,6 +168,9 @@ class Compute(Model):
         before = Compute.objects.filter(pk=self.pk).values(*ENDPOINT, "host_uuid").first() if self.pk else None
         if before and all(before[field] == getattr(self, field) for field in ENDPOINT):
             return
+        # connected anew: a connection this process still has proves no credentials (another
+        # process may have seen them change)
+        self.retire_connection()
         try:
             uuid = wvmHostDetails(self.hostname, self.login, self.password, self.type).host_uuid()
         except libvirtError as error:
@@ -190,6 +193,16 @@ class Compute(Model):
                                         "add it as a new host"))
         self.host_uuid = uuid
 
+    def retire_connection(self):
+        """Its connection as saved is not used again (connection_manager)."""
+        connection_manager.retire_connection(self.hostname, self.login, self.password, self.type)
+
+    def save(self, *args, **kwargs):
+        before = Compute.objects.filter(pk=self.pk).first() if self.pk else None
+        super().save(*args, **kwargs)
+        if before and any(getattr(before, field) != getattr(self, field) for field in ENDPOINT):
+            before.retire_connection()
+
     def delete(self, *args, **kwargs):
         """Its VMs keep running on the host: their owners wait in tombstones,
         or follow a VM already listed on another compute. The compute is held
@@ -203,4 +216,6 @@ class Compute(Model):
             Compute.objects.select_for_update().filter(pk=self.pk).first()
             for inst in self.instance_set.select_for_update():
                 forget(inst)
-            return super().delete(*args, **kwargs)
+            deleted = super().delete(*args, **kwargs)
+        self.retire_connection()
+        return deleted

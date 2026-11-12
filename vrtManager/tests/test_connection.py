@@ -177,6 +177,17 @@ class BoundedOpenTestCase(unittest.TestCase):
         self.assertIsNone(entry.connection)
         self.assertEqual(entry.last_error, {"text": "Connection closed (keepalive timeout)", "values": {}})
 
+    def test_a_retired_connection_of_a_changed_compute_is_opened_anew(self):
+        self.release.set()
+        old, new = alive_connection(), alive_connection()
+        with self.open_auth(old):
+            self.get()
+        self.manager.retire_connection("h", "u", "p", CONN_TCP)
+        self.manager.retire_connection("other", "u", "p", CONN_TCP)  # none: nothing to do
+        with self.open_auth(new):
+            self.assertIs(self.get()[0], new)
+        self.assertEqual(self.calls, 2)
+
     def test_an_rpc_error_opens_new_connections(self):
         self.release.set()
         old, new = alive_connection(), alive_connection()

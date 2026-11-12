@@ -432,6 +432,13 @@ class wvmConnectionManager(object):
                     return connection
         return None
 
+    def retire_connection(self, host, login, passwd, conn):
+        """The connection with these credentials, of a compute changed or
+        deleted, is not used again: asked again, it connects anew."""
+        connection = self._search_connection(str(host), str(login), str(passwd) if passwd is not None else None, conn)
+        if connection is not None:
+            connection.retire()
+
     def get_connection(self, host, login, passwd, conn):
         """
         returns a connection object (as returned by the libvirt.open* methods) for the given host and credentials

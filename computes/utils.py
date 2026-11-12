@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 from django.utils import timezone
-from computes.models import Compute
+from computes.models import ENDPOINT, Compute
 from instances.models import Instance, InstanceTombstone
 from logs.audit import write
 from operations import claims
@@ -193,6 +193,10 @@ def refresh_instance_database(compute):
         # undoing a newer one.
         with claims.hold({claims.compute_key(compute_pk): Claim.SHARED,
                           claims.reconcile_key(compute_pk): Claim.EXCLUSIVE}):
+            # a compute whose connection changed since it was read: the listing would be the old host's
+            if Compute.objects.filter(pk=compute_pk).values_list(*ENDPOINT).first() != \
+                    tuple(getattr(compute, field, None) for field in ENDPOINT):
+                return
             host_domains = _host_domains(compute)
             if host_domains is None:
                 return
