@@ -19,6 +19,7 @@ from libvirt import (
     VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP,
     VIR_DOMAIN_PAUSED,
     VIR_DOMAIN_RUNNING,
+    VIR_DOMAIN_SHUTDOWN_ACPI_POWER_BTN,
     VIR_DOMAIN_SHUTOFF,
     VIR_DOMAIN_START_PAUSED,
     VIR_DOMAIN_XML_SECURE,
@@ -694,7 +695,18 @@ class wvmInstance(wvmConnect):
         check_hostdevs(self, dom.name(), [etree.fromstring(xml)], restore)
 
     def shutdown(self):
-        self.instance.shutdown()
+        """libvirt asks a connected guest agent first and waits 60 s for one
+        that hangs before it presses the ACPI power button: an agent that
+        does not answer a ping in AGENT_TIMEOUT is passed over. One that
+        answers with an error (guest-ping disabled) may still shut it down."""
+        flags = 0
+        if self.instance.state()[0] == VIR_DOMAIN_RUNNING and self.is_agent_ready():
+            try:
+                self.ping_agent()
+            except libvirtError as err:
+                if err.get_error_code() != VIR_ERR_AGENT_COMMAND_FAILED:
+                    flags = VIR_DOMAIN_SHUTDOWN_ACPI_POWER_BTN
+        self.instance.shutdownFlags(flags)
 
     def force_shutdown(self):
         self.instance.destroy()

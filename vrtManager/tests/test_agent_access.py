@@ -81,3 +81,31 @@ class AgentAccessTestCase(unittest.TestCase):
             self.vm.set_user_password("root", "$6$salt$hash")
         self.assertEqual(self.agent.call_count, 1)
 
+
+class ShutdownTestCase(unittest.TestCase):
+    """Power off: libvirt waits 60 s for a hung agent before ACPI, so one that
+    does not answer a ping is passed over."""
+
+    def shutdown(self, state=1, ready=True, ping=None):
+        vm = wvmInstance.__new__(wvmInstance)
+        vm.instance = MagicMock()
+        vm.instance.state.return_value = [state, 1]
+        with patch.object(wvmInstance, "is_agent_ready", return_value=ready), \
+                patch.object(module, "qemuAgentCommand", side_effect=ping, return_value='{"return":{}}') as agent:
+            vm.shutdown()
+        return vm.instance.shutdownFlags.call_args.args[0], agent.call_count
+
+    def test_an_answering_agent_is_left_to_libvirt(self):
+        self.assertEqual(self.shutdown(), (0, 1))
+
+    def test_a_hung_agent_is_passed_over_for_acpi(self):
+        hung = coded(module.VIR_ERR_AGENT_COMMAND_TIMEOUT, "guest agent didn't respond to command within '10' seconds")
+        self.assertEqual(self.shutdown(ping=hung), (module.VIR_DOMAIN_SHUTDOWN_ACPI_POWER_BTN, 1))
+
+    def test_an_agent_with_ping_disabled_is_left_to_libvirt(self):
+        disabled = coded(module.VIR_ERR_AGENT_COMMAND_FAILED, "Command guest-ping has been disabled")
+        self.assertEqual(self.shutdown(ping=disabled), (0, 1))
+
+    def test_without_a_connected_agent_or_when_paused_there_is_no_ping(self):
+        self.assertEqual(self.shutdown(ready=False), (0, 0))
+        self.assertEqual(self.shutdown(state=3), (0, 0))
