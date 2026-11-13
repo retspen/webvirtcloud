@@ -40,6 +40,13 @@ class wvmNWFilters(wvmConnect):
         misspelled port or protocol then matches all traffic."""
         self.wvm.nwfilterDefineXMLFlags(xml, VIR_NWFILTER_DEFINE_VALIDATE)
 
+    def check_refs(self, tree):
+        """Refuses references to filters the host does not have, which libvirt
+        accepts: a VM using the filter would then not start."""
+        if missing := sorted(set(tree.xpath("filterref/@filter")) - set(self.get_nwfilters())):
+            raise util.OperationError(gettext_noop("The host has no network filters %(names)s to reference"),
+                                      names=", ".join(missing))
+
     def get_nwfilters_info(self):
         """Every filter of the host (filter_info), with the filters that
         reference it, by name: one listing, one XML read per filter."""
@@ -74,6 +81,7 @@ class wvmNWFilters(wvmConnect):
                 raise util.OperationError(gettext_noop("A network filter with this name already exists"))
             if nwfilter.UUIDString() == tree.findtext("uuid"):
                 raise util.OperationError(gettext_noop("A network filter with this UUID already exists"))
+        self.check_refs(tree)
         self.define(xml)
 
     def clone_nwfilter(self, name, clone_name):
@@ -179,6 +187,7 @@ class wvmNWFilter(wvmNWFilters):
             raise util.OperationError(gettext_noop("The XML must define filter %(name)s"), name=self.get_name())
         if tree.findtext("uuid") != self.get_uuid():
             raise util.OperationError(gettext_noop("The XML must keep the filter's UUID"))
+        self.check_refs(tree)
         self.define(xml)
 
     def delete_rule(self, index, text):

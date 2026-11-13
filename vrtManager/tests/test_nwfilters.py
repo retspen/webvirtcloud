@@ -127,6 +127,16 @@ class IdentityTests(SimpleTestCase):
         self.assertEqual(clone.xpath("filterref/parameter/@value"), ["192.0.2.10", "192.0.2.11"])
         self.assertEqual(len(clone.findall("rule")), 2)
 
+    def test_a_reference_to_a_filter_the_host_does_not_have_is_refused(self):
+        # libvirt takes it; a VM using the filter would not start
+        conn = filters(nwfilter("web", WEB))
+        with self.assertRaisesRegex(OperationError, "no network filters absent, gone to reference"):
+            conn.create_nwfilter("<filter name='new'><filterref filter='gone'/><filterref filter='absent'/></filter>")
+        conn = one()
+        with self.assertRaisesRegex(OperationError, "no network filters absent to reference"):
+            conn.edit(WEB.replace("filter='clean-traffic'", "filter='absent'"), digest(conn.get_xml()))
+        conn.wvm.nwfilterDefineXMLFlags.assert_not_called()
+
     def test_an_edit_is_of_the_same_filter(self):
         conn = one()
         for xml, why in ((WEB.replace("name='web'", "name='other'"), "must define filter web"),

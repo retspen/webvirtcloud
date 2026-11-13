@@ -74,6 +74,7 @@ from lxml import etree
 from vrtManager import util
 from vrtManager.connection import NVRAM_DIR, wvmConnect
 from vrtManager.nodedevs import check_hostdevs, pci_address, pci_label, usb_selector, usb_selector_label
+from vrtManager.nwfilters import same_text
 from vrtManager.storage import wvmStorage, wvmStorages
 from vrtManager.virtsecrets import REF_USAGE_TYPES
 
@@ -119,6 +120,34 @@ def _rate(before, after, seconds, scale=1):
 
 
 class wvmInstances(wvmConnect):
+    def nwfilters_unlike(self, source, names):
+        """Of the network filters named and those they reference: the ones
+        this host does not have, and the ones it has with other rules than
+        source (another connection), each sorted. A VM runs with its host's
+        filters of those names, whatever their rules."""
+        def rules(wvm, name):
+            tree = etree.fromstring(wvm.nwfilterLookupByName(name).XMLDesc(0))
+            for uuid in tree.findall("uuid"):  # each host's own
+                tree.remove(uuid)
+            return same_text(etree.tostring(tree, encoding="unicode")), tree.xpath("filterref/@filter")
+
+        if not names:  # the hosts are asked only about what the cards name
+            return [], []
+        here = set(self.get_nwfilters())
+        missing, unlike, seen, todo = [], [], set(), list(names)
+        while todo:
+            name = todo.pop()
+            if name in seen:
+                continue
+            seen.add(name)
+            text, refs = rules(source.wvm, name)
+            todo += refs
+            if name not in here:
+                missing.append(name)
+            elif rules(self.wvm, name)[0] != text:
+                unlike.append(name)
+        return sorted(missing), sorted(unlike)
+
     def moveto(self, conn, name, live, unsafe, offline, autoconverge=False, compress=False, uri=None,
                pools=None, on_copy=None):
         """Migrates the VM of conn (a wvmInstance on the source) here.
@@ -178,13 +207,18 @@ class wvmInstances(wvmConnect):
         # a host device is of the source host: the destination may have none, or another one
         if any(etree.fromstring(xml).xpath(HOST_DEVICES) for xml in definitions):
             raise util.OperationError(gettext_noop("A VM with host devices cannot be migrated; remove them first"))
-        networks, filters = self.unknown_networks([etree.fromstring(xml) for xml in definitions])
+        trees = [etree.fromstring(xml) for xml in definitions]
+        networks, _ = self.unknown_networks(trees)
         if networks:
             raise util.OperationError(gettext_noop("The destination host does not have these networks of the VM: %(names)s"),
                                       names=", ".join(networks))
+        filters, unlike = self.nwfilters_unlike(conn, {name for tree in trees for name in tree.xpath("devices/interface/filterref/@filter")})
         if filters:
             raise util.OperationError(gettext_noop("The destination host does not have these network filters of the VM: %(names)s"),
                                       names=", ".join(filters))
+        if unlike:
+            raise util.OperationError(gettext_noop("These network filters of the VM have other rules on the destination host: %(names)s"),
+                                      names=", ".join(unlike))
         if secrets := self.unknown_secrets([etree.fromstring(xml) for xml in definitions]):
             raise util.OperationError(gettext_noop("The destination host does not have these secrets of the VM: %(names)s"),
                                       names=", ".join(secrets))

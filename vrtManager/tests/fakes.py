@@ -124,7 +124,8 @@ class FakePool:
 class FakeHost:
     """The destination's libvirt connection. volumes: the paths its pools
     list; unlisted: files its pools show after a refresh; networks and
-    nwfilters: the names of its networks and network filters; secrets: the
+    nwfilters: the names of its networks and network filters (nwfilters
+    a list, each an empty filter, or each name's XML); secrets: the
     UUID, usage type and usage of each of its secrets."""
 
     def __init__(self, existing=(), volumes=(), unlisted=(), backing=None, inactive_pools=(), pool_types=None,
@@ -132,7 +133,7 @@ class FakeHost:
         self.existing = set(existing)
         self.secrets = list(secrets)
         self.networks = list(networks)
-        self.nwfilters = list(nwfilters)
+        self.nwfilters = nwfilters if isinstance(nwfilters, dict) else {name: f"<filter name='{name}'/>" for name in nwfilters}
         self.defined = []
         self.new = []
         self.volumes = set(volumes)
@@ -149,7 +150,10 @@ class FakeHost:
         return []
 
     def listNWFilters(self):
-        return self.nwfilters
+        return list(self.nwfilters)
+
+    def nwfilterLookupByName(self, name):
+        return MagicMock(**{"XMLDesc.return_value": self.nwfilters[name]})
 
     def listAllSecrets(self, flags=0):
         return [MagicMock(**{"UUIDString.return_value": uuid, "XMLDesc.return_value":
@@ -181,9 +185,12 @@ class FakeHost:
 
 
 class FakeSource:
-    def __init__(self, state, nvram=None, **domain):
+    """The source wvmInstance; nwfilters: its host's filters (FakeHost)."""
+
+    def __init__(self, state, nvram=None, nwfilters=(), **domain):
         self.state = state
         self.nvram = nvram
+        self.wvm = FakeHost(nwfilters=nwfilters)
         self.instance = FakeDomain(**domain)
 
     def get_nvram(self):

@@ -74,13 +74,38 @@ class ShutOffMigrationTestCase(unittest.TestCase):
                 "<filterref filter='clean-traffic'/></interface></devices></domain>")
         for host, why in ((FakeHost(nwfilters=["clean-traffic"]), "does not have these networks of the VM: lab"),
                           (FakeHost(networks=["lab"]), "does not have these network filters of the VM: clean-traffic")):
-            source = FakeSource(5, xml=card)
+            source = FakeSource(5, xml=card, nwfilters=["clean-traffic"])
             with self.subTest(why), self.assertRaisesRegex(util.OperationError, why):
                 destination(host).moveto(source, "vm", live=False, unsafe=False, offline=True)
             self.assertEqual(host.defined, [])
             self.assertIsNone(source.instance.undefined)
         host = FakeHost(networks=["lab"], nwfilters=["clean-traffic"])
-        destination(host).moveto(FakeSource(5, xml=card), "vm", live=False, unsafe=False, offline=True)
+        destination(host).moveto(FakeSource(5, xml=card, nwfilters=["clean-traffic"]), "vm", live=False, unsafe=False,
+                                 offline=True)
+        self.assertEqual(host.defined, [card])
+
+    def test_a_filter_with_other_rules_or_without_its_references_on_the_destination_is_refused(self):
+        # the VM would run with the destination's filter of that name, whatever its rules
+        card = ("<domain><name>vm</name><devices><interface type='bridge'><source bridge='br0'/>"
+                "<filterref filter='web'/></interface></devices></domain>")
+        web = ("<filter name='web' chain='root'><uuid>{}</uuid><filterref filter='base'/>"
+               "<rule action='drop' direction='in' priority='500'><tcp dstportstart='{}'/></rule></filter>")
+        base = "<filter name='base' chain='root'><rule action='drop' direction='in' priority='100'><all/></rule></filter>"
+        source = {"web": web.format("8f2c0000-0000-4000-8000-000000000001", 22), "base": base}
+        for here, why in (({"web": web.format("8f2c0000-0000-4000-8000-000000000002", 22)},
+                           "does not have these network filters of the VM: base"),
+                          ({"web": web.format("8f2c0000-0000-4000-8000-000000000002", 23), "base": base},
+                           "have other rules on the destination host: web"),
+                          ({"web": web.format("8f2c0000-0000-4000-8000-000000000002", 22),
+                            "base": base.replace("drop", "accept")}, "have other rules on the destination host: base")):
+            host = FakeHost(nwfilters=here)
+            with self.subTest(why), self.assertRaisesRegex(util.OperationError, why):
+                destination(host).moveto(FakeSource(5, xml=card, nwfilters=source), "vm", live=False, unsafe=False,
+                                         offline=True)
+            self.assertEqual(host.defined, [])
+        # the same rules: each host's UUID is its own
+        host = FakeHost(nwfilters={"web": web.format("8f2c0000-0000-4000-8000-000000000002", 22), "base": base})
+        destination(host).moveto(FakeSource(5, xml=card, nwfilters=source), "vm", live=False, unsafe=False, offline=True)
         self.assertEqual(host.defined, [card])
 
     def test_a_secret_the_destination_does_not_have_is_refused(self):
