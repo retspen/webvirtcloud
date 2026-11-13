@@ -97,6 +97,10 @@ USAGE_MAX_WINDOW = 30
 USAGE_STATS = VIR_DOMAIN_STATS_CPU_TOTAL | VIR_DOMAIN_STATS_BLOCK | VIR_DOMAIN_STATS_INTERFACE
 # seconds the guest agent has to set a password or add a key
 AGENT_TIMEOUT = 10
+# libvirt's values; bindings built against older libvirt (Ubuntu 24.04's) lack
+# the names, and the code comes from the host's libvirtd
+VIR_ERR_AGENT_COMMAND_TIMEOUT = 112
+VIR_ERR_AGENT_COMMAND_FAILED = 113  # the agent answered with an error: a command it lacks or has disabled
 # A running VM is cloned with a push backup that keeps the VM alive when the
 # guest shuts down during the copy: libvirt 11.10.
 LIVE_CLONE_MIN_LIBVIRT = 11_010_000
@@ -3253,15 +3257,31 @@ class wvmInstance(wvmConnect):
 
         return util.get_xml_path(self._XMLDesc(PERSISTENT_XML if config else 0), func=_get_agent)
 
+    def check_not_windows(self):
+        """Windows has no root account, and its agent takes no crypt(3) hash
+        and no SSH keys: refused in words, not with the agent's error."""
+        try:
+            osinfo = agent_command(self.instance, "guest-get-osinfo")
+        except libvirtError as err:
+            if err.get_error_code() == VIR_ERR_AGENT_COMMAND_FAILED:
+                return  # an agent without the command, or with it disabled: not known to be Windows
+            if err.get_error_code() == VIR_ERR_AGENT_COMMAND_TIMEOUT:  # not the change's timeout, which may still run
+                raise util.OperationError(gettext_noop("The guest agent did not answer in time; nothing was changed")) from err
+            raise
+        if osinfo.get("id") == "mswindows":
+            raise util.OperationError(gettext_noop("The VM runs Windows: its guest agent sets no root password or SSH key"))
+
     def set_user_password(self, user, crypted):
         """Set a user's password in the running guest through its agent;
         crypted is a crypt(3) hash."""
+        self.check_not_windows()
         password = base64.b64encode(crypted.encode()).decode()
         agent_command(self.instance, "guest-set-user-password", {"username": user, "password": password, "crypted": True})
 
     def add_authorized_key(self, user, key):
         """Add an SSH public key to the user's authorized keys in the running
         guest through its agent."""
+        self.check_not_windows()
         agent_command(self.instance, "guest-ssh-add-authorized-keys", {"username": user, "keys": [key], "reset": False})
 
     def is_agent_ready(self):

@@ -57,7 +57,7 @@ from webvirtcloud.middleware import error_text, same_origin_referer
 from vrtManager import util
 from vrtManager.connection import CONNECT_TIMEOUT
 from vrtManager.create import cpu_choices, wvmCreate
-from vrtManager.instance import USAGE_MAX_WINDOW, wvmInstances
+from vrtManager.instance import USAGE_MAX_WINDOW, VIR_ERR_AGENT_COMMAND_TIMEOUT, wvmInstances
 from vrtManager.interface import wvmInterface
 from vrtManager.nodedevs import (check_hostdevs, device_names, hostdev_problems, hostdev_users, managed_pci,
                                  node_devices, pci_problems, usb_unmatched)
@@ -1073,11 +1073,6 @@ def gstfsd_request(compute, data):
 # root password and SSH key: gstfsd changes a shut-off VM's disk, the QEMU
 # guest agent a running VM
 AGENT_OR_SHUT_OFF = gettext_lazy("Shut the VM down, or start its QEMU guest agent, and try again")
-
-
-# libvirt's value; bindings built against older libvirt (Ubuntu 24.04's) lack
-# the name, and the code comes from the host's libvirtd
-VIR_ERR_AGENT_COMMAND_TIMEOUT = 112
 
 
 def access_error(request, err):

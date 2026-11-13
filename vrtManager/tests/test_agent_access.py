@@ -14,6 +14,12 @@ from vrtManager import instance as module
 from vrtManager.instance import wvmInstance
 
 
+def coded(code, text):
+    err = libvirtError(text)
+    err.get_error_code = lambda: code
+    return err
+
+
 class AgentAccessTestCase(unittest.TestCase):
     def setUp(self):
         self.vm = wvmInstance.__new__(wvmInstance)  # no connection: only these calls
@@ -23,10 +29,14 @@ class AgentAccessTestCase(unittest.TestCase):
         self.addCleanup(patcher.stop)
 
     def sent(self):
-        (dom, command, timeout, flags), = [c.args for c in self.agent.call_args_list]
-        self.assertIs(dom, self.vm.instance)
-        self.assertEqual((timeout, flags), (10, 0))
-        return json.loads(command)
+        # the guest's OS first, then the change
+        calls = [c.args for c in self.agent.call_args_list]
+        for dom, _, timeout, flags in calls:
+            self.assertIs(dom, self.vm.instance)
+            self.assertEqual((timeout, flags), (10, 0))
+        osinfo, change = [json.loads(command) for _, command, _, _ in calls]
+        self.assertEqual(osinfo, {"execute": "guest-get-osinfo"})
+        return change
 
     def test_the_password_goes_as_a_hash(self):
         self.vm.set_user_password("root", "$6$salt$hash")
@@ -42,3 +52,32 @@ class AgentAccessTestCase(unittest.TestCase):
         self.agent.side_effect = libvirtError("guest agent didn't respond to command within '10' seconds")
         with self.assertRaisesRegex(libvirtError, "within '10' seconds"):
             self.vm.set_user_password("root", "$6$salt$hash")
+
+    def test_a_windows_guest_is_refused_in_words(self):
+        # its agent has no root account to change and takes no hash or SSH key
+        self.agent.return_value = '{"return":{"id":"mswindows","name":"Microsoft Windows"}}'
+        for change in (lambda: self.vm.set_user_password("root", "$6$salt$hash"),
+                       lambda: self.vm.add_authorized_key("root", "ssh-ed25519 AAAA laptop")):
+            with self.assertRaisesRegex(module.util.OperationError, "runs Windows"):
+                change()
+        self.assertEqual([json.loads(c.args[1])["execute"] for c in self.agent.call_args_list],
+                         ["guest-get-osinfo", "guest-get-osinfo"])
+
+    def test_an_agent_without_osinfo_still_gets_the_change(self):
+        # an agent that lacks guest-get-osinfo or has it disabled answers with an error
+        def answer(dom, command, timeout, flags):
+            if json.loads(command)["execute"] == "guest-get-osinfo":
+                raise coded(module.VIR_ERR_AGENT_COMMAND_FAILED, "Command guest-get-osinfo has been disabled")
+            return '{"return":{}}'
+
+        self.agent.side_effect = answer
+        self.vm.add_authorized_key("root", "ssh-ed25519 AAAA laptop")
+        self.assertEqual(self.sent()["execute"], "guest-ssh-add-authorized-keys")
+
+    def test_an_osinfo_that_times_out_says_nothing_was_changed(self):
+        # not the timeout of the change, which the agent may still run
+        self.agent.side_effect = coded(module.VIR_ERR_AGENT_COMMAND_TIMEOUT, "guest agent command timed out")
+        with self.assertRaisesRegex(module.util.OperationError, "nothing was changed"):
+            self.vm.set_user_password("root", "$6$salt$hash")
+        self.assertEqual(self.agent.call_count, 1)
+
