@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 05:44+0000\n"
+"POT-Creation-Date: 2026-11-13 07:26+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -3489,7 +3489,7 @@ msgid "Storage pool"
 msgstr "Depolama havuzu"
 
 #: instances/templates/add_instance_volume.html:41
-#: instances/templates/create_instance_w2.html:46 storages/forms.py:89
+#: instances/templates/create_instance_w2.html:46 storages/forms.py:107
 #: storages/templates/storage.html:182
 msgid "Letters, digits, dot, dash and underscore."
 msgstr "Harf, rakam, nokta, tire ve alt çizgi."
@@ -3507,8 +3507,8 @@ msgstr "Biçem"
 
 #: instances/templates/add_instance_volume.html:61
 #: instances/templates/create_instance_w2.html:154
-#: instances/templates/create_instance_w2.html:220 storages/forms.py:95
-#: storages/forms.py:115 storages/templates/storage.html:197
+#: instances/templates/create_instance_w2.html:220 storages/forms.py:113
+#: storages/forms.py:133 storages/templates/storage.html:197
 msgid "Preallocate metadata (qcow2)"
 msgstr "Meta veriyi önceden ayır (qcow2)"
 
@@ -3845,7 +3845,7 @@ msgstr "Seçin…"
 msgid "Custom CPU Models"
 msgstr "Özel CPU modelleri"
 
-#: instances/templates/create_instance_w2.html:146 storages/forms.py:94
+#: instances/templates/create_instance_w2.html:146 storages/forms.py:112
 msgid "Size (GiB)"
 msgstr "Boyut (GiB)"
 
@@ -7053,7 +7053,7 @@ msgstr "IPv4 ağ öneki /30 veya daha kısa olmalıdır"
 msgid "For libvirt, the IPv6 network prefix must be /64"
 msgstr "Libvirt için IPv6 ağ prefixi /64 olmak zorundadır"
 
-#: networks/forms.py:36 storages/forms.py:27
+#: networks/forms.py:36 storages/forms.py:35
 msgid "No pool name has been entered"
 msgstr "Havuz adı girilmedi"
 
@@ -7069,7 +7069,7 @@ msgstr "IPv6 alt ağı"
 msgid "Bridge or interface"
 msgstr "Köprü veya arabirim"
 
-#: networks/forms.py:56 storages/forms.py:51
+#: networks/forms.py:56 storages/forms.py:59
 msgid "The pool name must not contain any special characters"
 msgstr "Havuz adı herhangi bir özel karakter içermemelidir"
 
@@ -7086,7 +7086,7 @@ msgid "The pool bridge name must not contain any special characters"
 msgstr "Havuz köprü adı herhangi bir özel karakter içeremez"
 
 #: networks/forms.py:85 networks/forms.py:89 networks/forms.py:93
-#: storages/forms.py:82
+#: storages/forms.py:100
 msgid "This field is required."
 msgstr "Bu alan gerekli."
 
@@ -8220,65 +8220,77 @@ msgstr "Worker, iş herhangi bir şeyi değiştirmeden önce durdu"
 msgid "Pool is not active"
 msgstr "Havuz etkin değil"
 
-#: storages/forms.py:30 storages/templates/storage.html:102
+#: storages/forms.py:38 storages/templates/storage.html:102
 #: storages/templates/storages.html:43
 msgid "Path"
 msgstr "Yol"
 
-#: storages/forms.py:31
+#: storages/forms.py:39
 msgid "Device or remote path"
 msgstr "Aygıt veya uzak yol"
 
-#: storages/forms.py:32
+#: storages/forms.py:40
 msgid "Erase the device"
 msgstr "Aygıtı temizle"
 
-#: storages/forms.py:33 storages/templates/create_stg_block.html:110
+#: storages/forms.py:41 storages/templates/create_stg_block.html:110
 msgid "Ceph user"
 msgstr "Ceph kullanıcısı"
 
-#: storages/forms.py:34 storages/templates/create_stg_block.html:98
+#: storages/forms.py:42 storages/templates/create_stg_block.html:98
 msgid "Ceph monitor"
 msgstr "Ceph monitörü"
 
-#: storages/forms.py:35 storages/templates/create_stg_block.html:104
+#: storages/forms.py:43 storages/templates/create_stg_block.html:104
 msgid "Ceph pool"
 msgstr "Ceph havuzu"
 
-#: storages/forms.py:36 storages/templates/create_stg_block.html:116
+#: storages/forms.py:44 storages/templates/create_stg_block.html:116
 msgid "Ceph secret"
 msgstr "Ceph parolası"
 
-#: storages/forms.py:37 storages/templates/create_stg_block.html:139
+#: storages/forms.py:45 storages/templates/create_stg_block.html:139
 msgid "Server"
 msgstr "Sunucu"
 
-#: storages/forms.py:54
+#: storages/forms.py:62
 msgid "This host has a pool of that name"
 msgstr "Bu sunucuda bu adda bir havuz var"
 
-#: storages/forms.py:61
+#: storages/forms.py:71
 msgid "The target must not contain any special characters"
 msgstr "Hedef herhangi bir özel karakter içeremez"
 
-#: storages/forms.py:67
+#: storages/forms.py:75
+#, python-format
+msgid "%(path)s is a system directory of the host"
+msgstr "%(path)s, sunucunun bir sistem dizini"
+
+#: storages/forms.py:81
 #, python-format
 msgid "Pool %(pool)s uses this path"
 msgstr "%(pool)s havuzu bu yolu kullanıyor"
 
-#: storages/forms.py:74
+#: storages/forms.py:84
+#, python-format
+msgid "Pool %(pool)s uses %(path)s: one pool's directory cannot hold another's"
+msgstr ""
+"%(pool)s havuzu %(path)s yolunu kullanıyor: bir havuzun dizini başka bir "
+"havuzunkini içeremez"
+
+#: storages/forms.py:92
 msgid "The disk source must not contain any special characters"
 msgstr "Disk kaynağı herhangi bir özel karakter içermemelidir"
 
-#: storages/forms.py:84
+#: storages/forms.py:102
 msgid "Choose one of the host's Ceph secrets"
 msgstr "Sunucunun Ceph parolalarından birini seçin"
 
-#: storages/forms.py:102 storages/forms.py:122
+#: storages/forms.py:120 storages/forms.py:140
 msgid "The image name must not contain any special characters"
 msgstr "İmaj adı herhangi bir özel karakter içeremez"
 
-#: storages/forms.py:126
+#: storages/forms.py:144
 msgid "The image name must not exceed 120 characters"
 msgstr "İmaj adı 120 karakterden fazla olamaz"
 

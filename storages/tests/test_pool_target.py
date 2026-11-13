@@ -39,6 +39,33 @@ class PoolTargetTests(SimpleTestCase):
             with self.subTest(target=target):
                 self.assertEqual(target_error(target), refused)
 
+    def test_a_system_directory_is_refused(self):
+        # a pool there offers the host's own files as volumes to delete
+        for target, refused in (("/", True), ("/etc", True), ("//etc/", True), ("/srv/../etc", True), ("/usr/lib", True),
+                                ("/var", True), ("/var/lib", True), ("/var/lib/dpkg", True), ("/var/lib/libvirt", True),
+                                ("/var/lib/libvirt/qemu", True), ("/tmp/x", True), ("/home", True), ("/srv", True),
+                                ("/mnt", True), ("/etc-images", False), ("/srv/etc", False), ("/home/vms", False),
+                                ("/mnt/share", False), ("/var/lib/libvirt/images", False),
+                                ("/var/lib/libvirt/images/iso", False), ("/var/lib/libvirt/isos", False)):
+            with self.subTest(target=target):
+                self.assertEqual(target_error(target), refused)
+
+    def test_a_path_inside_or_around_another_pools_is_refused(self):
+        # a file in both would be listed, and deleted, through either pool
+        pools = [{"name": "default", "type": "dir", "path": "/srv/vms/images"},
+                 {"name": "ceph", "type": "rbd", "path": "rbd-pool"}]
+        for target, error in (
+            ("/srv/vms/images/", "Pool default uses this path"),
+            ("/srv/vms/images/iso", "Pool default uses /srv/vms/images: one pool's directory cannot hold another's"),
+            ("/srv/vms", "Pool default uses /srv/vms/images: one pool's directory cannot hold another's"),
+            ("/srv/vms/images-2", None),
+            ("rbd-pool", None),
+        ):
+            with self.subTest(target=target):
+                form = AddStgPool({"name": "pool1", "stg_type": "dir", "target": target}, pools=pools)
+                form.is_valid()
+                self.assertEqual(form.errors.get("target"), [error] if error else None)
+
     def test_accepted_and_refused_sources(self):
         for source, refused in (
             ("/dev/vdb", False),

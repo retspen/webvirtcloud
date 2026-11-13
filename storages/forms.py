@@ -1,3 +1,4 @@
+import posixpath
 import re
 
 from django import forms
@@ -8,6 +9,25 @@ from django.utils.translation import gettext_lazy as _
 # after "/". Written without nested repetition, which backtracked
 # exponentially on crafted input.
 POOL_PATH = re.compile(r"(?!-)(?:[/0-9a-zA-Z_.:]|(?<!/)-)+")
+# the host's own directories: a pool there offers its files as volumes to
+# delete, and a share mounted there hides them
+SYSTEM_DIRS = ("/bin", "/boot", "/dev", "/etc", "/lib", "/lib64", "/proc", "/root", "/run", "/sbin", "/sys", "/tmp",
+               "/usr", "/var")
+# inside /var, libvirt's directory holds images and ISOs beside these of its own
+LIBVIRT_STATE = ("/var/lib/libvirt/dnsmasq", "/var/lib/libvirt/filesystems", "/var/lib/libvirt/lockd", "/var/lib/libvirt/lxc", "/var/lib/libvirt/network",
+                 "/var/lib/libvirt/qemu", "/var/lib/libvirt/swtpm")
+# directories whose subdirectories are a pool's place, not they themselves
+PARENT_DIRS = ("/home", "/media", "/mnt", "/opt", "/srv")
+
+
+def inside(path, other):
+    return path == other or path.startswith(other.rstrip("/") + "/")
+
+
+def system_dir(path):
+    if path.startswith("/var/lib/libvirt/"):
+        return any(inside(path, state) for state in LIBVIRT_STATE)
+    return path == "/" or path in PARENT_DIRS or any(inside(path, system) for system in SYSTEM_DIRS)
 
 
 class AddStgPool(forms.Form):
@@ -56,15 +76,25 @@ class AddStgPool(forms.Form):
 
     def clean_target(self):
         target = self.cleaned_data["target"]
-        if target and not POOL_PATH.fullmatch(target):
+        if not target:
+            return target
+        if not POOL_PATH.fullmatch(target):
             raise forms.ValidationError(
                 _("The target must not contain any special characters")
             )
+        target = posixpath.normpath(re.sub("/+", "/", target))  # "/srv/../etc/" is /etc
+        if system_dir(target):
+            raise forms.ValidationError(_("%(path)s is a system directory of the host") % {"path": target})
         # an RBD pool's path is its Ceph pool, not a directory
-        used = next((pool["name"] for pool in self.pools
-                     if pool["type"] != "rbd" and pool["path"] and pool["path"].rstrip("/") == target.rstrip("/")), None)
-        if target and used:
-            raise forms.ValidationError(_("Pool %(pool)s uses this path") % {"pool": used})
+        for pool in self.pools:
+            if pool["type"] == "rbd" or not pool["path"]:
+                continue
+            if pool["path"].rstrip("/") == target:
+                raise forms.ValidationError(_("Pool %(pool)s uses this path") % {"pool": pool["name"]})
+            # its volumes would be listed, and deleted, through both pools
+            if inside(target, pool["path"]) or inside(pool["path"], target):
+                raise forms.ValidationError(_("Pool %(pool)s uses %(path)s: one pool's directory cannot hold another's") % {
+                    "pool": pool["name"], "path": pool["path"]})
         return target
 
     def clean_source(self):

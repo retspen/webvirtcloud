@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 05:44+0000\n"
+"POT-Creation-Date: 2026-11-13 07:26+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -3340,7 +3340,7 @@ msgid "Storage pool"
 msgstr "存储池"
 
 #: instances/templates/add_instance_volume.html:41
-#: instances/templates/create_instance_w2.html:46 storages/forms.py:89
+#: instances/templates/create_instance_w2.html:46 storages/forms.py:107
 #: storages/templates/storage.html:182
 msgid "Letters, digits, dot, dash and underscore."
 msgstr "字母、数字、点、短横线和下划线。"
@@ -3358,8 +3358,8 @@ msgstr "格式"
 
 #: instances/templates/add_instance_volume.html:61
 #: instances/templates/create_instance_w2.html:154
-#: instances/templates/create_instance_w2.html:220 storages/forms.py:95
-#: storages/forms.py:115 storages/templates/storage.html:197
+#: instances/templates/create_instance_w2.html:220 storages/forms.py:113
+#: storages/forms.py:133 storages/templates/storage.html:197
 msgid "Preallocate metadata (qcow2)"
 msgstr "预分配元数据（qcow2）"
 
@@ -3684,7 +3684,7 @@ msgstr "请选择…"
 msgid "Custom CPU Models"
 msgstr "自定义 CPU 型号"
 
-#: instances/templates/create_instance_w2.html:146 storages/forms.py:94
+#: instances/templates/create_instance_w2.html:146 storages/forms.py:112
 msgid "Size (GiB)"
 msgstr "大小（GiB）"
 
@@ -6660,7 +6660,7 @@ msgstr "IPv4 网络前缀必须为 /30 或更短"
 msgid "For libvirt, the IPv6 network prefix must be /64"
 msgstr "libvirt 要求 IPv6 网络前缀为 /64"
 
-#: networks/forms.py:36 storages/forms.py:27
+#: networks/forms.py:36 storages/forms.py:35
 msgid "No pool name has been entered"
 msgstr "未输入地址池名称"
 
@@ -6676,7 +6676,7 @@ msgstr "IPv6 子网"
 msgid "Bridge or interface"
 msgstr "网桥或接口"
 
-#: networks/forms.py:56 storages/forms.py:51
+#: networks/forms.py:56 storages/forms.py:59
 msgid "The pool name must not contain any special characters"
 msgstr "地址池名称不能包含特殊字符"
 
@@ -6693,7 +6693,7 @@ msgid "The pool bridge name must not contain any special characters"
 msgstr "地址池网桥名称不能包含特殊字符"
 
 #: networks/forms.py:85 networks/forms.py:89 networks/forms.py:93
-#: storages/forms.py:82
+#: storages/forms.py:100
 msgid "This field is required."
 msgstr "此字段为必填项。"
 
@@ -7760,65 +7760,75 @@ msgstr "工作进程在任务做出任何更改之前停止"
 msgid "Pool is not active"
 msgstr "存储池未激活"
 
-#: storages/forms.py:30 storages/templates/storage.html:102
+#: storages/forms.py:38 storages/templates/storage.html:102
 #: storages/templates/storages.html:43
 msgid "Path"
 msgstr "路径"
 
-#: storages/forms.py:31
+#: storages/forms.py:39
 msgid "Device or remote path"
 msgstr "设备或远程路径"
 
-#: storages/forms.py:32
+#: storages/forms.py:40
 msgid "Erase the device"
 msgstr "擦除设备"
 
-#: storages/forms.py:33 storages/templates/create_stg_block.html:110
+#: storages/forms.py:41 storages/templates/create_stg_block.html:110
 msgid "Ceph user"
 msgstr "Ceph 用户"
 
-#: storages/forms.py:34 storages/templates/create_stg_block.html:98
+#: storages/forms.py:42 storages/templates/create_stg_block.html:98
 msgid "Ceph monitor"
 msgstr "Ceph 监视器"
 
-#: storages/forms.py:35 storages/templates/create_stg_block.html:104
+#: storages/forms.py:43 storages/templates/create_stg_block.html:104
 msgid "Ceph pool"
 msgstr "Ceph 存储池"
 
-#: storages/forms.py:36 storages/templates/create_stg_block.html:116
+#: storages/forms.py:44 storages/templates/create_stg_block.html:116
 msgid "Ceph secret"
 msgstr "Ceph 机密"
 
-#: storages/forms.py:37 storages/templates/create_stg_block.html:139
+#: storages/forms.py:45 storages/templates/create_stg_block.html:139
 msgid "Server"
 msgstr "服务器"
 
-#: storages/forms.py:54
+#: storages/forms.py:62
 msgid "This host has a pool of that name"
 msgstr "此主机已有同名存储池"
 
-#: storages/forms.py:61
+#: storages/forms.py:71
 msgid "The target must not contain any special characters"
 msgstr "目标不能包含特殊字符"
 
-#: storages/forms.py:67
+#: storages/forms.py:75
+#, python-format
+msgid "%(path)s is a system directory of the host"
+msgstr "%(path)s 是主机的系统目录"
+
+#: storages/forms.py:81
 #, python-format
 msgid "Pool %(pool)s uses this path"
 msgstr "存储池 %(pool)s 正在使用此路径"
 
-#: storages/forms.py:74
+#: storages/forms.py:84
+#, python-format
+msgid "Pool %(pool)s uses %(path)s: one pool's directory cannot hold another's"
+msgstr "存储池 %(pool)s 正在使用 %(path)s：一个存储池的目录不能包含另一个存储池的目录"
+
+#: storages/forms.py:92
 msgid "The disk source must not contain any special characters"
 msgstr "磁盘源不能包含特殊字符"
 
-#: storages/forms.py:84
+#: storages/forms.py:102
 msgid "Choose one of the host's Ceph secrets"
 msgstr "请选择此主机上的一个 Ceph 机密"
 
-#: storages/forms.py:102 storages/forms.py:122
+#: storages/forms.py:120 storages/forms.py:140
 msgid "The image name must not contain any special characters"
 msgstr "镜像名称不能包含特殊字符"
 
-#: storages/forms.py:126
+#: storages/forms.py:144
 msgid "The image name must not exceed 120 characters"
 msgstr "镜像名称不能超过 120 个字符"
 
