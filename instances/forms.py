@@ -2,6 +2,7 @@ import re
 
 from django import forms
 from django.conf import settings
+from django.utils.crypto import salted_hmac
 from django.utils.translation import gettext_lazy as _
 
 from .models import Flavor
@@ -17,6 +18,12 @@ class FlavorForm(forms.ModelForm):
     class Meta:
         model = Flavor
         fields = "__all__"
+
+
+def console_seen(console_type, listener, keymap, passwd):
+    """The fingerprint of the console settings a page shows, which it sends
+    back: a page opened before another change would undo it."""
+    return salted_hmac("instances.console_seen", repr((console_type, listener, keymap, passwd)), algorithm="sha256").hexdigest()
 
 
 class ConsoleForm(forms.Form):
@@ -39,6 +46,7 @@ class ConsoleForm(forms.Form):
         required=False,
         strip=False,
     )
+    seen = forms.CharField(widget=forms.HiddenInput, required=False)
 
     def __init__(self, *args, instance, is_superuser, **kwargs):
         # the VM's settings as the initial values: a save changes only the fields edited
@@ -51,6 +59,8 @@ class ConsoleForm(forms.Form):
             "password_action": "keep",
             "keymap": instance.config_console_keymap or "auto",
         }
+        kwargs["initial"]["seen"] = console_seen(*(kwargs["initial"][k] for k in ("console_type", "listen_on", "keymap")),
+                                                 instance.config_console_passwd)
         super(ConsoleForm, self).__init__(*args, **kwargs)
         types = [("vnc", "VNC")]
         if settings.SERIAL_CONSOLE_ENABLED:
@@ -85,6 +95,8 @@ class ConsoleForm(forms.Form):
 
     def clean(self):
         data = super().clean()
+        if data.get("seen") != self.initial["seen"]:
+            raise forms.ValidationError(_("The console settings were changed meanwhile; check them and save again."))
         action = data.get("password_action")
         if action == "set":
             password = data.get("password", "")

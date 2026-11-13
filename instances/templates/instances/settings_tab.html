@@ -697,7 +697,7 @@
         {% endif %}
         {% if can_manage_console %}
         <div role="tabpanel" class="tab-pane" id="vncsettings">
-            <form method="post" action="{% url 'instances:update_console' instance.id %}" aria-label="{% trans "Console settings" %}">{% csrf_token %}
+            <form method="post" action="{% url 'instances:update_console' instance.id %}" aria-label="{% trans "Console settings" %}">{% csrf_token %}{{ console_form.seen }}
                 {% if instance.status != 5 %}
                 <p class="small text-body-secondary">{% trans "The running console keeps its current settings; changes here apply after the VM is shut down and started." %}</p>
                 {% endif %}

@@ -369,7 +369,7 @@ msgstr "Kullanıcı adını girin"
 
 #: accounts/templates/accounts/otp_login.html:37
 #: accounts/templates/login.html:36 admin/templates/admin/user_form.html:32
-#: console/templates/console-vnc.html:82 instances/forms.py:27
+#: console/templates/console-vnc.html:82 instances/forms.py:34
 #: instances/templates/instances/access_tab.html:53
 msgid "Password"
 msgstr "Parola"
@@ -758,7 +758,7 @@ msgstr ""
 "yalnızca bir sahibe izin veriliyor"
 
 #: admin/forms.py:208 computes/templates/computes/list.html:58
-#: computes/templates/overview.html:58 instances/forms.py:14
+#: computes/templates/overview.html:58 instances/forms.py:15
 #: instances/templates/allinstances_index_grouped.html:16
 #: instances/templates/allinstances_index_nongrouped.html:14
 #: instances/templates/create_instance_w2.html:63
@@ -2797,70 +2797,75 @@ msgstr ""
 msgid "Templates cannot be started."
 msgstr "Şablon makineler başlatılamaz."
 
-#: instances/forms.py:13 instances/templates/create_instance_w2.html:69
+#: instances/forms.py:14 instances/templates/create_instance_w2.html:69
 #: instances/templates/instances/settings_tab.html:858 instances/views.py:239
 msgid "Memory (MiB)"
 msgstr "Bellek (MiB)"
 
-#: instances/forms.py:15
+#: instances/forms.py:16
 msgid "Disk (GiB)"
 msgstr "Disk (GiB)"
 
-#: instances/forms.py:24
+#: instances/forms.py:31
 msgid "Console type"
 msgstr "Konsol tipi"
 
-#: instances/forms.py:29
+#: instances/forms.py:36
 msgid "Keep the password"
 msgstr "Parolayı koru"
 
-#: instances/forms.py:30
+#: instances/forms.py:37
 msgid "Generate a new one"
 msgstr "Yenisini oluştur"
 
-#: instances/forms.py:31
+#: instances/forms.py:38
 msgid "Set a new one"
 msgstr "Yenisini belirle"
 
-#: instances/forms.py:32
+#: instances/forms.py:39
 msgid "No password"
 msgstr "Parola yok"
 
-#: instances/forms.py:37
+#: instances/forms.py:44
 msgid "New password"
 msgstr "Yeni parola"
 
-#: instances/forms.py:57
+#: instances/forms.py:66
 msgid "Serial (xterm; the guest needs a getty on ttyS0)"
 msgstr "Seri (xterm; konuk sistemde ttyS0 üzerinde getty gerekir)"
 
-#: instances/forms.py:67
+#: instances/forms.py:76
 msgid "Auto"
 msgstr "Otomatik"
 
-#: instances/forms.py:76
+#: instances/forms.py:85
 msgid "Listen on"
 msgstr "Dinlenen"
 
-#: instances/forms.py:83
+#: instances/forms.py:92
 msgid "Keymap"
 msgstr "Klavye eşlemi"
 
-#: instances/forms.py:92
+#: instances/forms.py:98
+msgid "The console settings were changed meanwhile; check them and save again."
+msgstr ""
+"Konsol ayarları bu arada değişti; ayarları kontrol edip yeniden kaydedin."
+
+#: instances/forms.py:103
 msgid "Enter the new password."
 msgstr "Yeni parolayı girin."
 
-#: instances/forms.py:96
+#: instances/forms.py:107
 msgid ""
 "A VNC password takes up to 8 letters, digits or symbols, without accents."
 msgstr ""
 "VNC parolası en çok 8 harf, rakam ya da simge alır; aksanlı harf olmaz."
 
-#: instances/forms.py:98
+#: instances/forms.py:109
 msgid "A password takes no line breaks or other control characters."
 msgstr "Parola satır sonu ya da başka denetim karakteri içeremez."
 
-#: instances/forms.py:104
+#: instances/forms.py:115
 msgid ""
 "The console listens beyond localhost; only an administrator can remove its "
 "password."
@@ -2868,7 +2873,7 @@ msgstr ""
 "Konsol localhost dışında da dinliyor; parolasını yalnızca bir yönetici "
 "kaldırabilir."
 
-#: instances/forms.py:148
+#: instances/forms.py:159
 msgid "The name of the virtual machine must not contain any special characters"
 msgstr "Sanal makine adı özel karakterler içeremez"
 

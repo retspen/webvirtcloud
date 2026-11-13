@@ -2375,7 +2375,7 @@ def update_console(request, pk):
         raise PermissionDenied
     form = ConsoleForm(request.POST, instance=instance, is_superuser=request.user.is_superuser)
     if not form.is_valid():
-        messages.error(request, _("Console settings were not saved: %(errors)s") % {"errors": form.errors.as_text()})
+        messages.error(request, _("Console settings were not saved: %(errors)s") % {"errors": " ".join(e for errors in form.errors.values() for e in errors)})
         return get_safe_redirect(request, default=reverse("instances:instance", args=[instance.id]) + "#vncsettings")
     console_type = form.cleaned_data["console_type"]
     if console_type not in ("", instance.config_console_type):

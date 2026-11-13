@@ -10,7 +10,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
 from django.test import TestCase, override_settings
 from django.urls import reverse
-from instances.forms import ConsoleForm
+from instances.forms import ConsoleForm, console_seen
 from instances.models import Instance
 from unittest.mock import PropertyMock
 from accounts.models import UserInstance
@@ -35,7 +35,9 @@ class UpdateConsoleTestCase(TestCase):
             proxy.get_console_type.side_effect = lambda config=False: console_type if config else "vnc"
             proxy.get_console_listener_addr.return_value = "127.0.0.1"
             proxy.get_console_keymap.return_value = ""
+            proxy.get_console_passwd.return_value = None
             proxy.set_console_passwd.return_value = True
+            data = {"seen": console_seen(console_type, "127.0.0.1", "auto", None), **data}
             response = self.client.post(reverse("instances:update_console", args=[self.instance.id]), data)
         return proxy, [str(m) for m in get_messages(response.wsgi_request)]
 
@@ -44,6 +46,16 @@ class UpdateConsoleTestCase(TestCase):
         proxy.set_console_keymap.assert_called_once_with("de")
         proxy.set_console_listener_addr.assert_called_once_with("0.0.0.0")
         proxy.set_console_passwd.assert_not_called()
+
+    def test_a_page_opened_before_another_change_does_not_undo_it(self):
+        # another administrator moved the console to localhost and set a keymap
+        # or set a new password
+        for stale in (console_seen("vnc", "0.0.0.0", "auto", None), console_seen("vnc", "127.0.0.1", "auto", "Other-1")):
+            proxy, messages = self.post({**VNC, "listen_on": "0.0.0.0", "password_action": "generate", "seen": stale})
+            proxy.set_console_listener_addr.assert_not_called()
+            proxy.set_console_passwd.assert_not_called()
+            self.assertEqual(messages[-1], "Console settings were not saved: "
+                                           "The console settings were changed meanwhile; check them and save again.")
 
     def test_a_template_s_console_settings_are_not_changed(self):
         # its page has no console form: a template is cloned, not run
@@ -94,7 +106,7 @@ class UpdateConsoleTestCase(TestCase):
         with patch("instances.models.wvmInstance") as wvm:
             wvm.return_value.get_console_type.side_effect = lambda config=False: "pty" if config else "vnc"
             form = ConsoleForm(instance=Instance.objects.get(pk=self.instance.pk), is_superuser=True)
-        self.assertEqual((form["console_type"].value(), sorted(form.fields)), ("pty", ["console_type"]))
+        self.assertEqual((form["console_type"].value(), sorted(form.fields)), ("pty", ["console_type", "seen"]))
 
     def test_a_spice_console_stays_spice_when_its_settings_are_saved(self):
         # SPICE is not offered for new consoles: a save would have made it VNC
@@ -135,6 +147,8 @@ class ConsoleListenerTests(TestCase):
             proxy.get_console_passwd.return_value = "Old-pass-1"
             proxy.get_console_keymap.return_value = ""
             proxy.set_console_passwd.return_value = True
+            proxy.get_console_type.return_value = "vnc"
+            data = {"seen": console_seen("vnc", "127.0.0.1" if local else "0.0.0.0", "auto", "Old-pass-1"), **data}
             response = self.client.post(reverse("instances:update_console", args=[self.vm.id]), data)
         return proxy, [str(m) for m in get_messages(response.wsgi_request)]
 

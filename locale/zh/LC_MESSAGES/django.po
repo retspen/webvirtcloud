@@ -364,7 +364,7 @@ msgstr "输入用户名"
 
 #: accounts/templates/accounts/otp_login.html:37
 #: accounts/templates/login.html:36 admin/templates/admin/user_form.html:32
-#: console/templates/console-vnc.html:82 instances/forms.py:27
+#: console/templates/console-vnc.html:82 instances/forms.py:34
 #: instances/templates/instances/access_tab.html:53
 msgid "Password"
 msgstr "密码"
@@ -735,7 +735,7 @@ msgid ""
 msgstr "NEW_USER_DEFAULT_INSTANCES：%(name)s 已有所有者，且只允许一个所有者"
 
 #: admin/forms.py:208 computes/templates/computes/list.html:58
-#: computes/templates/overview.html:58 instances/forms.py:14
+#: computes/templates/overview.html:58 instances/forms.py:15
 #: instances/templates/allinstances_index_grouped.html:16
 #: instances/templates/allinstances_index_nongrouped.html:14
 #: instances/templates/create_instance_w2.html:63
@@ -2687,75 +2687,79 @@ msgstr "不支持控制台类型 '%(type)s'。请将虚拟机图形切换为 VNC
 msgid "Templates cannot be started."
 msgstr "模板无法启动。"
 
-#: instances/forms.py:13 instances/templates/create_instance_w2.html:69
+#: instances/forms.py:14 instances/templates/create_instance_w2.html:69
 #: instances/templates/instances/settings_tab.html:858 instances/views.py:239
 msgid "Memory (MiB)"
 msgstr "内存（MiB）"
 
-#: instances/forms.py:15
+#: instances/forms.py:16
 msgid "Disk (GiB)"
 msgstr "磁盘（GiB）"
 
-#: instances/forms.py:24
+#: instances/forms.py:31
 msgid "Console type"
 msgstr "控制台类型"
 
-#: instances/forms.py:29
+#: instances/forms.py:36
 msgid "Keep the password"
 msgstr "保留密码"
 
-#: instances/forms.py:30
+#: instances/forms.py:37
 msgid "Generate a new one"
 msgstr "生成新密码"
 
-#: instances/forms.py:31
+#: instances/forms.py:38
 msgid "Set a new one"
 msgstr "设置新密码"
 
-#: instances/forms.py:32
+#: instances/forms.py:39
 msgid "No password"
 msgstr "无密码"
 
-#: instances/forms.py:37
+#: instances/forms.py:44
 msgid "New password"
 msgstr "新密码"
 
-#: instances/forms.py:57
+#: instances/forms.py:66
 msgid "Serial (xterm; the guest needs a getty on ttyS0)"
 msgstr "串行（xterm；客户机需要在 ttyS0 上运行 getty）"
 
-#: instances/forms.py:67
+#: instances/forms.py:76
 msgid "Auto"
 msgstr "自动"
 
-#: instances/forms.py:76
+#: instances/forms.py:85
 msgid "Listen on"
 msgstr "监听地址"
 
-#: instances/forms.py:83
+#: instances/forms.py:92
 msgid "Keymap"
 msgstr "键盘映射"
 
-#: instances/forms.py:92
+#: instances/forms.py:98
+msgid "The console settings were changed meanwhile; check them and save again."
+msgstr "控制台设置已在此期间被更改；请检查后重新保存。"
+
+#: instances/forms.py:103
 msgid "Enter the new password."
 msgstr "请输入新密码。"
 
-#: instances/forms.py:96
+#: instances/forms.py:107
 msgid ""
 "A VNC password takes up to 8 letters, digits or symbols, without accents."
 msgstr "VNC 密码最多 8 个字母、数字或符号，不能有带重音的字母。"
 
-#: instances/forms.py:98
+#: instances/forms.py:109
 msgid "A password takes no line breaks or other control characters."
 msgstr "密码不能包含换行或其他控制字符。"
 
-#: instances/forms.py:104
+#: instances/forms.py:115
 msgid ""
 "The console listens beyond localhost; only an administrator can remove its "
 "password."
 msgstr "控制台监听的不只是 localhost；只有管理员可以移除其密码。"
 
-#: instances/forms.py:148
+#: instances/forms.py:159
 msgid "The name of the virtual machine must not contain any special characters"
 msgstr "虚拟机名称不能包含任何特殊字符"
 

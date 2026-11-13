@@ -8,6 +8,7 @@ from appsettings.models import AppSettings
 from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
+from django.contrib.messages import get_messages
 from django.http.response import Http404
 from django.shortcuts import reverse
 from django.test import TestCase
@@ -18,6 +19,7 @@ from operations.models import Operation
 
 from vrtManager.tests import livetest
 from .test_create_instance import run
+from instances.forms import ConsoleForm
 from instances.models import Flavor, Instance
 from computes.utils import refresh_instance_database
 
@@ -734,12 +736,17 @@ class InstancesTestCase(TestCase):
         self.assertEqual(Instance.objects.count(), instance_count)
 
     def test_console(self):
+        # the other address than the saved one: the save must change it
+        listen = "127.0.0.1" if self.instance.config_console_listener_address == "0.0.0.0" else "0.0.0.0"
         response = self.client.post(
             reverse("instances:update_console", args=[self.instance.id]),
-            {"listen_on": "0.0.0.0", "password_action": "keep", "keymap": "auto"},
+            {"listen_on": listen, "password_action": "keep", "keymap": "auto",
+             "seen": ConsoleForm(instance=self.instance, is_superuser=True).initial["seen"]},
             HTTP_REFERER=reverse("index"),
         )
         self.assertEqual(response.status_code, 302)
+        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)], [])
+        self.assertEqual(Instance.objects.get(pk=self.instance.pk).config_console_listener_address, listen)
 
     def test_status(self):
         response = self.client.get(reverse("instances:status", args=[self.instance.id]))
