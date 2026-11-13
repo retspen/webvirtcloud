@@ -65,9 +65,10 @@ class wvmHostDetails(wvmConnect):
             return {"total": None, "usage": None, "percent": None}
 
     def _cpu_times(self):
-        """(idle, total) nanoseconds of all host CPUs, from one reading."""
+        """(idle, total) nanoseconds of all host CPUs, from one reading. Time
+        waiting for I/O is idle: no CPU runs then, it only waits for disks."""
         stats = self.wvm.getCPUStats(VIR_NODE_CPU_STATS_ALL_CPUS, 0)
-        return stats["idle"], sum(stats.get(name, 0) for name in CPU_TIMES)
+        return stats["idle"] + stats.get("iowait", 0), sum(stats.get(name, 0) for name in CPU_TIMES)
 
     def get_cpu_usage(self, previous=None):
         """

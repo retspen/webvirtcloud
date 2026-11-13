@@ -337,6 +337,14 @@ class CpuUsageTestCase(UnitTestCase):
         # total = kernel + user + idle + iowait; guest (inside user) and utilization are left out
         self.assertEqual(usage, {"usage": 70.0, "sample": (130, 200, 105.0), "window": 5.0})
 
+    def test_time_waiting_for_disks_is_not_cpu_in_use(self, clock):
+        # a host that only waits for its disks: no CPU runs
+        clock.monotonic.return_value = 105.0
+        h = wvmHostDetails.__new__(wvmHostDetails)
+        h.wvm = MagicMock()
+        h.wvm.getCPUStats.return_value = {"kernel": 0, "user": 0, "idle": 100, "iowait": 100}
+        self.assertEqual(h.get_cpu_usage(previous=(100, 100, 100.0))["usage"], 0.0)
+
     def test_over_one_second_without_a_sample(self, clock):
         clock.monotonic.side_effect = [10.0, 11.0]
         h = host((100, 100), (110, 190))

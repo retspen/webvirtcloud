@@ -9,11 +9,12 @@ var cpuChart = lineChart(document.getElementById("cpuChart"), "%", [state.datase
         return span ? text + ' (' + state.dataset.averageOver + ' ' + span + ' s)' : text;
     },
 });
-var memChart = lineChart(document.getElementById("memChart"), "GB", [state.dataset.usage]);
+var memChart = lineChart(document.getElementById("memChart"), "GiB", [state.dataset.usage]);
 var cpuNow = document.getElementById("cpu_now");
 var memNow = document.getElementById("mem_now");
 var lastUpdate = "–";
 
+// bytes in GiB (1024³), one decimal
 function gb(bytes) {
     return Math.round(bytes / 107374182.4) / 10;
 }
@@ -41,7 +42,7 @@ pollWhileVisible(5000, function () {
     if (data.memdata.total) {
         memChart.options.scales.y.max = gb(data.memdata.total);
         addPoint(memChart, data.timeline, [gb(data.memdata.usage)]);
-        memNow.textContent = gb(data.memdata.usage) + " / " + gb(data.memdata.total) + " GB";
+        memNow.textContent = gb(data.memdata.usage) + " / " + gb(data.memdata.total) + " GiB";
     } else {
         addPoint(memChart, data.timeline, [null]);
     }

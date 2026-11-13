@@ -159,6 +159,6 @@ class GraphScriptTestCase(TestCase):
         # a host that could not be read leaves a gap and keeps the memory axis
         self.assertEqual((result["mem"], result["memMax"]), ([1, None], 2))
         # the readings in words, and since when they are not updated
-        self.assertEqual(result["shown"], ["3 %", "1 / 2 GB", "Updated at t."])
+        self.assertEqual(result["shown"], ["3 %", "1 / 2 GiB", "Updated at t."])
         self.assertEqual(result["state"], "Not updated since t.")
         self.assertTrue(result["label"].endswith(": 3 % (average over 5.1 s)"), result["label"])
