@@ -145,8 +145,8 @@ class GraphScriptTestCase(TestCase):
         poll.request();
         const label = charts[0].options.plugins.tooltip.callbacks.label({dataset: {label: "Usage"}, formattedValue: "3", dataIndex: 0});
         console.log(JSON.stringify({requests, timeouts, label, shown, state: elements.graph_state.textContent,
-                                    cpu: charts[0].data.datasets[0].data,
-                                    mem: charts[1].data.datasets[0].data, memMax: charts[1].options.scales.y.max}));
+                                    cpu: charts[0].data.datasets[0].data.map((point) => point.y),
+                                    mem: charts[1].data.datasets[0].data.map((point) => point.y), memMax: charts[1].options.scales.y.max}));
         """.replace("SCRIPT", json.dumps(script)).replace("CHARTS", json.dumps(CHARTS_JS.read_text())).replace(
             "DATASET", json.dumps(dataset))
         out = subprocess.run(["node", "-e", js], capture_output=True, text=True, timeout=30)
@@ -162,3 +162,47 @@ class GraphScriptTestCase(TestCase):
         self.assertEqual(result["shown"], ["3 %", "1 / 2 GiB", "Updated at t."])
         self.assertEqual(result["state"], "Not updated since t.")
         self.assertTrue(result["label"].endswith(": 3 % (average over 5.1 s)"), result["label"])
+
+
+@unittest.skipUnless(shutil.which("node"), "node is not installed")
+class ChartAxisTestCase(unittest.TestCase):
+    """A reading stands at the time it came, labelled with the panel's time:
+    one that took 20 s stands four times as far as one of 5 s."""
+
+    def test_readings_are_spaced_by_their_time(self):
+        js = """
+        const vm = require("vm");
+        let chart;
+        const page = {
+            document: {body: {}},
+            getComputedStyle: () => ({getPropertyValue: () => ""}),
+            Chart: Object.assign(function (canvas, config) {
+                this.data = config.data; this.options = config.options; this.update = () => {}; chart = this;
+            }, {defaults: {}}),
+        };
+        const context = vm.createContext(page);
+        vm.runInContext(CHARTS, context);
+        vm.runInContext("var c = lineChart({}, '%', ['Usage']);"
+            + " addPoint(c, '12:00:00', [1], 100); addPoint(c, '12:00:05', [2], 105); addPoint(c, '12:00:25', [null], 125);",
+            context);
+        // 20 px a second: each reading 100 px from the next or more
+        const axis = {chart, getPixelForValue: (value) => value * 20};
+        chart.options.scales.x.afterBuildTicks(axis);
+        const label = (a) => a.ticks.map((tick, i) => chart.options.scales.x.ticks.callback.call(a, tick.value, i, a.ticks));
+        const labels = label(axis);
+        // 4 px a second: a 5 s step (20 px) leaves no room for its label, a 20 s one (80 px) does
+        const packed = {chart, getPixelForValue: (value) => value * 4};
+        chart.options.scales.x.afterBuildTicks(packed);
+        const packedLabels = label(packed);
+        const title = chart.options.plugins.tooltip.callbacks.title([{chart, parsed: {x: 105}}]);
+        console.log(JSON.stringify({points: chart.data.datasets[0].data, type: chart.options.scales.x.type, labels, packedLabels,
+                                    title}));
+        """.replace("CHARTS", json.dumps(CHARTS_JS.read_text()))
+        out = subprocess.run(["node", "-e", js], capture_output=True, text=True, timeout=30)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        result = json.loads(out.stdout)
+        self.assertEqual(result["type"], "linear")
+        self.assertEqual(result["points"], [{"x": 100, "y": 1}, {"x": 105, "y": 2}, {"x": 125, "y": None}])
+        self.assertEqual(result["labels"], ["12:00:00", "12:00:05", "12:00:25"])
+        self.assertEqual(result["packedLabels"], ["", "12:00:05", "12:00:25"])
+        self.assertEqual(result["title"], "12:00:05")

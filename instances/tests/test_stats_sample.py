@@ -215,9 +215,9 @@ class StatsScriptTestCase(TestDriverVM, TestCase):
         fail = false;
         poll.request();
         const label = charts[0].options.plugins.tooltip.callbacks.label({dataset: {label: "Usage"}, formattedValue: "3", dataIndex: 0});
-        console.log(JSON.stringify({requests, label, every: [poll.interval, poll.first], cpu: charts[0].data.datasets[0].data,
-                                    disk: charts[2].data.datasets[1].data, net: charts[3].data.datasets[0].data,
-                                    mem: charts[1].data.datasets[0].data, memMax: charts[1].options.scales.y.max}));
+        console.log(JSON.stringify({requests, label, every: [poll.interval, poll.first], cpu: charts[0].data.datasets[0].data.map((point) => point.y),
+                                    disk: charts[2].data.datasets[1].data.map((point) => point.y), net: charts[3].data.datasets[0].data.map((point) => point.y),
+                                    mem: charts[1].data.datasets[0].data.map((point) => point.y), memMax: charts[1].options.scales.y.max}));
         """.replace("SCRIPT", json.dumps(script)).replace("CHARTS", json.dumps(CHARTS_JS.read_text())).replace(
             "DATASET", json.dumps(dataset)).replace("CANVASES", json.dumps(canvases))
         out = subprocess.run(["node", "-e", js], capture_output=True, text=True, timeout=30)
