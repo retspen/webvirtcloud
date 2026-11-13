@@ -24,8 +24,10 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from accounts.apps import admin_password_path
-from computes.utils import lock_ownership
+from computes.utils import lock_ownership, users_lock
 from logs.audit import audit, audit_vm, changed_fields, failed, snapshot
+from operations import claims
+from operations.utils import busy_message
 
 from accounts.forms import ApiTokenForm, EmailOTPForm, ProfileForm, UserSSHKeyForm
 from accounts.models import ApiToken, User, UserAttributes, UserInstance, UserSSHKey
@@ -36,16 +38,26 @@ from .utils import OTP_LINK, OTP_LINK_MAX_AGE, get_existing_totp_device, get_use
 
 def profile(request):
     publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
-    before = snapshot(request.user)
     profile_form = ProfileForm(request.POST or None, instance=request.user)
     ssh_key_form = UserSSHKeyForm()
 
     if profile_form.is_valid():
-        with audit(request, None, f"User {request.user.username}", "change") as entry:
-            profile_form.save()
-            fields = changed_fields(before, snapshot(request.user))
-            entry.action = "change " + ", ".join(fields)
-            entry.skip = not fields
+        try:
+            with audit(request, None, f"User {request.user.username}", "change") as entry, users_lock():
+                # the account as saved now (an administrator may have blocked it meanwhile),
+                # its e-mail address checked again, with the save
+                account = get_user_model().objects.get(pk=request.user.pk)
+                before = snapshot(account)
+                profile_form = ProfileForm(request.POST, instance=account)
+                entry.skip = not profile_form.is_valid()
+                if profile_form.is_valid():
+                    fields = changed_fields(before, snapshot(profile_form.save()))
+                    entry.action = "change " + ", ".join(fields)
+                    entry.skip = not fields
+        except claims.Busy as busy:
+            messages.error(request, busy_message(busy, request.user))
+            return redirect("accounts:profile")
+    if profile_form.is_valid():
         messages.success(request, _("Profile updated"))
         return redirect("accounts:profile")
 

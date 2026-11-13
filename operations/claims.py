@@ -58,6 +58,11 @@ def nwfilters_key(compute_id):
     return f"nwfilters:{compute_id}"
 
 
+def users_key():
+    """The panel's users: one change of them at a time, checked as it is saved."""
+    return "users"
+
+
 def name_key(name):
     """A VM name is the panel's on every compute (the name checks are global)."""
     return f"name:{name}"

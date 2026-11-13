@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 11:29+0000\n"
+"POT-Creation-Date: 2026-11-13 11:54+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -539,7 +539,7 @@ msgid "Add"
 msgstr "Ekle"
 
 #: accounts/templates/profile.html:64 accounts/templates/profile.html:70
-#: accounts/views.py:72 accounts/views.py:87
+#: accounts/views.py:84 accounts/views.py:99
 msgid "Create an API token"
 msgstr "API anahtarı oluştur"
 
@@ -580,98 +580,98 @@ msgstr ""
 "\n"
 "%(url)s"
 
-#: accounts/views.py:49
+#: accounts/views.py:61
 msgid "Profile updated"
 msgstr "Profil güncellendi"
 
-#: accounts/views.py:79
+#: accounts/views.py:91
 #, python-format
 msgid "A user has at most %(limit)s API tokens: delete one first."
 msgstr ""
 "Bir kullanıcının en fazla %(limit)s API anahtarı olabilir: önce birini silin."
 
-#: accounts/views.py:81
+#: accounts/views.py:93
 #, python-format
 msgid "You have a token named %(name)s: choose another name."
 msgstr "%(name)s adlı bir token'ınız var: başka bir ad seçin."
 
-#: accounts/views.py:118
+#: accounts/views.py:130
 msgid "API token deleted"
 msgstr "API anahtarı silindi"
 
-#: accounts/views.py:126
+#: accounts/views.py:138
 msgid "Delete API token"
 msgstr "API anahtarını sil"
 
-#: accounts/views.py:127
+#: accounts/views.py:139
 msgid "Scripts and tools that use it can no longer reach the API."
 msgstr "Onu kullanan betikler ve araçlar artık API'ye erişemez."
 
-#: accounts/views.py:137
+#: accounts/views.py:149
 msgid "SSH key added"
 msgstr "SSH anahtarı eklendi"
 
-#: accounts/views.py:145
+#: accounts/views.py:157
 msgid "Add SSH key"
 msgstr "SSH Anahtarı Ekle"
 
-#: accounts/views.py:166
+#: accounts/views.py:178
 msgid "SSH key deleted"
 msgstr "SSH anahtarı silindi"
 
-#: accounts/views.py:174
+#: accounts/views.py:186
 msgid "Delete SSH key"
 msgstr "SSH anahtarı sil"
 
-#: accounts/views.py:175
+#: accounts/views.py:187
 msgid ""
 "VMs that already have it keep it; VMs created from now on do not get it."
 msgstr ""
 "Ona zaten sahip olan sanal makinelerde kalır; bundan sonra oluşturulan sanal "
 "makinelere eklenmez."
 
-#: accounts/views.py:225
+#: accounts/views.py:237
 msgid "Password Changed"
 msgstr "Parola Değişti"
 
-#: accounts/views.py:256
+#: accounts/views.py:268
 msgid "Create User Instance"
 msgstr "Yeni Kullanıcı Sanal Makinesi Oluştur"
 
-#: accounts/views.py:291
+#: accounts/views.py:303
 msgid "Update User Instance"
 msgstr "Kullanıcı Sanal Makinesini Güncelle"
 
-#: accounts/views.py:309
+#: accounts/views.py:321
 msgid "The user loses access to this VM; the VM itself is not changed."
 msgstr ""
 "Kullanıcı bu sanal makineye erişimini kaybeder; sanal makinenin kendisi "
 "değişmez."
 
-#: accounts/views.py:344
+#: accounts/views.py:356
 #, python-format
 msgid "OTP Sent to %(email)s"
 msgstr "OTP %(email)s ye gönderildi"
 
-#: accounts/views.py:353
+#: accounts/views.py:365
 msgid "Email OTP"
 msgstr "OTP E-Postası"
 
-#: accounts/views.py:387
+#: accounts/views.py:399
 #, python-format
 msgid "The OTP QR code could not be mailed to %(user)s: %(error)s"
 msgstr "OTP QR kodu %(user)s kullanıcısına e-postayla gönderilemedi: %(error)s"
 
-#: accounts/views.py:391
+#: accounts/views.py:403
 #, python-format
 msgid "OTP QR code was emailed to user %(user)s"
 msgstr "OTP QR kodu %(user)s kullanıcısına gönderildi"
 
-#: accounts/views.py:395
+#: accounts/views.py:407
 msgid "User email not set, failed to send QR code"
 msgstr "Kullanıcı e-postası girilmemiş, QR kod gönderimi başarısız"
 
-#: accounts/views.py:407
+#: accounts/views.py:419
 #, python-format
 msgid "OTP of %(user)s was reset: a new QR code can be mailed."
 msgstr ""
@@ -961,16 +961,16 @@ msgstr "Sonuç"
 msgid "IP"
 msgstr "IP"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:322 instances/states.py:19
+#: admin/templates/admin/logs.html:56 admin/views.py:395 instances/states.py:19
 #: instances/views.py:441 logs/views.py:18
 msgid "Unknown"
 msgstr "Bilinmeyen"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:322 logs/views.py:18
+#: admin/templates/admin/logs.html:56 admin/views.py:395 logs/views.py:18
 msgid "Done"
 msgstr "Tamamlandı"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:322 logs/views.py:18
+#: admin/templates/admin/logs.html:56 admin/views.py:395 logs/views.py:18
 #: operations/templates/operations/job.html:107
 msgid "Failed"
 msgstr "Başarısız"
@@ -1107,7 +1107,7 @@ msgstr "Kullanıcı oluştur"
 msgid "New user"
 msgstr "Yeni kullanıcı"
 
-#: admin/templates/admin/user_list.html:19 admin/views.py:142
+#: admin/templates/admin/user_list.html:19 admin/views.py:179
 #: instances/templates/instances/settings_tab.html:79 templates/navbar.html:32
 msgid "Users"
 msgstr "Kullanıcılar"
@@ -1166,7 +1166,7 @@ msgstr "Burada belirlenen parolayla oturum açar."
 msgid "Signs in another way, such as LDAP. The current password is removed."
 msgstr "LDAP gibi başka bir yolla oturum açar. Mevcut parola kaldırılır."
 
-#: admin/views.py:39
+#: admin/views.py:42
 #, python-format
 msgid ""
 "%(name)s was changed meanwhile: here it is as it is now; make your change "
@@ -1174,51 +1174,55 @@ msgid ""
 msgstr ""
 "%(name)s bu arada değişti: güncel hâli aşağıda; değişikliğinizi yeniden yapın"
 
-#: admin/views.py:72
+#: admin/views.py:75
 msgid "Create Group"
 msgstr "Grup Oluştur"
 
-#: admin/views.py:101
+#: admin/views.py:117
 msgid "Update Group"
 msgstr "Grubu Güncelle"
 
-#: admin/views.py:117
+#: admin/views.py:133
 msgid "Its members stay but lose the permissions it gave them."
 msgstr "Üyeleri kalır ancak grubun onlara verdiği izinleri kaybeder."
 
-#: admin/views.py:123
+#: admin/views.py:139
 msgid "You cannot block, delete or demote your own account"
 msgstr "Kendi hesabınızı engelleyemez, silemez veya yetkisini düşüremezsiniz"
 
-#: admin/views.py:174
+#: admin/views.py:140
+msgid "This would leave no active superuser"
+msgstr "Bu işlem hiç etkin süper kullanıcı bırakmaz"
+
+#: admin/views.py:214
 msgid "Create User"
 msgstr "Kullanıcı Oluştur"
 
-#: admin/views.py:223
+#: admin/views.py:287
 msgid "Update User"
 msgstr "Kullanıcı Güncelle"
 
-#: admin/views.py:247
+#: admin/views.py:311
 #, python-format
 msgid "Password changed for %(user)s"
 msgstr "%(user)s parolası değiştirildi"
 
-#: admin/views.py:271
+#: admin/views.py:338
 msgid "Their access to VMs, SSH keys and settings go; the VMs themselves stay."
 msgstr ""
 "Sanal makinelere erişimi, SSH anahtarları ve ayarları silinir; sanal "
 "makinelerin kendisi kalır."
 
-#: admin/views.py:371
+#: admin/views.py:444
 msgid "deleted user"
 msgstr "silinmiş kullanıcı"
 
-#: admin/views.py:383
+#: admin/views.py:456
 #, python-format
 msgid "Removed VM %(name)s deleted"
 msgstr "Kaldırılan sanal makine %(name)s silindi"
 
-#: admin/views.py:390
+#: admin/views.py:463
 msgid "Its owners no longer get the VM back if its UUID shows up again."
 msgstr ""
 "UUID'si yeniden görünse bile sahipleri sanal makineyi artık geri almaz."

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 11:29+0000\n"
+"POT-Creation-Date: 2026-11-13 11:54+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -531,7 +531,7 @@ msgid "Add"
 msgstr "添加"
 
 #: accounts/templates/profile.html:64 accounts/templates/profile.html:70
-#: accounts/views.py:72 accounts/views.py:87
+#: accounts/views.py:84 accounts/views.py:99
 msgid "Create an API token"
 msgstr "创建 API 令牌"
 
@@ -570,93 +570,93 @@ msgstr ""
 "\n"
 "%(url)s"
 
-#: accounts/views.py:49
+#: accounts/views.py:61
 msgid "Profile updated"
 msgstr "资料已更新"
 
-#: accounts/views.py:79
+#: accounts/views.py:91
 #, python-format
 msgid "A user has at most %(limit)s API tokens: delete one first."
 msgstr "每个用户最多有 %(limit)s 个 API 令牌：请先删除一个。"
 
-#: accounts/views.py:81
+#: accounts/views.py:93
 #, python-format
 msgid "You have a token named %(name)s: choose another name."
 msgstr "您已有名为 %(name)s 的令牌：请换一个名称。"
 
-#: accounts/views.py:118
+#: accounts/views.py:130
 msgid "API token deleted"
 msgstr "API 令牌已删除"
 
-#: accounts/views.py:126
+#: accounts/views.py:138
 msgid "Delete API token"
 msgstr "删除 API 令牌"
 
-#: accounts/views.py:127
+#: accounts/views.py:139
 msgid "Scripts and tools that use it can no longer reach the API."
 msgstr "使用它的脚本和工具将无法再访问 API。"
 
-#: accounts/views.py:137
+#: accounts/views.py:149
 msgid "SSH key added"
 msgstr "SSH 密钥已添加"
 
-#: accounts/views.py:145
+#: accounts/views.py:157
 msgid "Add SSH key"
 msgstr "添加 SSH 密钥"
 
-#: accounts/views.py:166
+#: accounts/views.py:178
 msgid "SSH key deleted"
 msgstr "SSH 密钥已删除"
 
-#: accounts/views.py:174
+#: accounts/views.py:186
 msgid "Delete SSH key"
 msgstr "删除 SSH 密钥"
 
-#: accounts/views.py:175
+#: accounts/views.py:187
 msgid ""
 "VMs that already have it keep it; VMs created from now on do not get it."
 msgstr "已有此密钥的虚拟机会保留它；此后创建的虚拟机不会再获得它。"
 
-#: accounts/views.py:225
+#: accounts/views.py:237
 msgid "Password Changed"
 msgstr "密码已修改"
 
-#: accounts/views.py:256
+#: accounts/views.py:268
 msgid "Create User Instance"
 msgstr "创建用户虚拟机"
 
-#: accounts/views.py:291
+#: accounts/views.py:303
 msgid "Update User Instance"
 msgstr "更新用户虚拟机"
 
-#: accounts/views.py:309
+#: accounts/views.py:321
 msgid "The user loses access to this VM; the VM itself is not changed."
 msgstr "该用户将失去对此虚拟机的访问权限；虚拟机本身不受影响。"
 
-#: accounts/views.py:344
+#: accounts/views.py:356
 #, python-format
 msgid "OTP Sent to %(email)s"
 msgstr "OTP 已发送至 %(email)s"
 
-#: accounts/views.py:353
+#: accounts/views.py:365
 msgid "Email OTP"
 msgstr "邮件发送 OTP"
 
-#: accounts/views.py:387
+#: accounts/views.py:399
 #, python-format
 msgid "The OTP QR code could not be mailed to %(user)s: %(error)s"
 msgstr "无法将 OTP 二维码通过邮件发送给 %(user)s：%(error)s"
 
-#: accounts/views.py:391
+#: accounts/views.py:403
 #, python-format
 msgid "OTP QR code was emailed to user %(user)s"
 msgstr "OTP 二维码已通过邮件发送给用户 %(user)s"
 
-#: accounts/views.py:395
+#: accounts/views.py:407
 msgid "User email not set, failed to send QR code"
 msgstr "未设置用户邮箱，无法发送二维码"
 
-#: accounts/views.py:407
+#: accounts/views.py:419
 #, python-format
 msgid "OTP of %(user)s was reset: a new QR code can be mailed."
 msgstr "%(user)s 的 OTP 已重置：可以邮寄新的二维码。"
@@ -936,16 +936,16 @@ msgstr "结果"
 msgid "IP"
 msgstr "IP"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:322 instances/states.py:19
+#: admin/templates/admin/logs.html:56 admin/views.py:395 instances/states.py:19
 #: instances/views.py:441 logs/views.py:18
 msgid "Unknown"
 msgstr "未知"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:322 logs/views.py:18
+#: admin/templates/admin/logs.html:56 admin/views.py:395 logs/views.py:18
 msgid "Done"
 msgstr "完成"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:322 logs/views.py:18
+#: admin/templates/admin/logs.html:56 admin/views.py:395 logs/views.py:18
 #: operations/templates/operations/job.html:107
 msgid "Failed"
 msgstr "失败"
@@ -1076,7 +1076,7 @@ msgstr "创建用户"
 msgid "New user"
 msgstr "新建用户"
 
-#: admin/templates/admin/user_list.html:19 admin/views.py:142
+#: admin/templates/admin/user_list.html:19 admin/views.py:179
 #: instances/templates/instances/settings_tab.html:79 templates/navbar.html:32
 msgid "Users"
 msgstr "用户"
@@ -1134,56 +1134,60 @@ msgstr "使用此处设置的密码登录。"
 msgid "Signs in another way, such as LDAP. The current password is removed."
 msgstr "通过其他方式（如 LDAP）登录。当前密码将被移除。"
 
-#: admin/views.py:39
+#: admin/views.py:42
 #, python-format
 msgid ""
 "%(name)s was changed meanwhile: here it is as it is now; make your change "
 "again"
 msgstr "%(name)s 在此期间已更改：以下是其当前状态；请重新进行更改"
 
-#: admin/views.py:72
+#: admin/views.py:75
 msgid "Create Group"
 msgstr "创建用户组"
 
-#: admin/views.py:101
+#: admin/views.py:117
 msgid "Update Group"
 msgstr "更新用户组"
 
-#: admin/views.py:117
+#: admin/views.py:133
 msgid "Its members stay but lose the permissions it gave them."
 msgstr "其成员仍保留，但会失去该用户组授予的权限。"
 
-#: admin/views.py:123
+#: admin/views.py:139
 msgid "You cannot block, delete or demote your own account"
 msgstr "不能禁用、删除或降级你自己的账户"
 
-#: admin/views.py:174
+#: admin/views.py:140
+msgid "This would leave no active superuser"
+msgstr "这将导致没有可用的超级用户"
+
+#: admin/views.py:214
 msgid "Create User"
 msgstr "创建用户"
 
-#: admin/views.py:223
+#: admin/views.py:287
 msgid "Update User"
 msgstr "更新用户"
 
-#: admin/views.py:247
+#: admin/views.py:311
 #, python-format
 msgid "Password changed for %(user)s"
 msgstr "已为 %(user)s 修改密码"
 
-#: admin/views.py:271
+#: admin/views.py:338
 msgid "Their access to VMs, SSH keys and settings go; the VMs themselves stay."
 msgstr "其对虚拟机、SSH 密钥和设置的访问将被移除；虚拟机本身保留。"
 
-#: admin/views.py:371
+#: admin/views.py:444
 msgid "deleted user"
 msgstr "已删除的用户"
 
-#: admin/views.py:383
+#: admin/views.py:456
 #, python-format
 msgid "Removed VM %(name)s deleted"
 msgstr "已删除已移除的虚拟机 %(name)s"
 
-#: admin/views.py:390
+#: admin/views.py:463
 msgid "Its owners no longer get the VM back if its UUID shows up again."
 msgstr "若其 UUID 再次出现，其所有者将不再恢复对该虚拟机的所有权。"
 

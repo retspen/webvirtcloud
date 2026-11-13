@@ -1,8 +1,9 @@
+from contextlib import contextmanager
 from datetime import timedelta
 
 from accounts.models import ApiToken, Instance, UserAttributes, UserInstance
 from appsettings.settings import app_settings
-from computes.utils import lock_ownership
+from computes.utils import lock_ownership, users_lock
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
@@ -21,6 +22,8 @@ from instances.models import InstanceTombstone
 from instances.report import workbook
 from logs.audit import audit, changed_fields, snapshot
 from logs.models import Logs
+from operations import claims
+from operations.utils import busy_message
 from vrtManager import util
 
 from . import forms
@@ -77,19 +80,32 @@ def group_create(request):
 @superuser_only
 def group_update(request, pk):
     group = get_object_or_404(Group, pk=pk)
-    subject, before = f"Group {group.name}", group_snapshot(group)
-    seen = form_seen(before)
-    if request.method == "POST" and request.POST.get("seen") != seen:
-        messages.error(request, STALE % {"name": group.name})
-        return redirect(request.get_full_path())
-    form = forms.GroupForm(request.POST or None, instance=group)
-    if form.is_valid():
-        with audit(request, None, subject, "change") as entry:
-            form.save()
-            fields = changed_fields(before, group_snapshot(group))
-            entry.action = "change " + ", ".join(fields)
-            entry.skip = not fields
-        return redirect("admin:group_list")
+    subject = f"Group {group.name}"
+    if request.method == "POST":
+        try:
+            # as user_update: read, checked and saved while no other change of the users runs
+            with audit(request, None, subject, "change") as entry, users_lock():
+                group = Group.objects.get(pk=pk)
+                before = group_snapshot(group)
+                if request.POST.get("seen") != form_seen(before):
+                    raise Stale("changed since the form was shown")
+                form = forms.GroupForm(request.POST, instance=group)
+                entry.skip = not form.is_valid()
+                if form.is_valid():
+                    form.save()
+                    fields = changed_fields(before, group_snapshot(group))
+                    entry.action = "change " + ", ".join(fields)
+                    entry.skip = not fields
+        except Stale:
+            messages.error(request, STALE % {"name": group.name})
+            return redirect(request.get_full_path())
+        except claims.Busy as busy:
+            messages.error(request, busy_message(busy, request.user))
+            return redirect(request.get_full_path())
+        if form.is_valid():
+            return redirect("admin:group_list")
+    else:
+        form = forms.GroupForm(instance=group)
 
     return render(
         request,
@@ -97,7 +113,7 @@ def group_update(request, pk):
         {
             "form": form,
             "group": group,
-            "seen": seen,
+            "seen": form_seen(group_snapshot(group)),
             "title": _("Update Group"),
         },
     )
@@ -121,6 +137,27 @@ def group_delete(request, pk):
 # an administrator who blocks, deletes or demotes their own account is out of
 # these pages at once, and may have been the last one
 OWN_ACCOUNT = _("You cannot block, delete or demote your own account")
+NO_SUPERUSER = _("This would leave no active superuser")
+
+
+class NoSuperuser(Exception):
+    pass
+
+
+@contextmanager
+def users_change():
+    """A change of the panel's users, saved only if an active superuser is
+    left: two administrators blocking or demoting each other at once would
+    each leave the other, and then none. One change at a time (users_lock)."""
+    with users_lock():
+        yield
+        if not User.objects.filter(is_superuser=True, is_active=True).exists():
+            raise NoSuperuser("no active superuser would be left")
+
+
+def refused(request, err):
+    """The message of a users_change() that was not made."""
+    messages.error(request, NO_SUPERUSER if isinstance(err, NoSuperuser) else busy_message(err, request.user))
 
 
 @superuser_only
@@ -150,18 +187,21 @@ def user_create(request):
     user_form = forms.UserCreateForm(request.POST or None)
     attributes_form = forms.UserAttributesForm(request.POST or None)
     if user_form.is_valid() and attributes_form.is_valid():
-        with audit(request, None, f"User {user_form.cleaned_data['username']}", "add") as entry, transaction.atomic():
-            # the form's one-owner check of the default VMs again, with the inserts in one step
-            lock_ownership()
-            user_form.full_clean()
-            entry.skip = not user_form.is_valid()
-            if user_form.is_valid():
-                user = user_form.save()
-                attributes = attributes_form.save(commit=False)
-                attributes.user = user
-                attributes.save()
-                UserInstance.objects.bulk_create(UserInstance(user=user, instance=instance)
-                                                 for instance in user_form.default_instances)
+        # the form's checks again (its e-mail address one user's, the default VMs' one owner), with the inserts
+        try:
+            with audit(request, None, f"User {user_form.cleaned_data['username']}", "add") as entry, users_lock():
+                lock_ownership()
+                user_form.full_clean()
+                entry.skip = not user_form.is_valid()
+                if user_form.is_valid():
+                    user = user_form.save()
+                    attributes = attributes_form.save(commit=False)
+                    attributes.user = user
+                    attributes.save()
+                    UserInstance.objects.bulk_create(UserInstance(user=user, instance=instance)
+                                                     for instance in user_form.default_instances)
+        except claims.Busy as busy:  # the form again, with what was entered
+            user_form.add_error(None, busy_message(busy, request.user))
         if user_form.is_valid():
             return redirect("admin:user_list")
 
@@ -176,35 +216,59 @@ def user_create(request):
     )
 
 
+class Stale(Exception):
+    pass
+
+
+def user_edit_forms(request, pk):
+    """The user and quota forms of user pk as saved now, bound to the posted
+    values, and the fingerprint and snapshots of what they hold."""
+    user = User.objects.get(pk=pk)
+    attributes, _created = UserAttributes.objects.get_or_create(user=user)
+    before = (snapshot(user), snapshot(attributes))
+    data = request.POST if request.method == "POST" else None
+    return (forms.UserForm(data, instance=user), forms.UserAttributesForm(data, instance=attributes),
+            form_seen(*before), before)
+
+
 @sensitive_post_parameters()
 @superuser_only
 def user_update(request, pk):
     user = get_object_or_404(User, pk=pk)
-    attributes, attributes_created = UserAttributes.objects.get_or_create(user=user)
     subject = f"User {user.username}"
-    before, before_attributes = snapshot(user), snapshot(attributes)
-    seen = form_seen(before, before_attributes)
-    if request.method == "POST" and request.POST.get("seen") != seen:
-        messages.error(request, STALE % {"name": user.username})
-        return redirect(request.get_full_path())
-    user_form = forms.UserForm(request.POST or None, instance=user)
-    attributes_form = forms.UserAttributesForm(
-        request.POST or None, instance=attributes
-    )
-    valid = user_form.is_valid() and attributes_form.is_valid()
-    if valid and user == request.user and not (user_form.cleaned_data["is_active"] and user_form.cleaned_data["is_superuser"]):
-        user_form.add_error(None, OWN_ACCOUNT)
-        valid = False
+    valid = False
+    if request.method == "POST":
+        try:
+            # read, checked and saved while no other change of the users runs: a change
+            # saved since this form was shown is not undone, and its checks see what is saved
+            with audit(request, None, subject, "change") as entry, users_change():
+                user_form, attributes_form, seen, (before, before_attributes) = user_edit_forms(request, pk)
+                if request.POST.get("seen") != seen:
+                    raise Stale("changed since the form was shown")
+                valid = user_form.is_valid() and attributes_form.is_valid()
+                if valid and user == request.user and not (user_form.cleaned_data["is_active"]
+                                                           and user_form.cleaned_data["is_superuser"]):
+                    user_form.add_error(None, OWN_ACCOUNT)
+                    valid = False
+                entry.skip = not valid
+                if valid:
+                    user = user_form.save()
+                    attributes = attributes_form.save()
+                    if not user.is_active:  # as user_block
+                        ApiToken.objects.filter(user=user).delete()
+                    fields = set(changed_fields(before, snapshot(user))) | set(changed_fields(before_attributes, snapshot(attributes)))
+                    fields = sorted(fields - {"password", "last_login"})
+                    entry.action = "change " + ", ".join(fields)
+                    entry.skip = not fields
+        except Stale:
+            messages.error(request, STALE % {"name": user.username})
+            return redirect(request.get_full_path())
+        except (NoSuperuser, claims.Busy) as err:
+            refused(request, err)
+            return redirect(request.get_full_path())
+    else:
+        user_form, attributes_form, seen, _before = user_edit_forms(request, pk)
     if valid:
-        with audit(request, None, subject, "change") as entry, transaction.atomic():
-            user_form.save()
-            attributes_form.save()
-            if not user.is_active:  # as user_block
-                ApiToken.objects.filter(user=user).delete()
-            fields = set(changed_fields(before, snapshot(user))) | set(changed_fields(before_attributes, snapshot(attributes)))
-            fields = sorted(fields - {"password", "last_login"})
-            entry.action = "change " + ", ".join(fields)
-            entry.skip = not fields
         next_url = request.GET.get("next")
         if next_url and url_has_allowed_host_and_scheme(
             url=next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
@@ -260,8 +324,11 @@ def user_delete(request, pk):
         messages.error(request, OWN_ACCOUNT)
         return redirect("admin:user_list")
     if request.method == "POST":
-        with audit(request, None, f"User {user.username}", "delete"):
-            user.delete()
+        try:
+            with audit(request, None, f"User {user.username}", "delete"), users_change():
+                user.delete()
+        except (NoSuperuser, claims.Busy) as err:
+            refused(request, err)
         return redirect("admin:user_list")
 
     return render(
@@ -279,12 +346,15 @@ def user_block(request, pk):
     if user == request.user:
         messages.error(request, OWN_ACCOUNT)
         return redirect("admin:user_list")
-    with audit(request, None, f"User {user.username}", "block") as entry, transaction.atomic():
-        entry.skip = not user.is_active  # already blocked
-        user.is_active = False
-        user.save()
-        # an unblock must not bring back the tokens of someone who took the account over
-        ApiToken.objects.filter(user=user).delete()
+    try:
+        with audit(request, None, f"User {user.username}", "block") as entry, users_change():
+            entry.skip = not user.is_active  # already blocked
+            user.is_active = False
+            user.save(update_fields=["is_active"])  # not the rest as read before the lock
+            # an unblock must not bring back the tokens of someone who took the account over
+            ApiToken.objects.filter(user=user).delete()
+    except (NoSuperuser, claims.Busy) as err:
+        refused(request, err)
     return redirect("admin:user_list")
 
 
@@ -292,10 +362,13 @@ def user_block(request, pk):
 @superuser_only
 def user_unblock(request, pk):
     user: User = get_object_or_404(User, pk=pk)
-    with audit(request, None, f"User {user.username}", "unblock") as entry:
-        entry.skip = user.is_active  # not blocked
-        user.is_active = True
-        user.save()
+    try:
+        with audit(request, None, f"User {user.username}", "unblock") as entry, users_lock():
+            entry.skip = user.is_active  # not blocked
+            user.is_active = True
+            user.save(update_fields=["is_active"])
+    except claims.Busy as busy:
+        messages.error(request, busy_message(busy, request.user))
     return redirect("admin:user_list")
 
 

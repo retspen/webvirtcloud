@@ -41,6 +41,15 @@ def hosts_lock(compute=None):
 
 
 @contextmanager
+def users_lock():
+    """The panel's users for the block, in one transaction, while no other
+    change of them runs: what a form checked before (one user per e-mail
+    address, an active superuser left) is checked again as it is saved."""
+    with claims.hold({claims.users_key(): Claim.EXCLUSIVE}), transaction.atomic():
+        yield
+
+
+@contextmanager
 def user_quota_lock(user):
     """One user's quota check and the change it allows run one at a time."""
     with claims.hold({claims.quota_key(user.pk): Claim.EXCLUSIVE}):

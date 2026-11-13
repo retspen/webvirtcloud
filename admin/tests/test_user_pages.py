@@ -2,7 +2,11 @@
 user form says what its fields mean, and a password set by an administrator
 can be one the user must change."""
 
+from contextlib import contextmanager
+from unittest.mock import patch
+
 from accounts.models import ApiToken, UserAttributes
+from computes.utils import users_lock
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
 from django.test import TestCase
@@ -179,3 +183,75 @@ class UserPagesTests(TestCase):
         self.admin.refresh_from_db()
         self.assertTrue(self.admin.has_usable_password())
 
+
+
+class SavedAsCheckedTests(TestCase):
+    """What a form checked before is checked again as it is saved, while no
+    other change of the users runs (users_lock): here another change ends
+    just before this one takes the lock."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.admin = User.objects.create_superuser("sc-admin", "sc@example.com", "pw")
+        self.other = User.objects.create_superuser("sc-other", "sc-other@example.com", "pw")
+        # these two are the superusers: not the default admin the migrations make
+        User.objects.exclude(pk__in=[self.admin.pk, self.other.pk]).update(is_active=False)
+        self.client.force_login(self.admin)
+
+    def meanwhile(self, change, lock_of="admin.views"):
+        @contextmanager
+        def lock():
+            change()
+            with users_lock():
+                yield
+
+        return patch(f"{lock_of}.users_lock", lock)
+
+    def test_two_administrators_blocking_each_other_leave_one(self):
+        # the other blocked this administrator meanwhile: blocking the other would leave none
+        with self.meanwhile(lambda: get_user_model().objects.filter(pk=self.admin.pk).update(is_active=False)):
+            response = self.client.post(reverse("admin:user_block", args=[self.other.pk]))
+        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)], ["This would leave no active superuser"])
+        self.other.refresh_from_db()
+        self.assertTrue(self.other.is_active)
+
+    def test_an_email_address_taken_meanwhile_is_refused(self):
+        def take():
+            get_user_model().objects.create_user("sc-first", email="Bob@example.com")
+
+        with self.meanwhile(take):
+            response = self.client.post(reverse("admin:user_create"), {
+                "username": "sc-bob", "email": "bob@example.com", "password": "Wvc-bob-pass-9", "role": "user",
+                "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 1})
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(get_user_model().objects.filter(username="sc-bob").exists())
+
+    def test_a_form_checked_before_another_change_ends_is_refused_as_saved(self):
+        # the other change ends after this form's page was read, before its save takes the lock
+        alice = get_user_model().objects.create_user("sc-alice")
+        url = reverse("admin:user_update", args=[alice.pk])
+        data = {"username": "sc-alice", "is_active": "on", "role": "user", "max_instances": 1, "max_cpus": 1,
+                "max_memory": 1, "max_disk_size": 1, "seen": user_seen(alice)}
+        with self.meanwhile(lambda: get_user_model().objects.filter(pk=alice.pk).update(is_active=False)):
+            response = self.client.post(url, data)
+        self.assertRedirects(response, url, fetch_redirect_response=False)
+        alice.refresh_from_db()
+        self.assertFalse(alice.is_active)
+
+    def test_a_busy_create_is_said_on_the_form(self):
+        from operations import claims
+
+        with patch("admin.views.users_lock", side_effect=claims.Busy("users")):
+            response = self.client.post(reverse("admin:user_create"), {
+                "username": "sc-carl", "password": "Wvc-carl-pass-9", "role": "user",
+                "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 1})
+        self.assertContains(response, "short operation")
+        self.assertFalse(get_user_model().objects.filter(username="sc-carl").exists())
+
+    def test_a_profile_saved_while_an_administrator_blocks_the_account_keeps_the_block(self):
+        bob = get_user_model().objects.create_user("sc-bob2", password="pw")
+        self.client.force_login(bob)
+        with self.meanwhile(lambda: get_user_model().objects.filter(pk=bob.pk).update(is_active=False), "accounts.views"):
+            self.client.post(reverse("accounts:profile"), {"first_name": "Bob", "last_name": "", "email": ""})
+        bob.refresh_from_db()
+        self.assertEqual((bob.first_name, bob.is_active), ("Bob", False))
