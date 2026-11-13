@@ -8,6 +8,7 @@ import re
 import secrets
 import socket
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
 from ipaddress import ip_address
 
 from accounts.models import UserInstance, UserSSHKey
@@ -106,6 +107,17 @@ def index(request):
         # a host of their own VMs is down
         own_hosts_down = any(c.status is not True for c in computes)
     utils.read_list_rows(instances)
+    if app_settings.VM_DRBD_STATUS == "True":
+        # read here, once per host and all hosts at once (a list waits DRBD_STATUS_TIMEOUT at most):
+        # the VM page alone left the list showing an old state
+        hosts = list({instance.compute for instance in instances})
+        with ThreadPoolExecutor(max_workers=max(len(hosts), 1)) as pool:
+            reports = dict(zip(hosts, pool.map(drbd_report, hosts)))
+        for instance in instances:
+            state = drbd_state(reports[instance.compute], instance.name)
+            if state != instance.drbd:
+                instance.drbd = state
+                Instance.objects.filter(pk=instance.pk).update(drbd=state)
 
     return render(
         request,
@@ -409,54 +421,41 @@ def _valid_ssh_target(compute):
     return True
 
 
+def drbd_report(compute):
+    """The compute's drbdadm status, "" for a compute it is not asked of
+    (only SSH ones are), None when it does not tell."""
+    if compute.type != 2 or not _valid_ssh_target(compute):
+        return ""
+    try:
+        status = subprocess.run(["ssh", "--", f"{compute.login}@{compute.hostname}", "sudo", "/usr/sbin/drbdadm", "status"],
+                                stdout=subprocess.PIPE, text=True, timeout=DRBD_STATUS_TIMEOUT)
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+    return status.stdout or "" if status.returncode == 0 else None
+
+
+def drbd_state(report, name):
+    """The DRBD state of VM name in its compute's report (drbd_report):
+    role/disk, "None DRBD" without resources, "Unknown" without a report."""
+    if report is None:
+        return _("Unknown")  # not "None DRBD": the compute did not tell
+    # the VM's resources are its name or its name_SUFFIX, at the start of a line
+    resources = re.findall("^" + re.escape(name) + "(?:_[A-Z]+)? role:(.+?)\n  disk:(.+?)\n", report,
+                           re.IGNORECASE | re.MULTILINE)
+    if not resources:
+        return "None DRBD"
+    roles = {role for role, _disk in resources}
+    disk = "OK" if all(disk == "UpToDate" for _role, disk in resources) else "NOK"
+    if {"Primary", "Secondary"} <= roles:  # a VM's resources on both sides
+        role = "NOK"
+    else:
+        role = "Primary" if "Primary" in roles else "Secondary"
+    return f"{role}/{disk}"
+
+
 def drbd_status(request, pk):
     instance = get_instance(request.user, pk)
-    result = "None DRBD"
-
-    if instance.compute.type == 2 and _valid_ssh_target(instance.compute):
-        conn = instance.compute.login + "@" + instance.compute.hostname
-        try:
-            remoteDrbdStatus = subprocess.run(
-                ["ssh", "--", conn, "sudo", "/usr/sbin/drbdadm", "status"],
-                stdout=subprocess.PIPE,
-                text=True,
-                timeout=DRBD_STATUS_TIMEOUT,
-            )
-        except (subprocess.TimeoutExpired, OSError):
-            return _("Unknown")  # not "None DRBD": the compute did not tell
-        if remoteDrbdStatus.returncode != 0:
-            return _("Unknown")
-
-        # the VM's resources are its name or its name_SUFFIX, at the start of a line
-        instanceFindDrbd = re.compile(
-            "^" + re.escape(instance.name) + "(?:_[A-Z]+)? role:(.+?)\n  disk:(.+?)\n",
-            re.IGNORECASE | re.MULTILINE,
-        )
-        instanceDrbd = instanceFindDrbd.findall(remoteDrbdStatus.stdout or "")
-        if instanceDrbd:
-            primaryCount = 0
-            secondaryCount = 0
-            statusDisk = "OK"
-
-            for disk in instanceDrbd:
-                if disk[0] == "Primary":
-                    primaryCount = primaryCount + 1
-                elif disk[0] == "Secondary":
-                    secondaryCount = secondaryCount + 1
-                if disk[1] != "UpToDate":
-                    statusDisk = "NOK"
-
-            if primaryCount > 0 and secondaryCount > 0:
-                statusRole = "NOK"
-            else:
-                if primaryCount > secondaryCount:
-                    statusRole = "Primary"
-                else:
-                    statusRole = "Secondary"
-
-            result = statusRole + "/" + statusDisk
-
-    return result
+    return drbd_state(drbd_report(instance.compute), instance.name)
 
 
 def _stats_sample(instance, token):

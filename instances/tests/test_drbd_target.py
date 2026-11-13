@@ -4,10 +4,17 @@ and a compute that does not answer in time, or an ssh that fails, leaves
 the status unknown, not "None DRBD"."""
 
 import subprocess
+import time
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
+from appsettings.models import AppSettings
+from computes.models import Compute
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.urls import reverse
+from instances.models import Instance
 from instances.views import DRBD_STATUS_TIMEOUT, _valid_ssh_target, drbd_status
 
 
@@ -60,3 +67,49 @@ class DrbdStatusTestCase(unittest.TestCase):
 
     def test_a_vm_without_a_resource_has_no_drbd(self):
         self.assertEqual(self.status("db"), "None DRBD")
+
+
+class DrbdListTestCase(TestCase):
+    """The VM list reads each SSH host's DRBD state once, for all its VMs:
+    the VM page alone left the list showing an old state."""
+
+    def test_the_list_shows_each_vms_state_from_one_read_per_host(self):
+        AppSettings.objects.filter(key="VM_DRBD_STATUS").update(value="True")
+        host = Compute.objects.create(name="drbd-host", hostname="192.0.2.1", type=2, login="root", password="")
+        for number, name in enumerate(("web", "webserver", "db")):
+            Instance.objects.create(compute=host, name=name, uuid=f"11111111-1111-1111-1111-00000000000{number}")
+        self.client.force_login(get_user_model().objects.create_superuser("drbd", "d@example.com", "pw"))
+        with patch("instances.views.refresh_instance_database"), \
+                patch.object(Compute, "status", new_callable=PropertyMock, return_value=True), \
+                patch.object(Instance, "info", new_callable=PropertyMock, return_value=None), \
+                patch.object(Compute, "proxy", new_callable=PropertyMock,
+                             return_value=MagicMock(**{"get_domain_rows.return_value": {}})), \
+                patch("instances.views.subprocess.run", return_value=SimpleNamespace(returncode=0, stdout=STATUS)) as run:
+            self.assertEqual(self.client.get(reverse("instances:index")).status_code, 200)
+        run.assert_called_once()
+        self.assertEqual(dict(Instance.objects.values_list("name", "drbd")),
+                         {"web": "Secondary/NOK", "webserver": "Primary/OK", "db": "None DRBD"})
+
+    def test_hosts_are_asked_at_once(self):
+        # a host that does not answer delays the list by one timeout, not one per host
+        AppSettings.objects.filter(key="VM_DRBD_STATUS").update(value="True")
+        for number in range(3):
+            host = Compute.objects.create(name=f"drbd-{number}", hostname=f"192.0.2.{number + 1}", type=2, login="root",
+                                          password="")
+            Instance.objects.create(compute=host, name=f"vm{number}", uuid=f"11111111-1111-1111-1111-00000000001{number}")
+        self.client.force_login(get_user_model().objects.create_superuser("drbd", "d@example.com", "pw"))
+
+        def slow(*args, **kwargs):
+            time.sleep(0.5)
+            return SimpleNamespace(returncode=0, stdout="")
+
+        start = time.monotonic()
+        with patch("instances.views.refresh_instance_database"), \
+                patch.object(Compute, "status", new_callable=PropertyMock, return_value=True), \
+                patch.object(Instance, "info", new_callable=PropertyMock, return_value=None), \
+                patch.object(Compute, "proxy", new_callable=PropertyMock,
+                             return_value=MagicMock(**{"get_domain_rows.return_value": {}})), \
+                patch("instances.views.subprocess.run", side_effect=slow) as run:
+            self.client.get(reverse("instances:index"))
+        self.assertEqual(run.call_count, 3)
+        self.assertLess(time.monotonic() - start, 1.4)

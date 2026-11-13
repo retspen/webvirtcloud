@@ -72,6 +72,7 @@ class ChoicesFixTestCase(TestCase):
 
 descriptions = importlib.import_module("appsettings.migrations.0021_setting_descriptions")
 vnc_and_nic = importlib.import_module("appsettings.migrations.0025_vnc_console_and_nic_descriptions")
+repair_numbers = importlib.import_module("appsettings.migrations.0026_repair_number_settings")
 
 
 class DescriptionsTestCase(TestCase):
@@ -122,3 +123,19 @@ class SettingsRowsTestCase(TestCase):
         self.assertEqual(rows["INSTANCE_MACHINE_DEFAULT_TYPE"], ("q35", "q35,pc,virt"))
         self.assertEqual(rows["INSTANCE_CDROM_ADD"], ("sata", "None,ide,sata,scsi"))
         self.assertEqual(rows["CLONE_INSTANCE_DEFAULT_PREFIX"][1], "")
+
+
+class RepairNumbersTestCase(TestCase):
+    def test_a_number_an_older_version_saved_goes_back_to_its_default(self):
+        from appsettings.views import NUMBERS
+
+        # the same ranges as the Settings page checks
+        self.assertEqual({key: bounds[:2] for key, bounds in repair_numbers.NUMBERS.items()}, NUMBERS)
+        for key, value in (("LOGS_PER_PAGE", "abc"), ("WORKER_CONCURRENCY", "0"), ("LOGIN_FAILURE_LIMIT", "")):
+            AppSettings.objects.filter(key=key).update(value=value)
+        AppSettings.objects.filter(key="LOG_RETENTION_DAYS").update(value="90")
+        repair_numbers.repair(apps, SimpleNamespace(connection=connection))
+        self.assertEqual(dict(AppSettings.objects.filter(key__in=["LOGS_PER_PAGE", "WORKER_CONCURRENCY", "LOGIN_FAILURE_LIMIT",
+                                                                  "LOG_RETENTION_DAYS"]).values_list("key", "value")),
+                         {"LOGS_PER_PAGE": "100", "WORKER_CONCURRENCY": "4", "LOGIN_FAILURE_LIMIT": "5",
+                          "LOG_RETENTION_DAYS": "90"})
