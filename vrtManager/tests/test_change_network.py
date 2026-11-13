@@ -117,6 +117,16 @@ class TestAddNetworkXml(unittest.TestCase):
         iface = self.attached(mac_address="", source="default")
         self.assertIsNone(iface.find("mac"))
 
+    def test_a_nic_is_seen_as_its_definition_reads(self):
+        # the fingerprint a form sends back: another change to the NIC gives another
+        inst = stopped_instance()
+        before = {nic["mac"]: nic["seen"] for nic in inst.get_net_devices(config=True)}
+        inst._XMLDesc.return_value = DOMAIN_XML.replace("<model type='virtio'/>\n<bandwidth>",
+                                                        "<model type='virtio'/><filterref filter='clean-traffic'/>\n<bandwidth>")
+        after = {nic["mac"]: nic["seen"] for nic in inst.get_net_devices(config=True)}
+        self.assertNotEqual(before["52:54:00:00:00:02"], after["52:54:00:00:00:02"])
+        self.assertEqual(before["52:54:00:00:00:01"], after["52:54:00:00:00:01"])
+
 
 if __name__ == "__main__":
     unittest.main()

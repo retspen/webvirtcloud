@@ -931,6 +931,8 @@ class wvmInstance(wvmConnect):
                         "filterref": filterref_inst,
                         "inbound": inbound,
                         "outbound": outbound,
+                        # the NIC as a form shows it: a form shown before another change is refused
+                        "seen": util.digest(etree.tostring(net, encoding="unicode", with_tail=False)),
                     }
                 )
             return result

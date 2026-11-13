@@ -366,6 +366,7 @@
                                             <p class="small text-body-secondary">{% trans "The VM is running: the changes apply at its next start." %}</p>
                                         {% endif %}
                                         <input type="hidden" name="net-old-mac-{{ forloop.counter0 }}" value="{{ network.mac }}">
+                                        <input type="hidden" name="net-seen-{{ forloop.counter0 }}" value="{{ network.seen }}">
                                         <div class="row g-3">
                                             <div class="col-12">
                                                 <label class="form-label" for="net-source-{{ forloop.counter0 }}">{% trans "Source" %}</label>

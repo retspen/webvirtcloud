@@ -45,6 +45,23 @@ class ChangeNetworkViewTestCase(TestCase):
                                                    "net-model-1": "virtio"}, HTTP_REFERER="/instances/%d/" % self.instance.id)
         self.assertEqual([str(m) for m in get_messages(response.wsgi_request)], ["Network device changed"])
 
+    def test_a_form_shown_before_another_change_is_refused(self):
+        # another admin changed the NIC's filter meanwhile: saving the model would undo it
+        def post(seen):
+            with patch("instances.models.wvmInstance") as wvm:
+                wvm.return_value.get_status.return_value = 5
+                wvm.return_value.get_net_devices.return_value = [{"mac": "52:54:00:00:00:02", "seen": "now"}]
+                response = self.client.post(self.url, {"net-old-mac-1": "52:54:00:00:00:02", "net-model-1": "e1000",
+                                                       "net-seen-1": seen}, HTTP_REFERER="/instances/%d/" % self.instance.id)
+            self.client.cookies.pop("messages", None)
+            return wvm.return_value.change_network, [str(m) for m in get_messages(response.wsgi_request)]
+
+        change, messages = post("before")
+        change.assert_not_called()
+        self.assertEqual(messages, ["Network interface 52:54:00:00:00:02 was changed meanwhile; reload the page"])
+        change, messages = post("now")
+        change.assert_called_once()
+
     def test_invalid_mac_is_rejected(self):
         change = self.post({
             "net-old-mac-0": "52:54:00:00:00:01",

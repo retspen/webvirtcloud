@@ -2019,6 +2019,12 @@ def change_network(request, pk):
         messages.error(request, err)
         return redirect(back)
 
+    # the form keeps what it does not change: one shown before another change would undo it
+    shown = next((net for net in instance.config_networks if net["mac"] == old_mac), None)
+    if shown and request.POST.get(f"net-seen-{num}") != shown["seen"]:
+        messages.error(request, _("Network interface %(mac)s was changed meanwhile; reload the page") % {"mac": old_mac})
+        return redirect(back)
+
     # no source: the NIC keeps the one it has, which the host's lists may not show
     raw_source = request.POST.get(f"net-source-{num}", "")
     (source, source_type) = utils.get_network_tuple(raw_source) if raw_source else (None, None)

@@ -53,6 +53,11 @@ def volume_key(compute_id, pool, name):
     return f"volume:{compute_id}:{pool}/{name}"
 
 
+def nwfilters_key(compute_id):
+    """A host's network filters: one change at a time, read and defined."""
+    return f"nwfilters:{compute_id}"
+
+
 def name_key(name):
     """A VM name is the panel's on every compute (the name checks are global)."""
     return f"name:{name}"

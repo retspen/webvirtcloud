@@ -95,6 +95,21 @@ class FilterRedefineTests(TestCase):
         _, response = self.defined({"del_nwfilter_rule": "", "index": "1", "rule": text(XML, "rule", 1)})
         self.assertIn("Invalid value for attribute 'action'", " ".join(str(m) for m in get_messages(response.wsgi_request)))
 
+    def test_a_change_waits_for_no_other_change_of_the_hosts_filters(self):
+        # two at once each define the filter as they read it: the second would undo the first
+        from operations import claims
+
+        with patch("nwfilters.views.one_change", side_effect=claims.Busy("nwfilters:1")):
+            for url, data in ((self.url, {"add_nwfilter_rule": "", "nwfilterrule_xml": "<rule action='drop' direction='in'/>"}),
+                              (self.list_url, {"del_nwfilter": "", "nwfiltername": "web"})):
+                with self.subTest(url):
+                    response = self.client.post(url, data)
+                    self.assertIn("short operation", " ".join(str(m) for m in get_messages(response.wsgi_request)))
+                    self.client.cookies.pop("messages", None)
+        self.wvm.nwfilterDefineXMLFlags.assert_not_called()
+        self.wvm.nwfilterLookupByName.return_value.undefine.assert_not_called()
+
+
 
 ALIKE = (f"<filter name='web' chain='root'><uuid>{UUID}</uuid>"
          "<rule action='accept' direction='in' priority='500'><tcp dstportstart='22'/></rule>"
@@ -186,3 +201,4 @@ class PageTests(TestCase):
         self.wvm.listAllNWFilters.return_value.append(clean)
         page = html.fromstring(self.client.get(url).content)
         self.assertEqual(page.xpath("//a[text()='clean-traffic']/@href"), [reverse("nwfilter", args=[self.compute.id, "clean-traffic"])])
+

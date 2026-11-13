@@ -7,8 +7,17 @@ from django.urls import reverse
 from instances.models import Instance
 from libvirt import libvirtError
 from logs.audit import audit
+from operations import claims
+from operations.models import Claim
+from operations.utils import busy_message
 from vrtManager import util
 from vrtManager.nwfilters import wvmNWFilter, wvmNWFilters
+
+
+def one_change(compute):
+    """The host's filters for one change: read, checked and defined while no
+    other change of them runs, which it would undo."""
+    return claims.hold({claims.nwfilters_key(compute.pk): Claim.EXCLUSIVE})
 
 
 @superuser_only
@@ -23,21 +32,22 @@ def nwfilters(request, compute_id):
 
         if request.method == "POST":
             name = request.POST.get("nwfiltername", "")
-            if "create_nwfilter" in request.POST:
-                xml = request.POST.get("nwfilter_xml", "")
-                try:  # the row names the filter where the XML does
-                    new_name = util.parse_xml(xml).get("name")
-                except util.OperationError:
-                    new_name = None
-                with audit(request, compute, f"Network filter {new_name or '(no name)'}", "add"):
-                    conn.create_nwfilter(xml)
-            elif "cln_nwfilter" in request.POST:
-                clone_name = request.POST.get("cln_name", "")
-                with audit(request, compute, f"Network filter {name}", f"clone as {clone_name}"):
-                    conn.clone_nwfilter(name, clone_name)
-            elif "del_nwfilter" in request.POST:
-                with audit(request, compute, f"Network filter {name}", "delete"):
-                    conn.delete_nwfilter(name)
+            with one_change(compute):
+                if "create_nwfilter" in request.POST:
+                    xml = request.POST.get("nwfilter_xml", "")
+                    try:  # the row names the filter where the XML does
+                        new_name = util.parse_xml(xml).get("name")
+                    except util.OperationError:
+                        new_name = None
+                    with audit(request, compute, f"Network filter {new_name or '(no name)'}", "add"):
+                        conn.create_nwfilter(xml)
+                elif "cln_nwfilter" in request.POST:
+                    clone_name = request.POST.get("cln_name", "")
+                    with audit(request, compute, f"Network filter {name}", f"clone as {clone_name}"):
+                        conn.clone_nwfilter(name, clone_name)
+                elif "del_nwfilter" in request.POST:
+                    with audit(request, compute, f"Network filter {name}", "delete"):
+                        conn.delete_nwfilter(name)
             return HttpResponseRedirect(request.get_full_path())
 
         # the VMs first: a list without them would offer to delete filters in use
@@ -49,6 +59,9 @@ def nwfilters(request, compute_id):
         messages.error(request, lib_err)
         if request.method == "POST":  # a host not reached as well: nothing was changed
             return HttpResponseRedirect(request.get_full_path())
+    except claims.Busy as busy:  # another change of the host's filters runs
+        messages.error(request, busy_message(busy, request.user))
+        return HttpResponseRedirect(request.get_full_path())
 
     return render(request, "nwfilters.html", {"nwfilters": nwfilters_all, "compute": compute})
 
@@ -66,24 +79,27 @@ def nwfilter(request, compute_id, nwfltr):
             post = request.POST
             subject = f"Network filter {nwfltr}"
             try:
-                if "edit_nwfilter" in post:
-                    with audit(request, compute, subject, "change XML"):
-                        nwfilter.edit(post.get("edit_xml", ""), post.get("seen", ""))
-                elif "add_nwfilter_rule" in post:
-                    with audit(request, compute, subject, "add rule"):
-                        nwfilter.add_rule(post.get("nwfilterrule_xml", ""))
-                elif "del_nwfilter_rule" in post:
-                    with audit(request, compute, subject, "delete rule"):
-                        nwfilter.delete_rule(post.get("index", ""), post.get("rule", ""))
-                elif "add_nwfilter_ref" in post:
-                    ref_name = post.get("nwfilters_select", "")
-                    with audit(request, compute, subject, f"add reference {ref_name}"):
-                        nwfilter.add_ref(ref_name)
-                elif "del_nwfilter_ref" in post:
-                    with audit(request, compute, subject, "delete reference") as entry:
-                        entry.action = f"delete reference {nwfilter.delete_ref(post.get('index', ''), post.get('ref', ''))}"
+                with one_change(compute):
+                    if "edit_nwfilter" in post:
+                        with audit(request, compute, subject, "change XML"):
+                            nwfilter.edit(post.get("edit_xml", ""), post.get("seen", ""))
+                    elif "add_nwfilter_rule" in post:
+                        with audit(request, compute, subject, "add rule"):
+                            nwfilter.add_rule(post.get("nwfilterrule_xml", ""))
+                    elif "del_nwfilter_rule" in post:
+                        with audit(request, compute, subject, "delete rule"):
+                            nwfilter.delete_rule(post.get("index", ""), post.get("rule", ""))
+                    elif "add_nwfilter_ref" in post:
+                        ref_name = post.get("nwfilters_select", "")
+                        with audit(request, compute, subject, f"add reference {ref_name}"):
+                            nwfilter.add_ref(ref_name)
+                    elif "del_nwfilter_ref" in post:
+                        with audit(request, compute, subject, "delete reference") as entry:
+                            entry.action = f"delete reference {nwfilter.delete_ref(post.get('index', ''), post.get('ref', ''))}"
             except libvirtError as err:  # OperationError too: a filter changed meanwhile, XML refused
                 messages.error(request, err)
+            except claims.Busy as busy:  # another change of the host's filters runs
+                messages.error(request, busy_message(busy, request.user))
             return HttpResponseRedirect(request.get_full_path())
 
         name = nwfilter.get_name()
