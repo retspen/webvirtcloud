@@ -58,7 +58,7 @@ def one(xml=WEB, names=("web", "clean-traffic", "no-spoofing")):
 
 
 def defined(conn):
-    return etree.fromstring(conn.wvm.nwfilterDefineXML.call_args.args[0])
+    return etree.fromstring(conn.wvm.nwfilterDefineXMLFlags.call_args.args[0])
 
 
 class UsersTests(SimpleTestCase):
@@ -110,9 +110,10 @@ class IdentityTests(SimpleTestCase):
                          ("", "not valid")):
             with self.subTest(why=why), self.assertRaisesRegex(OperationError, why):
                 conn.create_nwfilter(xml)
-        conn.wvm.nwfilterDefineXML.assert_not_called()
+        conn.wvm.nwfilterDefineXMLFlags.assert_not_called()
         conn.create_nwfilter("<filter name='other' chain='root'/>")
-        conn.wvm.nwfilterDefineXML.assert_called_once_with("<filter name='other' chain='root'/>")
+        conn.wvm.nwfilterDefineXMLFlags.assert_called_once_with("<filter name='other' chain='root'/>",
+                                                                 libvirt.VIR_NWFILTER_DEFINE_VALIDATE)
 
     def test_a_clone_keeps_rules_and_parameters_with_a_uuid_of_its_own(self):
         conn = filters(nwfilter("web", WEB))
@@ -133,12 +134,12 @@ class IdentityTests(SimpleTestCase):
                          (WEB.replace(UUID, "11111111-2222-3333-4444-555555555555"), "keep the filter's UUID")):
             with self.subTest(why=why), self.assertRaisesRegex(OperationError, why):
                 conn.edit(xml, digest(conn.get_xml()))
-        conn.wvm.nwfilterDefineXML.assert_not_called()
+        conn.wvm.nwfilterDefineXMLFlags.assert_not_called()
         # an editor that showed the filter as it was before another change
         with self.assertRaisesRegex(OperationError, "Filter web was changed meanwhile"):
             conn.edit(WEB, digest(WEB.replace("priority='500'", "priority='300'")))
         conn.edit(WEB.replace("priority='500'", "priority='400'"), digest(conn.get_xml()))
-        conn.wvm.nwfilterDefineXML.assert_called_once()
+        conn.wvm.nwfilterDefineXMLFlags.assert_called_once()
 
 
 class ChangeTests(SimpleTestCase):
@@ -150,6 +151,19 @@ class ChangeTests(SimpleTestCase):
         conn.add_ref("no-spoofing")
         self.assertEqual(defined(conn).xpath("filterref/@filter"), ["clean-traffic", "no-spoofing"])
         self.assertEqual(one().get_ref_choices(), ["no-spoofing"])
+
+    def test_each_change_is_checked_against_libvirts_schema(self):
+        # libvirt alone drops a misspelled attribute: <tcp dstport='443'/> would match all TCP
+        for change, make in (
+            ("add rule", lambda conn: conn.add_rule("<rule action='accept' direction='in'><udp dstportstart='53'/></rule>")),
+            ("add reference", lambda conn: conn.add_ref("no-spoofing")),
+            ("delete rule", lambda conn: conn.delete_rule(0, conn.get_rules()[0]["text"])),
+            ("edit", lambda conn: conn.edit(WEB, digest(conn.get_xml()))),
+        ):
+            with self.subTest(change):
+                conn = one()
+                make(conn)
+                self.assertEqual(conn.wvm.nwfilterDefineXMLFlags.call_args.args[1], libvirt.VIR_NWFILTER_DEFINE_VALIDATE)
 
     def test_a_rule_is_one_rule_element(self):
         with self.assertRaisesRegex(OperationError, "one <rule>"):

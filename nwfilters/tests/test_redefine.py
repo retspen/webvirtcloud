@@ -45,8 +45,8 @@ class FilterRedefineTests(TestCase):
     def defined(self, data):
         response = self.client.post(self.url, data)
         self.wvm.nwfilterLookupByName.return_value.undefine.assert_not_called()
-        self.wvm.nwfilterDefineXML.assert_called_once()
-        return etree.fromstring(self.wvm.nwfilterDefineXML.call_args.args[0]), response
+        self.wvm.nwfilterDefineXMLFlags.assert_called_once()
+        return etree.fromstring(self.wvm.nwfilterDefineXMLFlags.call_args.args[0]), response
 
     def test_a_rule_is_removed_in_place(self):
         tree, _ = self.defined({"del_nwfilter_rule": "", "index": "1", "rule": text(XML, "rule", 1)})
@@ -88,10 +88,10 @@ class FilterRedefineTests(TestCase):
         self.wvm.nwfilterLookupByName.side_effect = libvirtError("Network filter not found")
         response = self.client.post(self.url, {"del_nwfilter_rule": "", "index": "0", "rule": ""})
         self.assertRedirects(response, self.list_url, fetch_redirect_response=False)
-        self.wvm.nwfilterDefineXML.assert_not_called()
+        self.wvm.nwfilterDefineXMLFlags.assert_not_called()
 
     def test_a_refused_definition_is_reported_not_undone(self):
-        self.wvm.nwfilterDefineXML.side_effect = libvirtError("XML error: Invalid value for attribute 'action'")
+        self.wvm.nwfilterDefineXMLFlags.side_effect = libvirtError("XML error: Invalid value for attribute 'action'")
         _, response = self.defined({"del_nwfilter_rule": "", "index": "1", "rule": text(XML, "rule", 1)})
         self.assertIn("Invalid value for attribute 'action'", " ".join(str(m) for m in get_messages(response.wsgi_request)))
 
@@ -123,7 +123,7 @@ class RuleDeleteTests(TestCase):
     def test_the_second_of_two_alike_rules_is_deleted(self):
         # sent back by a browser, with other line breaks between its tags
         self.delete("1", text(ALIKE, "rule", 1).replace("><", ">\r\n  <"))
-        tree = etree.fromstring(self.wvm.nwfilterDefineXML.call_args.args[0])
+        tree = etree.fromstring(self.wvm.nwfilterDefineXMLFlags.call_args.args[0])
         self.assertEqual(tree.xpath("rule/*/@dstportstart"), ["22"])
 
     def test_a_rule_that_is_no_longer_there_is_not_deleted(self):
@@ -134,7 +134,7 @@ class RuleDeleteTests(TestCase):
             with self.subTest(index=index):
                 response = self.delete(index, rule)
                 self.assertIn("reload the page", " ".join(str(m) for m in get_messages(response.wsgi_request)))
-        self.wvm.nwfilterDefineXML.assert_not_called()
+        self.wvm.nwfilterDefineXMLFlags.assert_not_called()
 
 
 class PageTests(TestCase):

@@ -3,6 +3,7 @@ import copy
 import re
 from functools import cached_property
 
+from libvirt import VIR_NWFILTER_DEFINE_VALIDATE
 from lxml import etree
 
 from vrtManager import util
@@ -33,6 +34,12 @@ def filter_info(nwfilter, tree):
 
 
 class wvmNWFilters(wvmConnect):
+    def define(self, xml):
+        """Define a filter, its XML checked against libvirt's schema first:
+        libvirt alone drops what it does not know, and a rule with a
+        misspelled port or protocol then matches all traffic."""
+        self.wvm.nwfilterDefineXMLFlags(xml, VIR_NWFILTER_DEFINE_VALIDATE)
+
     def get_nwfilters_info(self):
         """Every filter of the host (filter_info), with the filters that
         reference it, by name: one listing, one XML read per filter."""
@@ -67,7 +74,7 @@ class wvmNWFilters(wvmConnect):
                 raise util.OperationError(gettext_noop("A network filter with this name already exists"))
             if nwfilter.UUIDString() == tree.findtext("uuid"):
                 raise util.OperationError(gettext_noop("A network filter with this UUID already exists"))
-        self.wvm.nwfilterDefineXML(xml)
+        self.define(xml)
 
     def clone_nwfilter(self, name, clone_name):
         """Define a copy of filter name as clone_name, with its rules,
@@ -79,7 +86,7 @@ class wvmNWFilters(wvmConnect):
         tree = etree.fromstring(self.get_nwfilter(name).XMLDesc(0))
         tree.set("name", clone_name)
         tree.remove(tree.find("uuid"))
-        self.wvm.nwfilterDefineXML(etree.tostring(tree, encoding="unicode"))
+        self.define(etree.tostring(tree, encoding="unicode"))
 
     def delete_nwfilter(self, name):
         """Undefine a filter that no VM's interface and no other filter
@@ -143,7 +150,7 @@ class wvmNWFilter(wvmNWFilters):
         return [name for name in sorted(self.get_nwfilters()) if name not in taken]
 
     def _define(self, tree):
-        self.wvm.nwfilterDefineXML(etree.tostring(tree, encoding="unicode"))
+        self.define(etree.tostring(tree, encoding="unicode"))
 
     def _without(self, tag, index, text):
         """The filter without its tag element at index, which must still read
@@ -172,7 +179,7 @@ class wvmNWFilter(wvmNWFilters):
             raise util.OperationError(gettext_noop("The XML must define filter %(name)s"), name=self.get_name())
         if tree.findtext("uuid") != self.get_uuid():
             raise util.OperationError(gettext_noop("The XML must keep the filter's UUID"))
-        self.wvm.nwfilterDefineXML(xml)
+        self.define(xml)
 
     def delete_rule(self, index, text):
         self._without("rule", index, text)

@@ -61,20 +61,20 @@ class FilterRowTests(TestCase):
                       [str(m) for m in get_messages(response.wsgi_request)])
         other = XML.replace("name='web'", "name='other'")
         self.client.post(self.list_url, {"create_nwfilter": "", "nwfilter_xml": other})
-        self.wvm.nwfilterDefineXML.assert_not_called()
+        self.wvm.nwfilterDefineXMLFlags.assert_not_called()
         self.assertEqual(rows(), [
             ("Network filter web: add: A network filter with this name already exists", False),
             ("Network filter other: add: A network filter with this UUID already exists", False),
         ])
 
     def test_an_unparsable_filter(self):
-        self.wvm.nwfilterDefineXML.side_effect = libvirtError("XML error")
+        self.wvm.nwfilterDefineXMLFlags.side_effect = libvirtError("XML error")
         response = self.client.post(self.list_url, {"create_nwfilter": "", "nwfilter_xml": "<filter"})
         self.assertRedirects(response, self.list_url, fetch_redirect_response=False)
         [(message, success)] = rows()
         self.assertFalse(success)
         self.assertTrue(message.startswith("Network filter (no name): add: The XML is not valid"), message)
-        self.wvm.nwfilterDefineXML.assert_not_called()
+        self.wvm.nwfilterDefineXMLFlags.assert_not_called()
 
     def test_a_filter_in_use_is_not_deleted(self):
         vm = MagicMock(**{"name.return_value": "web-1", "isActive.return_value": False, "XMLDesc.return_value":
@@ -102,7 +102,7 @@ class FilterRowTests(TestCase):
         self.assertFalse(Logs.objects.filter(message__contains="<").exists())
 
     def test_a_failing_rule_add(self):
-        self.wvm.nwfilterDefineXML.side_effect = libvirtError("refused")
+        self.wvm.nwfilterDefineXMLFlags.side_effect = libvirtError("refused")
         response = self.client.post(self.url, {"add_nwfilter_rule": "", "nwfilterrule_xml": "<rule action='accept' direction='in' priority='500'><all/></rule>"})
         self.assertIn("refused", " ".join(str(m) for m in get_messages(response.wsgi_request)))
         [(message, success)] = rows()
