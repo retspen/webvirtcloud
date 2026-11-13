@@ -744,3 +744,13 @@ class LiveCloneJobTestCase(TransactionTestCase):
         self.proxy.get_status.return_value = 5
         self.recovered(frozen=True)
         self.assertNotIn("fs_thaw", self.events)
+
+    def test_recovery_tells_how_to_thaw_a_guest_paused_meanwhile(self):
+        # libvirt thaws no paused guest: resumed, it would stay frozen without a word
+        self.proxy.get_status.return_value = 3
+        self.proxy.backup_result.return_value = None
+        self.proxy.backup_targets.return_value = {"/other/x.qcow2"}
+        outcome, _op = self.recovered(defined=True, frozen=True)
+        self.assertEqual(outcome.state, Operation.SUCCEEDED)
+        self.assertIn("resume it, then thaw them with: virsh domfsthaw", words(outcome.result["warning"]))
+        self.proxy.fs_thaw.assert_not_called()

@@ -572,6 +572,8 @@ def _delete_created(proxy, op):
 
 CLONE_STATE_REFUSED = _("The VM must be running, paused or shut off to be cloned")
 THAW_FAILED = _("The guest's file systems could not be thawed (%(error)s); thaw them with: virsh domfsthaw %(vm)s")
+PAUSED_FROZEN = _("%(vm)s is paused and its file systems may still be frozen: resume it, then thaw them with: "
+                  "virsh domfsthaw %(vm)s")
 
 
 def _check_clone_state(proxy, data):
@@ -736,12 +738,15 @@ class CloneInstance(Kind):
             return Outcome(Operation.UNCERTAIN, error=say(_(
                 "The VM is no longer on the compute the job ran on; check these volumes, then resolve this job: "
                 "%(volumes)s"), volumes=created))
-        thawed = []
-        if op.intent.get("frozen") and proxy.get_status() == 1:
+        thawed, vm = [], op.resource_label.rpartition("/")[2]
+        status = proxy.get_status()
+        if op.intent.get("frozen") and status == 1:
             try:
                 proxy.fs_thaw()
             except libvirtError as err:
-                thawed = say(THAW_FAILED, error=err, vm=op.resource_label.rpartition("/")[2])
+                thawed = say(THAW_FAILED, error=err, vm=vm)
+        elif op.intent.get("frozen") and status == 3:  # libvirt thaws no paused guest
+            thawed = say(PAUSED_FROZEN, vm=vm)
         outcome = self._live_outcome(proxy, op)
         if thawed and outcome.state == Operation.SUCCEEDED:  # a warning of the clone, as when the job made it
             outcome.result["warning"] = [*outcome.result.get("warning", []), *thawed]
