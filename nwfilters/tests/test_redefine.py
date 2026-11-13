@@ -174,6 +174,13 @@ class PageTests(TestCase):
         self.compute = Compute.objects.create(name="nwf", hostname="localhost", login="", password="", type=4)
         self.client.force_login(get_user_model().objects.create_superuser("nwf", "nwf@example.com", "pw"))
 
+    def test_rule_actions_are_in_the_users_language(self):
+        page = html.fromstring(self.client.get(reverse("nwfilter", args=[self.compute.id, "web"]),
+                                               HTTP_ACCEPT_LANGUAGE="tr").content)
+        badges = [badge.text_content() for badge in page.xpath("//tbody/tr/td[1]/span")]
+        self.assertLessEqual({"Kabul et", "Düşür"}, set(badges))
+        self.assertNotIn("Drop", badges)
+
     def test_a_filter_in_use_is_not_offered_for_delete(self):
         page = html.fromstring(self.client.get(reverse("nwfilters", args=[self.compute.id])).content)
         [delete] = page.xpath("//button[@name='del_nwfilter']")

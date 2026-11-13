@@ -2509,6 +2509,14 @@ class wvmInstance(wvmConnect):
             if not mac:
                 raise ValueError(f"No MAC address for network interface {num}")
             net.find("mac").set("address", self.fix_mac(mac))
+            # a filter's parameters of the source's own addresses would block the clone's traffic:
+            # its MAC is the clone's, its IP the one it learns (clean-traffic's default), unless
+            # learning is off; libvirt learns no IPv6 address, so IPV6 stays for the admin to change
+            for parameter in net.xpath("filterref/parameter[@name='MAC']"):
+                parameter.set("value", self.fix_mac(mac))
+            if not net.xpath("filterref/parameter[@name='CTRL_IP_LEARNING'][@value='none']"):
+                for parameter in net.xpath("filterref/parameter[@name='IP']"):
+                    parameter.getparent().remove(parameter)
 
         # the clone's console gets a password of its own: one copied from the source would open both
         for graphics in tree.findall("devices/graphics[@type='vnc']"):

@@ -106,8 +106,11 @@
                         <th scope="row">{{ forloop.counter }}</th>
                         <td>
                             {% if rule.action == "accept" %}<span class="badge bg-success-subtle text-success-emphasis">{% trans "Accept" %}</span>
-                            {% elif rule.action == "drop" or rule.action == "reject" %}<span class="badge bg-danger-subtle text-danger-emphasis">{{ rule.action|capfirst }}</span>
-                            {% else %}<span class="badge text-bg-light border">{{ rule.action|capfirst }}</span>{% endif %}
+                            {% elif rule.action == "drop" %}<span class="badge bg-danger-subtle text-danger-emphasis">{% trans "Drop" context "network filter rule" %}</span>
+                            {% elif rule.action == "reject" %}<span class="badge bg-danger-subtle text-danger-emphasis">{% trans "Reject" context "network filter rule" %}</span>
+                            {% elif rule.action == "return" %}<span class="badge text-bg-light border">{% trans "Return" context "network filter rule" %}</span>
+                            {% elif rule.action == "continue" %}<span class="badge text-bg-light border">{% trans "Continue" context "network filter rule" %}</span>
+                            {% else %}<span class="badge text-bg-light border">{{ rule.action }}</span>{% endif %}
                         </td>
                         <td class="text-nowrap">{% if rule.direction == "in" %}{% trans "To the VM" %}{% elif rule.direction == "out" %}{% trans "From the VM" %}{% elif rule.direction == "inout" %}{% trans "Both ways" %}{% else %}{{ rule.direction }}{% endif %}</td>
                         <td>{% if rule.priority is not None %}{{ rule.priority }}{% else %}500{% endif %}</td>

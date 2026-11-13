@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 08:27+0000\n"
+"POT-Creation-Date: 2026-11-13 08:46+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -307,7 +307,7 @@ msgstr "Burada oturumunuz açık kalır; diğer oturumlarınız kapanır."
 #: networks/templates/network.html:378 networks/templates/network.html:405
 #: networks/templates/network.html:444
 #: nwfilters/templates/create_nwfilter_block.html:33
-#: nwfilters/templates/nwfilter.html:179 nwfilters/templates/nwfilters.html:93
+#: nwfilters/templates/nwfilter.html:182 nwfilters/templates/nwfilters.html:93
 #: operations/templates/operations/job.html:31
 #: operations/templatetags/operations.py:83
 #: storages/templates/create_stg_block.html:183
@@ -2103,7 +2103,7 @@ msgstr "hiçbiri"
 #: networks/templates/add_network_qos.html:36
 #: networks/templates/network.html:337 networks/templates/network.html:379
 #: networks/templates/network.html:406 networks/templates/network.html:445
-#: nwfilters/templates/nwfilter.html:154 templates/common/form.html:28
+#: nwfilters/templates/nwfilter.html:157 templates/common/form.html:28
 msgid "Save"
 msgstr "Kaydet"
 
@@ -2639,7 +2639,7 @@ msgstr "Bağlan"
 #: networks/templates/network.html:354 networks/templates/network.html:392
 #: networks/templates/network.html:418
 #: nwfilters/templates/create_nwfilter_block.html:17
-#: nwfilters/templates/nwfilter.html:166 nwfilters/templates/nwfilters.html:85
+#: nwfilters/templates/nwfilter.html:169 nwfilters/templates/nwfilters.html:85
 #: storages/templates/create_stg_block.html:21
 #: storages/templates/create_stg_vol_block.html:16
 #: storages/templates/create_stg_vol_block.html:54
@@ -3078,12 +3078,12 @@ msgstr ""
 msgid "Each network card needs a network"
 msgstr "Her ağ kartının bir ağı olmalı"
 
-#: instances/jobs.py:851 vrtManager/instance.py:2838
+#: instances/jobs.py:851 vrtManager/instance.py:2846
 #, python-format
 msgid "This host has no network %(name)s"
 msgstr "Bu sunucuda %(name)s ağı yok"
 
-#: instances/jobs.py:853 vrtManager/instance.py:2840
+#: instances/jobs.py:853 vrtManager/instance.py:2848
 #, python-format
 msgid "This host has no network filter %(name)s"
 msgstr "Bu sunucuda %(name)s ağ filtresi yok"
@@ -3148,7 +3148,7 @@ msgstr "cloud-init tohumu, disk için bir dizin depolama havuzu gerektirir"
 msgid "This host offers no firmware %(firmware)s"
 msgstr "Bu sunucu %(firmware)s firmware'ini sunmuyor"
 
-#: instances/jobs.py:928 vrtManager/instance.py:3187
+#: instances/jobs.py:928 vrtManager/instance.py:3195
 msgid "This host offers no TPM 2.0: install swtpm on it"
 msgstr "Bu sunucu TPM 2.0 sunmuyor: üzerine swtpm kurun"
 
@@ -4441,7 +4441,7 @@ msgid "Add USB device"
 msgstr "USB aygıtı ekle"
 
 #: instances/templates/instances/host_devices_form.html:18
-#: vrtManager/instance.py:3091
+#: vrtManager/instance.py:3099
 msgid ""
 "A VM with a saved state does not change its USB devices: start it, or start "
 "it without its saved state"
@@ -7464,7 +7464,7 @@ msgstr ""
 msgid "A change takes effect when the network is stopped and started again."
 msgstr "Değişiklik, ağ durdurulup yeniden başlatıldığında geçerli olur."
 
-#: networks/templates/network.html:327 nwfilters/templates/nwfilter.html:144
+#: networks/templates/network.html:327 nwfilters/templates/nwfilter.html:147
 msgid "XML definition"
 msgstr "XML tanımı"
 
@@ -7712,7 +7712,7 @@ msgid "libvirt's filter format"
 msgstr "libvirt'in filtre biçimi"
 
 #: nwfilters/templates/create_nwfilter_block.html:25
-#: nwfilters/templates/nwfilter.html:152
+#: nwfilters/templates/nwfilter.html:155
 msgid "Filter XML"
 msgstr "Filtre XML'i"
 
@@ -7784,8 +7784,8 @@ msgstr "Başka bir filtreye başvurmuyor."
 msgid "Rules"
 msgstr "Kurallar"
 
-#: nwfilters/templates/nwfilter.html:88 nwfilters/templates/nwfilter.html:165
-#: nwfilters/templates/nwfilter.html:180
+#: nwfilters/templates/nwfilter.html:88 nwfilters/templates/nwfilter.html:168
+#: nwfilters/templates/nwfilter.html:183
 msgid "Add rule"
 msgstr "Kural ekle"
 
@@ -7801,44 +7801,64 @@ msgstr "Eşleşmeler"
 msgid "Accept"
 msgstr "Kabul et"
 
+#: nwfilters/templates/nwfilter.html:109
+msgctxt "network filter rule"
+msgid "Drop"
+msgstr "Düşür"
+
+#: nwfilters/templates/nwfilter.html:110
+msgctxt "network filter rule"
+msgid "Reject"
+msgstr "Reddet"
+
+#: nwfilters/templates/nwfilter.html:111
+msgctxt "network filter rule"
+msgid "Return"
+msgstr "Geri dön"
+
 #: nwfilters/templates/nwfilter.html:112
+msgctxt "network filter rule"
+msgid "Continue"
+msgstr "Devam et"
+
+#: nwfilters/templates/nwfilter.html:115
 msgid "To the VM"
 msgstr "Sanal makineye"
 
-#: nwfilters/templates/nwfilter.html:112
+#: nwfilters/templates/nwfilter.html:115
 msgid "From the VM"
 msgstr "Sanal makineden"
 
-#: nwfilters/templates/nwfilter.html:112
+#: nwfilters/templates/nwfilter.html:115
 msgid "Both ways"
 msgstr "İki yönde"
 
-#: nwfilters/templates/nwfilter.html:118
+#: nwfilters/templates/nwfilter.html:121
 msgid "Any traffic of the chain"
 msgstr "Zincirin tüm trafiği"
 
-#: nwfilters/templates/nwfilter.html:120
+#: nwfilters/templates/nwfilter.html:123
 msgid "Without connection tracking"
 msgstr "Bağlantı izleme olmadan"
 
-#: nwfilters/templates/nwfilter.html:126
+#: nwfilters/templates/nwfilter.html:129
 #, python-format
 msgid "Delete rule %(number)s"
 msgstr "%(number)s numaralı kuralı sil"
 
-#: nwfilters/templates/nwfilter.html:127
+#: nwfilters/templates/nwfilter.html:130
 msgid "Delete this rule? Interfaces that use the filter no longer get it."
 msgstr "Bu kural silinsin mi? Filtreyi kullanan arabirimler artık onu almaz."
 
-#: nwfilters/templates/nwfilter.html:136
+#: nwfilters/templates/nwfilter.html:139
 msgid "The filter has no rules of its own."
 msgstr "Filtrenin kendine ait kuralı yok."
 
-#: nwfilters/templates/nwfilter.html:148
+#: nwfilters/templates/nwfilter.html:151
 msgid "Change the filter's XML"
 msgstr "Filtrenin XML'ini değiştir"
 
-#: nwfilters/templates/nwfilter.html:149
+#: nwfilters/templates/nwfilter.html:152
 msgid ""
 "A change applies at once, also to the running VMs that use the filter; it "
 "keeps the filter's name and UUID."
@@ -7846,7 +7866,7 @@ msgstr ""
 "Değişiklik hemen, filtreyi kullanan çalışan sanal makinelere de uygulanır; "
 "filtrenin adı ve UUID'si korunur."
 
-#: nwfilters/templates/nwfilter.html:170
+#: nwfilters/templates/nwfilter.html:173
 msgid ""
 "One rule: in is traffic to the VM, out from it; a lower priority applies "
 "first (500 if none is given)."
@@ -7854,11 +7874,11 @@ msgstr ""
 "Tek kural: in sanal makineye gelen, out ondan çıkan trafiktir; düşük öncelik "
 "önce uygulanır (verilmezse 500)."
 
-#: nwfilters/templates/nwfilter.html:171
+#: nwfilters/templates/nwfilter.html:174
 msgid "The protocols and their attributes"
 msgstr "Protokoller ve öznitelikleri"
 
-#: nwfilters/templates/nwfilter.html:174
+#: nwfilters/templates/nwfilter.html:177
 msgid "Rule XML"
 msgstr "Kural XML'i"
 
@@ -9662,59 +9682,59 @@ msgstr ""
 "Ana makinenin ya da harici bir TPM'i olan sanal makine klonlanmaz; önce onu "
 "kaldırın"
 
-#: vrtManager/instance.py:2519
+#: vrtManager/instance.py:2527
 msgid "Cannot clone a VM whose NVRAM is not a file"
 msgstr "NVRAM'i dosya olmayan bir sanal makine klonlanamaz"
 
-#: vrtManager/instance.py:2589
+#: vrtManager/instance.py:2597
 #, python-format
 msgid "Clone failed (%(err)s); remove these copies by hand: %(path)s"
 msgstr ""
 "Klonlama başarısız oldu (%(err)s); bu kopyaları elle kaldırın: %(path)s"
 
-#: vrtManager/instance.py:2600
+#: vrtManager/instance.py:2608
 msgid "Shut the VM down before cloning it"
 msgstr "Klonlamadan önce sanal makineyi kapatın"
 
-#: vrtManager/instance.py:2654
+#: vrtManager/instance.py:2662
 #, python-format
 msgid "Clone failed (%(err)s); remove these copies by hand: %(leftovers)s"
 msgstr ""
 "Klonlama başarısız oldu (%(err)s); bu kopyaları elle kaldırın: %(leftovers)s"
 
-#: vrtManager/instance.py:2665
+#: vrtManager/instance.py:2673
 msgid "Live clone needs libvirt 11.10 or later; shut the VM down to clone it"
 msgstr ""
 "Canlı klonlama libvirt 11.10 veya sonrasını gerektirir; klonlamak için sanal "
 "makineyi kapatın"
 
-#: vrtManager/instance.py:2668
+#: vrtManager/instance.py:2676
 msgid "A VM with a TPM is cloned only shut down"
 msgstr "TPM'i olan bir sanal makine yalnızca kapalıyken klonlanır"
 
-#: vrtManager/instance.py:2671
+#: vrtManager/instance.py:2679
 #, python-format
 msgid "Disk %(dev)s is not a local file; shut the VM down to clone it"
 msgstr ""
 "Disk %(dev)s yerel bir dosya değil; klonlamak için sanal makineyi kapatın"
 
-#: vrtManager/instance.py:2673
+#: vrtManager/instance.py:2681
 #, python-format
 msgid "Disk %(dev)s is shareable; shut the VM down to clone it"
 msgstr "Disk %(dev)s paylaşılabilir; klonlamak için sanal makineyi kapatın"
 
-#: vrtManager/instance.py:2678
+#: vrtManager/instance.py:2686
 #, python-format
 msgid "Disk %(dev)s changes at the next start; shut the VM down to clone it"
 msgstr ""
 "Disk %(dev)s sonraki başlatmada değişiyor; klonlamak için sanal makineyi "
 "kapatın"
 
-#: vrtManager/instance.py:2680
+#: vrtManager/instance.py:2688
 msgid "Another job is running on the VM; clone it when that ends"
 msgstr "Sanal makinede başka bir iş çalışıyor; o bittiğinde klonlayın"
 
-#: vrtManager/instance.py:2706
+#: vrtManager/instance.py:2714
 #, python-format
 msgid ""
 "Storage pool %(pool)s has %(free).1f GiB free; the clone needs %(size).1f GiB"
@@ -9724,25 +9744,25 @@ msgstr ""
 "gerektiriyor (kopyalanan diskler, artı bunların %%%(percent)g kadarı, en az "
 "%(minimum)g GiB)"
 
-#: vrtManager/instance.py:2723
+#: vrtManager/instance.py:2731
 #, python-format
 msgid "Volume %(name)s already exists in storage pool %(pool)s"
 msgstr "%(name)s birimi %(pool)s depolama havuzunda zaten var"
 
-#: vrtManager/instance.py:2877
+#: vrtManager/instance.py:2885
 msgid "A network interface that is a host device is removed in the XML editor"
 msgstr "Sunucu aygıtı olan bir ağ arabirimi XML düzenleyicide kaldırılır"
 
-#: vrtManager/instance.py:2893
+#: vrtManager/instance.py:2901
 #, python-format
 msgid "No network interface with MAC %(old_mac)s"
 msgstr "MAC adresi %(old_mac)s olan ağ arabirimi yok"
 
-#: vrtManager/instance.py:2896
+#: vrtManager/instance.py:2904
 msgid "A network interface that is a host device is changed in the XML editor"
 msgstr "Sunucu aygıtı olan bir ağ arabirimi XML düzenleyicide değiştirilir"
 
-#: vrtManager/instance.py:2990
+#: vrtManager/instance.py:2998
 msgid ""
 "A VM changes its PCI devices while it runs, or is shut off without a saved "
 "state"
@@ -9750,43 +9770,43 @@ msgstr ""
 "Sanal makine PCI aygıtlarını çalışırken veya kaydedilmiş durumu olmadan "
 "kapalıyken değiştirir"
 
-#: vrtManager/instance.py:3011
+#: vrtManager/instance.py:3019
 #, python-format
 msgid "%(err)s; whether the VM has %(device)s now is not known"
 msgstr "%(err)s; sanal makinede şu anda %(device)s olup olmadığı bilinmiyor"
 
-#: vrtManager/instance.py:3013
+#: vrtManager/instance.py:3021
 #, python-format
 msgid "%(err)s; %(device)s: the VM is not running, its next start has it"
 msgstr "%(err)s; %(device)s: sanal makine çalışmıyor, sonraki başlatmada var"
 
-#: vrtManager/instance.py:3014
+#: vrtManager/instance.py:3022
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the VM is not running, its next start does not have it"
 msgstr "%(err)s; %(device)s: sanal makine çalışmıyor, sonraki başlatmada yok"
 
-#: vrtManager/instance.py:3015
+#: vrtManager/instance.py:3023
 #, python-format
 msgid "%(err)s; %(device)s: the running VM has it, its next start has it"
 msgstr ""
 "%(err)s; %(device)s: çalışan sanal makinede var, sonraki başlatmada var"
 
-#: vrtManager/instance.py:3016
+#: vrtManager/instance.py:3024
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the running VM has it, its next start does not have it"
 msgstr ""
 "%(err)s; %(device)s: çalışan sanal makinede var, sonraki başlatmada yok"
 
-#: vrtManager/instance.py:3017
+#: vrtManager/instance.py:3025
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the running VM does not have it, its next start has it"
 msgstr ""
 "%(err)s; %(device)s: çalışan sanal makinede yok, sonraki başlatmada var"
 
-#: vrtManager/instance.py:3019
+#: vrtManager/instance.py:3027
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the running VM does not have it, its next start does not"
@@ -9794,48 +9814,48 @@ msgid ""
 msgstr ""
 "%(err)s; %(device)s: çalışan sanal makinede yok, sonraki başlatmada yok"
 
-#: vrtManager/instance.py:3053
+#: vrtManager/instance.py:3061
 #, python-format
 msgid "The VM has no PCI device %(address)s"
 msgstr "Sanal makinede %(address)s PCI aygıtı yok"
 
-#: vrtManager/instance.py:3074
+#: vrtManager/instance.py:3082
 msgid "The VM has no USB controller"
 msgstr "Sanal makinede USB denetleyicisi yok"
 
-#: vrtManager/instance.py:3108
+#: vrtManager/instance.py:3116
 msgid "The VM has no such USB device"
 msgstr "Sanal makinede böyle bir USB aygıtı yok"
 
-#: vrtManager/instance.py:3122
+#: vrtManager/instance.py:3130
 #, python-format
 msgid "The VM has no network interface %(mac)s"
 msgstr "Sanal makinede %(mac)s ağ arabirimi yok"
 
-#: vrtManager/instance.py:3153
+#: vrtManager/instance.py:3161
 msgid "The VM has its own RNG device: change it in the XML editor"
 msgstr ""
 "Sanal makinenin kendi RNG aygıtı var: bunu XML düzenleyicide değiştirin"
 
-#: vrtManager/instance.py:3180
+#: vrtManager/instance.py:3188
 msgid "The VM has its own TPM: change it in the XML editor"
 msgstr "Sanal makinenin kendi TPM'i var: bunu XML düzenleyicide değiştirin"
 
-#: vrtManager/instance.py:3199
+#: vrtManager/instance.py:3207
 #, python-format
 msgid "Unknown crash action %(action)s"
 msgstr "Bilinmeyen çökme eylemi %(action)s"
 
-#: vrtManager/instance.py:3226
+#: vrtManager/instance.py:3234
 #, python-format
 msgid "Network interface %(mac)s is not in the definition"
 msgstr "%(mac)s ağ arayüzü tanımda yok"
 
-#: vrtManager/instance.py:3317
+#: vrtManager/instance.py:3325
 msgid "The guest agent did not answer in time; nothing was changed"
 msgstr "Konuk ajanı zamanında yanıt vermedi; hiçbir şey değiştirilmedi"
 
-#: vrtManager/instance.py:3320
+#: vrtManager/instance.py:3328
 msgid "The VM runs Windows: its guest agent sets no root password or SSH key"
 msgstr ""
 "Sanal makinede Windows çalışıyor: konuk ajanı root parolası ya da SSH "

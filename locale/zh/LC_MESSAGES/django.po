@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 08:27+0000\n"
+"POT-Creation-Date: 2026-11-13 08:46+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -302,7 +302,7 @@ msgstr "您在此处保持登录；您的其他会话将结束。"
 #: networks/templates/network.html:378 networks/templates/network.html:405
 #: networks/templates/network.html:444
 #: nwfilters/templates/create_nwfilter_block.html:33
-#: nwfilters/templates/nwfilter.html:179 nwfilters/templates/nwfilters.html:93
+#: nwfilters/templates/nwfilter.html:182 nwfilters/templates/nwfilters.html:93
 #: operations/templates/operations/job.html:31
 #: operations/templatetags/operations.py:83
 #: storages/templates/create_stg_block.html:183
@@ -2024,7 +2024,7 @@ msgstr "无"
 #: networks/templates/add_network_qos.html:36
 #: networks/templates/network.html:337 networks/templates/network.html:379
 #: networks/templates/network.html:406 networks/templates/network.html:445
-#: nwfilters/templates/nwfilter.html:154 templates/common/form.html:28
+#: nwfilters/templates/nwfilter.html:157 templates/common/form.html:28
 msgid "Save"
 msgstr "保存"
 
@@ -2547,7 +2547,7 @@ msgstr "连接"
 #: networks/templates/network.html:354 networks/templates/network.html:392
 #: networks/templates/network.html:418
 #: nwfilters/templates/create_nwfilter_block.html:17
-#: nwfilters/templates/nwfilter.html:166 nwfilters/templates/nwfilters.html:85
+#: nwfilters/templates/nwfilter.html:169 nwfilters/templates/nwfilters.html:85
 #: storages/templates/create_stg_block.html:21
 #: storages/templates/create_stg_vol_block.html:16
 #: storages/templates/create_stg_vol_block.html:54
@@ -2942,12 +2942,12 @@ msgstr "镜像已存在。请检查卷或更改虚拟机名称"
 msgid "Each network card needs a network"
 msgstr "每个网卡都需要一个网络"
 
-#: instances/jobs.py:851 vrtManager/instance.py:2838
+#: instances/jobs.py:851 vrtManager/instance.py:2846
 #, python-format
 msgid "This host has no network %(name)s"
 msgstr "此主机没有网络 %(name)s"
 
-#: instances/jobs.py:853 vrtManager/instance.py:2840
+#: instances/jobs.py:853 vrtManager/instance.py:2848
 #, python-format
 msgid "This host has no network filter %(name)s"
 msgstr "此主机没有网络过滤器 %(name)s"
@@ -3010,7 +3010,7 @@ msgstr "cloud-init 种子需要为磁盘使用目录类型的存储池"
 msgid "This host offers no firmware %(firmware)s"
 msgstr "此主机不提供固件 %(firmware)s"
 
-#: instances/jobs.py:928 vrtManager/instance.py:3187
+#: instances/jobs.py:928 vrtManager/instance.py:3195
 msgid "This host offers no TPM 2.0: install swtpm on it"
 msgstr "此主机不提供 TPM 2.0：请在主机上安装 swtpm"
 
@@ -4248,7 +4248,7 @@ msgid "Add USB device"
 msgstr "添加 USB 设备"
 
 #: instances/templates/instances/host_devices_form.html:18
-#: vrtManager/instance.py:3091
+#: vrtManager/instance.py:3099
 msgid ""
 "A VM with a saved state does not change its USB devices: start it, or start "
 "it without its saved state"
@@ -7051,7 +7051,7 @@ msgstr "无限制：该网络的虚拟机自由共享主机带宽。"
 msgid "A change takes effect when the network is stopped and started again."
 msgstr "更改在网络停止并重新启动后生效。"
 
-#: networks/templates/network.html:327 nwfilters/templates/nwfilter.html:144
+#: networks/templates/network.html:327 nwfilters/templates/nwfilter.html:147
 msgid "XML definition"
 msgstr "XML 定义"
 
@@ -7279,7 +7279,7 @@ msgid "libvirt's filter format"
 msgstr "libvirt 的过滤器格式"
 
 #: nwfilters/templates/create_nwfilter_block.html:25
-#: nwfilters/templates/nwfilter.html:152
+#: nwfilters/templates/nwfilter.html:155
 msgid "Filter XML"
 msgstr "过滤器 XML"
 
@@ -7349,8 +7349,8 @@ msgstr "未引用其他过滤器。"
 msgid "Rules"
 msgstr "规则"
 
-#: nwfilters/templates/nwfilter.html:88 nwfilters/templates/nwfilter.html:165
-#: nwfilters/templates/nwfilter.html:180
+#: nwfilters/templates/nwfilter.html:88 nwfilters/templates/nwfilter.html:168
+#: nwfilters/templates/nwfilter.html:183
 msgid "Add rule"
 msgstr "添加规则"
 
@@ -7366,60 +7366,80 @@ msgstr "匹配条件"
 msgid "Accept"
 msgstr "接受"
 
+#: nwfilters/templates/nwfilter.html:109
+msgctxt "network filter rule"
+msgid "Drop"
+msgstr "丢弃"
+
+#: nwfilters/templates/nwfilter.html:110
+msgctxt "network filter rule"
+msgid "Reject"
+msgstr "拒绝"
+
+#: nwfilters/templates/nwfilter.html:111
+msgctxt "network filter rule"
+msgid "Return"
+msgstr "返回"
+
 #: nwfilters/templates/nwfilter.html:112
+msgctxt "network filter rule"
+msgid "Continue"
+msgstr "继续"
+
+#: nwfilters/templates/nwfilter.html:115
 msgid "To the VM"
 msgstr "发往虚拟机"
 
-#: nwfilters/templates/nwfilter.html:112
+#: nwfilters/templates/nwfilter.html:115
 msgid "From the VM"
 msgstr "来自虚拟机"
 
-#: nwfilters/templates/nwfilter.html:112
+#: nwfilters/templates/nwfilter.html:115
 msgid "Both ways"
 msgstr "双向"
 
-#: nwfilters/templates/nwfilter.html:118
+#: nwfilters/templates/nwfilter.html:121
 msgid "Any traffic of the chain"
 msgstr "该链的所有流量"
 
-#: nwfilters/templates/nwfilter.html:120
+#: nwfilters/templates/nwfilter.html:123
 msgid "Without connection tracking"
 msgstr "不使用连接跟踪"
 
-#: nwfilters/templates/nwfilter.html:126
+#: nwfilters/templates/nwfilter.html:129
 #, python-format
 msgid "Delete rule %(number)s"
 msgstr "删除规则 %(number)s"
 
-#: nwfilters/templates/nwfilter.html:127
+#: nwfilters/templates/nwfilter.html:130
 msgid "Delete this rule? Interfaces that use the filter no longer get it."
 msgstr "删除此规则？使用该过滤器的接口将不再应用此规则。"
 
-#: nwfilters/templates/nwfilter.html:136
+#: nwfilters/templates/nwfilter.html:139
 msgid "The filter has no rules of its own."
 msgstr "该过滤器没有自己的规则。"
 
-#: nwfilters/templates/nwfilter.html:148
+#: nwfilters/templates/nwfilter.html:151
 msgid "Change the filter's XML"
 msgstr "修改过滤器的 XML"
 
-#: nwfilters/templates/nwfilter.html:149
+#: nwfilters/templates/nwfilter.html:152
 msgid ""
 "A change applies at once, also to the running VMs that use the filter; it "
 "keeps the filter's name and UUID."
 msgstr "更改立即生效，也作用于使用该过滤器的运行中虚拟机；过滤器的名称和 UUID 保持不变。"
 
-#: nwfilters/templates/nwfilter.html:170
+#: nwfilters/templates/nwfilter.html:173
 msgid ""
 "One rule: in is traffic to the VM, out from it; a lower priority applies "
 "first (500 if none is given)."
 msgstr "一条规则：in 表示发往虚拟机的流量，out 表示来自虚拟机的流量；优先级数值越低越先应用（未指定时为 500）。"
 
-#: nwfilters/templates/nwfilter.html:171
+#: nwfilters/templates/nwfilter.html:174
 msgid "The protocols and their attributes"
 msgstr "协议及其属性"
 
-#: nwfilters/templates/nwfilter.html:174
+#: nwfilters/templates/nwfilter.html:177
 msgid "Rule XML"
 msgstr "规则 XML"
 
@@ -9103,52 +9123,52 @@ msgstr "请关闭虚拟机后再还原到内部快照"
 msgid "A VM with a host's or an external TPM is not cloned; remove it first"
 msgstr "带有主机 TPM 或外部 TPM 的虚拟机无法克隆；请先将其移除"
 
-#: vrtManager/instance.py:2519
+#: vrtManager/instance.py:2527
 msgid "Cannot clone a VM whose NVRAM is not a file"
 msgstr "NVRAM 不是文件的虚拟机无法克隆"
 
-#: vrtManager/instance.py:2589
+#: vrtManager/instance.py:2597
 #, python-format
 msgid "Clone failed (%(err)s); remove these copies by hand: %(path)s"
 msgstr "克隆失败（%(err)s）；请手动删除这些副本：%(path)s"
 
-#: vrtManager/instance.py:2600
+#: vrtManager/instance.py:2608
 msgid "Shut the VM down before cloning it"
 msgstr "请先关闭虚拟机再克隆"
 
-#: vrtManager/instance.py:2654
+#: vrtManager/instance.py:2662
 #, python-format
 msgid "Clone failed (%(err)s); remove these copies by hand: %(leftovers)s"
 msgstr "克隆失败（%(err)s）；请手动删除这些副本：%(leftovers)s"
 
-#: vrtManager/instance.py:2665
+#: vrtManager/instance.py:2673
 msgid "Live clone needs libvirt 11.10 or later; shut the VM down to clone it"
 msgstr "在线克隆需要 libvirt 11.10 或更高版本；请关闭虚拟机后再克隆"
 
-#: vrtManager/instance.py:2668
+#: vrtManager/instance.py:2676
 msgid "A VM with a TPM is cloned only shut down"
 msgstr "带 TPM 的虚拟机只能在关机时克隆"
 
-#: vrtManager/instance.py:2671
+#: vrtManager/instance.py:2679
 #, python-format
 msgid "Disk %(dev)s is not a local file; shut the VM down to clone it"
 msgstr "磁盘 %(dev)s 不是本地文件；请关闭虚拟机后再克隆"
 
-#: vrtManager/instance.py:2673
+#: vrtManager/instance.py:2681
 #, python-format
 msgid "Disk %(dev)s is shareable; shut the VM down to clone it"
 msgstr "磁盘 %(dev)s 是可共享的；请关闭虚拟机后再克隆"
 
-#: vrtManager/instance.py:2678
+#: vrtManager/instance.py:2686
 #, python-format
 msgid "Disk %(dev)s changes at the next start; shut the VM down to clone it"
 msgstr "磁盘 %(dev)s 在下次启动时会改变；请关闭虚拟机后再克隆"
 
-#: vrtManager/instance.py:2680
+#: vrtManager/instance.py:2688
 msgid "Another job is running on the VM; clone it when that ends"
 msgstr "虚拟机上有另一个任务正在运行；请在其结束后再克隆"
 
-#: vrtManager/instance.py:2706
+#: vrtManager/instance.py:2714
 #, python-format
 msgid ""
 "Storage pool %(pool)s has %(free).1f GiB free; the clone needs %(size).1f GiB"
@@ -9157,111 +9177,111 @@ msgstr ""
 "存储池 %(pool)s 可用 %(free).1f GiB；克隆需要 %(size).1f GiB（复制的磁盘，再加其 %(percent)g%%，至少"
 " %(minimum)g GiB）"
 
-#: vrtManager/instance.py:2723
+#: vrtManager/instance.py:2731
 #, python-format
 msgid "Volume %(name)s already exists in storage pool %(pool)s"
 msgstr "卷 %(name)s 已存在于存储池 %(pool)s 中"
 
-#: vrtManager/instance.py:2877
+#: vrtManager/instance.py:2885
 msgid "A network interface that is a host device is removed in the XML editor"
 msgstr "作为主机设备的网络接口需在 XML 编辑器中删除"
 
-#: vrtManager/instance.py:2893
+#: vrtManager/instance.py:2901
 #, python-format
 msgid "No network interface with MAC %(old_mac)s"
 msgstr "没有 MAC 为 %(old_mac)s 的网络接口"
 
-#: vrtManager/instance.py:2896
+#: vrtManager/instance.py:2904
 msgid "A network interface that is a host device is changed in the XML editor"
 msgstr "作为主机设备的网络接口需在 XML 编辑器中修改"
 
-#: vrtManager/instance.py:2990
+#: vrtManager/instance.py:2998
 msgid ""
 "A VM changes its PCI devices while it runs, or is shut off without a saved "
 "state"
 msgstr "虚拟机只能在运行时或无保存的状态的关机时更改其 PCI 设备"
 
-#: vrtManager/instance.py:3011
+#: vrtManager/instance.py:3019
 #, python-format
 msgid "%(err)s; whether the VM has %(device)s now is not known"
 msgstr "%(err)s；虚拟机现在是否有 %(device)s 未知"
 
-#: vrtManager/instance.py:3013
+#: vrtManager/instance.py:3021
 #, python-format
 msgid "%(err)s; %(device)s: the VM is not running, its next start has it"
 msgstr "%(err)s；%(device)s：虚拟机未运行，下次启动时有它"
 
-#: vrtManager/instance.py:3014
+#: vrtManager/instance.py:3022
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the VM is not running, its next start does not have it"
 msgstr "%(err)s；%(device)s：虚拟机未运行，下次启动时没有它"
 
-#: vrtManager/instance.py:3015
+#: vrtManager/instance.py:3023
 #, python-format
 msgid "%(err)s; %(device)s: the running VM has it, its next start has it"
 msgstr "%(err)s；%(device)s：运行中的虚拟机有它，下次启动时有它"
 
-#: vrtManager/instance.py:3016
+#: vrtManager/instance.py:3024
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the running VM has it, its next start does not have it"
 msgstr "%(err)s；%(device)s：运行中的虚拟机有它，下次启动时没有它"
 
-#: vrtManager/instance.py:3017
+#: vrtManager/instance.py:3025
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the running VM does not have it, its next start has it"
 msgstr "%(err)s；%(device)s：运行中的虚拟机没有它，下次启动时有它"
 
-#: vrtManager/instance.py:3019
+#: vrtManager/instance.py:3027
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the running VM does not have it, its next start does not"
 " have it"
 msgstr "%(err)s；%(device)s：运行中的虚拟机没有它，下次启动时没有它"
 
-#: vrtManager/instance.py:3053
+#: vrtManager/instance.py:3061
 #, python-format
 msgid "The VM has no PCI device %(address)s"
 msgstr "虚拟机没有 PCI 设备 %(address)s"
 
-#: vrtManager/instance.py:3074
+#: vrtManager/instance.py:3082
 msgid "The VM has no USB controller"
 msgstr "虚拟机没有 USB 控制器"
 
-#: vrtManager/instance.py:3108
+#: vrtManager/instance.py:3116
 msgid "The VM has no such USB device"
 msgstr "虚拟机没有此 USB 设备"
 
-#: vrtManager/instance.py:3122
+#: vrtManager/instance.py:3130
 #, python-format
 msgid "The VM has no network interface %(mac)s"
 msgstr "虚拟机没有网络接口 %(mac)s"
 
-#: vrtManager/instance.py:3153
+#: vrtManager/instance.py:3161
 msgid "The VM has its own RNG device: change it in the XML editor"
 msgstr "虚拟机有自己的 RNG 设备：请在 XML 编辑器中修改"
 
-#: vrtManager/instance.py:3180
+#: vrtManager/instance.py:3188
 msgid "The VM has its own TPM: change it in the XML editor"
 msgstr "虚拟机有自己的 TPM：请在 XML 编辑器中修改"
 
-#: vrtManager/instance.py:3199
+#: vrtManager/instance.py:3207
 #, python-format
 msgid "Unknown crash action %(action)s"
 msgstr "未知的崩溃操作 %(action)s"
 
-#: vrtManager/instance.py:3226
+#: vrtManager/instance.py:3234
 #, python-format
 msgid "Network interface %(mac)s is not in the definition"
 msgstr "网络接口 %(mac)s 不在定义中"
 
-#: vrtManager/instance.py:3317
+#: vrtManager/instance.py:3325
 msgid "The guest agent did not answer in time; nothing was changed"
 msgstr "客户机代理未及时响应；未做任何更改"
 
-#: vrtManager/instance.py:3320
+#: vrtManager/instance.py:3328
 msgid "The VM runs Windows: its guest agent sets no root password or SSH key"
 msgstr "该虚拟机运行 Windows：其客户机代理不能设置 root 密码或 SSH 密钥"
 
