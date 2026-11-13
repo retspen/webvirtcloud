@@ -101,3 +101,28 @@ filterInstances(page([group(fleet)], "", "Crashed", undefined, {counts, status})
 assert.strictEqual(counts[3].parentElement.hidden, false, "the chosen state stays, even empty");
 filterInstances(page([group(fleet)], "no-such-vm", "Active", undefined, {counts, status}));
 assert.strictEqual(counts[0].parentElement.hidden, false, "All stays when nothing is found");
+
+// a search is without case and accents in any language: "istanbul" finds "İSTANBUL"
+const turkish = [vm("İSTANBUL-1", "Active"), vm("ankara", "Active"), vm("Şişli", "Off")];
+filterInstances(page([group(turkish)], "istanbul", ""));
+assert.deepStrictEqual(visible(turkish), ["İSTANBUL-1"]);
+filterInstances(page([group(turkish)], "sisli", ""));
+assert.deepStrictEqual(visible(turkish), ["Şişli"]);
+
+// the chosen state is remembered as the search is: a list the poll reloads keeps it
+{
+    const vmModule = require("vm");
+    const fs = require("fs");
+    const stored = {"VMs_filter_state": "Off"};
+    const pill = (state) => ({dataset: {pillState: state}, classList: {toggle() {}}, setAttribute() {}});
+    const pillList = [pill(""), pill("Active"), pill("Off")];
+    const elements = {
+        filter: {value: "", hasAttribute: () => false, addEventListener() {}},
+        "state-filter": {value: "", addEventListener() {}},
+        "state-pills": {querySelectorAll: () => pillList, querySelector: () => pillList[0], addEventListener() {}},
+    };
+    const doc = {title: "VMs", getElementById: (id) => elements[id], querySelectorAll: () => []};
+    const storage = {getItem: (k) => stored[k] || null, setItem: (k, v) => { stored[k] = v; }, removeItem: (k) => { delete stored[k]; }};
+    vmModule.runInNewContext(fs.readFileSync(process.argv[2], "utf8"), {document: doc, sessionStorage: storage});
+    assert.strictEqual(elements["state-filter"].value, "Off");
+}

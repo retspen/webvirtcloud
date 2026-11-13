@@ -12,17 +12,25 @@
 // The instance list's state pills (#state-pills) set the state; each one's
 // [data-count-state] counts the VMs of its state the search finds (its
 // state left aside), "" all of them; a state's pill with none is hidden
-// unless chosen. #filter-status tells screen readers how many VMs match,
-// collapsed hosts' VMs too.
+// unless chosen; the chosen state is remembered as the search is, so that a
+// list the poll reloads keeps it. #filter-status tells screen readers how
+// many VMs match, collapsed hosts' VMs too.
+
+// text as it is compared: without case and accents, whatever the browser's
+// language ("İSTANBUL", "istanbul" and "Istanbul" are one; so are "ş" and "s")
+function fold(text) {
+    return text.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/ı/g, "i");
+}
+
 function filterTable(doc) {
-    var text = doc.getElementById("filter").value.toLowerCase();
+    var text = fold(doc.getElementById("filter").value);
     var states = doc.getElementById("state-filter");
     var state = states ? states.value : "";
     var anyShown = false;
     var counts = {"": 0}, vms = 0, shownVms = 0;
     doc.querySelectorAll(".searchable").forEach(function (group) {
         var host = group.dataset.host;
-        var hostMatches = host !== undefined && host.toLowerCase().includes(text);
+        var hostMatches = host !== undefined && fold(host).includes(text);
         var header = null, shown = false;
         group.querySelectorAll("tr, [data-search], [data-group-header]").forEach(function (row) {
             if (row.hasAttribute("data-group-header")) {
@@ -31,7 +39,7 @@ function filterTable(doc) {
             }
             var mark = row.querySelector("[data-state]");
             var searched = row.dataset.search !== undefined ? row.dataset.search : row.textContent;
-            var found = hostMatches || searched.toLowerCase().includes(text);
+            var found = hostMatches || fold(searched).includes(text);
             row.hidden = !((!state || (mark && mark.dataset.state === state)) && found);
             shown = shown || !row.hidden;
             if (mark) {
@@ -64,7 +72,7 @@ function filterTable(doc) {
 }
 
 if (typeof module !== "undefined") {
-    module.exports = {filterTable: filterTable};
+    module.exports = {filterTable: filterTable, fold: fold};
 } else {
     var search = document.getElementById("filter");
     var states = document.getElementById("state-filter");
@@ -72,12 +80,12 @@ if (typeof module !== "undefined") {
     // search ([data-forget], the group form's members) starts empty
     var remember = !search.hasAttribute("data-forget");
     var key = document.title + "_filter";
-    function keep(value) {
+    function keep(value, which) {
         try {
             if (value) {
-                sessionStorage.setItem(key, value);
+                sessionStorage.setItem(which || key, value);
             } else {
-                sessionStorage.removeItem(key);
+                sessionStorage.removeItem(which || key);
             }
         } catch (e) {
             // storage turned off: the search is not kept
@@ -102,6 +110,7 @@ if (typeof module !== "undefined") {
     var pills = document.getElementById("state-pills");
     function chooseState(pill) {
         states.value = pill.dataset.pillState;
+        keep(states.value, key + "_state");
         pills.querySelectorAll("[data-pill-state]").forEach(function (other) {
             other.classList.toggle("active", other === pill);
             other.setAttribute("aria-pressed", other === pill);
@@ -109,6 +118,18 @@ if (typeof module !== "undefined") {
         filterTable(document);
     }
     if (pills) {
+        var kept = "";
+        try {
+            kept = sessionStorage.getItem(key + "_state") || "";
+        } catch (e) {
+            // storage turned off: all states
+        }
+        var keptPill = kept && Array.prototype.find.call(pills.querySelectorAll("[data-pill-state]"), function (pill) {
+            return pill.dataset.pillState === kept;
+        });
+        if (keptPill) {
+            chooseState(keptPill);
+        }
         pills.addEventListener("click", function (event) {
             var pill = event.target.closest("[data-pill-state]");
             if (pill) {
