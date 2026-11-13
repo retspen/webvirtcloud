@@ -143,7 +143,7 @@ class VMRowTests(TestCase):
         self.proxy.get_console_passwd.return_value = ""
         self.proxy.get_console_keymap.return_value = ""
         self.proxy.set_console_keymap.return_value = False  # no graphics device
-        self.proxy.set_console_listener_addr.return_value = False  # a socket, no address
+        self.proxy.set_console_listener_addr.return_value = False  # no graphics device
         form = {"listen_on": "0.0.0.0", "keymap": "de", "password_action": "keep",
                 "seen": console_seen("vnc", "127.0.0.1", "auto", "")}
         self.post("update_console", form)

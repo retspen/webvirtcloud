@@ -2485,7 +2485,8 @@ def getvvfile(request, pk):
         listen = proxy.get_console_listener_addr()
         response.writelines("[virt-viewer]\n")
         response.writelines(f"type={proxy.get_console_type()}\n")
-        response.writelines(f"host={proxy.host if listen == '0.0.0.0' else listen}\n")
+        # a console on all IPv4 or IPv6 addresses is reached through the host
+        response.writelines(f"host={proxy.host if listen in ('0.0.0.0', '::') else listen}\n")
         response.writelines(f"port={proxy.get_console_port()}\n")
         response.writelines(f"title={keyfile_value(proxy.instance.name())}\n")
         # as the console page: without the permission the viewer asks for the password

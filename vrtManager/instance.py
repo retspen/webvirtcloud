@@ -1639,6 +1639,10 @@ class wvmInstance(wvmConnect):
         except ValueError:  # a host name
             return False
 
+    def get_console_listen_type(self, config=False):
+        """address, network, socket or none; None for a console without a listen element"""
+        return util.get_xml_path(self._XMLDesc(PERSISTENT_XML if config else 0), "/domain/devices/graphics[1]/listen/@type")
+
     def set_console_listener_addr(self, listener_addr):
         root = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
         # The console is the first graphics device of the definition being
@@ -1648,7 +1652,9 @@ class wvmInstance(wvmConnect):
             return False
         listen = graphic.find("listen[@type='address']")
         if listen is None:
-            return False
+            raise util.OperationError(
+                gettext_noop("The console listens on no address (on a network, a socket or nowhere); "
+                             "change it in the XML editor"))
         if listener_addr:
             graphic.set("listen", listener_addr)
             listen.set("address", listener_addr)
@@ -1665,6 +1671,11 @@ class wvmInstance(wvmConnect):
         serial console opens (libvirt adds the serial port for the console)."""
         root = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
         devices = root.find("devices")
+        console = devices.find("console")
+        if console_type == "pty" and console is not None and console.get("type") != "pty":
+            raise util.OperationError(
+                gettext_noop("The serial console is a %(type)s one, the browser opens only a pty one; "
+                             "change it in the XML editor"), type=console.get("type"))
         graphics = devices.findall("graphics")
         for graphic in graphics:
             devices.remove(graphic)
@@ -1684,7 +1695,7 @@ class wvmInstance(wvmConnect):
             if passwd is not None:
                 fits = len(passwd) <= 8 and all(" " <= c <= "~" for c in passwd)
                 vnc.set("passwd", passwd if fits else util.randomPasswd(8))
-        elif devices.find("console") is None:
+        elif console is None:
             etree.SubElement(devices, "console", type="pty")
         return self._defineXML(etree.tostring(root).decode())
 

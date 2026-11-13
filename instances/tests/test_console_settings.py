@@ -57,6 +57,23 @@ class UpdateConsoleTestCase(TestCase):
             self.assertEqual(messages[-1], "Console settings were not saved: "
                                            "The console settings were changed meanwhile; check them and save again.")
 
+    def test_a_listen_address_that_cannot_change_saves_nothing(self):
+        # a socket console: refused before the password and keymap are saved
+        with patch("instances.models.wvmInstance") as wvm:
+            proxy = wvm.return_value
+            proxy.get_console_type.return_value = "vnc"
+            proxy.get_console_listen_type.return_value = "socket"
+            proxy.get_console_listener_addr.return_value = "127.0.0.1"
+            proxy.get_console_keymap.return_value = ""
+            proxy.get_console_passwd.return_value = None
+            response = self.client.post(reverse("instances:update_console", args=[self.instance.id]),
+                                        {**VNC, "listen_on": "0.0.0.0", "keymap": "de", "password_action": "generate",
+                                         "seen": console_seen("vnc", "127.0.0.1", "auto", None)})
+        proxy.set_console_passwd.assert_not_called()
+        proxy.set_console_keymap.assert_not_called()
+        proxy.set_console_listener_addr.assert_not_called()
+        self.assertIn("listens on no address", str(list(get_messages(response.wsgi_request))[0]))
+
     def test_a_template_s_console_settings_are_not_changed(self):
         # its page has no console form: a template is cloned, not run
         self.instance.is_template = True

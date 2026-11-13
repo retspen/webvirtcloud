@@ -108,6 +108,11 @@ class ConsoleForm(forms.Form):
                 self.add_error("password", _("A VNC password takes up to 8 letters, digits or symbols, without accents."))
             elif not password.isprintable():  # a SPICE password
                 self.add_error("password", _("A password takes no line breaks or other control characters."))
+        # refused before anything is saved; a new console type gets an address listener
+        if ("listen_on" in self.changed_data and data.get("console_type") in ("", self.initial["console_type"])
+                and self.instance.proxy.get_console_listen_type(config=True) in ("network", "socket", "none")):
+            self.add_error("listen_on", _("The console listens on no address (on a network, a socket or nowhere); "
+                                          "change it in the XML editor"))
         # A console that listens beyond localhost (set by an administrator)
         # keeps its password unless an administrator removes it.
         if action == "none" and not self.is_superuser and not self.instance.proxy.console_listens_locally():

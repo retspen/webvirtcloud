@@ -6,6 +6,7 @@ import unittest
 from lxml import etree
 
 from vrtManager.instance import wvmInstance
+from vrtManager.util import OperationError
 
 SPICE = """<domain><devices>
     <graphics type='spice' autoport='yes' keymap='de' passwd='%s'><listen type='address' address='0.0.0.0'/></graphics>
@@ -54,3 +55,13 @@ class ConsoleGraphicsTestCase(unittest.TestCase):
         self.assertEqual((p.get_console_type(), p.get_console_port(), p.get_console_passwd(),
                           p.get_console_keymap(), p.get_console_listener_addr()),
                          ("vnc", "5901", None, "", "127.0.0.1"))
+
+    def test_a_change_the_console_cannot_take_is_refused_and_nothing_is_saved(self):
+        # the browser opens only a pty serial console; a socket console has no address to change
+        p = vm("""<domain><devices><console type='tcp'><source mode='bind' host='127.0.0.1' service='4555'/></console>
+            <graphics type='vnc'><listen type='socket'/></graphics></devices></domain>""")
+        for change, reason in ((lambda: p.set_console_type("pty"), "The serial console is a tcp one"),
+                               (lambda: p.set_console_listener_addr("0.0.0.0"), "The console listens on no address")):
+            with self.subTest(reason), self.assertRaisesRegex(OperationError, reason):
+                change()
+        self.assertEqual(p.defined, [])

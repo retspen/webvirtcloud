@@ -66,6 +66,12 @@ class CanOpenConsoleTestCase(TestCase):
         # the VM found by its UUID; a console on all addresses is reached through the host
         for line in (b"type=vnc", b"host=192.0.2.7", b"port=5900", b"title=cons-vm"):
             self.assertIn(line + b"\n", res.content)
+        with patch("instances.models.wvmInstance") as wvm:
+            proxy = wvm.return_value.cached_reads.return_value.__enter__.return_value
+            proxy.host = "192.0.2.7"
+            proxy.get_console_listener_addr.return_value = "::"  # all IPv6 addresses
+            res = self.client.get(reverse("instances:getvvfile", args=[self.instance.id]))
+        self.assertIn(b"host=192.0.2.7\n", res.content)
         # the password only with the permission the console page asks for, as there
         self.assertNotIn(b"password=", res.content)
         self.owner.user_permissions.add(Permission.objects.get(codename="passwordless_console"))
