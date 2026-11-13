@@ -6,6 +6,7 @@ from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
 
+from appsettings.models import AppSettings
 from computes.models import Compute
 from instances.models import Instance
 from libvirt import libvirtError
@@ -14,6 +15,7 @@ from vrtManager.util import OperationError
 
 class SetRootPassTestCase(TestCase):
     def setUp(self):
+        AppSettings.objects.filter(key__startswith="SHOW_ACCESS_").update(value="True")  # the Access forms are on
         self.admin = get_user_model().objects.create_superuser("tests-admin", "admin@example.com", "pw")
         self.client.force_login(self.admin)
         self.compute = Compute.objects.create(
@@ -50,6 +52,34 @@ class SetRootPassTestCase(TestCase):
         self.assertTrue(data["passwd"].startswith("$6$"))
         self.assertFalse(data["passwd"].startswith("$6$kgPoiREy$"))
         self.assertTrue(sha512_crypt.verify("newSecretPassword123", data["passwd"]))
+
+    @patch("instances.views.gstfsd_request")
+    @patch.object(Instance, "proxy")
+    def test_an_access_turned_off_in_settings_is_refused(self, mock_proxy, gstfsd):
+        # the setting hides the form: a POST does not reach the VM either
+        from accounts.models import UserSSHKey
+
+        key = UserSSHKey.objects.create(user=self.admin, keyname="k", keypublic="ssh-ed25519 AAAA k")
+        mock_proxy.get_status.return_value = 5
+        AppSettings.objects.filter(key__startswith="SHOW_ACCESS_").update(value="False")
+        for name, data in (("rootpasswd", {"passwd": "x"}), ("add_public_key", {"sshkeyid": key.id})):
+            with self.subTest(name):
+                response = self.client.post(reverse(f"instances:{name}", args=[self.instance.id]), data)
+                self.assertEqual(response.status_code, 403)
+        gstfsd.assert_not_called()
+
+    @patch("instances.views.gstfsd_request")
+    @patch.object(Instance, "proxy")
+    def test_a_password_that_cannot_be_hashed_is_refused_in_words(self, mock_proxy, gstfsd):
+        mock_proxy.get_status.return_value = 5
+        for passwd in ("a" * 4097, "a\x00b"):
+            with self.subTest(len(passwd)):
+                response = self.client.post(reverse("instances:rootpasswd", args=[self.instance.id]), {"passwd": passwd})
+                self.assertEqual(response.status_code, 302)
+                self.assertEqual([str(m) for m in get_messages(response.wsgi_request)],
+                                 ["Enter a password of at most 4096 characters, without NUL characters"])
+                self.client.cookies.pop("messages", None)
+        gstfsd.assert_not_called()
 
     def test_set_root_pass_get_not_allowed(self):
         response = self.client.get(reverse("instances:rootpasswd", args=[self.instance.id]))
@@ -94,6 +124,7 @@ class GuestAgentAccessTestCase(TestCase):
     key through the agent; gstfsd serves only a shut-off VM."""
 
     def setUp(self):
+        AppSettings.objects.filter(key__startswith="SHOW_ACCESS_").update(value="True")  # the Access forms are on
         from accounts.models import UserSSHKey
         from django.contrib.auth import get_user_model
 

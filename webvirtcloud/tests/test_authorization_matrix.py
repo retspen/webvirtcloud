@@ -24,6 +24,7 @@ from django.test import Client, TestCase
 from django.urls import NoReverseMatch, URLPattern, URLResolver, get_resolver, resolve, reverse
 
 from accounts.models import UserInstance, UserSSHKey
+from appsettings.models import AppSettings
 from computes.models import Compute
 from instances.models import Instance
 
@@ -178,6 +179,8 @@ class AuthorizationMatrixTestCase(TestCase):
             uuid="22222222-3333-4444-5555-666666666666",
         )
         self.client = Client(raise_request_exception=True)
+        # the Access forms on: a setting that turns them off refuses everyone (test_root_pass)
+        AppSettings.objects.filter(key__startswith="SHOW_ACCESS_").update(value="True")
 
     def _kwargs(self, params):
         kwargs = {}

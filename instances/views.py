@@ -39,6 +39,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy, gettext_noop
 from django.views.decorators.http import require_POST
 from django.views.decorators.debug import sensitive_post_parameters
+from passlib.exc import PasswordValueError
 from passlib.hash import sha512_crypt
 from libvirt import (VIR_DOMAIN_PAUSED,
                      VIR_DOMAIN_RUNNING,
@@ -1093,39 +1094,45 @@ def access_error(request, err):
 @serialize_instance_mutation
 def set_root_pass(request, pk):
     instance = get_instance(request.user, pk, perm_type="change")
+    if app_settings.SHOW_ACCESS_ROOT_PASSWORD != "True":  # turned off in Settings, the form too
+        raise PermissionDenied
+    back = get_safe_redirect(request, default=reverse("instances:instance", args=[instance.id]) + "#access")
 
-    if request.method == "POST":
-        passwd = request.POST.get("passwd", None)
-        if passwd:
-            passwd_hash = sha512_crypt.hash(passwd)
-            # gstfsd opens the domain by name: send the host's current one.
-            data = {"action": "password", "passwd": passwd_hash, "vname": instance.proxy.instance.name()}
+    passwd = request.POST.get("passwd", "")
+    if not passwd:
+        messages.error(request, _("Enter a password"))
+        return back
+    try:
+        passwd_hash = sha512_crypt.hash(passwd)
+    except PasswordValueError:
+        messages.error(request, _("Enter a password of at most 4096 characters, without NUL characters"))
+        return back
+    # gstfsd opens the domain by name: send the host's current one.
+    data = {"action": "password", "passwd": passwd_hash, "vname": instance.proxy.instance.name()}
 
-            status = instance.proxy.get_status()
-            if status == 5 or (status == 1 and instance.guest_agent_ready):
-                try:
-                    with audit_vm(request, instance, "reset root password"):
-                        if status == 5:
-                            gstfsd_request(instance.compute, data)
-                        else:
-                            instance.proxy.set_user_password("root", passwd_hash)
-                except (util.OperationError, libvirtError) as err:
-                    messages.error(request, access_error(request, err))
+    status = instance.proxy.get_status()
+    if status == 5 or (status == 1 and instance.guest_agent_ready):
+        try:
+            with audit_vm(request, instance, "reset root password"):
+                if status == 5:
+                    gstfsd_request(instance.compute, data)
                 else:
-                    messages.success(request, _("Reset root password"))
-            else:
-                messages.error(request, AGENT_OR_SHUT_OFF)
+                    instance.proxy.set_user_password("root", passwd_hash)
+        except (util.OperationError, libvirtError) as err:
+            messages.error(request, access_error(request, err))
         else:
-            messages.error(request, _("Enter a password"))
-    return get_safe_redirect(
-        request, default=reverse("instances:instance", args=[instance.id]) + "#access"
-    )
+            messages.success(request, _("Reset root password"))
+    else:
+        messages.error(request, AGENT_OR_SHUT_OFF)
+    return back
 
 
 @require_POST
 @serialize_instance_mutation
 def add_public_key(request, pk):
     instance = get_instance(request.user, pk, perm_type="change")
+    if app_settings.SHOW_ACCESS_SSH_KEYS != "True":  # turned off in Settings, the form too
+        raise PermissionDenied
 
     if request.method == "POST":
         sshkeyid = request.POST.get("sshkeyid", "")

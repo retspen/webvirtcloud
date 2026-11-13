@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import libvirt
 from computes.models import Compute
+from appsettings.models import AppSettings
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
 from django.test import TestCase
@@ -19,6 +20,7 @@ UUID = "11111111-2222-3333-4444-555555555555"
 
 class VMRowTests(TestCase):
     def setUp(self):
+        AppSettings.objects.filter(key__startswith="SHOW_ACCESS_").update(value="True")  # the Access forms are on
         self.client.force_login(get_user_model().objects.create_superuser("vm-admin", "vm@example.com", "pw"))
         self.client.raise_request_exception = False
         compute = Compute.objects.create(name="c1", hostname="192.0.2.1", login="", password="", type=4)

@@ -9,6 +9,7 @@ from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
 
+from appsettings.models import AppSettings
 from computes.models import Compute
 from instances.models import Instance
 from logs.models import Logs
@@ -16,6 +17,7 @@ from logs.models import Logs
 
 class MissingFieldTestCase(TestCase):
     def setUp(self):
+        AppSettings.objects.filter(key__startswith="SHOW_ACCESS_").update(value="True")  # the Access forms are on
         self.client.force_login(get_user_model().objects.create_superuser("mf", "mf@example.com", "pw"))
         Logs.objects.all().delete()  # the login's row
         self.compute = Compute.objects.create(name="mf-c", hostname="127.0.0.1", login="", password="", type=4)
