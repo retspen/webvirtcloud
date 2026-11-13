@@ -191,7 +191,7 @@ def instances(request, compute_id):
     states = vm_states(request.user, [compute])
     utils.refresh_instance_database(compute)
     instances = list(Instance.objects.filter(compute=compute).order_by("name").prefetch_related("userinstance_set"))
-    read_list_rows(instances)
+    read_list_rows(instances, [compute])
 
     return render(
         request, "computes/instances.html",

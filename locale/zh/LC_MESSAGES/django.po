@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 11:54+0000\n"
+"POT-Creation-Date: 2026-11-13 12:28+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -5788,60 +5788,65 @@ msgstr "最近的记录，最新的在前。"
 msgid "All of this VM's logs"
 msgstr "该虚拟机的全部日志"
 
-#: instances/utils.py:94 instances/utils.py:126
+#: instances/utils.py:96 instances/utils.py:128
 #, python-format
 msgid ""
 "The disk files cannot be checked on %(host)s: it did not answer within "
 "%(seconds)s seconds"
 msgstr "无法在 %(host)s 上检查磁盘文件：它在 %(seconds)s 秒内没有响应"
 
-#: instances/utils.py:112
+#: instances/utils.py:114
 #, python-format
 msgid "The disk files cannot be checked on %(host)s: %(err)s"
 msgstr "无法在 %(host)s 上检查磁盘文件：%(err)s"
 
-#: instances/utils.py:176
+#: instances/utils.py:178
 msgid ""
 "The quota cannot be checked: a host of your virtual machines cannot be "
 "reached, or the size of one of their disks cannot be read. Nothing was "
 "changed."
 msgstr "无法检查配额：您的某台虚拟机所在主机无法连接，或其某个磁盘的大小无法读取。未做任何更改。"
 
-#: instances/utils.py:183
+#: instances/utils.py:185
 msgid "The quota of virtual machines is reached"
 msgstr "虚拟机配额已用尽"
 
-#: instances/utils.py:184
+#: instances/utils.py:186
 msgid "The vCPU quota is reached"
 msgstr "vCPU 配额已用尽"
 
-#: instances/utils.py:185
+#: instances/utils.py:187
 msgid "The memory quota is reached"
 msgstr "内存配额已用尽"
 
-#: instances/utils.py:186
+#: instances/utils.py:188
 msgid "The disk quota is reached"
 msgstr "磁盘配额已用尽"
 
-#: instances/utils.py:195
+#: instances/utils.py:197
 #, python-format
 msgid "%(quota)s (%(total)s > %(limit)s)"
 msgstr "%(quota)s（%(total)s > %(limit)s）"
 
-#: instances/utils.py:287
+#: instances/utils.py:289
 msgid "None available device name"
 msgstr "没有可用的设备名称"
 
-#: instances/utils.py:460
+#: instances/utils.py:472
+#, python-format
+msgid "Connection Failed: %(host)s did not answer within %(seconds)s seconds"
+msgstr "连接失败：%(host)s 在 %(seconds)s 秒内无响应"
+
+#: instances/utils.py:503
 #, python-format
 msgid "%(hostname)s via %(address)s"
 msgstr "%(hostname)s，经由 %(address)s"
 
-#: instances/utils.py:493
+#: instances/utils.py:536
 msgid "Invalid MAC address"
 msgstr "无效的 MAC 地址"
 
-#: instances/utils.py:495
+#: instances/utils.py:538
 msgid "More MAC addresses than networks"
 msgstr "MAC 地址数量多于网络数量"
 
@@ -8729,36 +8734,36 @@ msgid ""
 " for it"
 msgstr "连接失败：%(host)s 无响应：仍有 %(requests)s 个请求在等待它"
 
-#: vrtManager/connection.py:231
+#: vrtManager/connection.py:243
 #, python-format
 msgid "Connection Failed: %(host)s did not answer within %(seconds)s s"
 msgstr "连接失败：%(host)s 在 %(seconds)s 秒内未响应"
 
-#: vrtManager/connection.py:242
+#: vrtManager/connection.py:254
 msgid "the connection closed right after opening"
 msgstr "连接在打开后立即关闭"
 
-#: vrtManager/connection.py:255
+#: vrtManager/connection.py:267
 #, python-format
 msgid "Connection Failed: %(error)s"
 msgstr "连接失败：%(error)s"
 
-#: vrtManager/connection.py:324
+#: vrtManager/connection.py:336
 #, python-format
 msgid "Connection closed (%(reason)s)"
 msgstr "连接已关闭（%(reason)s）"
 
-#: vrtManager/connection.py:476
+#: vrtManager/connection.py:488
 #, python-format
 msgid "Connection Failed: %(host)s is not connected"
 msgstr "连接失败：%(host)s 未连接"
 
-#: vrtManager/connection.py:528
+#: vrtManager/connection.py:540
 #, python-format
 msgid "This host has no architecture %(arch)s"
 msgstr "此主机没有 %(arch)s 架构"
 
-#: vrtManager/connection.py:1191
+#: vrtManager/connection.py:1203
 #, python-format
 msgid ""
 "Pool %(pool)s is not active: the files the disks of the VMs in it are made "

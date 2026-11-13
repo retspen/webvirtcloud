@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 11:54+0000\n"
+"POT-Creation-Date: 2026-11-13 12:28+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -6122,7 +6122,7 @@ msgstr "En son satırlar, en yenisi önce."
 msgid "All of this VM's logs"
 msgstr "Bu sanal makinenin tüm logları"
 
-#: instances/utils.py:94 instances/utils.py:126
+#: instances/utils.py:96 instances/utils.py:128
 #, python-format
 msgid ""
 "The disk files cannot be checked on %(host)s: it did not answer within "
@@ -6131,12 +6131,12 @@ msgstr ""
 "Disk dosyaları %(host)s üzerinde denetlenemiyor: %(seconds)s saniye içinde "
 "yanıt vermedi"
 
-#: instances/utils.py:112
+#: instances/utils.py:114
 #, python-format
 msgid "The disk files cannot be checked on %(host)s: %(err)s"
 msgstr "Disk dosyaları %(host)s üzerinde denetlenemiyor: %(err)s"
 
-#: instances/utils.py:176
+#: instances/utils.py:178
 msgid ""
 "The quota cannot be checked: a host of your virtual machines cannot be "
 "reached, or the size of one of their disks cannot be read. Nothing was "
@@ -6145,41 +6145,46 @@ msgstr ""
 "Kota denetlenemiyor: sanal makinelerinizin bir sunucusuna erişilemiyor ya da "
 "disklerinden birinin boyutu okunamıyor. Hiçbir şey değiştirilmedi."
 
-#: instances/utils.py:183
+#: instances/utils.py:185
 msgid "The quota of virtual machines is reached"
 msgstr "Sanal makine kotası doldu"
 
-#: instances/utils.py:184
+#: instances/utils.py:186
 msgid "The vCPU quota is reached"
 msgstr "vCPU kotası doldu"
 
-#: instances/utils.py:185
+#: instances/utils.py:187
 msgid "The memory quota is reached"
 msgstr "Bellek kotası doldu"
 
-#: instances/utils.py:186
+#: instances/utils.py:188
 msgid "The disk quota is reached"
 msgstr "Disk kotası doldu"
 
-#: instances/utils.py:195
+#: instances/utils.py:197
 #, python-format
 msgid "%(quota)s (%(total)s > %(limit)s)"
 msgstr "%(quota)s (%(total)s > %(limit)s)"
 
-#: instances/utils.py:287
+#: instances/utils.py:289
 msgid "None available device name"
 msgstr "Hiçbiri uygun aygıt adı değil"
 
-#: instances/utils.py:460
+#: instances/utils.py:472
+#, python-format
+msgid "Connection Failed: %(host)s did not answer within %(seconds)s seconds"
+msgstr "Bağlantı başarısız: %(host)s %(seconds)s saniye içinde yanıt vermedi"
+
+#: instances/utils.py:503
 #, python-format
 msgid "%(hostname)s via %(address)s"
 msgstr "%(address)s üzerinden %(hostname)s"
 
-#: instances/utils.py:493
+#: instances/utils.py:536
 msgid "Invalid MAC address"
 msgstr "Geçersiz MAC adresi"
 
-#: instances/utils.py:495
+#: instances/utils.py:538
 msgid "More MAC addresses than networks"
 msgstr "Ağlardan daha fazla MAC adresi"
 
@@ -9240,36 +9245,36 @@ msgstr ""
 "Bağlantı başarısız: %(host)s yanıt vermiyor: %(requests)s istek hâlâ onu "
 "bekliyor"
 
-#: vrtManager/connection.py:231
+#: vrtManager/connection.py:243
 #, python-format
 msgid "Connection Failed: %(host)s did not answer within %(seconds)s s"
 msgstr "Bağlantı başarısız: %(host)s %(seconds)s sn içinde yanıt vermedi"
 
-#: vrtManager/connection.py:242
+#: vrtManager/connection.py:254
 msgid "the connection closed right after opening"
 msgstr "bağlantı açıldıktan hemen sonra kapandı"
 
-#: vrtManager/connection.py:255
+#: vrtManager/connection.py:267
 #, python-format
 msgid "Connection Failed: %(error)s"
 msgstr "Bağlantı başarısız: %(error)s"
 
-#: vrtManager/connection.py:324
+#: vrtManager/connection.py:336
 #, python-format
 msgid "Connection closed (%(reason)s)"
 msgstr "Bağlantı kapandı (%(reason)s)"
 
-#: vrtManager/connection.py:476
+#: vrtManager/connection.py:488
 #, python-format
 msgid "Connection Failed: %(host)s is not connected"
 msgstr "Bağlantı başarısız: %(host)s bağlı değil"
 
-#: vrtManager/connection.py:528
+#: vrtManager/connection.py:540
 #, python-format
 msgid "This host has no architecture %(arch)s"
 msgstr "Bu sunucuda %(arch)s mimarisi yok"
 
-#: vrtManager/connection.py:1191
+#: vrtManager/connection.py:1203
 #, python-format
 msgid ""
 "Pool %(pool)s is not active: the files the disks of the VMs in it are made "

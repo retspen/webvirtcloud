@@ -158,6 +158,18 @@ def _count_on(connection):
 
 
 @contextlib.contextmanager
+def counted_thread():
+    """A thread a web request starts to use a host counts as a request of its
+    own (HOST_REQUESTS): one stuck on a host it asks holds a place there, and
+    the next ones are refused, not piled up."""
+    _request.active = True
+    try:
+        yield
+    finally:
+        _request_finished()
+
+
+@contextlib.contextmanager
 def other_hosts():
     """For code that reads other hosts in the middle of a web request, which
     then goes on with the host it used before, through the objects it kept:

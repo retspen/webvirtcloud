@@ -5,6 +5,7 @@ import string
 import threading
 import time
 from collections import namedtuple
+from copy import copy as shallow_copy
 from contextlib import contextmanager
 
 from accounts.models import UserInstance, UserAttributes
@@ -18,9 +19,9 @@ from django.utils.translation import gettext_noop
 from libvirt import libvirtError
 from logs.audit import reason, write
 from operations.models import Operation
-from vrtManager.connection import other_hosts, wvmConnect
+from vrtManager.connection import counted_thread, other_hosts, wvmConnect
 from vrtManager.instance import wvmInstance, wvmInstances
-from vrtManager.util import ConnectionFailed, message, vol_dev_type
+from vrtManager.util import ConnectionFailed, HostBusy, message, vol_dev_type
 
 from .models import Instance
 
@@ -418,12 +419,16 @@ def record_migration(instance, new_compute):
             instance.save()
 
 
-def read_list_rows(instances):
+def read_list_rows(instances, computes):
     """Each VM's info and title for a VM list, read once a host
     (get_domain_rows), not three calls a VM; a VM whose host or whose
-    domain cannot be read has no info: the list shows it unknown."""
+    domain cannot be read has no info: the list shows it unknown. The VMs
+    take the list's computes, on which vm_states marked those that did not
+    answer."""
+    by_pk = {compute.pk: compute for compute in computes}
     rows, shown = {}, {}
     for inst in instances:
+        inst.compute = by_pk.get(inst.compute_id, inst.compute)
         shown.setdefault(inst.compute_id, set()).add(inst.uuid)
     for compute in {inst.compute_id: inst.compute for inst in instances}.values():
         try:
@@ -434,20 +439,61 @@ def read_list_rows(instances):
         inst.info, inst.title = rows[inst.compute_id].get(inst.uuid, (None, ""))
 
 
+# how long a VM list and its poll wait for a host's VMs, all hosts asked at once
+LIST_HOST_WAIT = 10
+
+
+def host_domain_states(computes):
+    """{compute pk: get_domain_states(), or None when it cannot be read}, all
+    hosts asked at once. One that fails, or does not answer within
+    LIST_HOST_WAIT seconds, is None and is marked not answering for the rest
+    of the request (its status and connection): a stuck host no longer holds
+    every list."""
+    answers = {}  # compute pk: its states, or the exception that ended the read
+
+    def read(pk, compute):
+        with counted_thread():
+            try:
+                if compute.status is not True:
+                    raise compute.connection  # the error it connected with
+                answers[pk] = compute.proxy.get_domain_states()
+            except Exception as error:
+                answers[pk] = error
+
+    # each thread a copy of its compute: one that answers late sets nothing on the request's;
+    # daemon threads: one stuck on its host does not hold the process when it exits
+    threads = [threading.Thread(target=read, args=(compute.pk, shallow_copy(compute)), daemon=True)
+               for compute in computes]
+    for thread in threads:
+        thread.start()
+    deadline = time.monotonic() + LIST_HOST_WAIT
+    for thread in threads:
+        thread.join(max(0, deadline - time.monotonic()))
+    states = {}
+    for compute in computes:
+        answer = answers.get(compute.pk)
+        states[compute.pk] = answer if isinstance(answer, dict) else None
+        if isinstance(answer, dict):
+            continue
+        failure = answer or HostBusy(gettext_noop("Connection Failed: %(host)s did not answer within %(seconds)s seconds"),
+                                     host=compute.hostname, seconds=LIST_HOST_WAIT)
+        # what its cached properties then give for the rest of the request
+        vars(compute).update(connection=failure, status=False)
+    return states
+
+
 def vm_states(user, computes):
     """{compute pk: {"ok": True, "vms": {uuid: [name, state]}}, or {"ok": False}
-    for a host that cannot be read}: what the VM lists poll, read from libvirt;
-    for a user who does not see hosts only their own VMs (a VM is its host and
-    UUID: one UUID may be defined on two hosts)."""
+    for a host that cannot be read}: what the VM lists poll, read from libvirt
+    (host_domain_states); for a user who does not see hosts only their own
+    VMs (a VM is its host and UUID: one UUID may be defined on two hosts)."""
     show_hosts = user.is_superuser or user.has_perm("instances.view_instances")
     own = None if show_hosts else set(
         Instance.objects.filter(userinstance__user=user).values_list("compute_id", "uuid"))
     result = {}
+    states = host_domain_states(computes)
     for compute in computes:
-        try:
-            vms = compute.proxy.get_domain_states() if compute.status is True else None
-        except libvirtError:
-            vms = None
+        vms = states[compute.pk]
         result[str(compute.pk)] = {"ok": False} if vms is None else {
             "ok": True, "vms": {u: s for u, s in vms.items() if own is None or (compute.pk, u) in own}}
     return result

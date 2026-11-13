@@ -106,7 +106,7 @@ def index(request):
         # other users get no host names or connection errors, only whether
         # a host of their own VMs is down
         own_hosts_down = any(c.status is not True for c in computes)
-    utils.read_list_rows(instances)
+    utils.read_list_rows(instances, computes)
     if app_settings.VM_DRBD_STATUS == "True":
         # read here, once per host and all hosts at once (a list waits DRBD_STATUS_TIMEOUT at most):
         # the VM page alone left the list showing an old state
