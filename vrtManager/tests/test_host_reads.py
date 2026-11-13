@@ -190,6 +190,22 @@ class CapacityTestCase(unittest.TestCase):
         self.assertEqual(conn.wvm.getAllDomainStats.call_count, 1)
         idle.XMLDesc.assert_not_called()
 
+    def test_a_vm_that_cannot_be_read_leaves_the_capacity_unknown(self):
+        # a VM gone meanwhile is left out; one whose XML is refused would be missing from the sums
+        from libvirt import VIR_ERR_NO_DOMAIN, VIR_ERR_SYSTEM_ERROR, libvirtError
+
+        def unread(code):
+            err = libvirtError("refused")
+            err.get_error_code = lambda: code
+            return MagicMock(**{"XMLDesc.side_effect": err})
+
+        conn = connection(wvmHostDetails)
+        conn.wvm.getAllDomainStats = MagicMock(return_value=[(unread(VIR_ERR_NO_DOMAIN), {"state.state": VIR_DOMAIN_RUNNING})])
+        self.assertEqual(conn.get_capacity()["vms"]["running"], 0)
+        conn.wvm.getAllDomainStats = MagicMock(return_value=[(unread(VIR_ERR_SYSTEM_ERROR), {"state.state": VIR_DOMAIN_RUNNING})])
+        with self.assertRaises(libvirtError):
+            conn.get_capacity()
+
 
 class CpuTopologyTestCase(unittest.TestCase):
     """The topology comes from the capabilities' NUMA cells: getInfo makes

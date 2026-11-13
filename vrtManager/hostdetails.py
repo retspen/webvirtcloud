@@ -3,6 +3,7 @@ import time
 from libvirt import (
     libvirtError,
     VIR_CONNECT_GET_ALL_DOMAINS_STATS_NOWAIT,
+    VIR_ERR_NO_DOMAIN,
     VIR_DOMAIN_BLOCKED,
     VIR_DOMAIN_PAUSED,
     VIR_DOMAIN_RUNNING,
@@ -135,8 +136,10 @@ class wvmHostDetails(wvmConnect):
             if memory is None or vcpu is None:
                 try:
                     doc = etree.fromstring(dom.XMLDesc(0))
-                except libvirtError:
-                    continue  # gone meanwhile
+                except libvirtError as err:
+                    if err.get_error_code() == VIR_ERR_NO_DOMAIN:
+                        continue  # gone meanwhile
+                    raise  # unread, its share would be missing: the capacity is not known
                 memory, vcpu = int(doc.findtext("currentMemory")), doc.find("vcpu")
                 vcpu = int(vcpu.get("current", vcpu.text))
             yield stats["state.state"], memory, vcpu
