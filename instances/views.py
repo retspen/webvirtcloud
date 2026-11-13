@@ -235,8 +235,9 @@ def vm_report(request):
     owners = {}
     for owner in UserInstance.objects.select_related("user", "instance"):
         owners.setdefault((owner.instance.compute_id, owner.instance.uuid), []).append(owner.user.username)
-    header = ["VM", "State", "Host", "OS", "OS family", "vCPUs", "Memory (MiB)", "IP addresses",
-              "Address sources", "MAC addresses", "Owners", "In the panel"]
+    # in the reader's language
+    header = [_("VM"), _("State"), _("Host"), _("OS"), _("OS family"), _("vCPUs"), _("Memory (MiB)"), _("IP addresses"),
+              _("Address sources"), _("MAC addresses"), _("Owners"), _("In the panel")]
     rows = []
     for vm in result["vms"]:
         key = (vm["compute_id"], vm["uuid"])
@@ -244,24 +245,21 @@ def vm_report(request):
         reported = [(address, sources) for address, sources in vm["addresses"]
                     if not ip_address(address).is_link_local]
         found = {source for _address, sources in reported for source in sources}
-        row = {"VM": vm["name"], "State": str(state_label(vm["state"])[0]), "Host": hosts[vm["compute_id"]],
-               "OS": vm["os"], "OS family": vm["os_family"], "vCPUs": vm["vcpus"], "Memory (MiB)": vm["memory"],
-               "IP addresses": ", ".join(address for address, _sources in reported),
-               "Address sources": ", ".join(s for s in addresses.SOURCES.values() if s in found),
-               "MAC addresses": ", ".join(vm["macs"]), "Owners": ", ".join(sorted(owners.get(key, []))),
-               "In the panel": "yes" if key in known else "no"}
-        rows.append(list(row.values()))
+        rows.append([vm["name"], str(state_label(vm["state"])[0]), hosts[vm["compute_id"]], vm["os"], vm["os_family"],
+                     vm["vcpus"], vm["memory"], ", ".join(address for address, _sources in reported),
+                     ", ".join(s for s in addresses.SOURCES.values() if s in found), ", ".join(vm["macs"]),
+                     ", ".join(sorted(owners.get(key, []))), _("yes") if key in known else _("no")])
 
-    notes = [f"Created: {timezone.localtime():%Y-%m-%d %H:%M}",
-             f"VMs listed: {len(rows)}",
-             f"Running VMs read: {result['checked']}",
-             f"Without a connected guest agent (a static address on them cannot be seen): {result['no_agent']}",
-             f"Guest agents not read (a paused VM, no answer in time, or an error): {result['unread']}"]
+    notes = [_("Created: %(time)s") % {"time": f"{timezone.localtime():%Y-%m-%d %H:%M}"},
+             _("VMs listed: %(n)s") % {"n": len(rows)},
+             _("Running VMs read: %(n)s") % {"n": result["checked"]},
+             _("Without a connected guest agent (a static address on them cannot be seen): %(n)s") % {"n": result["no_agent"]},
+             _("Guest agents not read (a paused VM, no answer in time, or an error): %(n)s") % {"n": result["unread"]}]
     if result["hosts_down"]:
-        notes.append("Hosts not reached: " + ", ".join(result["hosts_down"]))
+        notes.append(_("Hosts not reached: %(hosts)s") % {"hosts": ", ".join(result["hosts_down"])})
     if result["hosts_unfinished"]:
-        notes.append("Hosts not finished in time: " + ", ".join(result["hosts_unfinished"]))
-    response = HttpResponse(report.workbook("VMs", header, rows, "Coverage", notes),
+        notes.append(_("Hosts not finished in time: %(hosts)s") % {"hosts": ", ".join(result["hosts_unfinished"])})
+    response = HttpResponse(report.workbook(_("VMs"), header, rows, _("Coverage"), notes),
                             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     response["Content-Disposition"] = f'attachment; filename="vms-{timezone.localtime():%Y%m%d-%H%M}.xlsx"'
     return response

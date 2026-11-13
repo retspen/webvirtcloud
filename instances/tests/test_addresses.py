@@ -159,6 +159,11 @@ class ReadAndMatchTests(unittest.TestCase):
         failing = FakeDomain({VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP: libvirtError("no ARP")})
         self.assertIsNone(addresses.read(failing, VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP))
 
+    def test_an_answer_that_is_no_address_is_skipped(self):
+        # one guest's bad answer does not end the search or the report: its other addresses count
+        dom = FakeDomain({AGENT: {"eth0": iface(MAC1, (0, "invalid-address", 24), (0, "192.0.2.10", 24))}})
+        self.assertEqual(addresses.read(dom, AGENT), [(MAC1, ip_address("192.0.2.10"))])
+
     def test_an_interface_without_a_mac_is_skipped(self):
         # the agent gives tunnels (wg0, tun0) no hardware address: libvirt's hwaddr is None
         dom = FakeDomain({AGENT: {"wg0": {"hwaddr": None, "addrs": [{"type": 0, "addr": "198.51.100.5", "prefix": 32}]},

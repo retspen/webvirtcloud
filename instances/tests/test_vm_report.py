@@ -38,17 +38,25 @@ class VmReportTests(TestCase):
         Instance.objects.create(compute=self.c2, name="vm-b", uuid=UUID_B)
         UserInstance.objects.create(user=self.owner, instance=self.a)
 
-    def report(self, user, vms=(), side_effect=None):
+    def report(self, user, vms=(), side_effect=None, language="en"):
         self.client.force_login(user)
         with patch("instances.addresses.inventory", return_value={"vms": list(vms), **COUNTS},
                    side_effect=side_effect) as inventory:
-            response = self.client.get(reverse("instances:vm_report"))
+            response = self.client.get(reverse("instances:vm_report"), HTTP_ACCEPT_LANGUAGE=language)
         return response, inventory
 
-    def sheets(self, response):
+    def sheets(self, response, names=("VMs", "Coverage")):
         book = load_workbook(BytesIO(response.content))
-        return ([list(row) for row in book["VMs"].iter_rows(values_only=True)],
-                [row[0] for row in book["Coverage"].iter_rows(values_only=True)])
+        return ([list(row) for row in book[names[0]].iter_rows(values_only=True)],
+                [row[0] for row in book[names[1]].iter_rows(values_only=True)])
+
+    def test_the_report_is_in_the_readers_language(self):
+        response, _ = self.report(self.admin, [vm(UNKNOWN, "made-with-virsh", self.c2.id, state=5, os="", family="")],
+                                  language="tr")
+        rows, coverage = self.sheets(response, ("Sanal makineler", "Kapsam"))
+        self.assertEqual(rows[0][:3], ["VM", "Durum", "Sunucu"])
+        self.assertEqual(rows[1][-1], "hayır")
+        self.assertIn("Listelenen sanal makineler: 1", coverage)
 
     def test_an_administrator_gets_every_vm_with_hosts_and_owners(self):
         response, inventory = self.report(self.admin, [

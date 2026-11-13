@@ -92,9 +92,14 @@ def read(dom, source):
             answer = dom.interfaceAddresses(source)
     except libvirtError:
         return None
-    return [(iface["hwaddr"].lower(), ip_address(addr["addr"]))
-            for iface in answer.values() if iface.get("hwaddr")
-            for addr in iface.get("addrs") or []]
+    pairs = []
+    for iface in answer.values():
+        for addr in (iface.get("addrs") or []) if iface.get("hwaddr") else []:
+            try:
+                pairs.append((iface["hwaddr"].lower(), ip_address(addr["addr"])))
+            except ValueError:
+                continue  # a guest agent's answer that is no address: the other addresses still count
+    return pairs
 
 
 def _counted(func, *args):
