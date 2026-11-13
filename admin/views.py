@@ -21,9 +21,22 @@ from instances.models import InstanceTombstone
 from instances.report import workbook
 from logs.audit import audit, changed_fields, snapshot
 from logs.models import Logs
+from vrtManager import util
 
 from . import forms
 from .decorators import superuser_only
+
+
+def form_seen(*snapshots):
+    """The fingerprint of what an edit form shows (snapshot()s), which it sends
+    back: a form opened before another administrator's change would undo it.
+    A password or a login of the user is no change of the form."""
+    shown = [sorted((key, sorted(value) if isinstance(value, frozenset) else value)
+                    for key, value in snap.items() if key not in ("password", "last_login")) for snap in snapshots]
+    return util.digest(repr(shown))
+
+
+STALE = _("%(name)s was changed meanwhile: here it is as it is now; make your change again")
 
 
 def group_snapshot(group):
@@ -65,6 +78,10 @@ def group_create(request):
 def group_update(request, pk):
     group = get_object_or_404(Group, pk=pk)
     subject, before = f"Group {group.name}", group_snapshot(group)
+    seen = form_seen(before)
+    if request.method == "POST" and request.POST.get("seen") != seen:
+        messages.error(request, STALE % {"name": group.name})
+        return redirect(request.get_full_path())
     form = forms.GroupForm(request.POST or None, instance=group)
     if form.is_valid():
         with audit(request, None, subject, "change") as entry:
@@ -80,6 +97,7 @@ def group_update(request, pk):
         {
             "form": form,
             "group": group,
+            "seen": seen,
             "title": _("Update Group"),
         },
     )
@@ -165,6 +183,10 @@ def user_update(request, pk):
     attributes, attributes_created = UserAttributes.objects.get_or_create(user=user)
     subject = f"User {user.username}"
     before, before_attributes = snapshot(user), snapshot(attributes)
+    seen = form_seen(before, before_attributes)
+    if request.method == "POST" and request.POST.get("seen") != seen:
+        messages.error(request, STALE % {"name": user.username})
+        return redirect(request.get_full_path())
     user_form = forms.UserForm(request.POST or None, instance=user)
     attributes_form = forms.UserAttributesForm(
         request.POST or None, instance=attributes
@@ -197,6 +219,7 @@ def user_update(request, pk):
             "user_form": user_form,
             "attributes_form": attributes_form,
             "edited_user": user,
+            "seen": seen,
             "title": _("Update User"),
         },
     )

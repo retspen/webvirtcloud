@@ -8,6 +8,7 @@ from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
 from lxml import html
+from admin.tests.edits import user_seen
 
 
 class UserPagesTests(TestCase):
@@ -23,7 +24,8 @@ class UserPagesTests(TestCase):
 
     def form_data(self, user, **changes):
         data = {"username": user.username, "is_active": "on", "role": "superuser" if user.is_superuser else "user",
-                "max_instances": "2", "max_cpus": "2", "max_memory": "2", "max_disk_size": "20", **changes}
+                "max_instances": "2", "max_cpus": "2", "max_memory": "2", "max_disk_size": "20", "seen": user_seen(user),
+                **changes}
         return {key: value for key, value in data.items() if value != ""}
 
     def test_an_administrator_cannot_block_delete_or_demote_themselves(self):
@@ -71,9 +73,22 @@ class UserPagesTests(TestCase):
     def test_a_refused_choice_is_said_beside_its_field(self):
         url = reverse("admin:user_update", args=[self.alice.pk])
         response = self.client.post(url, {"username": "up-alice", "is_active": "on", "groups": "99999", "user_permissions": "99999",
-                                          "role": "user", "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 1})
+                                          "role": "user", "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 1,
+                                          "seen": user_seen(self.alice)})
         page = html.fromstring(response.content)
         self.assertEqual(len(page.xpath("//fieldset//div[contains(@class, 'invalid-feedback')]")), 2)
+
+    def test_a_form_opened_before_another_change_is_refused(self):
+        # another administrator blocked alice meanwhile: the form's ticked Active would undo it
+        url = reverse("admin:user_update", args=[self.alice.pk])
+        stale = self.form_data(self.alice, email="alice@example.com")
+        type(self.alice).objects.filter(pk=self.alice.pk).update(is_active=False)
+        response = self.client.post(url, stale)
+        self.assertRedirects(response, url, fetch_redirect_response=False)
+        self.assertIn("up-alice was changed meanwhile", self.messages(response)[0])
+        self.alice.refresh_from_db()
+        self.assertFalse(self.alice.is_active)
+        self.assertEqual(self.alice.email, "")
 
     def test_the_quota_shows_no_limit_and_memory_in_gib(self):
         UserAttributes.objects.filter(user=self.alice).update(max_instances=-1, max_cpus=1, max_memory=1536, max_disk_size=-1)

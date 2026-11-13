@@ -10,6 +10,7 @@
 {% block content %}
 <form id="create-update" method="post">
     {% csrf_token %}
+    {% if seen %}<input type="hidden" name="seen" value="{{ seen }}">{% endif %}
     {% bootstrap_form_errors form type="non_fields" %}
 
     <section class="form-section">

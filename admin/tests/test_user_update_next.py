@@ -3,6 +3,7 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
+from admin.tests.edits import user_seen
 
 LIMITS = {"role": "user", "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 4}
 
@@ -14,7 +15,7 @@ class UserUpdateNextTests(TestCase):
 
     def save(self, next_url):
         url = reverse("admin:user_update", args=[self.user.id]) + "?next=" + next_url
-        return self.client.post(url, {"username": "un-user", "is_active": "on", **LIMITS})
+        return self.client.post(url, {"username": "un-user", "is_active": "on", "seen": user_seen(self.user), **LIMITS})
 
     def test_a_page_of_this_site(self):
         account = reverse("accounts:account", args=[self.user.id])

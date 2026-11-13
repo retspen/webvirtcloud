@@ -5,6 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from logs.models import Logs
+from admin.tests.edits import group_seen, user_seen
 
 ATTRIBUTES = {"role": "user", "max_instances": 2, "max_cpus": 2, "max_memory": 2, "max_disk_size": 20}
 
@@ -26,7 +27,7 @@ class UserRowTests(TestCase):
     def edit(self, user, **changes):
         data = {"username": user.username, "email": user.email, "is_active": "on", **ATTRIBUTES,
                 "user_permissions": [p.pk for p in user.user_permissions.all()],
-                "groups": [g.pk for g in user.groups.all()], **changes}
+                "groups": [g.pk for g in user.groups.all()], "seen": user_seen(user), **changes}
         return self.client.post(reverse("admin:user_update", args=[user.pk]), data)
 
     def test_user_add_change_delete(self):
@@ -96,9 +97,10 @@ class GroupAndRemovedVMRowTests(TestCase):
         self.client.post(reverse("admin:group_create"), {"name": "ops"})
         group = Group.objects.get(name="ops")
         url = reverse("admin:group_update", args=[group.pk])
-        self.client.post(url, {"name": "ops", "users": [member.pk]})
-        self.client.post(url, {"name": "ops", "users": [member.pk], "permissions": [permission.pk]})
-        self.client.post(url, {"name": "ops", "users": [member.pk], "permissions": [permission.pk]})  # no change
+        self.client.post(url, {"name": "ops", "users": [member.pk], "seen": group_seen(group)})
+        self.client.post(url, {"name": "ops", "users": [member.pk], "permissions": [permission.pk], "seen": group_seen(group)})
+        # no change
+        self.client.post(url, {"name": "ops", "users": [member.pk], "permissions": [permission.pk], "seen": group_seen(group)})
         self.client.post(reverse("admin:group_delete", args=[group.pk]))
         self.assertEqual(rows(), [
             ("Group ops: add", True),

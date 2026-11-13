@@ -9,6 +9,7 @@ from lxml import html
 
 from accounts.models import ApiToken, UserAttributes
 from logs.models import Logs
+from admin.tests.edits import group_seen, user_seen
 
 
 class AdminTestCase(TestCase):
@@ -37,7 +38,8 @@ class AdminTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
 
         response = self.client.post(
-            reverse("admin:group_update", args=[group_id]), {"name": "Updated Group Test"}
+            reverse("admin:group_update", args=[group_id]),
+            {"name": "Updated Group Test", "seen": group_seen(Group.objects.get(pk=group_id))}
         )
         self.assertRedirects(response, reverse("admin:group_list"))
 
@@ -104,7 +106,7 @@ class AdminTestCase(TestCase):
         for block in (lambda: self.client.post(reverse("admin:user_block", args=[user.id])),
                       lambda: self.client.post(reverse("admin:user_update", args=[user.id]),
                                                {"username": "taken", "role": "user", "max_instances": 1, "max_cpus": 1,
-                                                "max_memory": 1, "max_disk_size": 1})):
+                                                "max_memory": 1, "max_disk_size": 1, "seen": user_seen(user)})):
             _, token = ApiToken.objects.create(user)
             self.assertEqual(block().status_code, 302)
             self.client.post(reverse("admin:user_unblock", args=[user.id]))
@@ -145,6 +147,7 @@ class AdminTestCase(TestCase):
         response = self.client.post(
             reverse("admin:user_update", args=[user_id]),
             {
+                "seen": user_seen(User.objects.get(pk=user_id)),
                 "username": "utest",
                 "role": "user",
                 "max_instances": 2,
@@ -221,3 +224,14 @@ class AdminTestCase(TestCase):
         response = self.client.get(reverse("admin:logs"), {"page": "999"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["logs"].number, response.context["logs"].paginator.num_pages)
+
+    def test_a_group_form_opened_before_another_change_is_refused(self):
+        # another administrator added a member meanwhile: the old form would take it out
+        group = Group.objects.create(name="stale-group")
+        seen = group_seen(group)
+        member = User.objects.create_user("stale-member")
+        group.user_set.add(member)
+        url = reverse("admin:group_update", args=[group.pk])
+        response = self.client.post(url, {"name": "stale-group", "seen": seen})
+        self.assertRedirects(response, url, fetch_redirect_response=False)
+        self.assertEqual(list(group.user_set.all()), [member])
