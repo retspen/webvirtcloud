@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 08:46+0000\n"
+"POT-Creation-Date: 2026-11-13 09:45+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -1736,89 +1736,89 @@ msgstr "Temayı değiştir"
 msgid "Save %(group_title)s"
 msgstr "%(group_title)s kaydet"
 
-#: appsettings/views.py:38
+#: appsettings/views.py:39
 msgid "New VM defaults"
 msgstr "Yeni sanal makine varsayılanları"
 
-#: appsettings/views.py:41 instances/templates/instance.html:70
+#: appsettings/views.py:42 instances/templates/instance.html:70
 #: instances/templates/instances/destroy_instance_form.html:33
 #: instances/templates/instances/resize_tab.html:21
 #: instances/templates/instances/settings_tab.html:197
 msgid "Disks"
 msgstr "Diskler"
 
-#: appsettings/views.py:45
+#: appsettings/views.py:46
 msgid "Clones"
 msgstr "Klonlar"
 
-#: appsettings/views.py:46 console/templates/console-base.html:10
+#: appsettings/views.py:47 console/templates/console-base.html:10
 #: console/templates/console-base.html:23
 #: instances/templates/instance_actions.html:11
 #: instances/templates/instances/settings_tab.html:32
 msgid "Console"
 msgstr "Konsol"
 
-#: appsettings/views.py:47
+#: appsettings/views.py:48
 msgid "VM access and owners"
 msgstr "Sanal makine erişimi ve sahipleri"
 
-#: appsettings/views.py:49
+#: appsettings/views.py:50
 msgid "Snapshots and jobs"
 msgstr "Anlık görüntüler ve işler"
 
-#: appsettings/views.py:51
+#: appsettings/views.py:52
 msgid "Login"
 msgstr "Oturum açma"
 
-#: appsettings/views.py:52
+#: appsettings/views.py:53
 msgid "Lists and pages"
 msgstr "Listeler ve sayfalar"
 
-#: appsettings/views.py:60
+#: appsettings/views.py:61
 #, python-format
 msgid "%(setting)s takes at most %(length)s characters"
 msgstr "%(setting)s en fazla %(length)s karakter alır"
 
-#: appsettings/views.py:65
+#: appsettings/views.py:66
 #, python-format
 msgid "%(setting)s must be a whole number between %(low)s and %(high)s"
 msgstr "%(setting)s, %(low)s ile %(high)s arasında bir tam sayı olmalıdır"
 
-#: appsettings/views.py:68
+#: appsettings/views.py:69
 #, python-format
 msgid "%(setting)s must be one of %(choices)s"
 msgstr "%(setting)s şunlardan biri olmalıdır: %(choices)s"
 
-#: appsettings/views.py:72
+#: appsettings/views.py:73
 #, python-format
 msgid "%(setting)s takes letters, digits and '-' only"
 msgstr "%(setting)s yalnızca harf, rakam ve '-' alır"
 
-#: appsettings/views.py:81
+#: appsettings/views.py:82
 msgid "Disk I/O native needs disk cache none or directsync"
 msgstr ""
 "Disk G/Ç native, disk önbelleği none veya directsync olmasını gerektirir"
 
-#: appsettings/views.py:98
+#: appsettings/views.py:99
 #, python-format
 msgid "Unknown theme: %(theme)s"
 msgstr "Bilinmeyen tema: %(theme)s"
 
-#: appsettings/views.py:104
+#: appsettings/views.py:105
 #, python-format
 msgid "Theme is changed. Now: %(theme)s"
 msgstr "Tema değiştirildi. Şimdi: %(theme)s"
 
-#: appsettings/views.py:132
+#: appsettings/views.py:140
 #, python-format
 msgid "Saved: %(settings)s"
 msgstr "Kaydedildi: %(settings)s"
 
-#: appsettings/views.py:134
+#: appsettings/views.py:142
 msgid "Nothing changed"
 msgstr "Hiçbir şey değişmedi"
 
-#: appsettings/views.py:141 vrtManager/nodedevs.py:294
+#: appsettings/views.py:149 vrtManager/nodedevs.py:294
 #: vrtManager/nodedevs.py:333
 msgid "Other"
 msgstr "Diğer"
@@ -2994,7 +2994,7 @@ msgstr ""
 msgid "Clone VM"
 msgstr "Sanal makineyi klonla"
 
-#: instances/jobs.py:639 instances/jobs.py:646 instances/jobs.py:974
+#: instances/jobs.py:639 instances/jobs.py:646 instances/jobs.py:980
 msgid "Copying disks"
 msgstr "Diskler kopyalanıyor"
 
@@ -3099,68 +3099,77 @@ msgstr ""
 msgid "Create VM"
 msgstr "Sanal makine oluştur"
 
-#: instances/jobs.py:900 instances/jobs.py:945 instances/views.py:2542
+#: instances/jobs.py:903 instances/jobs.py:951 instances/views.py:2542
 msgid "A virtual machine with this name already exists"
 msgstr "Bu isimde bir sanal makine mevcut"
 
-#: instances/jobs.py:902 instances/jobs.py:941
+#: instances/jobs.py:905 instances/jobs.py:947
 msgid "There is an instance with same name. Remove it and try again!"
 msgstr "Aynı isimde başka bir sanal makine var. Onu silip yeniden deneyin!"
 
-#: instances/jobs.py:905
+#: instances/jobs.py:908
 msgid "First you need to create or select an image"
 msgstr "Öncelikle bir imaj oluşturun ya da mevcut bir imajı seçin"
 
-#: instances/jobs.py:907
+#: instances/jobs.py:910
 msgid "Choose one disk source: a new disk, existing volumes or a template"
 msgstr ""
 "Tek bir disk kaynağı seçin: yeni bir disk, mevcut birimler ya da bir şablon"
 
-#: instances/jobs.py:910
+#: instances/jobs.py:913
 msgid "Invalid cache mode"
 msgstr "Geçersiz önbellek modu"
 
-#: instances/jobs.py:912
+#: instances/jobs.py:915
+#, python-format
+msgid ""
+"Disk cache %(cache)s does not go with disk I/O native, which Settings set: "
+"choose none or directsync"
+msgstr ""
+"%(cache)s disk önbelleği, Ayarlar'daki native disk G/Ç ile kullanılamaz: none"
+" ya da directsync seçin"
+
+#: instances/jobs.py:918
 #, python-format
 msgid "This host offers no CPU mode or model %(mode)s"
 msgstr "Bu sunucu %(mode)s CPU modunu veya modelini sunmuyor"
 
-#: instances/jobs.py:914
+#: instances/jobs.py:920
 #, python-format
 msgid "A %(arch)s VM cannot have a %(model)s network card"
 msgstr "Bir %(arch)s VM'inde %(model)s ağ kartı olamaz"
 
-#: instances/jobs.py:916
+#: instances/jobs.py:922
 #, python-format
 msgid "A CD-ROM cannot use the %(bus)s bus"
 msgstr "CD-ROM %(bus)s veri yolunu kullanamaz"
 
-#: instances/jobs.py:919
+#: instances/jobs.py:925
 msgid "The cloud-init seed is read from a CD-ROM: choose its bus"
 msgstr "cloud-init tohumu bir CD-ROM'dan okunur: veri yolunu seçin"
 
-#: instances/jobs.py:922
+#: instances/jobs.py:928
 msgid "The cloud-init seed needs a directory storage pool for the disk"
 msgstr "cloud-init tohumu, disk için bir dizin depolama havuzu gerektirir"
 
-#: instances/jobs.py:926
+#: instances/jobs.py:932
 #, python-format
 msgid "This host offers no firmware %(firmware)s"
 msgstr "Bu sunucu %(firmware)s firmware'ini sunmuyor"
 
-#: instances/jobs.py:928 vrtManager/instance.py:3195
+#: instances/jobs.py:934 vrtManager/instance.py:3195
 msgid "This host offers no TPM 2.0: install swtpm on it"
 msgstr "Bu sunucu TPM 2.0 sunmuyor: üzerine swtpm kurun"
 
-#: instances/jobs.py:994
+#: instances/jobs.py:1000
 msgid "Writing the cloud-init seed"
 msgstr "cloud-init tohumu yazılıyor"
 
-#: instances/jobs.py:1001
+#: instances/jobs.py:1007
 msgid "Defining the VM"
 msgstr "Sanal makine tanımlanıyor"
 
-#: instances/jobs.py:1043
+#: instances/jobs.py:1049
 #, python-format
 msgid ""
 "The panel failed unexpectedly; its log has the details. Remove these volumes "
@@ -3169,114 +3178,114 @@ msgstr ""
 "Panel beklenmedik bir hatayla karşılaştı; ayrıntılar panelin günlüğünde. Bu "
 "birimleri elle kaldırın: %(volumes)s"
 
-#: instances/jobs.py:1047
+#: instances/jobs.py:1053
 #, python-format
 msgid "%(error)s. Remove these volumes by hand: %(volumes)s"
 msgstr "%(error)s. Şu birimleri elle silin: %(volumes)s"
 
-#: instances/jobs.py:1074
+#: instances/jobs.py:1080
 #, python-format
 msgid "The instance is already on %(compute)s"
 msgstr "Sanal makine zaten %(compute)s üzerinde"
 
-#: instances/jobs.py:1076
+#: instances/jobs.py:1082
 #, python-format
 msgid "%(compute)s is not reachable"
 msgstr "%(compute)s sunucusuna ulaşılamıyor"
 
-#: instances/jobs.py:1078
+#: instances/jobs.py:1084
 #, python-format
 msgid "%(compute)s is the VM's own host under another name"
 msgstr "%(compute)s, sanal makinenin kendi sunucusunun başka bir adı"
 
-#: instances/jobs.py:1135
+#: instances/jobs.py:1141
 #, python-format
 msgid ""
 "The VM migrated, but autostart could not be set on the destination: %(error)s"
 msgstr ""
 "Sanal makine taşındı, ancak hedefte otomatik başlatma ayarlanamadı: %(error)s"
 
-#: instances/jobs.py:1142
+#: instances/jobs.py:1148
 #, python-format
 msgid "The VM migrated, but its NVRAM file stays on the source: %(error)s"
 msgstr "Sanal makine taşındı, ancak NVRAM dosyası kaynakta kaldı: %(error)s"
 
-#: instances/jobs.py:1150
+#: instances/jobs.py:1156
 msgid "Migrate VM"
 msgstr "Sanal makineyi taşı"
 
-#: instances/jobs.py:1197
+#: instances/jobs.py:1203
 msgid "Migrating the VM"
 msgstr "Sanal makine taşınıyor"
 
-#: instances/jobs.py:1246
+#: instances/jobs.py:1252
 msgid "libvirt is still migrating the VM"
 msgstr "libvirt sanal makineyi hâlâ taşıyor"
 
-#: instances/jobs.py:1258
+#: instances/jobs.py:1264
 msgid "The VM stayed on the source host"
 msgstr "Sanal makine kaynak sunucuda kaldı"
 
-#: instances/jobs.py:1260
+#: instances/jobs.py:1266
 msgid ""
 "The VM is on both computes or on neither; check them, then resolve this job."
 msgstr ""
 "Sanal makine ya iki sunucuda da var ya da hiçbirinde yok; kontrol edin, sonra"
 " bu işi çözün."
 
-#: instances/jobs.py:1279
+#: instances/jobs.py:1285
 msgid "Move disk"
 msgstr "Diski taşı"
 
-#: instances/jobs.py:1286
+#: instances/jobs.py:1292
 msgid "Choose a disk of the VM"
 msgstr "Sanal makinenin bir diskini seçin"
 
-#: instances/jobs.py:1310
+#: instances/jobs.py:1316
 msgid "Copying the disk"
 msgstr "Disk kopyalanıyor"
 
-#: instances/jobs.py:1352
+#: instances/jobs.py:1358
 #, python-format
 msgid "Another block job runs on %(dev)s; check the VM"
 msgstr ""
 "%(dev)s üzerinde başka bir blok işi çalışıyor; sanal makineyi kontrol edin"
 
-#: instances/jobs.py:1358
+#: instances/jobs.py:1364
 #, python-format
 msgid "The disk stayed in %(path)s; remove %(dest)s if it is there"
 msgstr "Disk %(path)s içinde kaldı; varsa %(dest)s dosyasını silin"
 
-#: instances/jobs.py:1360
+#: instances/jobs.py:1366
 #, python-format
 msgid "The definitions of %(dev)s name %(paths)s; check the VM"
 msgstr "%(dev)s tanımları %(paths)s gösteriyor; sanal makineyi kontrol edin"
 
-#: instances/jobs.py:1367
+#: instances/jobs.py:1373
 #, python-format
 msgid "Disk %(path)s was kept: a disk file that stays needs it"
 msgstr "%(path)s diski korundu: kalan bir disk dosyası ona ihtiyaç duyuyor"
 
-#: instances/jobs.py:1368
+#: instances/jobs.py:1374
 #, python-format
 msgid "The VM is removed, but disk %(path)s was not deleted: %(err)s"
 msgstr "Sanal makine kaldırıldı, ancak %(path)s diski silinmedi: %(err)s"
 
-#: instances/jobs.py:1369
+#: instances/jobs.py:1375
 #, python-format
 msgid "Disk %(path)s is used by another VM and was kept"
 msgstr ""
 "%(path)s diski başka bir sanal makine tarafından kullanılıyor ve korundu"
 
-#: instances/jobs.py:1423
+#: instances/jobs.py:1429
 msgid "Delete VM"
 msgstr "Sanal makineyi sil"
 
-#: instances/jobs.py:1453
+#: instances/jobs.py:1459
 msgid "Deleting the VM"
 msgstr "Sanal makine siliniyor"
 
-#: instances/jobs.py:1465
+#: instances/jobs.py:1471
 msgid "The VM was not deleted; it may have been shut off"
 msgstr "Sanal makine silinmedi; kapatılmış olabilir"
 

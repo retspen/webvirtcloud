@@ -80,6 +80,29 @@ class CreateJobTestCase(TransactionTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertFalse(Operation.objects.exists())
 
+    def test_a_cache_that_does_not_go_with_the_settings_io_is_refused_and_the_io_kept(self):
+        # libvirt refuses native I/O with a cache other than none or directsync, after the disks are made
+        from appsettings.models import AppSettings
+
+        self.conn.get_cache_modes.return_value = {"none": "Disable cache", "writeback": "Write back"}
+        # a TransactionTestCase run before may have emptied the table
+        AppSettings.objects.update_or_create(key="INSTANCE_VOLUME_DEFAULT_IO", defaults={
+            "name": "Disk IO Type", "value": "native", "choices": "default,native,threads"})
+        url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"
+        response = self.client.post(url, {**BODY, "cache_mode": "writeback"}, content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("does not go with disk I/O native", str(response.json()))
+        self.assertEqual(self.client.post(url, BODY, content_type="application/json").status_code, 202)
+        # a pair Settings made one libvirt refuses after the job was asked for: refused before a disk is made
+        op = Operation.objects.get()
+        Operation.objects.filter(pk=op.pk).update(params={**op.params, "cache_mode": "writeback"})
+        acquire("wvc-test:1:a", "wvc-test")
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker="wvc-test:1:a")
+        op.refresh_from_db()
+        with self.assertRaisesRegex(OperationError, "does not go with disk I/O native"):
+            CreateInstance().run(op, Context(op, SimpleNamespace(identity="wvc-test:1:a")))
+        self.conn.create_volume.assert_not_called()
+
     def test_the_cpu_is_a_mode_or_a_model_the_host_offers(self):
         url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"
         # a model name longer than 20 characters is taken; none, or one the host lacks, is refused

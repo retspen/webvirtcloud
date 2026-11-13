@@ -11,6 +11,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_noop
 from logs.audit import audit
 from operations.utils import BOUNDS
+from vrtManager.util import OperationError
 
 from appsettings.models import AppSettings
 
@@ -75,10 +76,10 @@ def refusal(setting, value):
 
 def combined_refusal(values):
     """Why settings that work only together cannot be saved as values
-    (key: value, saved or new), or None."""
+    (key: value, saved or new), untranslated, or None."""
     # libvirt refuses such a disk: every new VM would fail
     if values["INSTANCE_VOLUME_DEFAULT_IO"] == "native" and values["INSTANCE_VOLUME_DEFAULT_CACHE"] not in ("none", "directsync"):
-        return _("Disk I/O native needs disk cache none or directsync")
+        return gettext_noop("Disk I/O native needs disk cache none or directsync")
     return None
 
 
@@ -113,9 +114,10 @@ def appsettings(request):
         refusals = [refused for refused in (refusal(s, value) for s, value in changed) if refused]
         # checked only when the pair changes: a pair saved before does not block other settings
         pair = {"INSTANCE_VOLUME_DEFAULT_IO", "INSTANCE_VOLUME_DEFAULT_CACHE"}
-        if not refusals and pair & {s.key for s, _v in changed} and (refused := combined_refusal(
+        pair_changed = bool(pair & {s.key for s, _v in changed})
+        if not refusals and pair_changed and (refused := combined_refusal(
                 {key: s.value for key, s in settings_by_key.items()} | {s.key: value for s, value in changed})):
-            refusals = [refused]
+            refusals = [_(refused)]
         for refused in refusals:
             messages.error(request, refused)
         if changed and not refusals:
@@ -123,10 +125,16 @@ def appsettings(request):
             try:
                 # one row, and all of the group or none of it
                 with audit(request, None, "Settings", action), transaction.atomic():
+                    # the pair as saved now, locked: another administrator's save of its other half
+                    # since this page was read must not make it one libvirt refuses
+                    if pair_changed:
+                        saved = AppSettings.objects.select_for_update().filter(key__in=pair).values_list("key", "value")
+                        if refused := combined_refusal(dict(saved) | {s.key: value for s, value in changed}):
+                            raise OperationError(refused)
                     for setting, value in changed:
                         setting.value = value
                         setting.save()
-            except DatabaseError as err:  # the audit row records it as failed
+            except (DatabaseError, OperationError) as err:  # the audit row records it as failed
                 messages.error(request, err)
             else:
                 messages.success(request, _("Saved: %(settings)s") % {"settings": ", ".join(s.name for s, _v in changed)})

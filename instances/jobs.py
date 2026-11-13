@@ -870,6 +870,16 @@ def _check_macs(conn, data):
                                       mac=", ".join(sorted(used & macs)))
 
 
+def _disk_io(params):
+    """The disk I/O of Settings for the new VM's disks, refused with a cache
+    libvirt does not take with it, before any disk is made."""
+    io_mode = app_settings.INSTANCE_VOLUME_DEFAULT_IO
+    if io_mode == "native" and params["cache_mode"] not in ("none", "directsync"):
+        raise util.OperationError(_("Disk cache %(cache)s does not go with disk I/O native, which Settings set: "
+                                    "choose none or directsync"), cache=params["cache_mode"])
+    return io_mode
+
+
 @register
 class CreateInstance(Kind):
     name = "instance.create"
@@ -908,6 +918,7 @@ class CreateInstance(Kind):
         _check_disk_name(conn, data)
         if data["cache_mode"] not in conn.get_cache_modes():
             raise util.OperationError(_("Invalid cache mode"))
+        _disk_io(data)
         if data["vcpu_mode"] not in cpu_choices(conn.get_dom_capabilities(data["arch"], data["machine"])):
             raise util.OperationError(_("This host offers no CPU mode or model %(mode)s"), mode=data["vcpu_mode"])
         if data["net_model"] and data["net_model"] not in conn.get_network_models(data["arch"]):
@@ -949,6 +960,7 @@ class CreateInstance(Kind):
 
     def run(self, op, ctx):
         data = op.params
+        io_mode = _disk_io(data)  # Settings may have changed since the job was asked for
         c = Compute.objects.get(pk=data["compute"])
         conn = wvmCreate(c.hostname, c.login, c.password, c.type)
         meta_prealloc = bool(data["meta_prealloc"])
@@ -967,7 +979,7 @@ class CreateInstance(Kind):
                 "cache_mode": data["cache_mode"],
                 "discard_mode": app_settings.INSTANCE_VOLUME_DEFAULT_DISCARD,
                 "detect_zeroes_mode": app_settings.INSTANCE_VOLUME_DEFAULT_DETECT_ZEROES,
-                "io_mode": app_settings.INSTANCE_VOLUME_DEFAULT_IO,
+                "io_mode": io_mode,
             }
 
         ctx.record_intent()

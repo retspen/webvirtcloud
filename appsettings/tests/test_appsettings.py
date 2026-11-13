@@ -1,4 +1,5 @@
 import re
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
@@ -124,6 +125,31 @@ class AppSettingsTestCase(TestCase):
         AppSettings.objects.filter(key="INSTANCE_VOLUME_DEFAULT_CACHE").update(value="writeback")
         self.post("LOGS_PER_PAGE", "50")
         self.assertEqual(AppSettings.objects.get(key="LOGS_PER_PAGE").value, "50")
+
+    def test_the_pair_is_checked_again_as_saved_when_it_is_saved(self):
+        # another administrator saved the cache after this page read the settings: the first
+        # check saw the pair as it was, the second, under the rows' lock, sees it as it is
+        from appsettings import views
+
+        AppSettings.objects.filter(key="INSTANCE_VOLUME_DEFAULT_CACHE").update(value="writeback")
+        real = views.combined_refusal
+        calls = []
+
+        def stale_first(values):
+            calls.append(values)
+            return None if len(calls) == 1 else real(values)
+
+        with patch.object(views, "combined_refusal", side_effect=stale_first):
+            response = self.client.post(reverse("appsettings"), {"INSTANCE_VOLUME_DEFAULT_IO": "native"},
+                                        HTTP_ACCEPT_LANGUAGE="tr")
+        self.assertEqual(len(calls), 2)
+        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)],
+                         ["Disk G/Ç native, disk önbelleği none veya directsync olmasını gerektirir"])
+        self.assertEqual(AppSettings.objects.get(key="INSTANCE_VOLUME_DEFAULT_IO").value, "default")
+        # the log row keeps the reason in English, which each reader sees in their language
+        from logs.models import Logs
+
+        self.assertIn("Disk I/O native needs disk cache none or directsync", Logs.objects.latest("id").message)
 
     def page(self):
         from lxml import html

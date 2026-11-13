@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 08:46+0000\n"
+"POT-Creation-Date: 2026-11-13 09:45+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -1679,88 +1679,88 @@ msgstr "更改主题"
 msgid "Save %(group_title)s"
 msgstr "保存%(group_title)s"
 
-#: appsettings/views.py:38
+#: appsettings/views.py:39
 msgid "New VM defaults"
 msgstr "新建虚拟机默认值"
 
-#: appsettings/views.py:41 instances/templates/instance.html:70
+#: appsettings/views.py:42 instances/templates/instance.html:70
 #: instances/templates/instances/destroy_instance_form.html:33
 #: instances/templates/instances/resize_tab.html:21
 #: instances/templates/instances/settings_tab.html:197
 msgid "Disks"
 msgstr "磁盘"
 
-#: appsettings/views.py:45
+#: appsettings/views.py:46
 msgid "Clones"
 msgstr "克隆"
 
-#: appsettings/views.py:46 console/templates/console-base.html:10
+#: appsettings/views.py:47 console/templates/console-base.html:10
 #: console/templates/console-base.html:23
 #: instances/templates/instance_actions.html:11
 #: instances/templates/instances/settings_tab.html:32
 msgid "Console"
 msgstr "控制台"
 
-#: appsettings/views.py:47
+#: appsettings/views.py:48
 msgid "VM access and owners"
 msgstr "虚拟机访问与所有者"
 
-#: appsettings/views.py:49
+#: appsettings/views.py:50
 msgid "Snapshots and jobs"
 msgstr "快照与任务"
 
-#: appsettings/views.py:51
+#: appsettings/views.py:52
 msgid "Login"
 msgstr "登录"
 
-#: appsettings/views.py:52
+#: appsettings/views.py:53
 msgid "Lists and pages"
 msgstr "列表与页面"
 
-#: appsettings/views.py:60
+#: appsettings/views.py:61
 #, python-format
 msgid "%(setting)s takes at most %(length)s characters"
 msgstr "%(setting)s 最多 %(length)s 个字符"
 
-#: appsettings/views.py:65
+#: appsettings/views.py:66
 #, python-format
 msgid "%(setting)s must be a whole number between %(low)s and %(high)s"
 msgstr "%(setting)s 必须是 %(low)s 到 %(high)s 之间的整数"
 
-#: appsettings/views.py:68
+#: appsettings/views.py:69
 #, python-format
 msgid "%(setting)s must be one of %(choices)s"
 msgstr "%(setting)s 必须是以下之一：%(choices)s"
 
-#: appsettings/views.py:72
+#: appsettings/views.py:73
 #, python-format
 msgid "%(setting)s takes letters, digits and '-' only"
 msgstr "%(setting)s 只能包含字母、数字和 '-'"
 
-#: appsettings/views.py:81
+#: appsettings/views.py:82
 msgid "Disk I/O native needs disk cache none or directsync"
 msgstr "磁盘 I/O native 需要磁盘缓存为 none 或 directsync"
 
-#: appsettings/views.py:98
+#: appsettings/views.py:99
 #, python-format
 msgid "Unknown theme: %(theme)s"
 msgstr "未知主题：%(theme)s"
 
-#: appsettings/views.py:104
+#: appsettings/views.py:105
 #, python-format
 msgid "Theme is changed. Now: %(theme)s"
 msgstr "主题已更改。当前：%(theme)s"
 
-#: appsettings/views.py:132
+#: appsettings/views.py:140
 #, python-format
 msgid "Saved: %(settings)s"
 msgstr "已保存：%(settings)s"
 
-#: appsettings/views.py:134
+#: appsettings/views.py:142
 msgid "Nothing changed"
 msgstr "没有任何更改"
 
-#: appsettings/views.py:141 vrtManager/nodedevs.py:294
+#: appsettings/views.py:149 vrtManager/nodedevs.py:294
 #: vrtManager/nodedevs.py:333
 msgid "Other"
 msgstr "其他"
@@ -2872,7 +2872,7 @@ msgstr "%(vm)s 已暂停，其文件系统可能仍处于冻结状态：请先�
 msgid "Clone VM"
 msgstr "克隆虚拟机"
 
-#: instances/jobs.py:639 instances/jobs.py:646 instances/jobs.py:974
+#: instances/jobs.py:639 instances/jobs.py:646 instances/jobs.py:980
 msgid "Copying disks"
 msgstr "正在复制磁盘"
 
@@ -2962,176 +2962,183 @@ msgstr "MAC 地址 %(mac)s 已属于此主机上另一台虚拟机的网卡"
 msgid "Create VM"
 msgstr "创建虚拟机"
 
-#: instances/jobs.py:900 instances/jobs.py:945 instances/views.py:2542
+#: instances/jobs.py:903 instances/jobs.py:951 instances/views.py:2542
 msgid "A virtual machine with this name already exists"
 msgstr "同名虚拟机已存在"
 
-#: instances/jobs.py:902 instances/jobs.py:941
+#: instances/jobs.py:905 instances/jobs.py:947
 msgid "There is an instance with same name. Remove it and try again!"
 msgstr "已存在同名虚拟机。请删除后重试！"
 
-#: instances/jobs.py:905
+#: instances/jobs.py:908
 msgid "First you need to create or select an image"
 msgstr "请先创建或选择一个镜像"
 
-#: instances/jobs.py:907
+#: instances/jobs.py:910
 msgid "Choose one disk source: a new disk, existing volumes or a template"
 msgstr "请选择一种磁盘来源：新磁盘、现有卷或模板"
 
-#: instances/jobs.py:910
+#: instances/jobs.py:913
 msgid "Invalid cache mode"
 msgstr "无效的缓存模式"
 
-#: instances/jobs.py:912
+#: instances/jobs.py:915
+#, python-format
+msgid ""
+"Disk cache %(cache)s does not go with disk I/O native, which Settings set: "
+"choose none or directsync"
+msgstr "磁盘缓存 %(cache)s 与设置中的原生 (native) 磁盘 I/O 不兼容：请选择 none 或 directsync"
+
+#: instances/jobs.py:918
 #, python-format
 msgid "This host offers no CPU mode or model %(mode)s"
 msgstr "此主机不提供 CPU 模式或型号 %(mode)s"
 
-#: instances/jobs.py:914
+#: instances/jobs.py:920
 #, python-format
 msgid "A %(arch)s VM cannot have a %(model)s network card"
 msgstr "%(arch)s 虚拟机不能使用 %(model)s 网卡"
 
-#: instances/jobs.py:916
+#: instances/jobs.py:922
 #, python-format
 msgid "A CD-ROM cannot use the %(bus)s bus"
 msgstr "CD-ROM 不能使用 %(bus)s 总线"
 
-#: instances/jobs.py:919
+#: instances/jobs.py:925
 msgid "The cloud-init seed is read from a CD-ROM: choose its bus"
 msgstr "cloud-init 种子从 CD-ROM 读取：请选择其总线"
 
-#: instances/jobs.py:922
+#: instances/jobs.py:928
 msgid "The cloud-init seed needs a directory storage pool for the disk"
 msgstr "cloud-init 种子需要为磁盘使用目录类型的存储池"
 
-#: instances/jobs.py:926
+#: instances/jobs.py:932
 #, python-format
 msgid "This host offers no firmware %(firmware)s"
 msgstr "此主机不提供固件 %(firmware)s"
 
-#: instances/jobs.py:928 vrtManager/instance.py:3195
+#: instances/jobs.py:934 vrtManager/instance.py:3195
 msgid "This host offers no TPM 2.0: install swtpm on it"
 msgstr "此主机不提供 TPM 2.0：请在主机上安装 swtpm"
 
-#: instances/jobs.py:994
+#: instances/jobs.py:1000
 msgid "Writing the cloud-init seed"
 msgstr "正在写入 cloud-init 种子"
 
-#: instances/jobs.py:1001
+#: instances/jobs.py:1007
 msgid "Defining the VM"
 msgstr "正在定义虚拟机"
 
-#: instances/jobs.py:1043
+#: instances/jobs.py:1049
 #, python-format
 msgid ""
 "The panel failed unexpectedly; its log has the details. Remove these volumes "
 "by hand: %(volumes)s"
 msgstr "面板发生意外错误；详细信息见面板日志。请手动删除这些卷：%(volumes)s"
 
-#: instances/jobs.py:1047
+#: instances/jobs.py:1053
 #, python-format
 msgid "%(error)s. Remove these volumes by hand: %(volumes)s"
 msgstr "%(error)s。请手动删除这些卷：%(volumes)s"
 
-#: instances/jobs.py:1074
+#: instances/jobs.py:1080
 #, python-format
 msgid "The instance is already on %(compute)s"
 msgstr "虚拟机已在 %(compute)s 上"
 
-#: instances/jobs.py:1076
+#: instances/jobs.py:1082
 #, python-format
 msgid "%(compute)s is not reachable"
 msgstr "无法连接 %(compute)s"
 
-#: instances/jobs.py:1078
+#: instances/jobs.py:1084
 #, python-format
 msgid "%(compute)s is the VM's own host under another name"
 msgstr "%(compute)s 是该虚拟机所在主机的另一个名称"
 
-#: instances/jobs.py:1135
+#: instances/jobs.py:1141
 #, python-format
 msgid ""
 "The VM migrated, but autostart could not be set on the destination: %(error)s"
 msgstr "虚拟机已迁移，但无法在目标主机上设置自动启动：%(error)s"
 
-#: instances/jobs.py:1142
+#: instances/jobs.py:1148
 #, python-format
 msgid "The VM migrated, but its NVRAM file stays on the source: %(error)s"
 msgstr "虚拟机已迁移，但其 NVRAM 文件仍留在源主机上：%(error)s"
 
-#: instances/jobs.py:1150
+#: instances/jobs.py:1156
 msgid "Migrate VM"
 msgstr "迁移虚拟机"
 
-#: instances/jobs.py:1197
+#: instances/jobs.py:1203
 msgid "Migrating the VM"
 msgstr "正在迁移虚拟机"
 
-#: instances/jobs.py:1246
+#: instances/jobs.py:1252
 msgid "libvirt is still migrating the VM"
 msgstr "libvirt 仍在迁移虚拟机"
 
-#: instances/jobs.py:1258
+#: instances/jobs.py:1264
 msgid "The VM stayed on the source host"
 msgstr "虚拟机留在了源主机上"
 
-#: instances/jobs.py:1260
+#: instances/jobs.py:1266
 msgid ""
 "The VM is on both computes or on neither; check them, then resolve this job."
 msgstr "虚拟机同时位于两个计算节点上，或都不在；请检查后处理此任务。"
 
-#: instances/jobs.py:1279
+#: instances/jobs.py:1285
 msgid "Move disk"
 msgstr "移动磁盘"
 
-#: instances/jobs.py:1286
+#: instances/jobs.py:1292
 msgid "Choose a disk of the VM"
 msgstr "请选择虚拟机的一个磁盘"
 
-#: instances/jobs.py:1310
+#: instances/jobs.py:1316
 msgid "Copying the disk"
 msgstr "正在复制磁盘"
 
-#: instances/jobs.py:1352
+#: instances/jobs.py:1358
 #, python-format
 msgid "Another block job runs on %(dev)s; check the VM"
 msgstr "%(dev)s 上正在运行另一个块任务；请检查虚拟机"
 
-#: instances/jobs.py:1358
+#: instances/jobs.py:1364
 #, python-format
 msgid "The disk stayed in %(path)s; remove %(dest)s if it is there"
 msgstr "磁盘仍在 %(path)s；如果 %(dest)s 存在，请将其删除"
 
-#: instances/jobs.py:1360
+#: instances/jobs.py:1366
 #, python-format
 msgid "The definitions of %(dev)s name %(paths)s; check the VM"
 msgstr "%(dev)s 的定义指向 %(paths)s；请检查虚拟机"
 
-#: instances/jobs.py:1367
+#: instances/jobs.py:1373
 #, python-format
 msgid "Disk %(path)s was kept: a disk file that stays needs it"
 msgstr "磁盘 %(path)s 已保留：某个保留的磁盘文件依赖它"
 
-#: instances/jobs.py:1368
+#: instances/jobs.py:1374
 #, python-format
 msgid "The VM is removed, but disk %(path)s was not deleted: %(err)s"
 msgstr "虚拟机已删除，但磁盘 %(path)s 未被删除：%(err)s"
 
-#: instances/jobs.py:1369
+#: instances/jobs.py:1375
 #, python-format
 msgid "Disk %(path)s is used by another VM and was kept"
 msgstr "磁盘 %(path)s 正被另一台虚拟机使用，已保留"
 
-#: instances/jobs.py:1423
+#: instances/jobs.py:1429
 msgid "Delete VM"
 msgstr "删除虚拟机"
 
-#: instances/jobs.py:1453
+#: instances/jobs.py:1459
 msgid "Deleting the VM"
 msgstr "正在删除虚拟机"
 
-#: instances/jobs.py:1465
+#: instances/jobs.py:1471
 msgid "The VM was not deleted; it may have been shut off"
 msgstr "虚拟机未被删除；它可能已被关闭"
 
