@@ -4,6 +4,7 @@ from admin.permissions import IsSuperUser
 from appsettings.settings import app_settings
 from computes.models import Compute
 from computes.utils import libvirt_compute_lock
+from instances.utils import paths_used_on_other_computes
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import extend_schema, inline_serializer
@@ -206,9 +207,11 @@ class VolumeViewSet(viewsets.ViewSet):
 
         subject, action = f"Storage pool {storage_pk}", f"delete volume {pk}"
         if conn.is_active():
-            # no VM operation attaches it between the check and the delete
-            with audit(request, compute, subject, action), libvirt_compute_lock(compute):
-                conn.del_volume(pk)
+            with audit(request, compute, subject, action):
+                conn.check_unused_elsewhere(pk, lambda paths: paths_used_on_other_computes(compute, paths))
+                # no VM operation attaches it between the check and the delete
+                with libvirt_compute_lock(compute):
+                    conn.del_volume(pk)
             return Response({"status": "Volume: " + pk + " is deleted"})
         else:
             failed(request, compute, subject, action, "pool is not active")

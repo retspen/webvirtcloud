@@ -5,6 +5,7 @@ from admin.decorators import superuser_only
 from appsettings.settings import app_settings
 from computes.models import Compute
 from computes.utils import libvirt_compute_lock
+from instances.utils import paths_used_on_other_computes
 from django.contrib import messages
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -162,9 +163,11 @@ def storage(request, compute_id, pool):
         if "del_volume" in request.POST:
             volname = request.POST.get("volname", "")
             try:
-                # no VM operation attaches it between the check and the delete
-                with audit(request, compute, subject, f"delete volume {volname}"), libvirt_compute_lock(compute):
-                    conn.del_volume(volname)
+                with audit(request, compute, subject, f"delete volume {volname}"):
+                    conn.check_unused_elsewhere(volname, lambda paths: paths_used_on_other_computes(compute, paths))
+                    # no VM operation attaches it between the check and the delete
+                    with libvirt_compute_lock(compute):
+                        conn.del_volume(volname)
             except OperationError as err:
                 messages.error(request, str(err))
             except claims.Busy as busy:

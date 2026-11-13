@@ -113,6 +113,31 @@ class VolumeDeleteTests(TestCase):
                 request()
                 self.assertEqual(inside, [[(self.compute.pk, False)]])
 
+    def test_the_other_computes_are_asked_before_the_lock(self):
+        # shared storage: another host's VM may use the file at the same path;
+        # a host that does not answer does not hold this one's lock meanwhile
+        for module, request in (
+            ("storages.views", lambda: self.client.post(reverse("storage", args=[self.compute.id, "default"]),
+                                                        {"del_volume": "1", "volname": "disk.qcow2"})),
+            ("storages.api.viewsets", lambda: self.client.delete(
+                f"/api/v1/computes/{self.compute.id}/storages/default/volumes/disk.qcow2/")),
+        ):
+            with self.subTest(module), patch(f"{module}.wvmStorage") as mock_wvm, \
+                    patch(f"{module}.libvirt_compute_lock") as lock, \
+                    patch(f"{module}.paths_used_on_other_computes", return_value=set()) as others:
+                conn = mock_wvm.return_value
+                conn.is_active.return_value = True
+                conn.get_size.return_value = (1, 1)
+
+                def check(name, elsewhere, lock=lock):
+                    lock.assert_not_called()
+                    elsewhere(["/pool/disk.qcow2"])
+
+                conn.check_unused_elsewhere.side_effect = check
+                request()
+                others.assert_called_once_with(self.compute, ["/pool/disk.qcow2"])
+                conn.del_volume.assert_called_once_with("disk.qcow2")
+
     @patch("storages.views.wvmStorage")
     def test_a_busy_compute_is_a_message(self, mock_wvm):
         conn = self.refused(mock_wvm)

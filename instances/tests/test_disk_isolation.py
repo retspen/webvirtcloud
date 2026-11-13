@@ -3,7 +3,7 @@ Disk and media mutation views must be superuser-only (matching the UI, where
 the Disk tab is only rendered for superusers), and even for superusers the
 views must not act on volumes or option values taken blindly from the client.
 """
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
@@ -118,6 +118,22 @@ class DiskViewsTenantIsolationTestCase(TestCase):
         mock_wvm.return_value.detach_disk.assert_called_once_with("vda")
         self.assertEqual(mock_storage.call_args[0][-1], "default")
         mock_storage.return_value.del_volume.assert_called_once_with("vm-disk.qcow2")
+        mock_storage.return_value.check_unused_elsewhere.assert_called_once_with("vm-disk.qcow2", ANY)
+
+    def test_delete_vol_of_a_volume_another_compute_uses_keeps_the_disk_attached(self):
+        from vrtManager.util import InUse
+
+        self.client.force_login(self.superuser)
+        with patch("instances.models.wvmInstance") as mock_wvm, patch(
+            "instances.views.wvmStorage"
+        ) as mock_storage:
+            mock_wvm.return_value.get_disk_devices.return_value = [VM_DISK]
+            mock_wvm.return_value.get_managed_save_image.return_value = 0
+            mock_storage.return_value.check_unused_elsewhere.side_effect = InUse("in use on another compute")
+            res = self._post("delete_vol", {"dev": "vda", "path": VM_DISK["path"]})
+        self.assertEqual([str(m) for m in get_messages(res.wsgi_request)], ["in use on another compute"])
+        mock_wvm.return_value.detach_disk.assert_not_called()
+        mock_storage.return_value.del_volume.assert_not_called()
 
     def test_delete_vol_refuses_dev_not_attached_to_vm(self):
         self.client.force_login(self.superuser)

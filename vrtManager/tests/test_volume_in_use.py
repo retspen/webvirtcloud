@@ -191,6 +191,15 @@ class DeleteVolumeTestCase(unittest.TestCase):
         conn.del_volume("disk.qcow2")
         vols["disk.qcow2"].delete.assert_called_once_with(0)
 
+    def test_a_volume_another_compute_uses_is_refused(self):
+        # shared storage: another host's VM has the same file at the same path
+        conn, _vols = storage([], [volume("/pool/disk.qcow2")])
+        asked = []
+        conn.check_unused_elsewhere("disk.qcow2", lambda paths: asked.append(paths) or set())
+        self.assertEqual(asked, [["/pool/disk.qcow2"]])
+        with self.assertRaisesRegex(util.InUse, "disk.qcow2 is in use on another compute"):
+            conn.check_unused_elsewhere("disk.qcow2", set)
+
 
 class RunningCopyTestCase(unittest.TestCase):
     """A running guest's disk is not copied: the copy would mix instants."""

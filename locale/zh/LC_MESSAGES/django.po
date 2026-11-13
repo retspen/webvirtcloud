@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 07:27+0000\n"
+"POT-Creation-Date: 2026-11-13 07:41+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -2629,7 +2629,7 @@ msgid ""
 msgstr "不支持控制台类型 '%(type)s'。请将虚拟机图形切换为 VNC。"
 
 #: instances/api/viewsets.py:149 instances/api/viewsets.py:167
-#: instances/views.py:816 instances/views.py:836 instances/views.py:1813
+#: instances/views.py:816 instances/views.py:836 instances/views.py:1819
 msgid "Templates cannot be started."
 msgstr "模板无法启动。"
 
@@ -2962,7 +2962,7 @@ msgstr "MAC 地址 %(mac)s 已属于此主机上另一台虚拟机的网卡"
 msgid "Create VM"
 msgstr "创建虚拟机"
 
-#: instances/jobs.py:900 instances/jobs.py:945 instances/views.py:2530
+#: instances/jobs.py:900 instances/jobs.py:945 instances/views.py:2536
 msgid "A virtual machine with this name already exists"
 msgstr "同名虚拟机已存在"
 
@@ -3314,7 +3314,7 @@ msgid "Disk source"
 msgstr "磁盘来源"
 
 #: instances/templates/add_instance_volume.html:21
-#: instances/templates/create_instance_w2.html:134 instances/views.py:2550
+#: instances/templates/create_instance_w2.html:134 instances/views.py:2556
 msgid "New disk"
 msgstr "新磁盘"
 
@@ -3340,7 +3340,7 @@ msgid "Storage pool"
 msgstr "存储池"
 
 #: instances/templates/add_instance_volume.html:41
-#: instances/templates/create_instance_w2.html:46 storages/forms.py:107
+#: instances/templates/create_instance_w2.html:46 storages/forms.py:119
 #: storages/templates/storage.html:182
 msgid "Letters, digits, dot, dash and underscore."
 msgstr "字母、数字、点、短横线和下划线。"
@@ -3358,8 +3358,8 @@ msgstr "格式"
 
 #: instances/templates/add_instance_volume.html:61
 #: instances/templates/create_instance_w2.html:154
-#: instances/templates/create_instance_w2.html:220 storages/forms.py:113
-#: storages/forms.py:133 storages/templates/storage.html:197
+#: instances/templates/create_instance_w2.html:220 storages/forms.py:125
+#: storages/forms.py:145 storages/templates/storage.html:197
 msgid "Preallocate metadata (qcow2)"
 msgstr "预分配元数据（qcow2）"
 
@@ -3684,11 +3684,11 @@ msgstr "请选择…"
 msgid "Custom CPU Models"
 msgstr "自定义 CPU 型号"
 
-#: instances/templates/create_instance_w2.html:146 storages/forms.py:112
+#: instances/templates/create_instance_w2.html:146 storages/forms.py:124
 msgid "Size (GiB)"
 msgstr "大小（GiB）"
 
-#: instances/templates/create_instance_w2.html:161 instances/views.py:2551
+#: instances/templates/create_instance_w2.html:161 instances/views.py:2557
 msgid "Existing volumes"
 msgstr "已有卷"
 
@@ -3724,7 +3724,7 @@ msgstr "设备"
 msgid "Remove"
 msgstr "移除"
 
-#: instances/templates/create_instance_w2.html:194 instances/views.py:2552
+#: instances/templates/create_instance_w2.html:194 instances/views.py:2558
 msgid "Clone from template"
 msgstr "从模板克隆"
 
@@ -6041,108 +6041,108 @@ msgstr "磁盘 %(dev)s 有待生效的更改；请在虚拟机关机后删除它
 msgid "Volume %(vol)s is used by another VM; detach it instead"
 msgstr "卷 %(vol)s 正被另一台虚拟机使用；请改为分离它"
 
-#: instances/views.py:1590
+#: instances/views.py:1596
 #, python-format
 msgid ""
 "The guest has not released disk %(dev)s yet; volume %(vol)s was kept. Delete "
 "it from the storage pool once the VM is shut down."
 msgstr "客户机尚未释放磁盘 %(dev)s；卷 %(vol)s 已保留。请在虚拟机关机后从存储池中删除它。"
 
-#: instances/views.py:1601
+#: instances/views.py:1607
 #, python-format
 msgid "Disk %(dev)s was detached, but its volume was kept: %(err)s"
 msgstr "磁盘 %(dev)s 已分离，但其卷已保留：%(err)s"
 
-#: instances/views.py:1629
+#: instances/views.py:1635
 #, python-format
 msgid "This VM cannot take a CD-ROM on the %(bus)s bus now"
 msgstr "该虚拟机现在无法在 %(bus)s 总线上添加 CD-ROM"
 
-#: instances/views.py:1632
+#: instances/views.py:1638
 msgid "A USB CD-ROM needs an ISO image: libvirt has no empty USB drive"
 msgstr "USB CD-ROM 需要 ISO 镜像：libvirt 不支持空的 USB 驱动器"
 
-#: instances/views.py:1637
+#: instances/views.py:1643
 #, python-format
 msgid "%(image)s is already in a CD-ROM of this VM"
 msgstr "%(image)s 已在此虚拟机的某个光驱中"
 
-#: instances/views.py:1718
+#: instances/views.py:1724
 #, python-format
 msgid "Pool %(pool)s was not read again: %(err)s"
 msgstr "未重新读取存储池 %(pool)s：%(err)s"
 
-#: instances/views.py:1739
+#: instances/views.py:1745
 #, python-format
 msgid "Snapshot was not deleted: %(err)s"
 msgstr "快照未删除：%(err)s"
 
-#: instances/views.py:1857
+#: instances/views.py:1863
 msgid "Add at least one device to the boot order."
 msgstr "请至少向启动顺序中添加一个设备。"
 
-#: instances/views.py:1863 vrtManager/instance.py:1161
+#: instances/views.py:1869 vrtManager/instance.py:1161
 msgid "Invalid Device Type for boot order"
 msgstr "启动顺序的设备类型无效"
 
-#: instances/views.py:1874
+#: instances/views.py:1880
 msgid "Boot order changed. It applies at the next start."
 msgstr "启动顺序已更改，将在下次启动时生效。"
 
-#: instances/views.py:1876
+#: instances/views.py:1882
 msgid "Boot order changed successfully."
 msgstr "启动顺序已成功更改。"
 
-#: instances/views.py:1896
+#: instances/views.py:1902
 msgid "The XML is empty"
 msgstr "XML 为空"
 
-#: instances/views.py:1900 instances/views.py:2541
+#: instances/views.py:1906 instances/views.py:2547
 #, python-format
 msgid "The XML is not well-formed: %(error)s"
 msgstr "XML 格式不正确：%(error)s"
 
-#: instances/views.py:1902
+#: instances/views.py:1908
 #, python-format
 msgid "The XML must keep the VM's UUID %(uuid)s."
 msgstr "XML 必须保留虚拟机的 UUID %(uuid)s。"
 
-#: instances/views.py:1906
+#: instances/views.py:1912
 msgid ""
 "The definition has changed since the editor was opened. Reload the page to "
 "edit the current one."
 msgstr "自打开编辑器以来定义已被更改。请重新加载页面以编辑当前定义。"
 
-#: instances/views.py:1922
+#: instances/views.py:1928
 msgid "The XML definition was saved."
 msgstr "XML 定义已保存。"
 
-#: instances/views.py:1924
+#: instances/views.py:1930
 msgid "The XML definition was saved; the VM uses it from its next start."
 msgstr "XML 定义已保存；虚拟机从下次启动起使用它。"
 
-#: instances/views.py:2005
+#: instances/views.py:2011
 msgid "Select one network interface to change"
 msgstr "请选择一个要更改的网络接口"
 
-#: instances/views.py:2043
+#: instances/views.py:2049
 msgid "Network Device Config is changed. Please shutdown instance to activate."
 msgstr "网络设备配置已更改。请关闭虚拟机以使其生效。"
 
-#: instances/views.py:2045
+#: instances/views.py:2051
 msgid "Network device changed"
 msgstr "网络设备已更改"
 
-#: instances/views.py:2057
+#: instances/views.py:2063
 msgid "No network selected"
 msgstr "未选择网络"
 
-#: instances/views.py:2062
+#: instances/views.py:2068
 #, python-format
 msgid "The VM already has a network device with MAC %(mac)s"
 msgstr "虚拟机已有 MAC 地址为 %(mac)s 的网络设备"
 
-#: instances/views.py:2081
+#: instances/views.py:2087
 msgid ""
 "The running VM has no free PCI slot for another network device: shut it down "
 "and add the device then; Add PCIe slots on the Disks tab gives it free ones "
@@ -6150,136 +6150,136 @@ msgid ""
 msgstr ""
 "运行中的虚拟机没有可用 PCI 插槽来添加网络设备：请关机后再添加设备。“磁盘”选项卡上的“添加 PCIe 插槽”可使其从下次启动起获得可用插槽。"
 
-#: instances/views.py:2127 instances/views.py:2133
+#: instances/views.py:2133 instances/views.py:2139
 msgid "The VM has it"
 msgstr "虚拟机已有此设备"
 
-#: instances/views.py:2168
+#: instances/views.py:2174
 #, python-format
 msgid "The host has no USB device %(device)s; reload the page"
 msgstr "主机没有 USB 设备 %(device)s；请重新加载页面"
 
-#: instances/views.py:2189
+#: instances/views.py:2195
 #, python-format
 msgid "The host has no PCI device %(device)s"
 msgstr "主机上没有 PCI 设备 %(device)s"
 
-#: instances/views.py:2207
+#: instances/views.py:2213
 #, python-format
 msgid ""
 "Removal of PCI device %(address)s requested: the guest has not let it go yet;"
 " it stays in the running VM until it does or the VM stops."
 msgstr "已请求移除 PCI 设备 %(address)s：客户机尚未释放它；在客户机释放或虚拟机停止之前，它仍保留在运行中的虚拟机中。"
 
-#: instances/views.py:2252 instances/views.py:2282
+#: instances/views.py:2258 instances/views.py:2288
 msgid "Select a network interface and a QoS direction"
 msgstr "请选择网络接口和 QoS 方向"
 
-#: instances/views.py:2255 vrtManager/network.py:470
+#: instances/views.py:2261 vrtManager/network.py:470
 msgid "QoS rates must be whole numbers"
 msgstr "QoS 速率必须为整数"
 
-#: instances/views.py:2262 networks/views.py:230
+#: instances/views.py:2268 networks/views.py:230
 #, python-format
 msgid "%(qos_dir)s QoS is set"
 msgstr "%(qos_dir)s QoS 已设置"
 
-#: instances/views.py:2267
+#: instances/views.py:2273
 #, python-format
 msgid ""
 "%(qos_dir)s QoS is set. A running VM gets it after it is powered off and on."
 msgstr "%(qos_dir)s QoS 已设置。运行中的虚拟机需关机再开机后才能生效。"
 
-#: instances/views.py:2289 networks/views.py:256
+#: instances/views.py:2295 networks/views.py:256
 #, python-format
 msgid "%(qos_dir)s QoS is deleted"
 msgstr "%(qos_dir)s QoS 已删除"
 
-#: instances/views.py:2294
+#: instances/views.py:2300
 #, python-format
 msgid ""
 "%(qos_dir)s QoS is deleted. A running VM keeps the old limit until it is "
 "powered off and on."
 msgstr "%(qos_dir)s QoS 已删除。运行中的虚拟机在关机再开机之前保留旧的限制。"
 
-#: instances/views.py:2322
+#: instances/views.py:2328
 msgid "Only one owner is allowed and the one already added"
 msgstr "只允许一个所有者，且已添加"
 
-#: instances/views.py:2324
+#: instances/views.py:2330
 #, python-format
 msgid "%(user)s is already an owner"
 msgstr "%(user)s 已是所有者"
 
-#: instances/views.py:2369
+#: instances/views.py:2375
 #, python-format
 msgid "Console settings were not saved: %(errors)s"
 msgstr "控制台设置未保存：%(errors)s"
 
-#: instances/views.py:2391
+#: instances/views.py:2397
 msgid ""
 "Error setting console password. You should check that your instance have an "
 "graphic device."
 msgstr "设置控制台密码出错。请检查虚拟机是否有图形设备。"
 
-#: instances/views.py:2438
+#: instances/views.py:2444
 msgid "Shut the VM down to change whether it is a template."
 msgstr "请关闭虚拟机以更改其是否为模板。"
 
-#: instances/views.py:2444
+#: instances/views.py:2450
 #, python-format
 msgid "%(quota)s: '%(instance_name)s' stays a template."
 msgstr "%(quota)s：“%(instance_name)s”仍为模板。"
 
-#: instances/views.py:2528
+#: instances/views.py:2534
 msgid "The XML has no name"
 msgstr "XML 中没有名称"
 
-#: instances/views.py:2543 webvirtcloud/middleware.py:156
+#: instances/views.py:2549 webvirtcloud/middleware.py:156
 #, python-format
 msgid "libvirt Error - %(exception)s"
 msgstr "libvirt 错误 - %(exception)s"
 
-#: instances/views.py:2550
+#: instances/views.py:2556
 msgid "An empty disk of the size you set"
 msgstr "按设定大小创建的空磁盘"
 
-#: instances/views.py:2551
+#: instances/views.py:2557
 msgid "Volumes already in a pool"
 msgstr "存储池中已有的卷"
 
-#: instances/views.py:2552
+#: instances/views.py:2558
 msgid "A copy of a template volume"
 msgstr "模板卷的副本"
 
-#: instances/views.py:2630
+#: instances/views.py:2636
 msgid ""
 "This host has no running storage pool for the VM's disks: add or start one on"
 " its Storage page."
 msgstr "此主机没有可用于虚拟机磁盘的运行中存储池：请在其“存储”页面添加或启动一个。"
 
-#: instances/views.py:2632
+#: instances/views.py:2638
 msgid "This host has no network for the VM: add one on its Networks page."
 msgstr "此主机没有可供虚拟机使用的网络：请在其“网络”页面添加一个。"
 
-#: instances/views.py:2664
+#: instances/views.py:2670
 #, python-format
 msgid "The machine type is q35, not %(machine)s: UEFI Secure Boot needs it"
 msgstr "机器类型为 q35，而不是 %(machine)s：UEFI 安全启动需要它"
 
-#: instances/views.py:2691
+#: instances/views.py:2697
 msgid "Flavor Created"
 msgstr "规格已创建"
 
-#: instances/views.py:2699
+#: instances/views.py:2705
 msgid "Create Flavor"
 msgstr "创建规格"
 
-#: instances/views.py:2711
+#: instances/views.py:2717
 msgid "Flavor Deleted"
 msgstr "规格已删除"
 
-#: instances/views.py:2717
+#: instances/views.py:2723
 msgid "Only the size template goes; VMs made from it keep their size."
 msgstr "仅删除此规格；由它创建的虚拟机保持其大小。"
 
@@ -6660,7 +6660,7 @@ msgstr "IPv4 网络前缀必须为 /30 或更短"
 msgid "For libvirt, the IPv6 network prefix must be /64"
 msgstr "libvirt 要求 IPv6 网络前缀为 /64"
 
-#: networks/forms.py:36 storages/forms.py:35
+#: networks/forms.py:36 storages/forms.py:47
 msgid "No pool name has been entered"
 msgstr "未输入地址池名称"
 
@@ -6676,7 +6676,7 @@ msgstr "IPv6 子网"
 msgid "Bridge or interface"
 msgstr "网桥或接口"
 
-#: networks/forms.py:56 storages/forms.py:59
+#: networks/forms.py:56 storages/forms.py:71
 msgid "The pool name must not contain any special characters"
 msgstr "地址池名称不能包含特殊字符"
 
@@ -6693,7 +6693,7 @@ msgid "The pool bridge name must not contain any special characters"
 msgstr "地址池网桥名称不能包含特殊字符"
 
 #: networks/forms.py:85 networks/forms.py:89 networks/forms.py:93
-#: storages/forms.py:100
+#: storages/forms.py:112
 msgid "This field is required."
 msgstr "此字段为必填项。"
 
@@ -7755,80 +7755,80 @@ msgstr "恢复在一小时内无法读取任务状态；请检查虚拟机，然
 msgid "The worker stopped before the job changed anything"
 msgstr "工作进程在任务做出任何更改之前停止"
 
-#: storages/api/viewsets.py:143 storages/api/viewsets.py:159
-#: storages/api/viewsets.py:195 storages/api/viewsets.py:215
+#: storages/api/viewsets.py:144 storages/api/viewsets.py:160
+#: storages/api/viewsets.py:196 storages/api/viewsets.py:218
 msgid "Pool is not active"
 msgstr "存储池未激活"
 
-#: storages/forms.py:38 storages/templates/storage.html:102
+#: storages/forms.py:50 storages/templates/storage.html:102
 #: storages/templates/storages.html:43
 msgid "Path"
 msgstr "路径"
 
-#: storages/forms.py:39
+#: storages/forms.py:51
 msgid "Device or remote path"
 msgstr "设备或远程路径"
 
-#: storages/forms.py:40
+#: storages/forms.py:52
 msgid "Erase the device"
 msgstr "擦除设备"
 
-#: storages/forms.py:41 storages/templates/create_stg_block.html:110
+#: storages/forms.py:53 storages/templates/create_stg_block.html:110
 msgid "Ceph user"
 msgstr "Ceph 用户"
 
-#: storages/forms.py:42 storages/templates/create_stg_block.html:98
+#: storages/forms.py:54 storages/templates/create_stg_block.html:98
 msgid "Ceph monitor"
 msgstr "Ceph 监视器"
 
-#: storages/forms.py:43 storages/templates/create_stg_block.html:104
+#: storages/forms.py:55 storages/templates/create_stg_block.html:104
 msgid "Ceph pool"
 msgstr "Ceph 存储池"
 
-#: storages/forms.py:44 storages/templates/create_stg_block.html:116
+#: storages/forms.py:56 storages/templates/create_stg_block.html:116
 msgid "Ceph secret"
 msgstr "Ceph 机密"
 
-#: storages/forms.py:45 storages/templates/create_stg_block.html:139
+#: storages/forms.py:57 storages/templates/create_stg_block.html:139
 msgid "Server"
 msgstr "服务器"
 
-#: storages/forms.py:62
+#: storages/forms.py:74
 msgid "This host has a pool of that name"
 msgstr "此主机已有同名存储池"
 
-#: storages/forms.py:71
+#: storages/forms.py:83
 msgid "The target must not contain any special characters"
 msgstr "目标不能包含特殊字符"
 
-#: storages/forms.py:75
+#: storages/forms.py:87
 #, python-format
 msgid "%(path)s is a system directory of the host"
 msgstr "%(path)s 是主机的系统目录"
 
-#: storages/forms.py:81
+#: storages/forms.py:93
 #, python-format
 msgid "Pool %(pool)s uses this path"
 msgstr "存储池 %(pool)s 正在使用此路径"
 
-#: storages/forms.py:84
+#: storages/forms.py:96
 #, python-format
 msgid "Pool %(pool)s uses %(path)s: one pool's directory cannot hold another's"
 msgstr "存储池 %(pool)s 正在使用 %(path)s：一个存储池的目录不能包含另一个存储池的目录"
 
-#: storages/forms.py:92
+#: storages/forms.py:104
 msgid "The disk source must not contain any special characters"
 msgstr "磁盘源不能包含特殊字符"
 
-#: storages/forms.py:102
+#: storages/forms.py:114
 msgid "Choose one of the host's Ceph secrets"
 msgstr "请选择此主机上的一个 Ceph 机密"
 
-#: storages/forms.py:120 storages/forms.py:140
+#: storages/forms.py:132 storages/forms.py:152
 msgid "The image name must not contain any special characters"
 msgstr "镜像名称不能包含特殊字符"
 
-#: storages/forms.py:144
+#: storages/forms.py:156
 msgid "The image name must not exceed 120 characters"
 msgstr "镜像名称不能超过 120 个字符"
 
@@ -8296,36 +8296,36 @@ msgstr "最后一个分块与声明的文件大小不符"
 msgid "The partial upload is missing"
 msgstr "部分上传的文件不存在"
 
-#: storages/views.py:29
+#: storages/views.py:30
 msgid "No file chunk was submitted."
 msgstr "未提交文件分块。"
 
-#: storages/views.py:35
+#: storages/views.py:36
 msgid "Invalid chunk parameters."
 msgstr "分块参数无效。"
 
-#: storages/views.py:37
+#: storages/views.py:38
 msgid "Invalid chunk index or total chunks."
 msgstr "分块索引或分块总数无效。"
 
-#: storages/views.py:42
+#: storages/views.py:43
 msgid "Invalid file size."
 msgstr "文件大小无效。"
 
-#: storages/views.py:51
+#: storages/views.py:52
 msgid "Upload session is busy. Please retry."
 msgstr "上传会话繁忙，请重试。"
 
-#: storages/views.py:53
+#: storages/views.py:54
 msgid "ISO image already exists"
 msgstr "ISO 镜像已存在"
 
-#: storages/views.py:174
+#: storages/views.py:177
 #, python-format
 msgid "Volume: %(vol)s is deleted."
 msgstr "卷 %(vol)s 已删除。"
 
-#: storages/views.py:191
+#: storages/views.py:194
 #, python-format
 msgid "Image file %(name)s is created successfully"
 msgstr "镜像文件 %(name)s 创建成功"
@@ -9685,20 +9685,25 @@ msgid ""
 "Pool %(name)s holds disks of the running VMs %(vms)s; shut them down first"
 msgstr "存储池 %(name)s 中有运行中的虚拟机 %(vms)s 的磁盘；请先关闭它们"
 
-#: vrtManager/storage.py:231
+#: vrtManager/storage.py:234
 #, python-format
 msgid ""
 "VMs %(vms)s have disks in pool %(name)s and would no longer start; detach "
 "those disks first"
 msgstr "虚拟机 %(vms)s 使用存储池 %(name)s 中的磁盘，将无法再启动；请先分离这些磁盘"
 
-#: vrtManager/storage.py:263
+#: vrtManager/storage.py:269
+#, python-format
+msgid "Volume %(name)s is in use on another compute that shares this storage"
+msgstr "卷 %(name)s 正在被共享此存储的另一台主机使用"
+
+#: vrtManager/storage.py:275
 #, python-format
 msgid ""
 "Volume %(name)s is in use: a VM's disk, a backing file or a snapshot's file"
 msgstr "卷 %(name)s 正在使用中：它是虚拟机的磁盘、后备文件或快照文件"
 
-#: vrtManager/storage.py:356
+#: vrtManager/storage.py:368
 #, python-format
 msgid "The running VMs %(vms)s use volume %(name)s; shut them down to copy it"
 msgstr "正在运行的虚拟机 %(vms)s 使用卷 %(name)s；请先将其关闭再复制"

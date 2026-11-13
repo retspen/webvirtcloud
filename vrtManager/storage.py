@@ -259,8 +259,17 @@ class wvmStorage(wvmConnect):
         vol = self.get_volume(name)
         return vol.XMLDesc(0)
 
+    def check_unused_elsewhere(self, name, elsewhere):
+        """Refuses a volume a VM of another host sharing this storage uses:
+        elsewhere(paths) gives those the other hosts use
+        (instances.utils.paths_used_on_other_computes). Asked before this
+        host's lock, which a host that does not answer would hold meanwhile."""
+        path = self.pool.storageVolLookupByName(name).path()
+        if path in elsewhere([path]):
+            raise util.InUse(gettext_noop("Volume %(name)s is in use on another compute that shares this storage"), name=name)
+
     def del_volume(self, name):
-        """libvirt deletes any volume; one a VM still needs is refused."""
+        """libvirt deletes any volume; one a VM of this host still needs is refused."""
         vol = self.pool.storageVolLookupByName(name)
         if vol.path() in self.paths_in_use():
             raise util.InUse(gettext_noop("Volume %(name)s is in use: a VM's disk, a backing file or a snapshot's file"), name=name)

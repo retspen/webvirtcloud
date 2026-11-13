@@ -1578,6 +1578,12 @@ def delete_vol(request, pk):
             _("Volume %(vol)s is used by another VM; detach it instead") % {"vol": disk["image"]},
         )
         return _back(request, pk, "disks")
+    try:  # before the disk is detached
+        conn_delete.check_unused_elsewhere(
+            disk["image"], lambda paths: utils.paths_used_on_other_computes(instance.compute, paths))
+    except util.OperationError as err:
+        messages.error(request, str(err))
+        return _back(request, pk, "disks")
 
     volume = f"{disk['storage']}/{disk['image']}"
     with audit_vm(request, instance, f"detach disk {dev}"):
