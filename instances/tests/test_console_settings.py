@@ -96,6 +96,21 @@ class UpdateConsoleTestCase(TestCase):
             form = ConsoleForm(instance=Instance.objects.get(pk=self.instance.pk), is_superuser=True)
         self.assertEqual((form["console_type"].value(), sorted(form.fields)), ("pty", ["console_type"]))
 
+    def test_a_spice_console_stays_spice_when_its_settings_are_saved(self):
+        # SPICE is not offered for new consoles: a save would have made it VNC
+        proxy, messages = self.post({**VNC, "console_type": "spice", "keymap": "de"}, console_type="spice")
+        self.assertEqual(messages, [])
+        proxy.set_console_type.assert_not_called()
+        proxy.set_console_keymap.assert_called_once_with("de")
+        proxy, _ = self.post({**VNC, "console_type": "vnc"}, console_type="spice")
+        proxy.set_console_type.assert_called_once_with("vnc")
+        # the VNC limits are not SPICE's
+        for password, saved in (("é-a-longer-one", True), ("a\nb", False)):
+            with self.subTest(password=password):
+                proxy, _ = self.post({**VNC, "console_type": "spice", "password_action": "set", "password": password},
+                                     console_type="spice")
+                self.assertEqual(proxy.set_console_passwd.called, saved)
+
     @override_settings(SERIAL_CONSOLE_ENABLED=False)
     def test_serial_is_not_offered_while_the_serial_console_is_off(self):
         proxy, _ = self.post({**VNC, "console_type": "pty"})

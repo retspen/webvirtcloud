@@ -1604,11 +1604,11 @@ class wvmInstance(wvmConnect):
 
     def get_console_listener_addr(self, config=False):
         listener_addr = util.get_xml_path(
-            self._XMLDesc(PERSISTENT_XML if config else 0), "/domain/devices/graphics/@listen"
+            self._XMLDesc(PERSISTENT_XML if config else 0), "/domain/devices/graphics[1]/@listen"
         )
         if listener_addr is None:
             listener_addr = util.get_xml_path(
-                self._XMLDesc(PERSISTENT_XML if config else 0), "/domain/devices/graphics/listen/@address"
+                self._XMLDesc(PERSISTENT_XML if config else 0), "/domain/devices/graphics[1]/listen/@address"
             )
             if listener_addr is None:
                 return "127.0.0.1"
@@ -1665,21 +1665,36 @@ class wvmInstance(wvmConnect):
         serial console opens (libvirt adds the serial port for the console)."""
         root = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
         devices = root.find("devices")
-        for graphic in devices.findall("graphics"):
+        graphics = devices.findall("graphics")
+        for graphic in graphics:
             devices.remove(graphic)
+        # libvirt refuses SPICE channels, USB redirection and smartcards
+        # without SPICE graphics; SPICE audio goes silent
+        for device in devices.xpath("channel[@type='spicevmc' or @type='spiceport'] | redirdev[@type='spicevmc']"
+                                    " | smartcard[@type='spicevmc']"):
+            devices.remove(device)
+        for audio in devices.findall("audio[@type='spice']"):
+            audio.set("type", "none")
         if console_type == "vnc":
-            etree.SubElement(devices, "graphics", type="vnc", port="-1", autoport="yes", listen="127.0.0.1")
+            vnc = etree.SubElement(devices, "graphics", type="vnc", port="-1", autoport="yes", listen="127.0.0.1")
+            # a SPICE console's keymap and password stay, a password VNC cannot take is replaced
+            if graphics and graphics[0].get("keymap"):
+                vnc.set("keymap", graphics[0].get("keymap"))
+            passwd = graphics[0].get("passwd") if graphics else None
+            if passwd is not None:
+                fits = len(passwd) <= 8 and all(" " <= c <= "~" for c in passwd)
+                vnc.set("passwd", passwd if fits else util.randomPasswd(8))
         elif devices.find("console") is None:
             etree.SubElement(devices, "console", type="pty")
         return self._defineXML(etree.tostring(root).decode())
 
     def get_console_socket(self):
-        socket = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics/@socket")
+        socket = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics[1]/@socket")
         return socket
 
     def get_console_type(self, config=False):
         xml = self._XMLDesc(PERSISTENT_XML if config else 0)
-        console_type = util.get_xml_path(xml, "/domain/devices/graphics/@type")
+        console_type = util.get_xml_path(xml, "/domain/devices/graphics[1]/@type")
         if console_type is None:
             console_type = util.get_xml_path(xml, "/domain/devices/console/@type")
         return console_type
@@ -1689,13 +1704,13 @@ class wvmInstance(wvmConnect):
             console_type = self.get_console_type()
         port = util.get_xml_path(
             self._XMLDesc(0),
-            "/domain/devices/graphics[@type='%s']/@port" % console_type,
+            "/domain/devices/graphics[1][@type='%s']/@port" % console_type,
         )
         return port
 
     def get_console_passwd(self, config=False):
         return util.get_xml_path(
-            self._XMLDesc(PERSISTENT_XML if config else VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics/@passwd"
+            self._XMLDesc(PERSISTENT_XML if config else VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics[1]/@passwd"
         )
 
     def set_console_passwd(self, passwd):
@@ -1730,7 +1745,7 @@ class wvmInstance(wvmConnect):
     def get_console_keymap(self, config=False):
         return (
             util.get_xml_path(
-                self._XMLDesc(PERSISTENT_XML if config else VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics/@keymap"
+                self._XMLDesc(PERSISTENT_XML if config else VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics[1]/@keymap"
             )
             or ""
         )

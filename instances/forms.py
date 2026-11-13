@@ -55,6 +55,9 @@ class ConsoleForm(forms.Form):
         types = [("vnc", "VNC")]
         if settings.SERIAL_CONSOLE_ENABLED:
             types.append(("pty", _("Serial (xterm; the guest needs a getty on ttyS0)")))
+        # a type the panel does not create (SPICE) is offered, so a save keeps it
+        if instance.config_console_type not in (None, "pty", "vnc"):
+            types.append((instance.config_console_type, instance.config_console_type.upper()))
         self.fields["console_type"].choices = types
         # the VNC settings are shown and saved while the console is VNC; a
         # switch to Serial ignores them
@@ -88,8 +91,11 @@ class ConsoleForm(forms.Form):
             if not password:
                 self.add_error("password", _("Enter the new password."))
             # VNC takes 8 bytes, and the browser console sends only ASCII as typed
-            elif len(password) > 8 or not all(" " <= c <= "~" for c in password):
+            elif (data.get("console_type") or self.initial["console_type"]) == "vnc" and (
+                    len(password) > 8 or not all(" " <= c <= "~" for c in password)):
                 self.add_error("password", _("A VNC password takes up to 8 letters, digits or symbols, without accents."))
+            elif not password.isprintable():  # a SPICE password
+                self.add_error("password", _("A password takes no line breaks or other control characters."))
         # A console that listens beyond localhost (set by an administrator)
         # keeps its password unless an administrator removes it.
         if action == "none" and not self.is_superuser and not self.instance.proxy.console_listens_locally():
