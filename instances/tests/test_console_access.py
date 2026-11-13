@@ -71,9 +71,10 @@ class CanOpenConsoleTestCase(TestCase):
         self.owner.user_permissions.add(Permission.objects.get(codename="passwordless_console"))
         with patch("instances.models.wvmInstance") as wvm:
             proxy = wvm.return_value.cached_reads.return_value.__enter__.return_value
-            proxy.get_console_passwd.return_value = "secret"
+            proxy.get_console_passwd.return_value = " a\\nb"
             res = self.client.get(reverse("instances:getvvfile", args=[self.instance.id]))
-        self.assertIn(b"password=secret\n", res.content)
+        # as a key file reads it back: the leading space and the backslash stay
+        self.assertIn(b"password=\\sa\\\\nb\n", res.content)
 
     def test_owner_can_get_vdi_url(self):
         self.client.force_login(self.owner)

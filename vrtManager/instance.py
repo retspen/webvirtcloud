@@ -1706,8 +1706,9 @@ class wvmInstance(wvmConnect):
         if passwd:
             graphic.set("passwd", passwd)
         else:
-            with contextlib.suppress(Exception):
-                graphic.attrib.pop("passwd")
+            graphic.attrib.pop("passwd", None)
+        # an expiry set elsewhere would leave the new password unusable
+        graphic.attrib.pop("passwdValidTo", None)
 
         newxml = etree.tostring(root).decode()
         return self._defineXML(newxml)
@@ -2521,6 +2522,7 @@ class wvmInstance(wvmConnect):
         # the clone's console gets a password of its own: one copied from the source would open both
         for graphics in tree.findall("devices/graphics[@type='vnc']"):
             graphics.set("passwd", util.randomPasswd(8))  # the length VNC allows
+            graphics.attrib.pop("passwdValidTo", None)  # an expired source's would leave it unusable
 
         nvram = tree.find("os/nvram")
         if nvram is not None and nvram.get("type", "file") != "file":

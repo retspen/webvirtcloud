@@ -2461,6 +2461,13 @@ def set_template(request, pk):
     return _back(request, pk, "options")
 
 
+def keyfile_value(value):
+    """value as a GLib key file (the .vv file) reads it back: a backslash,
+    a line break or a leading space would change it."""
+    value = value.replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
+    return "\\s" + value[1:] if value.startswith(" ") else value
+
+
 def getvvfile(request, pk):
     instance = get_instance(request.user, pk)
     # The .vv file contains the VNC password: same rule as the console.
@@ -2480,10 +2487,10 @@ def getvvfile(request, pk):
         response.writelines(f"type={proxy.get_console_type()}\n")
         response.writelines(f"host={proxy.host if listen == '0.0.0.0' else listen}\n")
         response.writelines(f"port={proxy.get_console_port()}\n")
-        response.writelines(f"title={proxy.instance.name()}\n")
+        response.writelines(f"title={keyfile_value(proxy.instance.name())}\n")
         # as the console page: without the permission the viewer asks for the password
         if request.user.has_perm("instances.passwordless_console"):
-            response.writelines(f"password={proxy.get_console_passwd() or ''}\n")
+            response.writelines(f"password={keyfile_value(proxy.get_console_passwd() or '')}\n")
     response.writelines("enable-usbredir=1\n")
     response.writelines("disable-effects=all\n")
     response.writelines("secure-attention=ctrl+alt+ins\n")

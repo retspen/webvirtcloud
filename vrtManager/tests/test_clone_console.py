@@ -4,6 +4,8 @@ Its NIC filters keep no address of the source's."""
 
 import unittest
 
+from lxml import etree
+
 from vrtManager.instance import wvmInstance
 
 
@@ -22,6 +24,10 @@ class CloneConsoleTestCase(unittest.TestCase):
         self.assertNotIn("shared12", passwords)
         self.assertEqual(len(passwords), 5)
         self.assertTrue(all(len(p) == 8 for p in passwords))  # the length VNC allows
+
+    def test_a_clone_keeps_no_password_expiry_of_its_source(self):
+        graphics = clone_graphics("passwd='shared12' passwdValidTo='2000-01-01T00:00:00'")
+        self.assertIsNone(graphics.get("passwdValidTo"))
 
     def test_a_source_without_a_password_gives_a_clone_with_one(self):
         self.assertEqual(len(clone_graphics("").get("passwd")), 8)
@@ -48,3 +54,18 @@ class CloneConsoleTestCase(unittest.TestCase):
         tree, _ = p._clone_definition({"name": "copy", "clone-net-mac-0": "52:54:00:00:00:02"},
                                       "abababab-0000-1111-2222-333333333333")
         self.assertEqual(tree.xpath("devices/interface/filterref/parameter/@name"), ["IP", "IPV6", "CTRL_IP_LEARNING"])
+
+
+class ConsolePasswordTestCase(unittest.TestCase):
+    def test_a_new_password_drops_an_expiry_set_elsewhere(self):
+        # an expired passwdValidTo would leave the new password unusable
+        p = wvmInstance.__new__(wvmInstance)
+        p._XMLDesc = lambda flags: """<domain><devices><graphics type='vnc' passwd='old12345'
+            passwdValidTo='2000-01-01T00:00:00'/></devices></domain>"""
+        for password in ("new12345", ""):
+            with self.subTest(password=password):
+                defined = []
+                p._defineXML = defined.append
+                p.set_console_passwd(password)
+                graphic = etree.fromstring(defined[0]).find("devices/graphics")
+                self.assertEqual((graphic.get("passwd"), graphic.get("passwdValidTo")), (password or None, None))

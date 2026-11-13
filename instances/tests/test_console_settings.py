@@ -53,7 +53,7 @@ class UpdateConsoleTestCase(TestCase):
         proxy.set_console_keymap.assert_not_called()
 
     def test_the_password_changes_by_the_action_chosen(self):
-        for action, password in (("set", " a b c "), ("set", "éééé"), ("none", "")):
+        for action, password in (("set", " a b c "), ("set", "~a\\b{}!"), ("none", "")):
             with self.subTest(action, password=password):
                 proxy, _ = self.post({**VNC, "password_action": action, "password": password})
                 proxy.set_console_passwd.assert_called_once_with(password)
@@ -62,7 +62,8 @@ class UpdateConsoleTestCase(TestCase):
         self.assertEqual(len(generated), 8)
 
     def test_a_password_vnc_cannot_take_is_refused_and_nothing_is_saved(self):
-        for password in ("", "123456789", "ééééé"):  # libvirt counts bytes: é is two
+        # the browser console sends the password's characters, QEMU expects its bytes
+        for password in ("", "123456789", "éé", "a\nb", "a\tb"):
             with self.subTest(password=password):
                 proxy, messages = self.post({**VNC, "keymap": "de", "password_action": "set", "password": password})
                 proxy.set_console_passwd.assert_not_called()
