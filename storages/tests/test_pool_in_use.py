@@ -1,7 +1,8 @@
 """A pool a VM needs is not stopped or deleted: stopping one that holds a
 running VM's disk would take that disk away, deleting one a VM's definition
 names (a disk of type volume) would keep that VM from starting. A disk given
-by its file path keeps working without the pool's definition. Runs on a
+by its file path keeps working without a directory pool's definition, not
+without a share's, which mounts it. Runs on a
 private libvirt test driver: "test:///default" is shared by the whole process."""
 
 import tempfile
@@ -75,3 +76,43 @@ class PoolInUseTests(TestCase):
         self.conn.lookupByName("by-name").undefine()
         self.post("delete")
         self.assertNotIn("use-pool", self.conn.listDefinedStoragePools())
+
+    def test_a_share_a_vm_disk_path_is_in_is_not_deleted(self):
+        # undefined, the share is not mounted at the next boot: the path is gone
+        self.conn.storagePoolDefineXML(
+            "<pool type='netfs'><name>share</name><source><host name='192.0.2.1'/><dir path='/export'/>"
+            "<format type='nfs'/></source><target><path>/mnt/share</path></target></pool>", 0)
+        self.conn.defineXML(domain("on-share", "type='file'><source file='/mnt/share/v.qcow2'/>"))
+        self.conn.defineXML(domain("beside", "type='file'><source file='/mnt/share-2/v.qcow2'/>"))
+        url = reverse("storage", args=[self.compute.id, "share"])
+        response = self.client.post(url, {"delete": ""})
+        messages = [str(m) for m in get_messages(response.wsgi_request)]
+        self.assertEqual(messages, ["VMs on-share have disks in pool share and would no longer start; detach those disks first"])
+        self.conn.lookupByName("on-share").undefine()
+        self.client.post(url, {"delete": ""})
+        self.assertNotIn("share", self.conn.listDefinedStoragePools())
+
+    def test_an_lvm_pool_counts_its_device_mapper_names_and_iscsi_pools_do_not_share_their_directory(self):
+        self.conn.storagePoolDefineXML(
+            "<pool type='logical'><name>lvm</name><source><name>vg-data</name><format type='lvm2'/></source>"
+            "<target><path>/dev/vg-data</path></target></pool>", 0)
+        self.conn.storagePoolDefineXML(
+            "<pool type='iscsi'><name>lun</name><source><host name='192.0.2.1'/><device path='iqn.2026-01.test:a'/>"
+            "</source><target><path>/dev/disk/by-path</path></target></pool>", 0)
+        self.conn.defineXML(domain("on-lv", "type='block'><source dev='/dev/mapper/vg--data-lv1'/>"))
+        # another iSCSI pool's LUN: every iSCSI pool's target is /dev/disk/by-path
+        self.conn.defineXML(domain("other-lun", "type='block'><source dev='/dev/disk/by-path/ip-192.0.2.9-lun-0'/>"))
+        self.client.post(reverse("storage", args=[self.compute.id, "lvm"]), {"delete": ""})
+        self.client.post(reverse("storage", args=[self.compute.id, "lun"]), {"delete": ""})
+        self.assertIn("lvm", self.conn.listDefinedStoragePools())
+        self.assertNotIn("lun", self.conn.listDefinedStoragePools())
+
+    def test_an_inaccessible_pool_has_its_state(self):
+        # libvirt's state 4: running, but its storage cannot be reached
+        from vrtManager.storage import wvmStorage
+
+        storage = wvmStorage.__new__(wvmStorage)
+        for state, status in ((2, "Running normally"), (4, "Inaccessible"), (9, "Unknown")):
+            with self.subTest(state=state):
+                storage.pool = type("Pool", (), {"info": lambda self, state=state: [state, 0, 0, 0]})()
+                self.assertEqual(storage.get_status(), status)

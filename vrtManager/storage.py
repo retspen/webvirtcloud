@@ -168,10 +168,11 @@ class wvmStorage(wvmConnect):
             "Initializing pool, not available",
             "Running normally",
             "Running degraded",
+            "Inaccessible",  # running, but its storage cannot be reached: a share whose server is gone
         ]
         try:
             return status[self.pool.info()[0]]
-        except ValueError:
+        except IndexError:  # a state newer than these
             return "Unknown"
 
     def get_size(self):
@@ -215,10 +216,22 @@ class wvmStorage(wvmConnect):
 
     def delete(self):
         """Refused while a VM's definition names it for a disk: that VM would
-        no longer start. A disk given by its file path does not need it."""
-        name = self.pool.name()
-        if vms := self.domains_using(lambda domain: domain.xpath("devices/disk/source[@pool=$name]", name=name)):
-            raise util.OperationError(gettext_noop("VMs %(vms)s have disks in pool %(name)s by its name and would no longer start; detach those disks first"), vms=', '.join(vms), name=name)
+        no longer start. So is a disk given by its path in a pool that mounts
+        or activates its storage (a share, a file system, an LVM group): the
+        path is gone with the pool. A directory pool's files stay; the device
+        directories of iSCSI and disk pools are every pool's, not this one's."""
+        name, kind = self.pool.name(), self.get_type()
+        target = (self.get_target_path() or "").rstrip("/")
+        under = (target + "/",) if kind in ("fs", "netfs", "logical") and target else ()
+        if kind == "logical" and (group := self.get_source_name()):
+            under += ("/dev/mapper/" + group.replace("-", "--") + "-",)  # device mapper's name of its volumes
+
+        def needs(domain):
+            return domain.xpath("devices/disk/source[@pool=$name]", name=name) or any(
+                path.startswith(under) for path in domain.xpath("devices/disk//source/@file | devices/disk//source/@dev"))
+
+        if vms := self.domains_using(needs):
+            raise util.OperationError(gettext_noop("VMs %(vms)s have disks in pool %(name)s and would no longer start; detach those disks first"), vms=', '.join(vms), name=name)
         self.pool.undefine()
 
     def get_autostart(self):

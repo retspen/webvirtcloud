@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 07:26+0000\n"
+"POT-Creation-Date: 2026-11-13 07:27+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -8620,6 +8620,10 @@ msgstr "Havuz"
 msgid "Degraded"
 msgstr "Bozulmuş"
 
+#: storages/templates/storage.html:94
+msgid "Inaccessible"
+msgstr "Erişilemiyor"
+
 #: storages/templates/storage.html:112
 msgid ""
 "This pool is stopped: its volumes cannot be listed or managed until it is "
@@ -10280,7 +10284,7 @@ msgstr ""
 msgid "Enter one <rule> element"
 msgstr "Tek bir <rule> öğesi girin"
 
-#: vrtManager/storage.py:213
+#: vrtManager/storage.py:214
 #, python-format
 msgid ""
 "Pool %(name)s holds disks of the running VMs %(vms)s; shut them down first"
@@ -10288,16 +10292,16 @@ msgstr ""
 "%(name)s havuzu çalışan %(vms)s sanal makinelerinin disklerini tutuyor; önce "
 "onları kapatın"
 
-#: vrtManager/storage.py:221
+#: vrtManager/storage.py:231
 #, python-format
 msgid ""
-"VMs %(vms)s have disks in pool %(name)s by its name and would no longer "
-"start; detach those disks first"
+"VMs %(vms)s have disks in pool %(name)s and would no longer start; detach "
+"those disks first"
 msgstr ""
-"%(vms)s sanal makinelerinin %(name)s havuzunda adıyla bağlı diskleri var ve "
-"artık başlamaz; önce bu diskleri ayırın"
+"%(vms)s sanal makinelerinin %(name)s havuzunda diskleri var ve artık "
+"başlamaz; önce bu diskleri ayırın"
 
-#: vrtManager/storage.py:253
+#: vrtManager/storage.py:263
 #, python-format
 msgid ""
 "Volume %(name)s is in use: a VM's disk, a backing file or a snapshot's file"
@@ -10305,7 +10309,7 @@ msgstr ""
 "%(name)s birimi kullanımda: bir sanal makinenin diski, bir temel (backing) "
 "dosya ya da bir anlık görüntünün dosyası"
 
-#: vrtManager/storage.py:346
+#: vrtManager/storage.py:356
 #, python-format
 msgid "The running VMs %(vms)s use volume %(name)s; shut them down to copy it"
 msgstr ""

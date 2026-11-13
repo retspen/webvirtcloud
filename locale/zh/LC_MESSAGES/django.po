@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 07:26+0000\n"
+"POT-Creation-Date: 2026-11-13 07:27+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -8147,6 +8147,10 @@ msgstr "存储池"
 msgid "Degraded"
 msgstr "降级"
 
+#: storages/templates/storage.html:94
+msgid "Inaccessible"
+msgstr "无法访问"
+
 #: storages/templates/storage.html:112
 msgid ""
 "This pool is stopped: its volumes cannot be listed or managed until it is "
@@ -9675,26 +9679,26 @@ msgstr "无法引用过滤器 %(name)s：它就是本过滤器、已被引用或
 msgid "Enter one <rule> element"
 msgstr "请输入一个 <rule> 元素"
 
-#: vrtManager/storage.py:213
+#: vrtManager/storage.py:214
 #, python-format
 msgid ""
 "Pool %(name)s holds disks of the running VMs %(vms)s; shut them down first"
 msgstr "存储池 %(name)s 中有运行中的虚拟机 %(vms)s 的磁盘；请先关闭它们"
 
-#: vrtManager/storage.py:221
+#: vrtManager/storage.py:231
 #, python-format
 msgid ""
-"VMs %(vms)s have disks in pool %(name)s by its name and would no longer "
-"start; detach those disks first"
-msgstr "虚拟机 %(vms)s 通过名称使用存储池 %(name)s 中的磁盘，将无法再启动；请先分离这些磁盘"
+"VMs %(vms)s have disks in pool %(name)s and would no longer start; detach "
+"those disks first"
+msgstr "虚拟机 %(vms)s 使用存储池 %(name)s 中的磁盘，将无法再启动；请先分离这些磁盘"
 
-#: vrtManager/storage.py:253
+#: vrtManager/storage.py:263
 #, python-format
 msgid ""
 "Volume %(name)s is in use: a VM's disk, a backing file or a snapshot's file"
 msgstr "卷 %(name)s 正在使用中：它是虚拟机的磁盘、后备文件或快照文件"
 
-#: vrtManager/storage.py:346
+#: vrtManager/storage.py:356
 #, python-format
 msgid "The running VMs %(vms)s use volume %(name)s; shut them down to copy it"
 msgstr "正在运行的虚拟机 %(vms)s 使用卷 %(name)s；请先将其关闭再复制"
