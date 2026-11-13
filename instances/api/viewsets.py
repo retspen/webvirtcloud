@@ -8,7 +8,9 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 from instances.jobs import MIGRATE_OPTIONS
 from instances.models import Flavor, Instance
+from instances.utils import host_domain_states
 from instances.views import (
+    _listed_computes,
     force_off,
     get_instance,
     powercycle,
@@ -56,6 +58,12 @@ class InstancesViewSet(viewsets.ViewSet):
     lookup_value_converter = "int"
 
     def list(self, request):
+        # as the VM list: the hosts read first (all at once, one that does not answer
+        # left as last read), so that VMs added, renamed or removed outside are seen
+        computes = _listed_computes(request.user, list(Compute.objects.all()))
+        host_domain_states(computes)
+        for compute in computes:
+            utils.refresh_instance_database(compute)
 
         if request.user.is_superuser or request.user.has_perm(
             "instances.view_instances"
