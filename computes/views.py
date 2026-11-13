@@ -1,8 +1,8 @@
 import json
 import logging
 import threading
+import time
 from contextlib import suppress
-from concurrent import futures
 from copy import copy
 
 from admin.decorators import superuser_only
@@ -31,7 +31,7 @@ from computes.forms import (
     TcpComputeForm,
     TlsComputeForm,
 )
-from computes.models import Compute
+from computes.models import ENDPOINT, Compute
 
 from . import utils
 
@@ -84,19 +84,41 @@ CONNECTIONS = {CONN_TCP: "TCP", CONN_SSH: "SSH", CONN_TLS: "TLS", CONN_SOCKET: "
 
 # the Computes page reads its hosts side by side, and waits this long for them in all
 LIST_WAIT = 10
-LIST_WORKERS = 8
 
 
 def _read_host(compute):
-    """Whether the panel reaches the compute, why not, and its capacity (shown_capacity)."""
-    return compute.status, compute.connection_error, shown_capacity(compute)
+    """Whether the panel reaches the compute, why not, its capacity
+    (shown_capacity) and, for one whose host UUID is not kept yet, that UUID
+    ("" when it cannot be read): every libvirt read of the list, bounded."""
+    uuid = ""
+    if compute.status is True and not compute.host_uuid:
+        with suppress(libvirtError):
+            uuid = compute.proxy.host_uuid()
+    return compute.status, compute.connection_error, shown_capacity(compute), uuid
 
 
-# the reads of the Computes pages of this process: one pool, and one read of a host at a time,
-# so a host that hangs holds one thread however often the page is loaded
-_pool = None
-_reading = {}  # compute pk: its last read
+class _HostRead(threading.Thread):
+    """One read of a host (_read_host) on a daemon thread: one stuck on its
+    host does not hold the process when it exits."""
+
+    def __init__(self, compute):
+        super().__init__(daemon=True, name=f"wvc-host-{compute.pk}")
+        self.compute, self.result = compute, None
+
+    def run(self):
+        self.result = _read_host(self.compute)
+
+
+# the reads of the Computes pages of this process, one of a host at a time: a host that
+# hangs holds one thread however often the page is loaded, and no other host's
+_reading = {}  # (compute pk, its connection settings): its last read
 _reading_lock = threading.Lock()
+
+
+def _read_key(compute):
+    """A compute as read: a compute whose connection settings change is read anew, not
+    given what its old host answered."""
+    return (compute.pk, *(getattr(compute, field) for field in ENDPOINT))
 
 
 def read_hosts(computes):
@@ -105,20 +127,24 @@ def read_hosts(computes):
     not answering. A host whose read of an earlier load still runs is not
     read again: that read is waited for. Each thread reads a copy: one still
     running later does not change what the page shows."""
-    global _pool
     with _reading_lock:
-        if _pool is None:  # in the process that serves: a pool's threads do not survive a fork
-            _pool = futures.ThreadPoolExecutor(max_workers=LIST_WORKERS, thread_name_prefix="wvc-hosts")
-        for compute in computes:
-            if compute.pk not in _reading or _reading[compute.pk].done():
-                _reading[compute.pk] = _pool.submit(_read_host, copy(compute))
-        reads = {compute: _reading[compute.pk] for compute in computes}
-    futures.wait(reads.values(), timeout=LIST_WAIT)
+        keys = {compute: _read_key(compute) for compute in computes}
+        # reads ended of computes deleted or changed since: their copies (and credentials) go
+        for key in [key for key, read in _reading.items() if key not in keys.values() and not read.is_alive()]:
+            del _reading[key]
+        for compute, key in keys.items():
+            if key not in _reading or not _reading[key].is_alive():
+                _reading[key] = _HostRead(copy(compute))
+                _reading[key].start()
+        reads = {compute: _reading[key] for compute, key in keys.items()}
+    deadline = time.monotonic() + LIST_WAIT
+    for read in reads.values():
+        read.join(max(0, deadline - time.monotonic()))
     for compute, read in reads.items():
-        if read.done():
-            compute.status, compute.connection_error, compute.shown_capacity = read.result()
+        if read.result is not None:
+            compute.status, compute.connection_error, compute.shown_capacity, compute.read_uuid = read.result
         else:
-            compute.status, compute.shown_capacity = False, None
+            compute.status, compute.shown_capacity, compute.read_uuid = False, None, ""
             compute.connection_error = _("The host did not answer within %(seconds)s seconds") % {"seconds": LIST_WAIT}
 
 
@@ -132,10 +158,10 @@ def computes(request):
     read_hosts(computes)
     for compute in computes:
         compute.connection_name = CONNECTIONS.get(compute.type, "")
-        if compute.status is True and not compute.host_uuid:
+        if compute.read_uuid:
             # one added before host UUIDs were kept (Compute.clean); none for a second record of a host
             with suppress(IntegrityError):
-                compute.record_host()
+                compute.record_host(compute.read_uuid)
         given = compute.shown_capacity
         totals["connected"] += compute.status is True
         if given:

@@ -27,7 +27,9 @@ function stale() {
 // the CPU sample of the previous answer: usage is taken since then
 var cpuSample = null;
 pollWhileVisible(5000, function () {
-    return $.getJSON(state.dataset.url, cpuSample ? {cpu_sample: cpuSample} : {}).fail(stale);
+    // a host that keeps a reading waiting: the charts say they are not updated, and the next poll goes out
+    return $.ajax({url: state.dataset.url, data: cpuSample ? {cpu_sample: cpuSample} : {}, dataType: "json",
+                   timeout: 30000}).fail(stale);
 }, function (data) {
     cpuSample = data.cpu_sample || null;
     cpuWindows.push(data.window);

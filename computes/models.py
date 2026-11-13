@@ -141,12 +141,13 @@ class Compute(Model):
     def __str__(self):
         return self.name
 
-    def record_host(self):
-        """Reads and keeps the UUID of the host the compute reaches (host_uuid)
-        while its connection is still the one read with; its UUID, or ""
-        when it cannot be read. IntegrityError when another compute is that host."""
+    def record_host(self, uuid=None):
+        """Reads (unless given) and keeps the UUID of the host the compute
+        reaches (host_uuid) while its connection is still the one read with;
+        its UUID, or "" when it cannot be read. IntegrityError when another
+        compute is that host."""
         try:
-            uuid = self.proxy.host_uuid()
+            uuid = uuid or self.proxy.host_uuid()
         except libvirtError:
             return ""
         with transaction.atomic():

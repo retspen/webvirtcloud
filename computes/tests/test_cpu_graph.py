@@ -113,7 +113,7 @@ class GraphScriptTestCase(TestCase):
         script = (settings.BASE_DIR / "static/js/host_graphs.js").read_text()
         js = """
         const vm = require("vm");
-        const charts = [], requests = [];
+        const charts = [], requests = [], timeouts = [];
         const element = (dataset) => ({dataset, textContent: "", classList: {add: () => {}, remove: () => {}}});
         const elements = {graph_state: element(DATASET),
                           cpu_now: element({}), mem_now: element({})};
@@ -129,7 +129,7 @@ class GraphScriptTestCase(TestCase):
                 this.update = () => {};
                 charts.push(this);
             }, {defaults: {}}),
-            $: {getJSON: (url, params) => { requests.push(params); return {fail() { return this; }}; }},
+            $: {ajax: (options) => { requests.push(options.data); timeouts.push(options.timeout); return {fail() { return this; }}; }},
             pollWhileVisible: (interval, request, onData) => { poll = {request, onData}; },
         };
         const context = vm.createContext(page);
@@ -144,7 +144,7 @@ class GraphScriptTestCase(TestCase):
         poll.onData({cpudata: null, memdata: {total: null, usage: null}, timeline: "t"});
         poll.request();
         const label = charts[0].options.plugins.tooltip.callbacks.label({dataset: {label: "Usage"}, formattedValue: "3", dataIndex: 0});
-        console.log(JSON.stringify({requests, label, shown, state: elements.graph_state.textContent,
+        console.log(JSON.stringify({requests, timeouts, label, shown, state: elements.graph_state.textContent,
                                     cpu: charts[0].data.datasets[0].data,
                                     mem: charts[1].data.datasets[0].data, memMax: charts[1].options.scales.y.max}));
         """.replace("SCRIPT", json.dumps(script)).replace("CHARTS", json.dumps(CHARTS_JS.read_text())).replace(
@@ -153,6 +153,8 @@ class GraphScriptTestCase(TestCase):
         self.assertEqual(out.returncode, 0, out.stderr)
         result = json.loads(out.stdout)
         self.assertEqual(result["requests"], [{}, {"cpu_sample": "token-1"}, {}])
+        # a reading the host keeps waiting ends: the charts then say they are not updated
+        self.assertEqual(result["timeouts"], [30000] * 3)
         self.assertEqual(result["cpu"], [3, None])
         # a host that could not be read leaves a gap and keeps the memory axis
         self.assertEqual((result["mem"], result["memMax"]), ([1, None], 2))
