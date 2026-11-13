@@ -1681,6 +1681,28 @@ msgstr "Log saklama süresi (gün)"
 msgid "Days the Logs page keeps its rows (1-3650)"
 msgstr "Logs sayfasının satırları sakladığı gün sayısı (1-3650)"
 
+#: appsettings/migrations/0025_vnc_console_and_nic_descriptions.py:7
+msgid "The VNC console starts scaled to its window"
+msgstr "VNC konsolu, penceresine ölçeklenmiş olarak açılır"
+
+#: appsettings/migrations/0025_vnc_console_and_nic_descriptions.py:8
+msgid "The VNC console starts view-only: no keyboard or mouse input"
+msgstr ""
+"VNC konsolu yalnızca görüntüleme modunda açılır: klavye ve fare girdisi yok"
+
+#: appsettings/migrations/0025_vnc_console_and_nic_descriptions.py:9
+msgid "The VNC console starts asking the guest to fit its screen to the window"
+msgstr "VNC konsolu, konuktan ekranını pencereye uydurmasını isteyerek açılır"
+
+#: appsettings/migrations/0025_vnc_console_and_nic_descriptions.py:10
+msgid "The VNC console starts clipped to its window, without scaling"
+msgstr "VNC konsolu, ölçeklenmeden penceresine kırpılmış olarak açılır"
+
+#: appsettings/migrations/0025_vnc_console_and_nic_descriptions.py:11
+msgid "Network card model chosen first for a new VM (default: VirtIO)"
+msgstr ""
+"Yeni bir sanal makine için önce seçilen ağ kartı modeli (default: VirtIO)"
+
 #: appsettings/models.py:10
 msgid "key"
 msgstr "anahtar"

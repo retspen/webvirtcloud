@@ -1624,6 +1624,26 @@ msgstr "日志保留天数"
 msgid "Days the Logs page keeps its rows (1-3650)"
 msgstr "日志页面保留记录的天数（1-3650）"
 
+#: appsettings/migrations/0025_vnc_console_and_nic_descriptions.py:7
+msgid "The VNC console starts scaled to its window"
+msgstr "VNC 控制台启动时缩放到窗口大小"
+
+#: appsettings/migrations/0025_vnc_console_and_nic_descriptions.py:8
+msgid "The VNC console starts view-only: no keyboard or mouse input"
+msgstr "VNC 控制台启动时为只读：不接受键盘和鼠标输入"
+
+#: appsettings/migrations/0025_vnc_console_and_nic_descriptions.py:9
+msgid "The VNC console starts asking the guest to fit its screen to the window"
+msgstr "VNC 控制台启动时请求客户机将屏幕调整为窗口大小"
+
+#: appsettings/migrations/0025_vnc_console_and_nic_descriptions.py:10
+msgid "The VNC console starts clipped to its window, without scaling"
+msgstr "VNC 控制台启动时裁剪到窗口大小，不缩放"
+
+#: appsettings/migrations/0025_vnc_console_and_nic_descriptions.py:11
+msgid "Network card model chosen first for a new VM (default: VirtIO)"
+msgstr "新建虚拟机默认选择的网卡型号（默认：VirtIO）"
+
 #: appsettings/models.py:10
 msgid "key"
 msgstr "键"

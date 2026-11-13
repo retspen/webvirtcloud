@@ -71,13 +71,15 @@ class ChoicesFixTestCase(TestCase):
 
 
 descriptions = importlib.import_module("appsettings.migrations.0021_setting_descriptions")
+vnc_and_nic = importlib.import_module("appsettings.migrations.0025_vnc_console_and_nic_descriptions")
 
 
 class DescriptionsTestCase(TestCase):
     def test_every_setting_says_what_it_does_within_its_column(self):
         limit = AppSettings._meta.get_field("description").max_length
         removed = {"VIEW_INSTANCE_DETAIL_BOTTOM_BAR"}  # by 0023
-        for key, text in descriptions.DESCRIPTIONS.items():
+        # as the last migration that describes a setting says
+        for key, text in {**descriptions.DESCRIPTIONS, **vnc_and_nic.DESCRIPTIONS}.items():
             with self.subTest(key=key):
                 self.assertLessEqual(len(text), limit)
                 if key not in removed:
