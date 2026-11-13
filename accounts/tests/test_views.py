@@ -329,6 +329,12 @@ class SingleOwnerEditTests(TestCase):
         self.assertRedirects(response, reverse("accounts:account", args=[bob.pk]), fetch_redirect_response=False)
         ui.refresh_from_db()
         self.assertTrue(ui.is_vnc)
+        # owners given while more were allowed: each one's rights still change
+        carol = UserInstance.objects.create(user=get_user_model().objects.create_user("carol"), instance=vm)
+        response = self.client.post(reverse("accounts:user_instance_update", args=[carol.pk]), {"is_delete": "on"})
+        self.assertRedirects(response, reverse("accounts:account", args=[carol.user.pk]), fetch_redirect_response=False)
+        carol.refresh_from_db()
+        self.assertTrue(carol.is_delete)
 
 
 class OwnerRightsReturnTestCase(TestCase):

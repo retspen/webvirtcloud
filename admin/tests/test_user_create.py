@@ -44,6 +44,14 @@ class UserCreateTests(TestCase):
         ticked = set(re.findall(r'<input[^>]*name="user_permissions"[^>]*value="(\d+)"[^>]*checked', page))
         self.assertEqual(ticked, {str(self.change_password.pk), str(Permission.objects.get(codename="passwordless_console").pk)})
 
+    def test_permissions_are_named_in_the_users_language(self):
+        # the database keeps each permission's English name
+        page = self.client.get(reverse("admin:user_create"), HTTP_ACCEPT_LANGUAGE="tr").content.decode()
+        for name in ("Parola değiştirebilir", "Sanal makineleri klonlayabilir", "Parolasız konsol erişimi yapabilir",
+                     "Sanal makinelerin anlık görüntüsünü alabilir", "Sanal makineleri görebilir"):
+            self.assertIn(name, page)
+        self.assertNotIn("Can clone instances", page)
+
     def test_groups_and_permissions_are_saved(self):
         group = Group.objects.create(name="uc-group")
         self.create(groups=[group.pk], user_permissions=[self.change_password.pk])

@@ -137,12 +137,12 @@
                     <legend class="visually-hidden">{% trans "Own permissions" %}</legend>
                     <p class="small text-body-secondary mb-2">{% trans "Off grants nothing here; it takes away nothing a group grants." %}</p>
                     <div class="border-top">
-                        {% for box, help in user_form.permission_rows %}
+                        {% for box, name, help in user_form.permission_rows %}
                             <div class="form-check form-switch border-bottom py-2 ps-5">
                                 <input id="{{ box.id_for_label }}" class="form-check-input" type="checkbox" role="switch" name="user_permissions"
                                        value="{{ box.data.value }}"{% if box.data.selected %} checked{% endif %}>
                                 <label class="form-check-label" for="{{ box.id_for_label }}">
-                                    <span class="d-block">{{ box.data.value.instance.name }}</span>
+                                    <span class="d-block">{{ name }}</span>
                                     <span class="small text-body-secondary">{{ help }}</span>
                                 </label>
                             </div>

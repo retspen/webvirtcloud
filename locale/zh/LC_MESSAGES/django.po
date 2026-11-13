@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 11:26+0000\n"
+"POT-Creation-Date: 2026-11-13 11:27+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -22,46 +22,46 @@ msgstr ""
 msgid "Change your password before using the API."
 msgstr "使用 API 前请先修改密码。"
 
-#: accounts/forms.py:28
+#: accounts/forms.py:27
 msgid "Instance owned by another user"
 msgstr "该虚拟机属于其他用户"
 
-#: accounts/forms.py:36 accounts/templates/account.html:72
+#: accounts/forms.py:35 accounts/templates/account.html:72
 #: instances/templates/instances/settings_tab.html:676
 msgid "Change settings"
 msgstr "修改设置"
 
-#: accounts/forms.py:36 accounts/templates/account.html:73
+#: accounts/forms.py:35 accounts/templates/account.html:73
 #: instances/templates/instances/settings_tab.html:676
 msgid "Delete the VM"
 msgstr "删除虚拟机"
 
-#: accounts/forms.py:37 accounts/templates/account.html:74
+#: accounts/forms.py:36 accounts/templates/account.html:74
 #: instances/templates/instances/settings_tab.html:676
 msgid "Change console settings"
 msgstr "修改控制台设置"
 
-#: accounts/forms.py:38
+#: accounts/forms.py:37
 msgid "Only together with Change settings"
 msgstr "仅可与“修改设置”一起使用"
 
-#: accounts/forms.py:50
+#: accounts/forms.py:49
 msgid "Another user has this email address"
 msgstr "其他用户已使用此邮箱地址"
 
-#: accounts/forms.py:69
+#: accounts/forms.py:68
 msgid "Key name already exist"
 msgstr "密钥名称已存在"
 
-#: accounts/forms.py:77
+#: accounts/forms.py:76
 msgid "Public key already exist"
 msgstr "公钥已存在"
 
-#: accounts/forms.py:80
+#: accounts/forms.py:79
 msgid "Invalid key"
 msgstr "无效的密钥"
 
-#: accounts/forms.py:96 computes/templates/computes/instances.html:45
+#: accounts/forms.py:95 computes/templates/computes/instances.html:45
 #: instances/templates/add_instance_volume.html:39
 #: instances/templates/allinstances_index_grouped.html:11
 #: instances/templates/allinstances_index_nongrouped.html:6
@@ -73,27 +73,27 @@ msgstr "无效的密钥"
 msgid "Name"
 msgstr "名称"
 
-#: accounts/forms.py:96
+#: accounts/forms.py:95
 msgid "What uses it, such as a script or a host"
 msgstr "用途，例如某个脚本或主机"
 
-#: accounts/forms.py:98 accounts/templates/api_token_list.html:19
+#: accounts/forms.py:97 accounts/templates/api_token_list.html:19
 msgid "Expires"
 msgstr "有效期"
 
-#: accounts/forms.py:99
+#: accounts/forms.py:98
 msgid "in 30 days"
 msgstr "30 天后"
 
-#: accounts/forms.py:99
+#: accounts/forms.py:98
 msgid "in 90 days"
 msgstr "90 天后"
 
-#: accounts/forms.py:99
+#: accounts/forms.py:98
 msgid "in a year"
 msgstr "一年后"
 
-#: accounts/forms.py:99 accounts/templates/account.html:29
+#: accounts/forms.py:98 accounts/templates/account.html:29
 #: accounts/templates/api_token_list.html:19
 #: accounts/templates/api_token_list.html:20 accounts/templates/profile.html:25
 #: admin/templates/admin/user_form.html:21
@@ -103,7 +103,7 @@ msgstr "一年后"
 msgid "never"
 msgstr "永不"
 
-#: accounts/forms.py:104
+#: accounts/forms.py:103
 msgid "Email"
 msgstr "邮箱"
 
@@ -141,7 +141,7 @@ msgstr "最大内存（MiB）"
 msgid "max disk size (GiB)"
 msgstr "最大磁盘大小（GiB）"
 
-#: accounts/models.py:82
+#: accounts/models.py:82 admin/forms.py:22
 msgid "Can change password"
 msgstr "可修改密码"
 
@@ -159,13 +159,13 @@ msgid "User Profile"
 msgstr "用户资料"
 
 #: accounts/templates/account.html:17 accounts/templates/profile.html:18
-#: admin/forms.py:75 admin/templates/admin/user_list.html:24
+#: admin/forms.py:89 admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:30
 msgid "Superuser"
 msgstr "超级用户"
 
 #: accounts/templates/account.html:19 accounts/templates/profile.html:20
-#: admin/forms.py:75 admin/templates/admin/user_list.html:24
+#: admin/forms.py:89 admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:32
 msgid "Template editor"
 msgstr "模板编辑者"
@@ -209,7 +209,7 @@ msgid "User sections"
 msgstr "用户页面导航"
 
 #: accounts/templates/account.html:50 accounts/templates/account.html:58
-#: admin/forms.py:193 computes/templates/computes/list.html:30
+#: admin/forms.py:207 computes/templates/computes/list.html:30
 #: computes/templates/computes/list.html:57 computes/templates/overview.html:46
 msgid "VMs"
 msgstr "虚拟机"
@@ -661,29 +661,45 @@ msgstr "未设置用户邮箱，无法发送二维码"
 msgid "OTP of %(user)s was reset: a new QR code can be mailed."
 msgstr "%(user)s 的 OTP 已重置：可以邮寄新的二维码。"
 
-#: admin/forms.py:22
+#: admin/forms.py:23
+msgid "Can clone instances"
+msgstr "可克隆虚拟机"
+
+#: admin/forms.py:24 instances/models.py:436
+msgid "Can access console without password"
+msgstr "可无密码访问控制台"
+
+#: admin/forms.py:25
+msgid "Can snapshot instances"
+msgstr "可为虚拟机创建快照"
+
+#: admin/forms.py:26
+msgid "Can view instances"
+msgstr "可查看虚拟机"
+
+#: admin/forms.py:31
 msgid "Change their own password on their profile page"
 msgstr "在个人资料页修改自己的密码"
 
-#: admin/forms.py:23
+#: admin/forms.py:32
 msgid ""
 "Clone the VMs they may change and the templates they may view, within their "
 "quota"
 msgstr "在配额范围内克隆其可修改的虚拟机和可查看的模板"
 
-#: admin/forms.py:24
+#: admin/forms.py:33
 msgid "Open a console without the VM's console password"
 msgstr "无需虚拟机的控制台密码即可打开控制台"
 
-#: admin/forms.py:25
+#: admin/forms.py:34
 msgid "Take, revert and delete snapshots of the VMs they may change"
 msgstr "为其可修改的虚拟机创建、恢复和删除快照"
 
-#: admin/forms.py:26
+#: admin/forms.py:35
 msgid "See every VM and host in the lists, read-only"
 msgstr "在列表中查看所有虚拟机和主机（只读）"
 
-#: admin/forms.py:75 admin/templates/admin/logs.html:39
+#: admin/forms.py:89 admin/templates/admin/logs.html:39
 #: admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:34
 #: computes/templates/computes/instances.html:46
@@ -695,29 +711,29 @@ msgstr "在列表中查看所有虚拟机和主机（只读）"
 msgid "User"
 msgstr "用户"
 
-#: admin/forms.py:82 admin/templates/admin/group_form.html:30
+#: admin/forms.py:96 admin/templates/admin/group_form.html:30
 msgid "Permissions"
 msgstr "权限"
 
-#: admin/forms.py:89 admin/templates/admin/group_list.html:6
+#: admin/forms.py:103 admin/templates/admin/group_list.html:6
 #: admin/templates/admin/group_list.html:8
 #: admin/templates/admin/group_list.html:24
 #: admin/templates/admin/user_form.html:123 templates/navbar.html:33
 msgid "Groups"
 msgstr "用户组"
 
-#: admin/forms.py:143
+#: admin/forms.py:157
 #, python-format
 msgid "NEW_USER_DEFAULT_INSTANCES: %(name)s is not exactly one VM"
 msgstr "NEW_USER_DEFAULT_INSTANCES：%(name)s 不是唯一的一台虚拟机"
 
-#: admin/forms.py:146
+#: admin/forms.py:160
 #, python-format
 msgid ""
 "NEW_USER_DEFAULT_INSTANCES: %(name)s has an owner, and only one is allowed"
 msgstr "NEW_USER_DEFAULT_INSTANCES：%(name)s 已有所有者，且只允许一个所有者"
 
-#: admin/forms.py:194 computes/templates/computes/list.html:58
+#: admin/forms.py:208 computes/templates/computes/list.html:58
 #: computes/templates/overview.html:58 instances/forms.py:14
 #: instances/templates/allinstances_index_grouped.html:16
 #: instances/templates/allinstances_index_nongrouped.html:14
@@ -727,7 +743,7 @@ msgstr "NEW_USER_DEFAULT_INSTANCES：%(name)s 已有所有者，且只允许一�
 msgid "vCPUs"
 msgstr "vCPU"
 
-#: admin/forms.py:195 computes/templates/computes/instances.html:49
+#: admin/forms.py:209 computes/templates/computes/instances.html:49
 #: computes/templates/computes/list.html:59 computes/templates/overview.html:66
 #: computes/templates/overview.html:150
 #: instances/templates/allinstances_index_grouped.html:17
@@ -739,34 +755,34 @@ msgstr "vCPU"
 msgid "Memory"
 msgstr "内存"
 
-#: admin/forms.py:196 instances/models.py:240
+#: admin/forms.py:210 instances/models.py:240
 #: instances/templates/create_instance_w2.html:118
 #: instances/templates/instances/settings_tab.html:25
 #: instances/templates/instances/stats_tab.html:53
 msgid "Disk"
 msgstr "磁盘"
 
-#: admin/forms.py:206
+#: admin/forms.py:220
 msgid "No limit"
 msgstr "不限"
 
-#: admin/forms.py:222
+#: admin/forms.py:236
 msgid "Enter a limit or choose No limit."
 msgstr "请输入限制值，或选择“不限”。"
 
-#: admin/forms.py:234
+#: admin/forms.py:248
 msgid "The user must change it at their next login"
 msgstr "用户必须在下次登录时修改密码"
 
-#: admin/forms.py:240
+#: admin/forms.py:254
 msgid "With a password"
 msgstr "使用密码"
 
-#: admin/forms.py:240
+#: admin/forms.py:254
 msgid "Without a password"
 msgstr "不使用密码"
 
-#: admin/forms.py:246
+#: admin/forms.py:260
 msgid "A user without a password cannot be made to change it"
 msgstr "没有密码的用户无法被要求修改密码"
 
@@ -3208,10 +3224,6 @@ msgstr "CD-ROM"
 #: instances/models.py:244
 msgid "NIC"
 msgstr "网卡"
-
-#: instances/models.py:436
-msgid "Can access console without password"
-msgstr "可无密码访问控制台"
 
 #: instances/states.py:10
 msgid "No state"

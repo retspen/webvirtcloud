@@ -17,6 +17,15 @@ from instances.models import Instance
 from .models import Permission
 
 
+# each permission's name in the user's language: the database keeps the English one
+PERMISSION_NAMES = {
+    "change_password": _("Can change password"),
+    "clone_instances": _("Can clone instances"),
+    "passwordless_console": _("Can access console without password"),
+    "snapshot_instances": _("Can snapshot instances"),
+    "view_instances": _("Can view instances"),
+}
+
 # what each permission lets a user do, shown beside its switch
 PERMISSION_HELP = {
     "change_password": _("Change their own password on their profile page"),
@@ -28,8 +37,13 @@ PERMISSION_HELP = {
 
 
 def permission_rows(field):
-    """Each permission's checkbox of a bound field with what it lets a user do."""
-    return [(box, PERMISSION_HELP.get(box.data["value"].instance.codename, "")) for box in field]
+    """Each permission's checkbox of a bound field with its name and what it lets a user do."""
+    rows = []
+    for box in field:
+        permission = box.data["value"].instance
+        rows.append((box, PERMISSION_NAMES.get(permission.codename, permission.name),
+                     PERMISSION_HELP.get(permission.codename, "")))
+    return rows
 
 
 class GroupForm(forms.ModelForm):
