@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 10:58+0000\n"
+"POT-Creation-Date: 2026-11-13 11:26+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -162,13 +162,13 @@ msgid "User Profile"
 msgstr "Kullanıcı Profili"
 
 #: accounts/templates/account.html:17 accounts/templates/profile.html:18
-#: admin/forms.py:74 admin/templates/admin/user_list.html:24
+#: admin/forms.py:75 admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:30
 msgid "Superuser"
 msgstr "Süperkullanıcı"
 
 #: accounts/templates/account.html:19 accounts/templates/profile.html:20
-#: admin/forms.py:74 admin/templates/admin/user_list.html:24
+#: admin/forms.py:75 admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:32
 msgid "Template editor"
 msgstr "Şablon düzenleyici"
@@ -214,7 +214,7 @@ msgid "User sections"
 msgstr "Kullanıcı bölümleri"
 
 #: accounts/templates/account.html:50 accounts/templates/account.html:58
-#: admin/forms.py:188 computes/templates/computes/list.html:30
+#: admin/forms.py:193 computes/templates/computes/list.html:30
 #: computes/templates/computes/list.html:57 computes/templates/overview.html:46
 msgid "VMs"
 msgstr "Sanal makineler"
@@ -677,11 +677,11 @@ msgid "OTP of %(user)s was reset: a new QR code can be mailed."
 msgstr ""
 "%(user)s kullanıcısının OTP'si sıfırlandı: yeni bir QR kodu gönderilebilir."
 
-#: admin/forms.py:21
+#: admin/forms.py:22
 msgid "Change their own password on their profile page"
 msgstr "Profil sayfasında kendi parolasını değiştirme"
 
-#: admin/forms.py:22
+#: admin/forms.py:23
 msgid ""
 "Clone the VMs they may change and the templates they may view, within their "
 "quota"
@@ -689,21 +689,21 @@ msgstr ""
 "Kotası dahilinde, değiştirebildiği sanal makineleri ve görebildiği şablonları"
 " klonlama"
 
-#: admin/forms.py:23
+#: admin/forms.py:24
 msgid "Open a console without the VM's console password"
 msgstr "Sanal makinenin konsol parolası olmadan konsol aç"
 
-#: admin/forms.py:24
+#: admin/forms.py:25
 msgid "Take, revert and delete snapshots of the VMs they may change"
 msgstr ""
 "Değiştirebildiği sanal makinelerin anlık görüntülerini alma, geri yükleme ve "
 "silme"
 
-#: admin/forms.py:25
+#: admin/forms.py:26
 msgid "See every VM and host in the lists, read-only"
 msgstr "Listelerde tüm sanal makineleri ve sunucuları salt okunur görme"
 
-#: admin/forms.py:74 admin/templates/admin/logs.html:39
+#: admin/forms.py:75 admin/templates/admin/logs.html:39
 #: admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:34
 #: computes/templates/computes/instances.html:46
@@ -715,24 +715,32 @@ msgstr "Listelerde tüm sanal makineleri ve sunucuları salt okunur görme"
 msgid "User"
 msgstr "Kullanıcı"
 
-#: admin/forms.py:81 admin/templates/admin/group_form.html:30
+#: admin/forms.py:82 admin/templates/admin/group_form.html:30
 msgid "Permissions"
 msgstr "İzinler"
 
-#: admin/forms.py:88 admin/templates/admin/group_list.html:6
+#: admin/forms.py:89 admin/templates/admin/group_list.html:6
 #: admin/templates/admin/group_list.html:8
 #: admin/templates/admin/group_list.html:24
 #: admin/templates/admin/user_form.html:123 templates/navbar.html:33
 msgid "Groups"
 msgstr "Gruplar"
 
-#: admin/forms.py:142
+#: admin/forms.py:143
 #, python-format
 msgid "NEW_USER_DEFAULT_INSTANCES: %(name)s is not exactly one VM"
 msgstr ""
 "NEW_USER_DEFAULT_INSTANCES: %(name)s tam olarak tek bir sanal makine değil"
 
-#: admin/forms.py:189 computes/templates/computes/list.html:58
+#: admin/forms.py:146
+#, python-format
+msgid ""
+"NEW_USER_DEFAULT_INSTANCES: %(name)s has an owner, and only one is allowed"
+msgstr ""
+"NEW_USER_DEFAULT_INSTANCES: %(name)s sanal makinesinin bir sahibi var ve "
+"yalnızca bir sahibe izin veriliyor"
+
+#: admin/forms.py:194 computes/templates/computes/list.html:58
 #: computes/templates/overview.html:58 instances/forms.py:14
 #: instances/templates/allinstances_index_grouped.html:16
 #: instances/templates/allinstances_index_nongrouped.html:14
@@ -742,7 +750,7 @@ msgstr ""
 msgid "vCPUs"
 msgstr "vCPU"
 
-#: admin/forms.py:190 computes/templates/computes/instances.html:49
+#: admin/forms.py:195 computes/templates/computes/instances.html:49
 #: computes/templates/computes/list.html:59 computes/templates/overview.html:66
 #: computes/templates/overview.html:150
 #: instances/templates/allinstances_index_grouped.html:17
@@ -754,34 +762,34 @@ msgstr "vCPU"
 msgid "Memory"
 msgstr "Bellek"
 
-#: admin/forms.py:191 instances/models.py:240
+#: admin/forms.py:196 instances/models.py:240
 #: instances/templates/create_instance_w2.html:118
 #: instances/templates/instances/settings_tab.html:25
 #: instances/templates/instances/stats_tab.html:53
 msgid "Disk"
 msgstr "Disk"
 
-#: admin/forms.py:201
+#: admin/forms.py:206
 msgid "No limit"
 msgstr "Sınır yok"
 
-#: admin/forms.py:217
+#: admin/forms.py:222
 msgid "Enter a limit or choose No limit."
 msgstr "Bir sınır girin ya da Sınır yok'u seçin."
 
-#: admin/forms.py:229
+#: admin/forms.py:234
 msgid "The user must change it at their next login"
 msgstr "Kullanıcı bir sonraki girişinde onu değiştirmek zorundadır"
 
-#: admin/forms.py:235
+#: admin/forms.py:240
 msgid "With a password"
 msgstr "Parolayla"
 
-#: admin/forms.py:235
+#: admin/forms.py:240
 msgid "Without a password"
 msgstr "Parolasız"
 
-#: admin/forms.py:241
+#: admin/forms.py:246
 msgid "A user without a password cannot be made to change it"
 msgstr "Parolası olmayan bir kullanıcıya parola değiştirme zorunluluğu konamaz"
 
@@ -937,16 +945,16 @@ msgstr "Sonuç"
 msgid "IP"
 msgstr "IP"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:292 instances/states.py:19
+#: admin/templates/admin/logs.html:56 admin/views.py:299 instances/states.py:19
 #: instances/views.py:441 logs/views.py:18
 msgid "Unknown"
 msgstr "Bilinmeyen"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:292 logs/views.py:18
+#: admin/templates/admin/logs.html:56 admin/views.py:299 logs/views.py:18
 msgid "Done"
 msgstr "Tamamlandı"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:292 logs/views.py:18
+#: admin/templates/admin/logs.html:56 admin/views.py:299 logs/views.py:18
 #: operations/templates/operations/job.html:107
 msgid "Failed"
 msgstr "Başarısız"
@@ -1083,7 +1091,7 @@ msgstr "Kullanıcı oluştur"
 msgid "New user"
 msgstr "Yeni kullanıcı"
 
-#: admin/templates/admin/user_list.html:19 admin/views.py:123
+#: admin/templates/admin/user_list.html:19 admin/views.py:124
 #: instances/templates/instances/settings_tab.html:79 templates/navbar.html:32
 msgid "Users"
 msgstr "Kullanıcılar"
@@ -1142,51 +1150,51 @@ msgstr "Burada belirlenen parolayla oturum açar."
 msgid "Signs in another way, such as LDAP. The current password is removed."
 msgstr "LDAP gibi başka bir yolla oturum açar. Mevcut parola kaldırılır."
 
-#: admin/views.py:58
+#: admin/views.py:59
 msgid "Create Group"
 msgstr "Grup Oluştur"
 
-#: admin/views.py:82
+#: admin/views.py:83
 msgid "Update Group"
 msgstr "Grubu Güncelle"
 
-#: admin/views.py:98
+#: admin/views.py:99
 msgid "Its members stay but lose the permissions it gave them."
 msgstr "Üyeleri kalır ancak grubun onlara verdiği izinleri kaybeder."
 
-#: admin/views.py:104
+#: admin/views.py:105
 msgid "You cannot block, delete or demote your own account"
 msgstr "Kendi hesabınızı engelleyemez, silemez veya yetkisini düşüremezsiniz"
 
-#: admin/views.py:149
+#: admin/views.py:156
 msgid "Create User"
 msgstr "Kullanıcı Oluştur"
 
-#: admin/views.py:193
+#: admin/views.py:200
 msgid "Update User"
 msgstr "Kullanıcı Güncelle"
 
-#: admin/views.py:217
+#: admin/views.py:224
 #, python-format
 msgid "Password changed for %(user)s"
 msgstr "%(user)s parolası değiştirildi"
 
-#: admin/views.py:241
+#: admin/views.py:248
 msgid "Their access to VMs, SSH keys and settings go; the VMs themselves stay."
 msgstr ""
 "Sanal makinelere erişimi, SSH anahtarları ve ayarları silinir; sanal "
 "makinelerin kendisi kalır."
 
-#: admin/views.py:341
+#: admin/views.py:348
 msgid "deleted user"
 msgstr "silinmiş kullanıcı"
 
-#: admin/views.py:353
+#: admin/views.py:360
 #, python-format
 msgid "Removed VM %(name)s deleted"
 msgstr "Kaldırılan sanal makine %(name)s silindi"
 
-#: admin/views.py:360
+#: admin/views.py:367
 msgid "Its owners no longer get the VM back if its UUID shows up again."
 msgstr ""
 "UUID'si yeniden görünse bile sahipleri sanal makineyi artık geri almaz."

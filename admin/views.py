@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from accounts.models import ApiToken, Instance, UserAttributes, UserInstance
 from appsettings.settings import app_settings
+from computes.utils import lock_ownership
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
@@ -131,14 +132,20 @@ def user_create(request):
     user_form = forms.UserCreateForm(request.POST or None)
     attributes_form = forms.UserAttributesForm(request.POST or None)
     if user_form.is_valid() and attributes_form.is_valid():
-        with audit(request, None, f"User {user_form.cleaned_data['username']}", "add"), transaction.atomic():
-            user = user_form.save()
-            attributes = attributes_form.save(commit=False)
-            attributes.user = user
-            attributes.save()
-            UserInstance.objects.bulk_create(UserInstance(user=user, instance=instance)
-                                             for instance in user_form.default_instances)
-        return redirect("admin:user_list")
+        with audit(request, None, f"User {user_form.cleaned_data['username']}", "add") as entry, transaction.atomic():
+            # the form's one-owner check of the default VMs again, with the inserts in one step
+            lock_ownership()
+            user_form.full_clean()
+            entry.skip = not user_form.is_valid()
+            if user_form.is_valid():
+                user = user_form.save()
+                attributes = attributes_form.save(commit=False)
+                attributes.user = user
+                attributes.save()
+                UserInstance.objects.bulk_create(UserInstance(user=user, instance=instance)
+                                                 for instance in user_form.default_instances)
+        if user_form.is_valid():
+            return redirect("admin:user_list")
 
     return render(
         request,

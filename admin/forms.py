@@ -10,7 +10,8 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from accounts.forms import UniqueEmailMixin
-from accounts.models import UserAttributes
+from accounts.models import UserAttributes, UserInstance
+from appsettings.settings import app_settings
 from instances.models import Instance
 
 from .models import Permission
@@ -140,6 +141,10 @@ class UserCreateForm(UserForm):
             found = list(Instance.objects.filter(name=name)[:2])
             if len(found) != 1:
                 raise ValidationError(_("NEW_USER_DEFAULT_INSTANCES: %(name)s is not exactly one VM") % {"name": name})
+            # as on the VM's Users tab: with one owner allowed, an owned VM is not given a second
+            if app_settings.ALLOW_INSTANCE_MULTIPLE_OWNER == "False" and UserInstance.objects.filter(instance=found[0]).exists():
+                raise ValidationError(_("NEW_USER_DEFAULT_INSTANCES: %(name)s has an owner, and only one is allowed")
+                                      % {"name": name})
             self.default_instances += found
         return cleaned
 

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 10:58+0000\n"
+"POT-Creation-Date: 2026-11-13 11:26+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -159,13 +159,13 @@ msgid "User Profile"
 msgstr "用户资料"
 
 #: accounts/templates/account.html:17 accounts/templates/profile.html:18
-#: admin/forms.py:74 admin/templates/admin/user_list.html:24
+#: admin/forms.py:75 admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:30
 msgid "Superuser"
 msgstr "超级用户"
 
 #: accounts/templates/account.html:19 accounts/templates/profile.html:20
-#: admin/forms.py:74 admin/templates/admin/user_list.html:24
+#: admin/forms.py:75 admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:32
 msgid "Template editor"
 msgstr "模板编辑者"
@@ -209,7 +209,7 @@ msgid "User sections"
 msgstr "用户页面导航"
 
 #: accounts/templates/account.html:50 accounts/templates/account.html:58
-#: admin/forms.py:188 computes/templates/computes/list.html:30
+#: admin/forms.py:193 computes/templates/computes/list.html:30
 #: computes/templates/computes/list.html:57 computes/templates/overview.html:46
 msgid "VMs"
 msgstr "虚拟机"
@@ -661,29 +661,29 @@ msgstr "未设置用户邮箱，无法发送二维码"
 msgid "OTP of %(user)s was reset: a new QR code can be mailed."
 msgstr "%(user)s 的 OTP 已重置：可以邮寄新的二维码。"
 
-#: admin/forms.py:21
+#: admin/forms.py:22
 msgid "Change their own password on their profile page"
 msgstr "在个人资料页修改自己的密码"
 
-#: admin/forms.py:22
+#: admin/forms.py:23
 msgid ""
 "Clone the VMs they may change and the templates they may view, within their "
 "quota"
 msgstr "在配额范围内克隆其可修改的虚拟机和可查看的模板"
 
-#: admin/forms.py:23
+#: admin/forms.py:24
 msgid "Open a console without the VM's console password"
 msgstr "无需虚拟机的控制台密码即可打开控制台"
 
-#: admin/forms.py:24
+#: admin/forms.py:25
 msgid "Take, revert and delete snapshots of the VMs they may change"
 msgstr "为其可修改的虚拟机创建、恢复和删除快照"
 
-#: admin/forms.py:25
+#: admin/forms.py:26
 msgid "See every VM and host in the lists, read-only"
 msgstr "在列表中查看所有虚拟机和主机（只读）"
 
-#: admin/forms.py:74 admin/templates/admin/logs.html:39
+#: admin/forms.py:75 admin/templates/admin/logs.html:39
 #: admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:34
 #: computes/templates/computes/instances.html:46
@@ -695,23 +695,29 @@ msgstr "在列表中查看所有虚拟机和主机（只读）"
 msgid "User"
 msgstr "用户"
 
-#: admin/forms.py:81 admin/templates/admin/group_form.html:30
+#: admin/forms.py:82 admin/templates/admin/group_form.html:30
 msgid "Permissions"
 msgstr "权限"
 
-#: admin/forms.py:88 admin/templates/admin/group_list.html:6
+#: admin/forms.py:89 admin/templates/admin/group_list.html:6
 #: admin/templates/admin/group_list.html:8
 #: admin/templates/admin/group_list.html:24
 #: admin/templates/admin/user_form.html:123 templates/navbar.html:33
 msgid "Groups"
 msgstr "用户组"
 
-#: admin/forms.py:142
+#: admin/forms.py:143
 #, python-format
 msgid "NEW_USER_DEFAULT_INSTANCES: %(name)s is not exactly one VM"
 msgstr "NEW_USER_DEFAULT_INSTANCES：%(name)s 不是唯一的一台虚拟机"
 
-#: admin/forms.py:189 computes/templates/computes/list.html:58
+#: admin/forms.py:146
+#, python-format
+msgid ""
+"NEW_USER_DEFAULT_INSTANCES: %(name)s has an owner, and only one is allowed"
+msgstr "NEW_USER_DEFAULT_INSTANCES：%(name)s 已有所有者，且只允许一个所有者"
+
+#: admin/forms.py:194 computes/templates/computes/list.html:58
 #: computes/templates/overview.html:58 instances/forms.py:14
 #: instances/templates/allinstances_index_grouped.html:16
 #: instances/templates/allinstances_index_nongrouped.html:14
@@ -721,7 +727,7 @@ msgstr "NEW_USER_DEFAULT_INSTANCES：%(name)s 不是唯一的一台虚拟机"
 msgid "vCPUs"
 msgstr "vCPU"
 
-#: admin/forms.py:190 computes/templates/computes/instances.html:49
+#: admin/forms.py:195 computes/templates/computes/instances.html:49
 #: computes/templates/computes/list.html:59 computes/templates/overview.html:66
 #: computes/templates/overview.html:150
 #: instances/templates/allinstances_index_grouped.html:17
@@ -733,34 +739,34 @@ msgstr "vCPU"
 msgid "Memory"
 msgstr "内存"
 
-#: admin/forms.py:191 instances/models.py:240
+#: admin/forms.py:196 instances/models.py:240
 #: instances/templates/create_instance_w2.html:118
 #: instances/templates/instances/settings_tab.html:25
 #: instances/templates/instances/stats_tab.html:53
 msgid "Disk"
 msgstr "磁盘"
 
-#: admin/forms.py:201
+#: admin/forms.py:206
 msgid "No limit"
 msgstr "不限"
 
-#: admin/forms.py:217
+#: admin/forms.py:222
 msgid "Enter a limit or choose No limit."
 msgstr "请输入限制值，或选择“不限”。"
 
-#: admin/forms.py:229
+#: admin/forms.py:234
 msgid "The user must change it at their next login"
 msgstr "用户必须在下次登录时修改密码"
 
-#: admin/forms.py:235
+#: admin/forms.py:240
 msgid "With a password"
 msgstr "使用密码"
 
-#: admin/forms.py:235
+#: admin/forms.py:240
 msgid "Without a password"
 msgstr "不使用密码"
 
-#: admin/forms.py:241
+#: admin/forms.py:246
 msgid "A user without a password cannot be made to change it"
 msgstr "没有密码的用户无法被要求修改密码"
 
@@ -914,16 +920,16 @@ msgstr "结果"
 msgid "IP"
 msgstr "IP"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:292 instances/states.py:19
+#: admin/templates/admin/logs.html:56 admin/views.py:299 instances/states.py:19
 #: instances/views.py:441 logs/views.py:18
 msgid "Unknown"
 msgstr "未知"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:292 logs/views.py:18
+#: admin/templates/admin/logs.html:56 admin/views.py:299 logs/views.py:18
 msgid "Done"
 msgstr "完成"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:292 logs/views.py:18
+#: admin/templates/admin/logs.html:56 admin/views.py:299 logs/views.py:18
 #: operations/templates/operations/job.html:107
 msgid "Failed"
 msgstr "失败"
@@ -1054,7 +1060,7 @@ msgstr "创建用户"
 msgid "New user"
 msgstr "新建用户"
 
-#: admin/templates/admin/user_list.html:19 admin/views.py:123
+#: admin/templates/admin/user_list.html:19 admin/views.py:124
 #: instances/templates/instances/settings_tab.html:79 templates/navbar.html:32
 msgid "Users"
 msgstr "用户"
@@ -1112,49 +1118,49 @@ msgstr "使用此处设置的密码登录。"
 msgid "Signs in another way, such as LDAP. The current password is removed."
 msgstr "通过其他方式（如 LDAP）登录。当前密码将被移除。"
 
-#: admin/views.py:58
+#: admin/views.py:59
 msgid "Create Group"
 msgstr "创建用户组"
 
-#: admin/views.py:82
+#: admin/views.py:83
 msgid "Update Group"
 msgstr "更新用户组"
 
-#: admin/views.py:98
+#: admin/views.py:99
 msgid "Its members stay but lose the permissions it gave them."
 msgstr "其成员仍保留，但会失去该用户组授予的权限。"
 
-#: admin/views.py:104
+#: admin/views.py:105
 msgid "You cannot block, delete or demote your own account"
 msgstr "不能禁用、删除或降级你自己的账户"
 
-#: admin/views.py:149
+#: admin/views.py:156
 msgid "Create User"
 msgstr "创建用户"
 
-#: admin/views.py:193
+#: admin/views.py:200
 msgid "Update User"
 msgstr "更新用户"
 
-#: admin/views.py:217
+#: admin/views.py:224
 #, python-format
 msgid "Password changed for %(user)s"
 msgstr "已为 %(user)s 修改密码"
 
-#: admin/views.py:241
+#: admin/views.py:248
 msgid "Their access to VMs, SSH keys and settings go; the VMs themselves stay."
 msgstr "其对虚拟机、SSH 密钥和设置的访问将被移除；虚拟机本身保留。"
 
-#: admin/views.py:341
+#: admin/views.py:348
 msgid "deleted user"
 msgstr "已删除的用户"
 
-#: admin/views.py:353
+#: admin/views.py:360
 #, python-format
 msgid "Removed VM %(name)s deleted"
 msgstr "已删除已移除的虚拟机 %(name)s"
 
-#: admin/views.py:360
+#: admin/views.py:367
 msgid "Its owners no longer get the VM back if its UUID shows up again."
 msgstr "若其 UUID 再次出现，其所有者将不再恢复对该虚拟机的所有权。"
 

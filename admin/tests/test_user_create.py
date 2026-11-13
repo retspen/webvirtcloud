@@ -96,6 +96,18 @@ class DefaultInstancesTests(TestCase):
         self.assertRedirects(self.create(), reverse("admin:user_list"))
         self.assertEqual([o.instance for o in UserInstance.objects.filter(user__username="newbie")], [self.web])
 
+    @override_settings(NEW_USER_DEFAULT_INSTANCES=["web"])
+    def test_an_owned_vm_is_not_given_a_second_owner_when_one_is_allowed(self):
+        from appsettings.models import AppSettings
+
+        UserInstance.objects.create(user=User.objects.create_user("alice"), instance=self.web)
+        AppSettings.objects.filter(key="ALLOW_INSTANCE_MULTIPLE_OWNER").update(value="False")
+        self.assertContains(self.create(), "NEW_USER_DEFAULT_INSTANCES: web has an owner, and only one is allowed")
+        self.assertFalse(User.objects.filter(username="newbie").exists())
+        AppSettings.objects.filter(key="ALLOW_INSTANCE_MULTIPLE_OWNER").update(value="True")
+        self.assertRedirects(self.create(), reverse("admin:user_list"))
+        self.assertEqual(UserInstance.objects.filter(instance=self.web).count(), 2)
+
     def test_a_name_that_is_not_one_vm_is_refused_on_the_form(self):
         for name in ("no-such-vm", "db"):
             with self.subTest(name), override_settings(NEW_USER_DEFAULT_INSTANCES=["web", name]):
