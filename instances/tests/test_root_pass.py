@@ -1,0 +1,224 @@
+from passlib.hash import sha512_crypt
+from unittest.mock import patch
+
+from django.contrib.auth import get_user_model
+from django.contrib.messages import get_messages
+from django.test import TestCase
+from django.urls import reverse
+
+from appsettings.models import AppSettings
+from computes.models import Compute
+from instances.models import Instance
+from libvirt import libvirtError
+from vrtManager.util import OperationError
+
+
+class SetRootPassTestCase(TestCase):
+    def setUp(self):
+        AppSettings.objects.filter(key__startswith="SHOW_ACCESS_").update(value="True")  # the Access forms are on
+        self.admin = get_user_model().objects.create_superuser("tests-admin", "admin@example.com", "pw")
+        self.client.force_login(self.admin)
+        self.compute = Compute.objects.create(
+            name="test_compute_root_pass",
+            hostname="localhost",
+            type=1,
+        )
+        self.instance = Instance.objects.create(
+            compute=self.compute,
+            name="root-pass-vm",
+            uuid="87654321-4321-4321-4321-210987654321",
+        )
+
+    @patch("instances.views.gstfsd_request")
+    @patch.object(Instance, "proxy")
+    def test_set_root_pass_post(self, mock_proxy, gstfsd):
+        # Renamed on the host: gstfsd must get the name of this UUID's domain
+        mock_proxy.instance.name.return_value = "renamed-on-host"
+        mock_proxy.get_status.return_value = 5  # shut off
+
+        response = self.client.post(
+            reverse("instances:rootpasswd", args=[self.instance.id]),
+            {"passwd": "newSecretPassword123"}
+        )
+        # Redirects back to referer or instance detail
+        self.assertEqual(response.status_code, 302)
+
+        # gstfsd of the VM's host gets the hashed password
+        compute, data = gstfsd.call_args.args
+        self.assertEqual(compute, self.compute)
+        self.assertEqual(data["action"], "password")
+        self.assertEqual(data["vname"], "renamed-on-host")
+        # SHA-512 crypt with a random salt, not the old fixed one, which the guest's crypt(3) checks
+        self.assertTrue(data["passwd"].startswith("$6$"))
+        self.assertFalse(data["passwd"].startswith("$6$kgPoiREy$"))
+        self.assertTrue(sha512_crypt.verify("newSecretPassword123", data["passwd"]))
+
+    @patch("instances.views.gstfsd_request")
+    @patch.object(Instance, "proxy")
+    def test_an_access_turned_off_in_settings_is_refused(self, mock_proxy, gstfsd):
+        # the setting hides the form: a POST does not reach the VM either
+        from accounts.models import UserSSHKey
+
+        key = UserSSHKey.objects.create(user=self.admin, keyname="k", keypublic="ssh-ed25519 AAAA k")
+        mock_proxy.get_status.return_value = 5
+        AppSettings.objects.filter(key__startswith="SHOW_ACCESS_").update(value="False")
+        for name, data in (("rootpasswd", {"passwd": "x"}), ("add_public_key", {"sshkeyid": key.id})):
+            with self.subTest(name):
+                response = self.client.post(reverse(f"instances:{name}", args=[self.instance.id]), data)
+                self.assertEqual(response.status_code, 403)
+        gstfsd.assert_not_called()
+
+    @patch("instances.views.gstfsd_request")
+    @patch.object(Instance, "proxy")
+    def test_a_password_that_cannot_be_hashed_is_refused_in_words(self, mock_proxy, gstfsd):
+        mock_proxy.get_status.return_value = 5
+        for passwd in ("a" * 4097, "a\x00b"):
+            with self.subTest(len(passwd)):
+                response = self.client.post(reverse("instances:rootpasswd", args=[self.instance.id]), {"passwd": passwd})
+                self.assertEqual(response.status_code, 302)
+                self.assertEqual([str(m) for m in get_messages(response.wsgi_request)],
+                                 ["Enter a password of at most 4096 characters, without NUL characters"])
+                self.client.cookies.pop("messages", None)
+        gstfsd.assert_not_called()
+
+    def test_set_root_pass_get_not_allowed(self):
+        response = self.client.get(reverse("instances:rootpasswd", args=[self.instance.id]))
+        self.assertEqual(response.status_code, 405)
+
+    def test_set_root_pass_not_found(self):
+        response = self.client.post(reverse("instances:rootpasswd", args=[99999]), {"passwd": "secret"})
+        self.assertEqual(response.status_code, 404)
+
+    @patch("instances.views.gstfsd_request")
+    @patch.object(Instance, "proxy")
+    def test_same_password_gets_a_different_salt_each_time(self, mock_proxy, gstfsd):
+        mock_proxy.instance.name.return_value = "root-pass-vm"
+        mock_proxy.get_status.return_value = 5
+        url = reverse("instances:rootpasswd", args=[self.instance.id])
+
+        self.client.post(url, {"passwd": "samePassword1"})
+        self.client.post(url, {"passwd": "samePassword1"})
+
+        hashes = [c.args[1]["passwd"] for c in gstfsd.call_args_list]
+        self.assertEqual(len(hashes), 2)
+        self.assertNotEqual(hashes[0], hashes[1])
+
+    @patch("instances.views.gstfsd_request", side_effect=OperationError("gstfsd error: timed out"))
+    @patch.object(Instance, "proxy")
+    def test_unreachable_gstfsd_is_an_error_message_not_a_crash(self, mock_proxy, gstfsd):
+        from accounts.models import UserSSHKey
+
+        admin = self.admin
+        key = UserSSHKey.objects.create(user=admin, keyname="k", keypublic="ssh-ed25519 AAAA k")
+        mock_proxy.instance.name.return_value = "root-pass-vm"
+        mock_proxy.get_status.return_value = 5
+        for name, data in (("rootpasswd", {"passwd": "x"}), ("add_public_key", {"sshkeyid": key.id})):
+            with self.subTest(name):
+                response = self.client.post(reverse(f"instances:{name}", args=[self.instance.id]), data)
+                self.assertEqual(response.status_code, 302)
+                self.assertEqual([str(m) for m in get_messages(response.wsgi_request)][-1], "gstfsd error: timed out")
+
+
+class GuestAgentAccessTestCase(TestCase):
+    """A running VM whose guest agent answers gets its root password and SSH
+    key through the agent; gstfsd serves only a shut-off VM."""
+
+    def setUp(self):
+        AppSettings.objects.filter(key__startswith="SHOW_ACCESS_").update(value="True")  # the Access forms are on
+        from accounts.models import UserSSHKey
+        from django.contrib.auth import get_user_model
+
+        self.admin = get_user_model().objects.create_superuser("tests-admin", "admin@example.com", "pw")
+        self.client.force_login(self.admin)
+        compute = Compute.objects.create(name="agent-compute", hostname="192.0.2.1", type=1)
+        self.instance = Instance.objects.create(compute=compute, name="agent-vm",
+                                                uuid="11111111-2222-3333-4444-555555555555")
+        admin = self.admin
+        self.key = UserSSHKey.objects.create(user=admin, keyname="laptop", keypublic="ssh-ed25519 AAAA laptop")
+        patcher = patch.object(Instance, "proxy")
+        self.proxy = patcher.start()
+        self.addCleanup(patcher.stop)
+        self.proxy.get_status.return_value = 1  # running
+        self.proxy.is_agent_ready.return_value = True
+
+    def post(self, name, data):
+        with patch("instances.views.gstfsd_request") as gstfsd:
+            response = self.client.post(reverse(f"instances:{name}", args=[self.instance.id]), data)
+        gstfsd.assert_not_called()
+        return [str(m) for m in get_messages(response.wsgi_request)]
+
+    def test_the_agent_sets_the_root_password(self):
+        self.assertEqual(self.post("rootpasswd", {"passwd": "S3cret-pass"}), ["Reset root password"])
+        user, crypted = self.proxy.set_user_password.call_args.args
+        self.assertEqual(user, "root")
+        self.assertTrue(crypted.startswith("$6$"))
+
+    def test_the_agent_adds_the_ssh_key(self):
+        self.assertEqual(self.post("add_public_key", {"sshkeyid": self.key.id}),
+                         ["Installed new SSH public key laptop"])
+        self.proxy.add_authorized_key.assert_called_once_with("root", "ssh-ed25519 AAAA laptop")
+
+    def test_a_running_vm_without_its_agent_is_refused(self):
+        self.proxy.is_agent_ready.return_value = False
+        for name, data in (("rootpasswd", {"passwd": "S3cret-pass"}), ("add_public_key", {"sshkeyid": self.key.id})):
+            # the latest message: the redirect is not followed, so earlier ones stay
+            self.assertEqual(self.post(name, data)[-1], "Shut the VM down, or start its QEMU guest agent, and try again")
+        self.proxy.set_user_password.assert_not_called()
+        self.proxy.add_authorized_key.assert_not_called()
+
+    def test_an_agent_that_refuses_is_an_error_message(self):
+        self.proxy.set_user_password.side_effect = libvirtError("guest agent command failed: user root not found")
+        self.assertEqual(self.post("rootpasswd", {"passwd": "S3cret-pass"}),
+                         ["guest agent command failed: user root not found"])
+
+    def test_a_command_that_timed_out_may_still_be_made(self):
+        # sent to the agent: it runs when the agent answers again; a failed
+        # synchronization sends nothing
+        from libvirt import VIR_ERR_AGENT_UNRESPONSIVE
+
+        for code, text, note in (
+            (112, "guest agent command timed out", True),  # VIR_ERR_AGENT_COMMAND_TIMEOUT
+            (VIR_ERR_AGENT_UNRESPONSIVE, "Guest agent is not responding", False),
+        ):
+            with self.subTest(code=code):
+                err = libvirtError(text)
+                err.get_error_code = lambda code=code: code
+                self.proxy.set_user_password.side_effect = err
+                self.proxy.add_authorized_key.side_effect = err
+                expected = text + (" The change may still be made when the agent answers again." if note else "")
+                self.assertEqual(self.post("rootpasswd", {"passwd": "S3cret-pass"})[-1], expected)
+                self.assertEqual(self.post("add_public_key", {"sshkeyid": self.key.id})[-1], expected)
+
+    def test_a_user_who_does_not_see_hosts_gets_no_connection_details(self):
+        from accounts.models import UserInstance
+        from django.contrib.auth import get_user_model
+        from libvirt import VIR_ERR_SYSTEM_ERROR, VIR_FROM_RPC
+
+        owner = get_user_model().objects.create_user("agent-owner", password="pw")
+        UserInstance.objects.create(user=owner, instance=self.instance, is_change=True)
+        self.client.force_login(owner)
+        err = libvirtError("Cannot recv data: 192.0.2.1:16509 Connection reset by peer")
+        err.get_error_domain = lambda: VIR_FROM_RPC
+        err.get_error_code = lambda: VIR_ERR_SYSTEM_ERROR
+        self.proxy.set_user_password.side_effect = err
+        self.assertEqual(self.post("rootpasswd", {"passwd": "S3cret-pass"}),
+                         ["The host of this virtual machine cannot be reached right now."])
+
+
+class OsInfoErrorTestCase(TestCase):
+    """The VM page asks for the guest's OS details; an agent that does not
+    answer in time is an error answer, not a server error."""
+
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser("tests-admin", "admin@example.com", "pw")
+        self.client.force_login(self.admin)
+        compute = Compute.objects.create(name="osinfo-compute", hostname="192.0.2.1", type=1)
+        self.instance = Instance.objects.create(compute=compute, name="osinfo-vm",
+                                                uuid="22222222-3333-4444-5555-666666666666")
+
+    @patch.object(Instance, "proxy")
+    def test_a_silent_agent_is_an_error_answer(self, proxy):
+        proxy.osinfo.side_effect = libvirtError("guest agent didn't respond to command within '10' seconds")
+        response = self.client.get(reverse("instances:osinfo", args=[self.instance.id]))
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {"error": "guest agent didn't respond to command within '10' seconds"})

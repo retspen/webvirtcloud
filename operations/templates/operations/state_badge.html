@@ -1,0 +1,1 @@
+{% load operations %}{% with color=state|state_color %}<span class="badge bg-{{ color }}{% if color == "warning" %} text-dark{% endif %}">{{ state|state_label }}</span>{% endwith %}

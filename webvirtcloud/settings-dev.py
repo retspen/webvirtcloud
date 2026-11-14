@@ -1,14 +1,13 @@
 """
 Django dev settings for webvirtcloud project.
 
-HowTo: python3 manage.py runserver 0:8000 --settings=webvirtcloud.settings-dev --nostatic
+HowTo: python3 manage.py runserver 0:8000 --settings=webvirtcloud.settings-dev
 
 """
 
 from webvirtcloud.settings import *
 
 DEBUG = True
-TEMPLATE_DEBUG = True
 
 
 INSTALLED_APPS += [
@@ -16,15 +15,11 @@ INSTALLED_APPS += [
     "template_profiler_panel",
 ]
 
-MIDDLEWARE += [
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
-]
+# as early as possible, as django-debug-toolbar asks
+MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")
 
 # DebugToolBar
 INTERNAL_IPS = ("127.0.0.1",)
-DEBUG_TOOLBAR_CONFIG = {
-    "INTERCEPT_REDIRECTS": False,
-}
 # http://django-debug-toolbar.readthedocs.org/en/latest/configuration.html#debug-toolbar-panels
 DEBUG_TOOLBAR_PANELS = [
     'debug_toolbar.panels.history.HistoryPanel',

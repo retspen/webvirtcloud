@@ -1,6 +1,6 @@
 /*
  * noVNC: HTML5 VNC client
- * Copyright (C) 2019 The noVNC Authors
+ * Copyright (C) 2019 The noVNC authors
  * (c) 2012 Michael Tinglof, Joe Balaz, Les Piech (Mercuri.ca)
  * Licensed under MPL 2.0 (see LICENSE.txt)
  *
@@ -56,7 +56,7 @@ export default class TightDecoder {
         } else if (this._ctl === 0x0A) {
             ret = this._pngRect(x, y, width, height,
                                 sock, display, depth);
-        } else if ((this._ctl & 0x80) == 0) {
+        } else if ((this._ctl & 0x08) == 0) {
             ret = this._basicRect(this._ctl, x, y, width, height,
                                   sock, display, depth);
         } else {
@@ -76,12 +76,8 @@ export default class TightDecoder {
             return false;
         }
 
-        const rQi = sock.rQi;
-        const rQ = sock.rQ;
-
-        display.fillRect(x, y, width, height,
-                         [rQ[rQi + 2], rQ[rQi + 1], rQ[rQi]], false);
-        sock.rQskipBytes(3);
+        let pixel = sock.rQshiftBytes(3);
+        display.fillRect(x, y, width, height, pixel, false);
 
         return true;
     }
@@ -148,6 +144,10 @@ export default class TightDecoder {
         const uncompressedSize = width * height * 3;
         let data;
 
+        if (uncompressedSize === 0) {
+            return true;
+        }
+
         if (uncompressedSize < 12) {
             if (sock.rQwait("TIGHT", uncompressedSize)) {
                 return false;
@@ -165,7 +165,15 @@ export default class TightDecoder {
             this._zlibs[streamId].setInput(null);
         }
 
-        display.blitRgbImage(x, y, width, height, data, 0, false);
+        let rgbx = new Uint8Array(width * height * 4);
+        for (let i = 0, j = 0; i < width * height * 4; i += 4, j += 3) {
+            rgbx[i]     = data[j];
+            rgbx[i + 1] = data[j + 1];
+            rgbx[i + 2] = data[j + 2];
+            rgbx[i + 3] = 255;  // Alpha
+        }
+
+        display.blitImage(x, y, width, height, rgbx, 0, false);
 
         return true;
     }
@@ -194,6 +202,10 @@ export default class TightDecoder {
         const uncompressedSize = rowSize * height;
 
         let data;
+
+        if (uncompressedSize === 0) {
+            return true;
+        }
 
         if (uncompressedSize < 12) {
             if (sock.rQwait("TIGHT", uncompressedSize)) {
@@ -237,7 +249,7 @@ export default class TightDecoder {
                 for (let b = 7; b >= 0; b--) {
                     dp = (y * width + x * 8 + 7 - b) * 4;
                     sp = (data[y * w + x] >> b & 1) * 3;
-                    dest[dp] = palette[sp];
+                    dest[dp]     = palette[sp];
                     dest[dp + 1] = palette[sp + 1];
                     dest[dp + 2] = palette[sp + 2];
                     dest[dp + 3] = 255;
@@ -247,14 +259,14 @@ export default class TightDecoder {
             for (let b = 7; b >= 8 - width % 8; b--) {
                 dp = (y * width + x * 8 + 7 - b) * 4;
                 sp = (data[y * w + x] >> b & 1) * 3;
-                dest[dp] = palette[sp];
+                dest[dp]     = palette[sp];
                 dest[dp + 1] = palette[sp + 1];
                 dest[dp + 2] = palette[sp + 2];
                 dest[dp + 3] = 255;
             }
         }
 
-        display.blitRgbxImage(x, y, width, height, dest, 0, false);
+        display.blitImage(x, y, width, height, dest, 0, false);
     }
 
     _paletteRect(x, y, width, height, data, palette, display) {
@@ -263,17 +275,83 @@ export default class TightDecoder {
         const total = width * height * 4;
         for (let i = 0, j = 0; i < total; i += 4, j++) {
             const sp = data[j] * 3;
-            dest[i] = palette[sp];
+            dest[i]     = palette[sp];
             dest[i + 1] = palette[sp + 1];
             dest[i + 2] = palette[sp + 2];
             dest[i + 3] = 255;
         }
 
-        display.blitRgbxImage(x, y, width, height, dest, 0, false);
+        display.blitImage(x, y, width, height, dest, 0, false);
     }
 
     _gradientFilter(streamId, x, y, width, height, sock, display, depth) {
-        throw new Error("Gradient filter not implemented");
+        // assume the TPIXEL is 3 bytes long
+        const uncompressedSize = width * height * 3;
+        let data;
+
+        if (uncompressedSize === 0) {
+            return true;
+        }
+
+        if (uncompressedSize < 12) {
+            if (sock.rQwait("TIGHT", uncompressedSize)) {
+                return false;
+            }
+
+            data = sock.rQshiftBytes(uncompressedSize);
+        } else {
+            data = this._readData(sock);
+            if (data === null) {
+                return false;
+            }
+
+            this._zlibs[streamId].setInput(data);
+            data = this._zlibs[streamId].inflate(uncompressedSize);
+            this._zlibs[streamId].setInput(null);
+        }
+
+        let rgbx = new Uint8Array(4 * width * height);
+
+        let rgbxIndex = 0, dataIndex = 0;
+        let left = new Uint8Array(3);
+        for (let x = 0; x < width; x++) {
+            for (let c = 0; c < 3; c++) {
+                const prediction = left[c];
+                const value = data[dataIndex++] + prediction;
+                rgbx[rgbxIndex++] = value;
+                left[c] = value;
+            }
+            rgbx[rgbxIndex++] = 255;
+        }
+
+        let upperIndex = 0;
+        let upper = new Uint8Array(3),
+            upperleft = new Uint8Array(3);
+        for (let y = 1; y < height; y++) {
+            left.fill(0);
+            upperleft.fill(0);
+            for (let x = 0; x < width; x++) {
+                for (let c = 0; c < 3; c++) {
+                    upper[c] = rgbx[upperIndex++];
+                    let prediction = left[c] + upper[c] - upperleft[c];
+                    if (prediction < 0) {
+                        prediction = 0;
+                    } else if (prediction > 255) {
+                        prediction = 255;
+                    }
+                    const value = data[dataIndex++] + prediction;
+                    rgbx[rgbxIndex++] = value;
+                    upperleft[c] = upper[c];
+                    left[c] = value;
+                }
+                rgbx[rgbxIndex++] = 255;
+                upperIndex++;
+            }
+        }
+
+        display.blitImage(x, y, width, height, rgbx, 0, false);
+
+        return true;
     }
 
     _readData(sock) {
@@ -300,7 +378,7 @@ export default class TightDecoder {
             return null;
         }
 
-        let data = sock.rQshiftBytes(this._len);
+        let data = sock.rQshiftBytes(this._len, false);
         this._len = 0;
 
         return data;

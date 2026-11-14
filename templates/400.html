@@ -1,0 +1,13 @@
+{% extends "error.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Bad request" %}{% endblock %}
+{% block code %}400{% endblock %}
+{% block status_classes %}text-bg-warning{% endblock %}
+{% block icon %}bi-exclamation-triangle{% endblock %}
+{% block heading %}{% trans "Bad request" %}{% endblock %}
+
+{% block text %}
+    <p class="mb-3">{% trans "The panel could not accept this request." %}</p>
+    <p class="text-body-secondary mb-0">{% trans "If the panel was opened at a new address, an administrator must add that address to ALLOWED_HOSTS." %}</p>
+{% endblock %}

@@ -1,0 +1,414 @@
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_noop
+from libvirt import (VIR_CONNECT_LIST_NODE_DEVICES_CAP_PCI_DEV, VIR_CONNECT_LIST_NODE_DEVICES_CAP_USB_DEV,
+                     VIR_ERR_NO_NODE_DEVICE, libvirtError)
+from lxml import etree
+
+from vrtManager import util
+
+# PCI base classes by their code (the class's first byte)
+PCI_CLASSES = {
+    0x01: _("Storage controller"),
+    0x02: _("Network controller"),
+    0x03: _("Display controller"),
+    0x04: _("Multimedia controller"),
+    0x06: _("Bridge"),
+    0x0C: _("Serial bus controller"),
+}
+
+# USB interface classes by their code
+USB_CLASSES = {
+    0x01: _("Audio"),
+    0x02: _("Communications"),
+    0x03: _("Human interface"),
+    0x06: _("Imaging"),
+    0x07: _("Printer"),
+    0x08: _("Mass storage"),
+    0x09: _("Hub"),
+    0x0A: _("Communications data"),
+    0x0B: _("Smart card"),
+    0x0E: _("Video"),
+    0xE0: _("Wireless"),
+    0xFF: _("Vendor specific"),
+}
+
+USB_HUB = 0x09
+
+
+def pci_address(domain, bus, slot, function):
+    """A PCI address as lspci writes it, from its parts as integers or as
+    libvirt's hex text (0x0000)."""
+    domain, bus, slot, function = (int(str(part), 0) for part in (domain, bus, slot, function))
+    return f"{domain:04x}:{bus:02x}:{slot:02x}.{function:x}"
+
+
+def usb_hub(name, nodes, children):
+    """True when the USB device named name is a hub (an interface of class 9)."""
+    return any(nodes[child].findtext("capability/class") == str(USB_HUB) for child in children.get(name, [])
+               if nodes[child].find("capability").get("type") == "usb")
+
+
+def host_resources(name, nodes, children):
+    """What the host itself has on the device named name or below it: its
+    network interfaces, block devices, graphics cards and USB devices (a
+    keyboard, or one given to a VM), by name. Giving the device to a VM
+    takes them from the host."""
+    found = []
+    for child in children.get(name, []):
+        cap = nodes[child].find("capability")
+        if cap.get("type") == "net":
+            found.append(cap.findtext("interface"))
+        elif cap.get("type") == "storage":
+            found.append(cap.findtext("block"))
+        elif cap.get("type") == "drm" and cap.findtext("type") == "primary":
+            found.append(nodes[child].xpath("string(devnode[@type='dev'])"))
+        elif cap.get("type") == "usb_device" and not usb_hub(child, nodes, children):
+            found.append(_("USB device %(bus)s/%(device)s (%(product)s)") % {
+                "bus": cap.findtext("bus"), "device": cap.findtext("device"), "product": cap.findtext("product")})
+        found.extend(host_resources(child, nodes, children))
+    return found
+
+
+def usb_id(text):
+    """A USB vendor or product ID of a definition, read as libvirt reads it
+    (C's strtoul: 0x hex, a leading 0 octal, else decimal) and written as a
+    node device writes it (0x0627); empty when not given."""
+    text = text.strip().removeprefix("+")
+    if not text:
+        return ""
+    base = 16 if text.lower().startswith("0x") else 8 if text.startswith("0") and text != "0" else 10
+    return f"0x{int(text, base):04x}"
+
+
+def usb_selector(source):
+    """(vendor, product, (bus, device) or None) of a USB <hostdev>'s <source>,
+    the parts libvirt picks a device by. An address libvirt resolved for a
+    running VM (autoAddress, in its migratable XML) is not one of them."""
+    address = source.find("address")
+    at = None if address is None else (int(address.get("bus")), int(address.get("device")))
+    return (usb_id(source.xpath("string(vendor/@id)")), usb_id(source.xpath("string(product/@id)")),
+            None if source.get("autoAddress") == "yes" else at)
+
+
+def element_address(address):
+    return pci_address(address.get("domain", "0"), address.get("bus"), address.get("slot"), address.get("function"))
+
+
+def parsed(parse, element):
+    """parse(element), a definition's host device; one whose address or IDs
+    are not numbers is refused (the XML editor and define from XML take any)."""
+    try:
+        return parse(element)
+    except (TypeError, ValueError):
+        raise util.OperationError(gettext_noop("The XML is not valid: %(err)s"),
+                                  err=etree.tostring(element, encoding=str, with_tail=False)) from None
+
+
+def hostdev_users(trees):
+    """What a VM's definitions give it of the host: PCI addresses (of a
+    <hostdev>, or of a NIC that is a host device) and USB selectors
+    (usb_selector)."""
+    pci, usb = set(), []
+    for tree in trees:
+        for address in tree.xpath("devices/hostdev[@mode='subsystem'][@type='pci']/source/address"
+                                  " | devices/interface[@type='hostdev']/source/address"
+                                  " | devices/interface/actual[@type='hostdev']/source/address"):
+            pci.add(parsed(element_address, address))
+        usb.extend(parsed(usb_selector, source) for source in tree.xpath("devices/hostdev[@mode='subsystem'][@type='usb']/source"))
+    return pci, usb
+
+
+def usb_named(selector, model, address):
+    """How a USB selector names the device of model at address: "address"
+    (its address, and its IDs where given), "model" (its IDs, no address:
+    any device of the model may be taken) or None."""
+    vendor, product, selected = selector
+    ids_match = (not vendor or vendor == model[0]) and (not product or product == model[1])
+    if not ids_match:
+        return None
+    if selected == address:
+        return "address"
+    return "model" if selected is None else None
+
+
+# Problems are messages (util.message), shown in the reader's language; a
+# device's label is one too, put in each problem of it
+def pci_label(address):
+    return [util.message(gettext_noop("PCI device %(address)s"), address=address)]
+
+
+def usb_selector_label(selector):
+    """How a VM's definition names a USB device (usb_selector): by its IDs, and its address where given."""
+    vendor, product, address = selector
+    ids = f"{vendor[2:]}:{product[2:]}"
+    if address is None:
+        return [util.message(gettext_noop("USB device %(ids)s"), ids=ids)]
+    return [util.message(gettext_noop("USB device %(ids)s at %(bus)s/%(device)s"), ids=ids, bus=address[0], device=address[1])]
+
+
+def usb_label(device):
+    return [util.message(gettext_noop("USB device %(bus)s/%(device)s (%(product)s)"),
+                         bus=device["bus"], device=device["device"], product=device["product"])]
+
+
+def device_problems(label, vms, resources, vm):
+    """Why a host device cannot be given to the VM named vm: the other VMs
+    that name it, and what the host has on it."""
+    problems = []
+    if others := sorted(set(vms) - {vm}):
+        problems.append(util.message(gettext_noop("%(device)s is given to %(vms)s"), device=label, vms=", ".join(others)))
+    if resources:
+        problems.append(util.message(gettext_noop("%(device)s holds the host's %(resources)s"), device=label,
+                                     resources=", ".join(resources)))
+    return problems
+
+
+def managed_pci(tree):
+    """The PCI addresses a VM's definition gives it as managed host devices
+    (a <hostdev> or a NIC that is one): libvirt takes them from their host
+    drivers when the VM starts."""
+    return {parsed(element_address, address)
+            for address in tree.xpath("devices/hostdev[@mode='subsystem'][@type='pci'][@managed='yes']/source/address"
+                                      " | devices/interface[@type='hostdev'][@managed='yes']/source/address")}
+
+
+def pci_problems(vm, device, by_address, managed):
+    """Why the host's PCI device (get_node_devices) cannot be given to the VM
+    named vm, whose definition gives it the managed PCI devices at the
+    addresses managed: by_address holds every PCI device of the host. Its
+    IOMMU group goes to the VM as a whole, so each other endpoint in it must
+    be one of managed, or have no driver or vfio-pci; no other VM may have
+    any of them; bridges stay with the pcieport driver or none. Nothing in
+    the group is taken implicitly."""
+    label = pci_label(device["address"])
+    # a bridge of any kind (a host bridge, a PCIe port) is the host's
+    if device["bridge"] or device["bridge_class"]:
+        return [util.message(gettext_noop("%(device)s is a bridge"), device=label)]
+    problems = device_problems(label, device["vms"], device["resources"], vm)
+    if device["resources"]:
+        problems.append(util.message(gettext_noop(
+            "bind %(address)s to vfio-pci on the host first if it is not needed there"), address=device["address"]))
+    if device["group"] is None:
+        return problems + [util.message(gettext_noop("%(device)s is in no IOMMU group"), device=label)]
+    group = {"device": label, "group": device["group"]}
+    for member in device["group_members"]:
+        if member == device["address"]:
+            continue
+        other = by_address.get(member)
+        if other is None:
+            problems.append(util.message(gettext_noop(
+                "%(device)s shares IOMMU group %(group)s with %(member)s, which cannot be read"), **group, member=member))
+        elif others := sorted(set(other["vms"]) - {vm}):
+            problems.append(util.message(gettext_noop(
+                "%(device)s shares IOMMU group %(group)s with %(member)s (%(product)s), which %(vms)s uses"),
+                **group, member=member, product=other["product"], vms=", ".join(others)))
+        elif other["bridge"]:
+            if other["driver"] not in ("", "pcieport"):
+                problems.append(util.message(gettext_noop(
+                    "%(device)s shares IOMMU group %(group)s with the bridge %(member)s (driver %(driver)s)"),
+                    **group, member=member, driver=other["driver"]))
+        elif member not in managed and other["driver"] not in ("", "vfio-pci"):
+            problems.append(util.message(gettext_noop(
+                "%(device)s shares IOMMU group %(group)s with %(member)s (%(product)s), which the host "
+                "(driver %(driver)s) uses"), **group, member=member, product=other["product"], driver=other["driver"]))
+    return problems
+
+
+USB_SOURCES = "devices/hostdev[@mode='subsystem'][@type='usb']/source"
+
+
+def usb_picked(source, usb):
+    """The selector (usb_selector) libvirt picks a device of the host's usb by
+    for a USB <hostdev>'s <source>: an address it resolved before
+    (autoAddress) while a device of the model is still there, else the model."""
+    vendor, product, given = usb_selector(source)
+    address = source.find("address")
+    if given is None and address is not None:
+        at = (int(address.get("bus")), int(address.get("device")))
+        if any(usb_named((vendor, product, at), device["model"], (device["bus"], device["device"])) for device in usb):
+            return vendor, product, at
+    return vendor, product, given
+
+
+def usb_unmatched(trees, usb, restore=False):
+    """Why the host cannot give the USB devices the definitions trees name
+    as they name them (libvirt then does not start the VM): a device it does
+    not have, unless optional, or requisite on a restore (a saved state or a
+    snapshot), as libvirt drops those; or a model it has more than one of,
+    named without an address (usb_picked)."""
+    dropped = ("optional", "requisite") if restore else ("optional",)
+    problems = []
+    for tree in trees:
+        for source in tree.xpath(USB_SOURCES):
+            picked = usb_picked(source, usb)
+            matches = [device for device in usb if usb_named(picked, device["model"], (device["bus"], device["device"]))]
+            label = usb_selector_label(usb_selector(source))
+            if not matches and source.get("startupPolicy") not in dropped:
+                problems.append(util.message(gettext_noop("%(device)s is not on the host"), device=label))
+            elif len(matches) > 1:
+                problems.append(util.message(gettext_noop(
+                    "the host has %(count)s of %(device)s: name the one to give by its address"),
+                    device=label, count=len(matches)))
+    return problems
+
+
+def hostdev_problems(vm, pci, usb, wanted_pci, wanted_usb, managed=frozenset()):
+    """Why the host's devices pci and usb (get_node_devices) that a definition
+    of the VM named vm wants (hostdev_users; managed_pci) cannot be given to
+    it: a PCI device the host does not have, pci_problems; for USB ones,
+    another VM names them or their PCI controller too, the host has its own
+    network interfaces or disks on them, or they are hubs."""
+    by_address = {device["address"]: device for device in pci}
+    problems = [util.message(gettext_noop("%(device)s is not on the host"), device=pci_label(address))
+                for address in sorted(wanted_pci - by_address.keys())]
+    for device in pci:
+        if device["address"] in wanted_pci:
+            problems += pci_problems(vm, device, by_address, managed)
+    for device in usb:
+        address = (device["bus"], device["device"])
+        if any(usb_named(selector, device["model"], address) for selector in wanted_usb):
+            label = usb_label(device)
+            problems += device_problems(label, device["vms"] + device["by_model"], device["resources"], vm)
+            if device["hub"]:
+                problems.append(util.message(gettext_noop("%(device)s is a hub"), device=label))
+            controller = by_address.get(device["controller"])
+            if controller and (holders := sorted(set(controller["vms"]) - {vm})):
+                problems.append(util.message(gettext_noop(
+                    "%(device)s is on the PCI controller %(controller)s, given to %(vms)s"),
+                    device=label, controller=controller["address"], vms=", ".join(holders)))
+    return problems
+
+
+def _pci(name, node, nodes, children, vms):
+    cap = node.find("capability")
+    address = pci_address(cap.findtext("domain"), cap.findtext("bus"), cap.findtext("slot"), cap.findtext("function"))
+    code = int(cap.findtext("class") or "0", 16)
+    group = cap.xpath("string(iommuGroup/@number)")
+    # SR-IOV: a virtual function's physical one
+    physfn = cap.find("capability[@type='phys_function']/address")
+    return {
+        "address": address,
+        "vendor": cap.findtext("vendor") or cap.xpath("string(vendor/@id)"),
+        "product": cap.findtext("product") or cap.xpath("string(product/@id)"),
+        "ids": f"{cap.xpath('string(vendor/@id)')[2:]}:{cap.xpath('string(product/@id)')[2:]}",
+        "kind": PCI_CLASSES.get(code >> 16, _("Other")),
+        "driver": node.findtext("driver/name") or "",
+        "group": int(group) if group else None,
+        "group_members": [pci_address(a.get("domain"), a.get("bus"), a.get("slot"), a.get("function"))
+                          for a in cap.xpath("iommuGroup/address")],
+        # a bridge header (a PCIe port too), as against class 0x06 functions such as an LPC controller
+        "bridge": cap.find("capability[@type='pci-bridge']") is not None
+        or cap.find("capability[@type='cardbus-bridge']") is not None or node.findtext("driver/name") == "pcieport",
+        # of the bridge class: a host bridge or an LPC controller too
+        "bridge_class": code >> 16 == 0x06,
+        "resources": host_resources(name, nodes, children),
+        "vms": [vm for vm, pci, usb_selectors in vms if address in pci],
+        "physfn": pci_address(physfn.get("domain"), physfn.get("bus"), physfn.get("slot"), physfn.get("function"))
+        if physfn is not None else "",
+        "vfs": len(cap.xpath("capability[@type='virt_functions']/address")),
+    }
+
+
+def _usb(name, node, nodes, children, vms):
+    cap = node.find("capability")
+    bus, device = int(cap.findtext("bus")), int(cap.findtext("device"))
+    model = (cap.xpath("string(vendor/@id)").lower(), cap.xpath("string(product/@id)").lower())
+    # a USB device's classes are its interfaces'
+    codes = [int(nodes[child].findtext("capability/class") or "0") for child in children.get(name, [])
+             if nodes[child].find("capability").get("type") == "usb"]
+    # the PCI controller it is on: a VM given that controller takes it too
+    parent = node.findtext("parent")
+    while parent in nodes and nodes[parent].find("capability").get("type") != "pci":
+        parent = nodes[parent].findtext("parent")
+    controller = nodes[parent].find("capability") if parent in nodes else None
+    named = [(vm, usb_named(selector, model, (bus, device))) for vm, pci_addresses, selectors in vms for selector in selectors]
+    by_address = sorted({vm for vm, how in named if how == "address"})
+    return {
+        "bus": bus,
+        "device": device,
+        "vendor": cap.findtext("vendor") or model[0],
+        "product": cap.findtext("product") or model[1],
+        "model": model,
+        "ids": f"{model[0][2:]}:{model[1][2:]}",
+        "kinds": sorted({str(USB_CLASSES.get(code, _("Other"))) for code in codes}),
+        "hub": USB_HUB in codes,
+        "controller": pci_address(controller.findtext("domain"), controller.findtext("bus"), controller.findtext("slot"),
+                                  controller.findtext("function")) if controller is not None else "",
+        "resources": host_resources(name, nodes, children),
+        "vms": by_address,
+        # VMs that name its model only: which device of the model they take is known only when they start
+        "by_model": sorted({vm for vm, how in named if how == "model"} - set(by_address)),
+    }
+
+
+def node_devices(conn):
+    """The PCI and USB devices of the host of conn (a wvmConnect), each with what the host has on it
+    (host_resources) and the VMs whose definitions name it: one listing
+    of every node device, one XML read each (a device gone meanwhile is
+    left out), and the VMs' definitions read once (domain_trees)."""
+    nodes = {}
+    for device in conn.wvm.listAllDevices(0):
+        try:
+            nodes[device.name()] = etree.fromstring(device.XMLDesc(0))
+        except libvirtError as err:
+            if err.get_error_code() != VIR_ERR_NO_NODE_DEVICE:
+                raise
+    children = {}
+    for name, node in nodes.items():
+        children.setdefault(node.findtext("parent"), []).append(name)
+
+    vms = [(vm, *hostdev_users(trees)) for vm, trees in conn.domain_trees()]
+    pci = [_pci(name, node, nodes, children, vms) for name, node in nodes.items()
+           if node.find("capability").get("type") == "pci"]
+    usb = [_usb(name, node, nodes, children, vms) for name, node in nodes.items()
+           if node.find("capability").get("type") == "usb_device"]
+    # a model the host has more than one of: a VM that names it by model alone may take any of them
+    models = [device["model"] for device in usb]
+    for device in usb:
+        device["same_model"] = models.count(device["model"]) > 1
+    pci.sort(key=lambda device: (device["group"] is None, device["group"] or 0, device["address"]))
+    usb.sort(key=lambda device: (device["bus"], device["device"]))
+    return pci, usb
+
+
+def device_names(conn):
+    """The product names of the host's USB devices, by their (vendor,
+    product) IDs, and of its PCI devices, by address: one listing of each,
+    one XML read per device; none when they cannot be read, as the names
+    are only shown."""
+    names = {}
+    try:
+        for flag in (VIR_CONNECT_LIST_NODE_DEVICES_CAP_USB_DEV, VIR_CONNECT_LIST_NODE_DEVICES_CAP_PCI_DEV):
+            for device in conn.wvm.listAllDevices(flag):
+                cap = etree.fromstring(device.XMLDesc(0)).find("capability")
+                if cap.get("type") == "pci":
+                    key = pci_address(cap.findtext("domain"), cap.findtext("bus"), cap.findtext("slot"), cap.findtext("function"))
+                else:
+                    key = (cap.xpath("string(vendor/@id)").lower(), cap.xpath("string(product/@id)").lower())
+                names[key] = cap.findtext("product") or ""
+    except libvirtError:  # a device gone meanwhile, or the host: the IDs and addresses are shown
+        return {}
+    return names
+
+
+class HostDevicesRefused(util.OperationError):
+    """check_hostdevs's refusal: its reasons name other VMs and what the host
+    has, for administrators only (operations.utils.public_error)."""
+
+
+def check_hostdevs(conn, vm, trees, restore=False):
+    """Refuses the host devices the definitions trees give the VM named vm,
+    on the host of conn, when they cannot be (hostdev_problems): each
+    definition on its own, as the VM starts from one of them, restored from
+    it when restore (usb_unmatched)."""
+    wanted = [(tree, hostdev_users([tree])) for tree in trees]
+    if not any(pci or usb for tree, (pci, usb) in wanted):
+        return
+    pci, usb = node_devices(conn)
+    problems = usb_unmatched(trees, usb, restore)
+    for tree, (wanted_pci, _selectors) in wanted:
+        picked = [usb_picked(source, usb) for source in tree.xpath(USB_SOURCES)]
+        problems += hostdev_problems(vm, pci, usb, wanted_pci, picked, managed_pci(tree))
+    if problems:
+        unique = list({util.render(m["text"], m["values"], str): m for m in problems}.values())
+        raise HostDevicesRefused(gettext_noop("%(problems)s"), problems=unique)

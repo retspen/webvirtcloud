@@ -1,4 +1,4 @@
-// Superhero 5.2.2
+// Superhero 5.3.8
 // Bootswatch
 
 
@@ -6,11 +6,7 @@
 
 $web-font-path: "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" !default;
 @if $web-font-path {
-  @import url($web-font-path);
-}
-
-:root {
-  color-scheme: dark;
+  @import url("#{$web-font-path}");
 }
 
 // Buttons
@@ -28,6 +24,10 @@ $web-font-path: "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&
 }
 
 // Typography
+
+.text-secondary {
+  color: var(--bs-secondary-color) !important;
+}
 
 .dropdown-menu {
   font-size: $font-size-sm;
@@ -73,12 +73,10 @@ label,
   font-size: $font-size-sm;
 }
 
-.form-control{
-  color-scheme: light;
-}
-
 .form-floating {
-  label {
+  > label,
+  > .form-control:focus ~ label,
+  > .form-control:not(:placeholder-shown) ~ label {
     color: $input-placeholder-color;
   }
 }
@@ -131,6 +129,11 @@ label,
   &-info {
     color: $white;
   }
+}
+
+.tooltip {
+  --bs-tooltip-bg: var(--bs-tertiary-bg);
+  --bs-tooltip-color: var(--bs-emphasis-color);
 }
 
 // Popovers

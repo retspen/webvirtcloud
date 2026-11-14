@@ -1,0 +1,10 @@
+#!/bin/sh
+# Docker's health check: every process has run for 5 s at least (one that
+# keeps failing never has) and the panel answers through nginx.
+# X-Forwarded-Proto: https keeps the HTTPS profile from redirecting it.
+# "webvirtcloud:worker   RUNNING   pid 27, uptime 0:00:10" (or "1 day, 0:00:10")
+supervisorctl status | awk '
+    $2 != "RUNNING" { print; bad = 1; next }
+    $0 !~ / day/ { split($NF, t, ":"); if (t[1] * 3600 + t[2] * 60 + t[3] < 5) { print; bad = 1 } }
+    END { exit bad }' || exit 1
+exec /srv/webvirtcloud/venv/bin/python3 -c "import urllib.request as u; u.urlopen(u.Request('http://127.0.0.1/accounts/login/', headers={'X-Forwarded-Proto': 'https'}), timeout=5)"

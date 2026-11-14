@@ -1,0 +1,20 @@
+[tool.ruff]
+target-version = "py310"
+extend-exclude = ["static"]
+
+[tool.ruff.lint]
+# Syntax errors and pyflakes; widen the rule set step by step.
+select = ["E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+# Settings overlay: re-exports the base settings by design.
+"webvirtcloud/settings-dev.py" = ["F403", "F405"]
+
+[tool.coverage.run]
+source = ["."]
+omit = [".venv/*", "*/migrations/*", "*/tests/*", "manage.py", "webvirtcloud/settings*.py"]
+
+[tool.coverage.report]
+# The lowest leg (PostgreSQL) measures 85% without the live libvirt suite
+# (2026-10-23); one point of room. Raise as tests grow.
+fail_under = 84

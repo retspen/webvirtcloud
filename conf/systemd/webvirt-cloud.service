@@ -1,23 +1,19 @@
 [Unit]
-Description=Webvirt Cloud Webinterface
+Description=WebVirtCloud panel (gunicorn)
 Wants=network-online.target
 After=network-online.target
 
 [Service]
-Type=simple
-Restart=on-failure
-RestartSec=10
 User=www-data
 Group=www-data
-LimitNOFILE=64000
-AmbientCapabilities=CAP_NET_BIND_SERVICE
-EnvironmentFile=/etc/default/webvirt
-
-ExecStart=/bin/bash -c "cd ${WEBVIRT_PATH};${WEBVIRT_PATH}/venv/bin/gunicorn webvirtcloud.wsgi:application -c ${WEBVIRT_PATH}/gunicorn.conf.py"
-
-# Make sure stderr/stdout is captured in the systemd journal.
-StandardOutput=journal
-StandardError=journal
+WorkingDirectory=/srv/webvirtcloud
+EnvironmentFile=-/etc/default/webvirtcloud
+ExecStart=/srv/webvirtcloud/venv/bin/gunicorn webvirtcloud.wsgi:application -c /srv/webvirtcloud/gunicorn.conf.py
+# gunicorn stops its workers itself; the rest of the group is killed after the timeout
+KillMode=mixed
+TimeoutStopSec=90
+Restart=on-failure
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target

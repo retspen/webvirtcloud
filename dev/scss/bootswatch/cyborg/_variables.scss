@@ -1,4 +1,4 @@
-// Cyborg 5.2.2
+// Cyborg 5.3.8
 // Bootswatch
 
 $theme: "cyborg" !default;
@@ -60,14 +60,14 @@ $headings-color:          $white !default;
 
 // Tables
 
-$table-color:                   $white !default;
+$table-color:                   initial !default;
 $table-accent-bg:               rgba($white, .05) !default;
 $table-hover-bg:                rgba($white, .075) !default;
 $table-border-color:            $gray-700 !default;
 $table-dark-bg:                 $gray-500 !default;
 $table-dark-border-color:       darken($gray-500, 7.5%) !default;
 
-$table-bg-scale:              0 !default;
+$table-bg-scale:              0% !default;
 
 // Buttons
 
@@ -80,7 +80,8 @@ $input-disabled-bg:                 $gray-400 !default;
 
 $input-color:                       $gray-900 !default;
 $input-border-color:                $white !default;
-$input-border-width:                0 !default;
+// stylelint-disable-next-line length-zero-no-unit
+$input-border-width:                0px !default;
 
 $input-group-addon-color:           $white !default;
 $input-group-addon-bg:              $gray-700 !default;
@@ -89,7 +90,9 @@ $input-group-addon-border-color:    transparent !default;
 $form-check-input-bg:                     $white !default;
 $form-check-input-border:                 none !default;
 
-$form-file-button-color:          $white !default;
+$form-file-button-color:          $input-group-addon-color !default;
+$form-file-button-bg:             $input-group-addon-bg !default;
+$form-file-button-hover-bg:       darken($form-file-button-bg, 2%) !default;
 
 // Dropdowns
 
@@ -106,6 +109,8 @@ $nav-tabs-link-hover-border-color:            $nav-tabs-border-color !default;
 $nav-tabs-link-active-color:                  $white !default;
 $nav-tabs-link-active-bg:                     $nav-tabs-border-color !default;
 $nav-tabs-link-active-border-color:           $nav-tabs-border-color !default;
+
+$nav-underline-link-active-color:   $white !default;
 
 // Navbar
 
@@ -128,7 +133,6 @@ $card-bg:                           $gray-700 !default;
 
 // Tooltips
 
-$tooltip-bg:                        $gray-700 !default;
 $tooltip-opacity:                   1 !default;
 
 // Popovers

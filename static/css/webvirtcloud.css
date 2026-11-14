@@ -4,18 +4,29 @@
  * For details, see http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-/* Global Styles */
-
-body {
-    padding-bottom: 50px;
+/* pages stop at Bootstrap's lg container width (960px): its xl and xxl
+   widths (1140px, 1320px) leave the panel's forms and lists too wide */
+@media (min-width: 1200px) {
+    .container {
+        max-width: 960px;
+    }
 }
 
-.container {
-    max-width: 900px;
+/* a count or label badge: text-bg-light keeps a light background with the
+   theme's light-text colour, white on grey in Darkly, Superhero and Vapor;
+   the page's own colours read in every theme */
+.badge.text-bg-light.border {
+    color: var(--bs-body-color) !important;
+    background-color: var(--bs-body-bg) !important;
 }
 
-.page-header {
-    margin: 5px 5px 20px 20px;
+/* an outlined secondary button (Cancel, a row's menu): Bootstrap draws it
+   in the theme's secondary colour, near the page background in Cyborg,
+   Darkly, Slate, Solar, Superhero and Vapor; the page's own text colours
+   read in every theme, its hover stays the theme's */
+.btn-outline-secondary {
+    color: var(--bs-body-color);
+    border-color: var(--bs-secondary-color);
 }
 
 #editor {
@@ -26,7 +37,14 @@ body {
     left: 0;
 }
 
-#xmlheight {
+/* Tom Select's control keeps the text colour of the select it replaces:
+   its own stylesheet fixes one, unreadable on some Bootswatch themes */
+.ts-wrapper.form-select .ts-control,
+.ts-wrapper.form-select .ts-control input {
+  color: inherit;
+}
+
+.xmlheight {
     height: 364px;
 }
 
@@ -34,150 +52,255 @@ body {
     height: 350px;
 }
 
-.search {
-    margin: 5px;
+/* the VM's XML editor: as tall as most of the window, framed like a form field */
+.xml-editor .ace_editor {
+    height: max(350px, 65vh);
+    border: var(--bs-border-width) solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
 }
 
-.btn-header {
-    margin-top: 5px;
+/* the review dialog's diff: added and removed lines on a tint, a hunk starts with its line number */
+.xml-diff > div {
+    padding: 0 .5rem;
+}
+.xml-diff .diff-add {
+    background-color: rgba(var(--bs-success-rgb), .12);
+}
+.xml-diff .diff-del {
+    background-color: rgba(var(--bs-danger-rgb), .12);
+}
+.xml-diff .diff-hunk:not(:first-child) {
+    margin-top: .75rem;
 }
 
-#action-block {
-    display: block;
-    padding: 15px 0;
-    font-weight: 400;
-    font-size: 14px;
-    width: 65px;
+/* headers of sortable tables (static/js/sort_tables.js): the sorted one shows
+   its direction, up for ascending */
+th[role=columnheader]:not([data-sort-method="none"]) {
+    cursor: pointer;
+    user-select: none;
 }
 
-.action-button {
-    text-align: center;
-}
-
-.tab-pane-bordered {
-    border: 1px solid #eee;
-    border-top-width: 0;
-    padding: 20px;
-}
-
-p {
-    display: block;
-    margin: 10px 10px 10px 10px;
-}
-
-#power {
-    margin-top: 20px;
-}
-
-#access {
-    margin-top: 20px;
-}
-
-#resize {
-    margin-top: 20px;
-}
-
-#snapshots {
-    margin-top: 20px;
-}
-
-#settings {
-    margin-top: 20px;
-}
-
-#graphics {
-    margin-top: 20px;
-}
-
-#undefine {
-    margin-top: 20px;
-}
-
-.flot-chart {
-    max-height: 250px;
-}
-
-.netIN {
-    border-color: rgb(83, 191, 189);
-    margin: 0.5em;
-    border-style: solid;
-    border-width: 0 0 0 1em;
-    padding: 0 0.3em;
-}
-
-.netOUT {
-    border-color: rgb(151, 187, 205);
-    margin: 0.5em;
-    border-style: solid;
-    border-width: 0 0 0 1em;
-    padding: 0 0.3em;
-}
-
-.diskRD {
-    border-color: rgb(190, 195, 205);
-    margin: 0.5em;
-    border-style: solid;
-    border-width: 0 0 0 1em;
-    padding: 0 0.3em;
-}
-
-.diskWR {
-    border-color: rgb(249, 134, 33);
-    margin: 0.5em;
-    border-style: solid;
-    border-width: 0 0 0 1em;
-    padding: 0 0.3em;
-}
-.keyselect {
-    display: inline;
-    min-width: 250px;
-}
-
-.multipleselect {
-    width:27em;
-    height:10em;
-    border:solid 2px #c0c0c0;
-    overflow:auto;
-    padding: 0 1em;
-    margin: 0.9em;
-}
-
-.multipleselect label {
-    display:block;
-}
-
-.multipleselect-on {
-    color:#ffffff;
-    background-color:#000099;
-}
-
-.bottom-bar-margin {
-    margin-top: 65px;
-}
-
-.thumbnail {
-    padding: 10px;
-}
-
-/* make dropdowns show on hover */
-@media only screen and (min-width: 768px) {
-  .dropdown:hover .dropdown-menu {
-    display: block;
-  }
-}
-.table > tbody > tr > td {
+th[aria-sort]:not([data-sort-method="none"])::after {
+    content: "";
+    display: inline-block;
+    margin-left: 0.4em;
     vertical-align: middle;
+    border: 0.3em solid transparent;
+    border-top-color: currentColor;
 }
 
-/* remove ugly dotted outline on tabs */
-a {
-    outline: 0;
+th[aria-sort="ascending"]:not([data-sort-method="none"])::after {
+    border-top-color: transparent;
+    border-bottom-color: currentColor;
 }
 
-.input-xs {
-    height: 22px;
-    padding: 2px 5px;
-    font-size: 12px;
-    line-height: 1.5; /* If Placeholder of the input is moved up, rem/modify this. */
-    border-radius: 2px;
-  }
+/* a phone keeps Bootstrap's own cell padding: some themes (Zephyr) double
+   it, and a list's last column no longer fits the screen */
+@media (max-width: 575.98px) {
+    .table > :not(caption) > * > * {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+}
+
+/* a choice shown as a card around its radio button (the VM's disk source,
+   a new pool's type): the chosen card by its border only, as the
+   Bootswatch dark themes keep light "subtle" backgrounds */
+.source-option {
+    cursor: pointer;
+}
+
+.source-option:has(input:checked) {
+    border-color: var(--bs-primary) !important;
+    box-shadow: inset 0 0 0 1px var(--bs-primary);
+}
+
+.source-option:has(input:focus-visible) {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
+.host-collapsed tr[host] {
+    display: none;
+}
+
+/* a live chart (static/js/charts.js) fills the width of its card at this height */
+.chart {
+    height: 160px;
+}
+
+/* the host's sections (computes/host_nav.html) on one line in every theme:
+   one font size, and the divider spaced alike on its two sides (Zephyr
+   doubles the space after it) */
+.host-nav .breadcrumb {
+    --bs-breadcrumb-item-padding-x: .5rem;
+    font-size: .875rem;
+}
+
+.host-nav .breadcrumb-item + .breadcrumb-item::before {
+    padding-right: var(--bs-breadcrumb-item-padding-x);
+}
+
+/* the power tab's states: the current one filled, the others a ring */
+.power-dot {
+    width: .8rem;
+    height: .8rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 2px solid var(--bs-border-color);
+}
+.power-dot.bg-success, .power-dot.bg-warning, .power-dot.bg-secondary { border-color: transparent; }
+/* the access tab's two login buttons line up */
+.access-act { min-width: 9rem; }
+
+/* the options tab: one row per device the guest sees, its name, its control and a note */
+.option-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 1rem;
+    row-gap: .25rem;
+    padding: .6rem 0;
+}
+.option-name { flex: 0 0 8rem; }
+
+/* the resize tab: one cell per vCPU up to the maximum, filled when on; memory now within its maximum */
+.vcpu-cell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    padding: 0 .4rem;
+    border-radius: var(--bs-border-radius);
+    border: 2px solid var(--bs-primary);
+    background: var(--bs-body-bg);
+    color: var(--bs-primary);
+    font-size: .875rem;
+    font-weight: 600;
+}
+.vcpu-cell.on { background: var(--bs-primary); color: #fff; }
+button.vcpu-cell:not(:disabled):hover { box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .25); }
+button.vcpu-cell:disabled { opacity: .65; }
+.memory-bar {
+    width: min(18rem, 100%);
+    height: .9rem;
+    border: 2px solid var(--bs-primary);
+    border-radius: var(--bs-border-radius);
+    overflow: hidden;
+}
+.memory-bar-now { height: 100%; background: var(--bs-primary); }
+.resize-act { min-width: 9rem; }
+
+/* the boot order: the devices the VM tries in turn, numbered and joined by a line */
+.boot-chain { counter-reset: boot; }
+.boot-node { position: relative; padding: .5rem 0; }
+.boot-chain > .boot-node { counter-increment: boot; }
+.boot-step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    border: 2px solid var(--bs-primary);
+    color: var(--bs-primary);
+    background: var(--bs-body-bg);
+    font-size: .8rem;
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
+}
+.boot-chain .boot-step::before { content: counter(boot); }
+.boot-chain > .boot-node:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    left: calc(.875rem - 1px);
+    top: calc(50% + .875rem);
+    height: calc(100% - 1.75rem);
+    border-left: 2px solid var(--bs-border-color);
+}
+.boot-spare .boot-step { visibility: hidden; }
+/* on a narrow screen a device's buttons go below its name, not over it */
+.boot-text { min-width: 10rem; flex-basis: 10rem; }
+.boot-chain .boot-spare-only, .boot-spare .boot-chain-only { display: none !important; }
+
+/* the snapshots tab: the VM's history as a line, newest first; now on top, the snapshot the VM goes on from filled */
+.snap-line { position: relative; padding-left: 1.75rem; }
+.snap-line::before {
+    content: "";
+    position: absolute;
+    left: calc(.5rem - 1px);
+    top: .75rem;
+    bottom: .75rem;
+    border-left: 2px solid var(--bs-border-color);
+}
+.snap-node { position: relative; padding: .5rem 0; }
+.snap-dot {
+    position: absolute;
+    left: -1.75rem;
+    top: .75rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    border: 2px solid var(--bs-primary);
+    background: var(--bs-body-bg);
+}
+.snap-dot.bg-success, .snap-dot.bg-warning, .snap-dot.bg-secondary { border-color: transparent; }
+.snap-dot.snap-current { background: var(--bs-primary); }
+.snap-dot.snap-none { border-color: var(--bs-border-color); }
+
+/* the network tab: a NIC as a cable to its source, solid while its link is up, dashed while down */
+.nic-wire {
+    position: relative;
+    flex: 0 0 3.5rem;
+    margin-inline: .25rem;
+    color: var(--bs-secondary-color);
+    border-top: 2px dashed currentColor;
+}
+.nic-wire::before, .nic-wire::after {
+    content: "";
+    position: absolute;
+    top: -4px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+.nic-wire::before { left: -3px; }
+.nic-wire::after { right: -3px; }
+.nic-wire.nic-up { color: var(--bs-success); border-top-style: solid; }
+
+/* a log message keeps a readable width when its table scrolls on a phone */
+.log-message {
+    min-width: 16rem;
+}
+
+/* the VM's new console password: only with "Set a new one" */
+fieldset:not(:has(input[value="set"]:checked)) > .console-new-password {
+    display: none;
+}
+
+/* the account forms (user, group, password): each section says what it is
+   about on the left, its fields on the right, with a rule between sections */
+.form-section {
+    border-top: 1px solid var(--bs-border-color);
+    padding: 1.5rem 0;
+}
+.form-section:first-of-type {
+    border-top: 0;
+    padding-top: .5rem;
+}
+.form-section-fields {
+    max-width: 52rem;
+}
+/* a choice drawn as a card (the user's role, how a user signs in) */
+.form-choice:has(input:checked) {
+    border-color: var(--bs-primary) !important;
+    box-shadow: inset 0 0 0 1px var(--bs-primary);
+}
+/* a user's password fields: only while With a password is chosen */
+.form-section-fields:has(input[name="usable_password"][value="false"]:checked) > .with-password {
+    display: none;
+}

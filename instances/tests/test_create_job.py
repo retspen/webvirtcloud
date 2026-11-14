@@ -1,0 +1,276 @@
+"""VM create runs as a job, from the page and from the API."""
+
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
+
+import libvirt
+
+from django.contrib.auth import get_user_model
+from django.core.exceptions import PermissionDenied
+from django.test import TransactionTestCase
+
+from appsettings.settings import get_settings
+from computes.models import Compute
+from instances.jobs import CreateInstance
+from instances.models import Instance
+from vrtManager.connection import wvmConnect
+from instances.tests.create_page import BODY
+from operations.jobs import Context
+from operations.models import Operation, acquire
+from operations.utils import traceback_of
+from vrtManager.util import OperationError
+
+
+class CreateJobTestCase(TransactionTestCase):
+    def setUp(self):
+        get_settings()
+        admin = get_user_model().objects.create_superuser("create_admin", "a@example.com", "pw")
+        self.client.force_login(admin)
+        self.compute = Compute.objects.create(name="create-c", hostname="192.0.2.40", login="root", password="", type=1)
+        patcher = patch("instances.jobs.wvmCreate")
+        self.conn = patcher.start().return_value
+        self.addCleanup(patcher.stop)
+        self.conn.get_instances.return_value = []
+        self.conn.get_networks.return_value = ["default"]
+        self.conn.get_network_models.side_effect = lambda arch: wvmConnect.get_network_models(None, arch)
+        self.conn.get_nwfilters.return_value = ["clean-traffic"]
+        self.conn.get_cache_modes.return_value = {"none": "Disable cache"}
+        self.conn.get_firmwares.return_value = ["BIOS", "UEFI", "UEFI Secure Boot"]
+        self.conn.get_disk_bus_types.return_value = ["virtio", "sata"]
+        self.conn.get_dom_capabilities.return_value = {"cpu_modes": ["host-model", "custom"],
+                                                       "cpu_custom_models": ["Skylake-Server-noTSX-IBRS"]}
+        self.conn.create_volume.return_value = "/srv/default/api-vm.qcow2"
+        missing = libvirt.libvirtError("no domain")
+        missing.get_error_code = lambda: libvirt.VIR_ERR_NO_DOMAIN
+        self.conn.wvm.lookupByUUIDString.side_effect = missing  # until the job defines the VM
+
+    def test_the_api_queues_the_create_and_the_worker_defines_and_records_it(self):
+        url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"
+        response = self.client.post(url, BODY, content_type="application/json")
+        self.assertEqual(response.status_code, 202)
+        op = Operation.objects.get()
+        self.assertEqual(response["Location"], f"/api/v1/operations/{op.pk}/")
+        self.conn.create_instance.assert_not_called()
+
+        acquire("wvc-test:1:a", "wvc-test")
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker="wvc-test:1:a")
+        op.refresh_from_db()
+        CreateInstance().run(op, Context(op, SimpleNamespace(identity="wvc-test:1:a")))
+        self.assertEqual(self.conn.create_instance.call_args.kwargs["uuid"], op.intent["uuid"])
+        # a console password of its own: without one, anyone reaching the VNC port is in
+        self.assertEqual(self.conn.create_instance.call_args.kwargs["console_pass"], "random")
+        self.assertTrue(Instance.objects.filter(uuid=op.intent["uuid"], name="api-vm").exists())
+
+    def test_the_api_takes_secure_boot_and_a_tpm(self):
+        url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/pc/"
+        body = {**BODY, "firmware": "UEFI Secure Boot", "tpm": True}
+        self.assertEqual(self.client.post(url, body, content_type="application/json").status_code, 202)
+        params = Operation.objects.get().params
+        self.assertEqual((params["firmware"], params["tpm"], params["machine"]), ("UEFI Secure Boot", True, "q35"))
+
+    def test_secure_boot_keeps_a_versioned_q35_machine(self):
+        url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/pc-q35-9.2/"
+        body = {**BODY, "firmware": "UEFI Secure Boot"}
+        self.assertEqual(self.client.post(url, body, content_type="application/json").status_code, 202)
+        self.assertEqual(Operation.objects.get().params["machine"], "pc-q35-9.2")
+
+    def test_a_refused_create_queues_nothing(self):
+        url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"
+        response = self.client.post(url, {**BODY, "cache_mode": "writeback"}, content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(Operation.objects.exists())
+
+    def test_a_cache_that_does_not_go_with_the_settings_io_is_refused_and_the_io_kept(self):
+        # libvirt refuses native I/O with a cache other than none or directsync, after the disks are made
+        from appsettings.models import AppSettings
+
+        self.conn.get_cache_modes.return_value = {"none": "Disable cache", "writeback": "Write back"}
+        # a TransactionTestCase run before may have emptied the table
+        AppSettings.objects.update_or_create(key="INSTANCE_VOLUME_DEFAULT_IO", defaults={
+            "name": "Disk IO Type", "value": "native", "choices": "default,native,threads"})
+        url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"
+        response = self.client.post(url, {**BODY, "cache_mode": "writeback"}, content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("does not go with disk I/O native", str(response.json()))
+        self.assertEqual(self.client.post(url, BODY, content_type="application/json").status_code, 202)
+        # a pair Settings made one libvirt refuses after the job was asked for: refused before a disk is made
+        op = Operation.objects.get()
+        Operation.objects.filter(pk=op.pk).update(params={**op.params, "cache_mode": "writeback"})
+        acquire("wvc-test:1:a", "wvc-test")
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker="wvc-test:1:a")
+        op.refresh_from_db()
+        with self.assertRaisesRegex(OperationError, "does not go with disk I/O native"):
+            CreateInstance().run(op, Context(op, SimpleNamespace(identity="wvc-test:1:a")))
+        self.conn.create_volume.assert_not_called()
+
+    def test_the_cpu_is_a_mode_or_a_model_the_host_offers(self):
+        url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"
+        # a model name longer than 20 characters is taken; none, or one the host lacks, is refused
+        response = self.client.post(url, {**BODY, "vcpu_mode": "Skylake-Server-noTSX-IBRS"}, content_type="application/json")
+        self.assertEqual(response.status_code, 202)
+        for vcpu_mode in ("", "maximum", "EPYC-Genoa", "x" * 65):
+            with self.subTest(vcpu_mode=vcpu_mode):
+                body = {**BODY, "vcpu_mode": vcpu_mode, "name": "api-vm2", "submission_key": f"key-{len(vcpu_mode):08}"}
+                response = self.client.post(url, body, content_type="application/json")
+                self.assertEqual(response.status_code, 400)
+        self.assertEqual(Operation.objects.count(), 1)
+
+    def test_impossible_sizes_are_refused_by_the_api(self):
+        url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"
+        for field, value in (("vcpu", 0), ("memory", -512), ("hdd_size", 0)):
+            with self.subTest(field=field):
+                response = self.client.post(url, {**BODY, field: value, "submission_key": f"key-min-{field}"},
+                                            content_type="application/json")
+                self.assertEqual(response.status_code, 400)
+                self.assertIn(field, response.json())
+        self.assertFalse(Operation.objects.exists())
+
+    def test_a_resubmitted_key_with_other_fields_is_a_conflict(self):
+        url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"
+        self.client.post(url, BODY, content_type="application/json")
+        response = self.client.post(url, {**BODY, "memory": 1024}, content_type="application/json")
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(Operation.objects.count(), 1)
+
+    def test_a_fault_of_the_panel_with_volumes_left_is_not_shown_as_it_is(self):
+        # its text names nothing users can act on; the volumes to remove are
+        self.client.post(f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/", BODY,
+                         content_type="application/json")
+        op = Operation.objects.get()
+        acquire("wvc-test:1:a", "wvc-test")
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker="wvc-test:1:a")
+        op.refresh_from_db()
+        self.conn.create_instance.side_effect = RuntimeError("no such bus")
+        self.conn.delete_volume.side_effect = libvirt.libvirtError("volume is busy")
+        with self.assertRaises(OperationError) as raised:
+            CreateInstance().run(op, Context(op, SimpleNamespace(identity="wvc-test:1:a")))
+        self.assertEqual(str(raised.exception), "The panel failed unexpectedly; its log has the details. "
+                         "Remove these volumes by hand: /srv/default/api-vm.qcow2")
+        self.assertIn("RuntimeError: no such bus", traceback_of(raised.exception))
+
+    def test_a_definition_whose_answer_was_lost_keeps_the_disk(self):
+        # it may have gone through: recovery records the VM, its disk with it
+        self.client.post(f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/", BODY,
+                         content_type="application/json")
+        op = Operation.objects.get()
+        acquire("wvc-test:1:a", "wvc-test")
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker="wvc-test:1:a")
+        op.refresh_from_db()
+        self.conn.create_instance.side_effect = libvirt.libvirtError("End of file while reading data")
+        for lookup in (None, libvirt.libvirtError("Cannot recv data")):  # defined; the host cannot tell
+            self.conn.wvm.lookupByUUIDString.side_effect = lookup
+            with self.assertRaisesMessage(libvirt.libvirtError, "End of file while reading data"):
+                CreateInstance().run(op, Context(op, SimpleNamespace(identity="wvc-test:1:a")))
+        self.conn.delete_volume.assert_not_called()
+
+    @patch("instances.jobs.wvmConnect")
+    def test_a_create_that_left_nothing_failed(self, conn):
+        op = Operation(params={**BODY, "template": ""},
+                       intent={"compute": self.compute.pk, "uuid": "abababab-0000-1111-2222-333333333333",
+                               "name": "api-vm"})
+        missing = libvirt.libvirtError("no domain")
+        missing.err = (libvirt.VIR_ERR_NO_DOMAIN, libvirt.VIR_FROM_QEMU, "no domain")
+        conn.return_value.wvm.lookupByUUIDString.side_effect = missing
+        pools = {"default": MagicMock(), "other": MagicMock()}
+        conn.return_value.wvm.storagePoolLookupByName.side_effect = pools.get
+        pools["default"].listVolumes.return_value = ["other.qcow2"]
+        pools["other"].listVolumes.return_value = ["api-vm.qcow2"]  # not the job's pool
+        self.assertEqual(CreateInstance().reconcile(op).state, Operation.FAILED)
+        pools["default"].listVolumes.return_value = ["api-vm.qcow2"]
+        self.assertEqual(CreateInstance().reconcile(op).state, Operation.UNCERTAIN)
+        # a pool that is not running may hold the disk: recovery waits for it
+        pools["default"].listVolumes.side_effect = libvirt.libvirtError("storage pool 'default' is not active")
+        with self.assertRaises(libvirt.libvirtError):
+            CreateInstance().reconcile(op)
+
+    def test_a_volume_already_named_as_the_new_disk_is_refused(self):
+        # else the job would fail on it and recovery take it for the job's own
+        url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"
+        self.conn.get_storage.return_value.listVolumes.return_value = ["api-vm.qcow2"]
+        response = self.client.post(url, BODY, content_type="application/json")
+        self.assertContains(response, "Image has already exist", status_code=400)
+        self.assertFalse(Operation.objects.exists())
+        self.conn.get_storage.assert_called_with("default")
+        # one made after the job was queued
+        self.conn.get_storage.return_value.listVolumes.return_value = []
+        self.client.post(url, BODY, content_type="application/json")
+        self.conn.get_storage.return_value.listVolumes.return_value = ["api-vm.img"]
+        with self.assertRaisesMessage(libvirt.libvirtError, "Image has already exist"):
+            CreateInstance().precheck(Operation.objects.get(), None)
+
+    def test_the_worker_checks_the_user_and_the_name_again(self):
+        response = self.client.post(f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/", BODY,
+                                    content_type="application/json")
+        self.assertEqual(response.status_code, 202)
+        op = Operation.objects.get()
+        CreateInstance().precheck(op, None)
+        # a VM of that name found on a host meanwhile
+        self.conn.get_instances.return_value = ["api-vm"]
+        with self.assertRaisesMessage(libvirt.libvirtError, "A virtual machine with this name already exists"):
+            CreateInstance().precheck(op, None)
+        # the user is no longer a superuser
+        op.user.is_superuser = False
+        op.user.save()
+        with self.assertRaises(PermissionDenied):
+            CreateInstance().precheck(op, None)
+
+    def test_a_network_or_filter_deleted_while_queued_is_refused(self):
+        # the VM would be defined with a card it cannot start with
+        response = self.client.post(f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/",
+                                    {**BODY, "nwfilter": "clean-traffic"}, content_type="application/json")
+        self.assertEqual(response.status_code, 202)
+        op = Operation.objects.get()
+        CreateInstance().precheck(op, None)
+        self.conn.get_nwfilters.return_value = []
+        with self.assertRaisesMessage(libvirt.libvirtError, "This host has no network filter clean-traffic"):
+            CreateInstance().precheck(op, None)
+        self.conn.get_networks.return_value = []
+        with self.assertRaisesMessage(libvirt.libvirtError, "This host has no network default"):
+            CreateInstance().precheck(op, None)
+
+    def test_a_network_card_without_a_network_is_refused(self):
+        # else the VM would be defined with <source network=''/> once its disks are made
+        url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"
+        for networks in ("default,", ","):
+            with self.subTest(networks=networks):
+                response = self.client.post(url, {**BODY, "networks": networks}, content_type="application/json")
+                self.assertContains(response, "Each network card needs a network", status_code=400)
+        self.assertFalse(Operation.objects.exists())
+
+    def test_a_network_card_model_the_architecture_lacks_is_refused(self):
+        # s390x machines have no PCI bus for an emulated card
+        admin = get_user_model().objects.get(username="create_admin")
+        params = CreateInstance().normalize({**BODY, "compute": self.compute.pk, "arch": "s390x",
+                                             "machine": "s390-ccw-virtio", "net_model": "e1000"})
+        with self.assertRaisesMessage(libvirt.libvirtError, "A s390x VM cannot have a e1000 network card"):
+            CreateInstance().validate(admin, params)
+        CreateInstance().validate(admin, {**params, "net_model": "virtio"})
+
+    def test_a_mac_of_another_vm_on_the_host_is_refused(self):
+        url = f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/"
+        nic = "<domain><devices><interface><mac address='%s'/></interface></devices></domain>"
+        other = MagicMock()
+        other.isPersistent.return_value = 1
+        # its NIC is added for its next boot only
+        other.XMLDesc.side_effect = lambda flags: nic % "52:54:00:aa:bb:cc" if flags else "<domain/>"
+        self.conn.wvm.listAllDomains.return_value = [other]
+        response = self.client.post(url, {**BODY, "mac": "52:54:00:AA:BB:CC"}, content_type="application/json")
+        self.assertContains(response, "MAC address 52:54:00:aa:bb:cc is a NIC's of another VM", status_code=400)
+        response = self.client.post(url, {**BODY, "mac": "52:54:00:aa:bb:cd"}, content_type="application/json")
+        self.assertEqual(response.status_code, 202)
+        # another VM took it while the job was queued
+        other.XMLDesc.side_effect = lambda flags: nic % "52:54:00:aa:bb:cd"
+        with self.assertRaisesMessage(libvirt.libvirtError, "MAC address 52:54:00:aa:bb:cd is a NIC's of another VM"):
+            CreateInstance().precheck(Operation.objects.get(), None)
+
+    def test_the_api_takes_a_body_without_a_mac_or_a_network_filter(self):
+        body = {k: v for k, v in BODY.items() if k not in ("mac", "nwfilter")}
+        response = self.client.post(f"/api/v1/computes/{self.compute.pk}/instances/create/x86_64/q35/", body,
+                                    content_type="application/json")
+        self.assertEqual(response.status_code, 202)
+        op = Operation.objects.get()
+        acquire("wvc-test:1:a", "wvc-test")
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker="wvc-test:1:a")
+        op.refresh_from_db()
+        CreateInstance().run(op, Context(op, SimpleNamespace(identity="wvc-test:1:a")))
+        self.assertEqual(self.conn.create_instance.call_args.kwargs["nwfilter"], "")

@@ -1,294 +1,218 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load operations %}
 {% load static %}
 {% load bootstrap_icons %}
 {% block title %}{{ compute }} - {% trans "Storage" %}: {{ pool }}{% endblock %}
-{% block style %}
-    <link rel="stylesheet" href="{% static "css/sortable-theme-bootstrap.css" %}"/>
-{% endblock %}
 
 {% block page_heading %}{{ compute }} - {% trans "Storage" %}: {{ pool }}{% endblock page_heading %}
 
-{% block page_heading_extra %}{% include 'create_stg_vol_block.html' %}{% endblock page_heading_extra %}
+{% block page_heading_extra %}
+<div class="d-flex flex-wrap gap-2">
+    {% include 'create_stg_vol_block.html' %}
+    {# the pool's own actions: starting or stopping it, the others in a menu #}
+    <div class="btn-group" role="group" aria-label="{% blocktrans %}Actions for pool {{ pool }}{% endblocktrans %}">
+        {% if state %}
+        <form method="post" class="btn-group">{% csrf_token %}
+            <button type="submit" class="btn btn-outline-secondary" name="stop"
+                    data-confirm="{% blocktrans with name=pool %}Stop pool {{ name }}? Its files stay, but until it is started again its volumes cannot be managed and VMs with disks in it may not start.{% endblocktrans %}">{% bs_icon 'stop-fill' %} {% trans "Stop" %}</button>
+        </form>
+        {% else %}
+        <form method="post" class="btn-group">{% csrf_token %}
+            <button type="submit" class="btn btn-outline-secondary" name="start">{% bs_icon 'play-fill' %} {% trans "Start" %}</button>
+        </form>
+        {% endif %}
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{% trans "More actions" %}">{% bs_icon 'three-dots' %}</button>
+            <ul class="dropdown-menu dropdown-menu-end shadow">
+                <li><form method="post">{% csrf_token %}
+                    {% if autostart %}
+                    <button type="submit" class="dropdown-item" name="unset_autostart"
+                            data-confirm="{% blocktrans with name=pool %}Disable autostart of pool {{ name }}? After the host restarts it stays stopped.{% endblocktrans %}">{% bs_icon 'toggle-off' %} {% trans "Disable autostart" %}</button>
+                    {% else %}
+                    <button type="submit" class="dropdown-item" name="set_autostart">{% bs_icon 'toggle-on' %} {% trans "Enable autostart" %}</button>
+                    {% endif %}
+                </form></li>
+                {% if not state %}
+                <li><hr class="dropdown-divider"></li>
+                <li><form method="post">{% csrf_token %}
+                    <button type="submit" class="dropdown-item text-danger" name="delete"
+                            data-confirm="{% blocktrans with name=pool %}Delete pool {{ name }}? Only its definition goes; its volumes and their files stay.{% endblocktrans %}">{% bs_icon 'trash' %} {% trans "Delete pool" %}</button>
+                </form></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock page_heading_extra %}
 
 {% block content %}
-    {% include 'pleasewaitdialog.html' %}
+    <div id="job-panel" aria-live="polite"></div>
     <div class="row">
         <div class="col-lg-12">
             
-            <ol class="breadcrumb shadow-sm">
-               <li class="breadcrumb-item">
-                    <a href="{% url 'overview' compute.id %}">{% bs_icon 'laptop' %}  {% trans "Overview" %}</a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{% url 'instances' compute.id %}">{% bs_icon 'server' %}  {% trans "Instances" %}</a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{% url 'storages' compute.id %}">{% bs_icon 'device-hdd' %}  {% trans "Storages" %}</a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{% url 'networks' compute.id %}">{% bs_icon 'hdd-network' %}  {% trans "Networks" %}</a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{% url 'interfaces' compute.id %}">{% bs_icon 'wifi' %}  {% trans "Interfaces" %}</a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{% url 'nwfilters' compute.id %}">{% bs_icon 'filter' %}  {% trans "NWFilters" %}</a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{% url 'virtsecrets' compute.id %}">{% bs_icon 'key' %}  {% trans "Secrets" %}</a>
-                </li>
-            </ol>
+            {% include "computes/host_nav.html" with section="storages" detail=True %}
         </div>
     </div>
-    <div class="row">
-        <div class="col-lg-12">
-            <dl class="row">
-                <dt class="col-6">{% trans "Pool name" %}</dt>
-                <dd class="col-6">{{ pool }}</dd>
-                <dt class="col-6">{% trans "Pool type" %}</dt>
-                <dd class="col-6">{% if not type %}{% trans "None" %}{% else %}{{ type }}{% endif %}</dd>
-                <dt class="col-6">{% trans "Pool path" %}</dt>
-                <dd class="col-6">{% if not path %}{% trans "None" %}{% else %}{{ path }}{% endif %}</dd>
-                <dt class="col-6">{% trans "Pool status" %}</dt>
-                <dd class="col-6">{% if not status %}{% trans "None" %}{% else %}{{ status }}{% endif %}</dd>
-                <dt class="col-6">{% trans "Size" %} </dt>
-                <dd class="col-6">{{size|filesizeformat }}</dd>
-                <dt class="col-6">{% trans "Usage" %} ({{ percent }}%)</dt>
-                <dd class="col-6">{{ used|filesizeformat }}</dd>
-                <dt class="col-6">{% trans "State" %}</dt>
-                <dd class="col-6">
-                    <form action="" method="post" role="form" aria-label="Storage start/stop form" class="confirm-form">{% csrf_token %}
-                        {% if state == 0 %}
-                            <input type="submit" class="btn btn-sm btn-secondary" name="start" value="{% trans "Start" %}">
-                            <input type="submit" class="btn btn-sm btn-danger" name="delete" value="{% trans "Delete" %}">
-                        {% else %}
-                            <input type="submit" class="btn btn-sm btn-secondary" name="stop" value="{% trans "Stop" %}">
-                        {% endif %}
-                    </form>
-                </dd>
-                <dt class="col-6">{% trans "Autostart" %}</dt>
-                <dd class="col-6">
-                    <form action="" method="post" role="form" aria-label="Storage disable/enable autostart form" class="confirm-form">{% csrf_token %}
-                    {% if autostart == 0 %}
-                        <input type="submit" class="btn btn-sm btn-secondary" name="set_autostart"
-                                value="{% trans "Enable" %}">
-                        {% else %}
-                        <input type="submit" class="btn btn-sm btn-secondary" name="unset_autostart"
-                                value="{% trans "Disable" %}">
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-6">
+            <div class="card h-100">
+                <div class="card-header">{% trans "Space" %}</div>
+                <div class="card-body">
+                    {% if not state %}
+                        <div class="text-body-secondary">{% trans "Unavailable while the pool is stopped." %}</div>
+                    {% elif size is None %}
+                        <div class="text-body-secondary">{% trans "The pool's space could not be read." %}</div>
+                    {% elif not size %}
+                        <div class="text-body-secondary">{% trans "The pool has no size." %}</div>
+                    {% else %}
+                        <div class="fs-4 lh-sm">{{ percent }} %</div>
+                        <div class="small text-body-secondary">
+                            {% blocktrans with used=used|filesizeformat size=size|filesizeformat %}{{ used }} used of {{ size }}{% endblocktrans %}
+                            {# what the space is the space of: other pools may share it #}
+                            {% if type == "dir" or type == "fs" or type == "netfs" %}· {% trans "the filesystem of its path" %}
+                            {% elif type == "logical" %}· {% trans "its volume group" %}
+                            {% elif type == "rbd" %}· {% trans "the Ceph cluster" %}{% endif %}
+                        </div>
+                        <div class="progress my-2" role="progressbar" style="--bs-progress-height: 0.3rem;" aria-label="{% trans "Space used" %}"
+                             aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar {% if percent > 90 %}bg-danger{% elif percent > 75 %}bg-warning{% endif %}" style="width: {{ percent }}%"></div>
+                        </div>
+                        <div class="small text-body-secondary">{% blocktrans with free=free|filesizeformat %}{{ free }} free{% endblocktrans %}</div>
                     {% endif %}
-                </form>
-                </dd>
-            </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6">
+            <div class="card h-100">
+                <div class="card-header">{% trans "Pool" %}</div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item py-1 d-flex justify-content-between gap-3">
+                        <span class="text-body-secondary">{% trans "State" %}</span>
+                        <span class="d-flex flex-wrap justify-content-end gap-1">
+                            {% if state %}<span class="badge text-bg-success">{% trans "Active" %}</span>{% else %}<span class="badge text-bg-secondary">{% trans "Stopped" %}</span>{% endif %}
+                            {% if status == "Running degraded" %}<span class="badge text-bg-warning">{% trans "Degraded" %}</span>{% elif status == "Inaccessible" %}<span class="badge text-bg-warning">{% trans "Inaccessible" %}</span>{% endif %}
+                            {% if autostart %}<span class="badge text-bg-light border">{% trans "Autostart" %}</span>{% endif %}
+                        </span>
+                    </li>
+                    <li class="list-group-item py-1 d-flex justify-content-between gap-3">
+                        <span class="text-body-secondary">{% trans "Type" %}</span><span>{{ type|default:"—" }}</span>
+                    </li>
+                    <li class="list-group-item py-1 d-flex justify-content-between gap-3">
+                        <span class="text-body-secondary">{% trans "Path" %}</span>
+                        <span class="font-monospace text-break text-end">{{ path|default:"—" }}</span>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 
-    
-    {% if state %}
-        <p>
-            {% include 'search_block.html' %}
-            <h5 class="page-header">{% trans "Volumes" %}</h5>
-        </p>     
-        {% if volumes  %}
-            <table class="table table-hover sortable-theme-bootstrap" data-sortable>
+    {% if not state %}
+        <div class="alert alert-secondary">
+            {% bs_icon 'info-circle' %} {% trans "This pool is stopped: its volumes cannot be listed or managed until it is started. Their files stay." %}
+        </div>
+    {% elif volumes %}
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+            <h5 class="me-auto mb-0">{% trans "Volumes" %}</h5>
+            <input id="filter" class="form-control w-auto" type="search" placeholder="{% trans "Search volumes" %}" aria-label="{% trans "Search volumes" %}">
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle" data-sortable>
                 <thead>
                 <tr>
-                    <th scope="col">#</th>
                     <th scope="col">{% trans "Name" %}</th>
-                    <th scope="col">{% trans "Allocated" %}</th>
-                    <th scope="col">{% trans "Size" %}</th>
                     <th scope="col">{% trans "Format" %}</th>
-                    <th scope="colgroup" data-sortable="false" colspan="2">{% trans "Action" %}</th>
+                    <th scope="col" class="d-none d-sm-table-cell" data-sort-method="number">{% trans "Capacity" %}</th>
+                    <th scope="col" data-sort-method="none"><span class="visually-hidden">{% trans "Actions" %}</span></th>
                 </tr>
                 </thead>
                 <tbody class="searchable">
                 {% for volume in volumes %}
-                <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ volume.name|truncatechars:55 }}</td>
-                    <td>{{ volume.allocation|filesizeformat }}</td>
-                    <td>{{ volume.size|filesizeformat }}</td>
-                    <td>{{ volume.type }}</td>
-                    <td>
-                        <!-- Modal Clone -->
-                        <div class="modal fade" id="Clone{{ forloop.counter }}" tabindex="-1" role="dialog"
-                                aria-labelledby="addHostLabel" aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">{% trans "Clone image" %} <span class="text-danger">{{ volume.name }}</span></h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <form method="post" role="form" aria-label="Clone image file form">{% csrf_token %}
-                                        <div class="modal-body">
-                                            <div class="row">
-                                                <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
-                                                <div class="col-sm-6">
-                                                    <input type="text" class="form-control" name="name" placeholder="{% trans "Name" %}" required pattern="[a-zA-Z0-9\.\-_]+">
-                                                    <input type="hidden" name="image" value="{{ volume.name }}">
-                                                </div>
-                                            </div>
-                                            <div class="row" id="image_format">
-                                                <label class="col-sm-3 col-form-label">{% trans "Convert" %}</label>
-                                                <div class="col-sm-6">
-                                                    <input class="volume-convert" type="checkbox" name="convert" value="true">
-                                                </div>
-                                            </div>
-                                            <div class="row format-convert">
-                                                <label class="col-sm-3 col-form-label">{% trans "Format" %}</label>
-                                                <div class="col-sm-6">
-                                                    <select name="format" class="form-select image-format">
-                                                        <option value="raw">{% trans "raw" %}</option>
-                                                        <option value="qcow">{% trans "qcow" %}</option>
-                                                        <option value="qcow2">{% trans "qcow2" %}</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div class="row meta-prealloc" style="display: none;">
-                                                <label class="col-sm-3 col-form-label">{% trans "Metadata" %}</label>
-                                                <div class="col-sm-6">
-                                                    <input type="checkbox" name="meta_prealloc" value="true">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
-                                            <button type="submit" class="btn btn-primary" name="cln_volume" onclick="showPleaseWaitDialog()">{% trans "Clone" %}</button>
-                                        </div>
-                                    </form>
-                                </div> <!-- /.modal-content -->
-                            </div> <!-- /.modal-dialog -->
-                        </div> <!-- /.modal -->
-                        {% if volume.type != "iso" %}
-                            <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#Clone{{ forloop.counter }}" title="{% trans "Clone" %}">
-                                {% bs_icon 'files' %} 
-                            </button>
-                        {% else %}
-                            <button class="btn btn-sm btn-secondary disabled">
-                                {% bs_icon 'files' %} 
-                            </button>
-                        {% endif %}
-                    </td>  
-                    <td>  
-                        <form action="" method="post" role="form" aria-label="Delete volume form" class="confirm-form">{% csrf_token %}
-                            <input type="hidden" name="volname" value="{{ volume.name }}">
-                            <button type="submit" class="btn btn-sm btn-secondary" name="del_volume" title="{% trans "Delete" %}">
-                                {% bs_icon 'trash' %} 
-                            </button>
-                        </form>
+                <tr data-search="{{ volume.name }}">
+                    <td class="text-break">{{ volume.name }}</td>
+                    <td><span class="badge text-bg-light border">{{ volume.type }}</span></td>
+                    {# capacity: what the guest sees; allocated: what it takes on the storage now #}
+                    <td class="d-none d-sm-table-cell" data-sort="{{ volume.size }}">
+                        <div>{{ volume.size|filesizeformat }}</div>
+                        <div class="small text-body-secondary">{% blocktrans with allocated=volume.allocation|filesizeformat %}{{ allocated }} allocated{% endblocktrans %}</div>
+                    </td>
+                    <td class="text-end text-nowrap">
+                        <div class="btn-group" role="group" aria-label="{% blocktrans with name=volume.name %}Actions for {{ name }}{% endblocktrans %}">
+                            {# an ISO image is uploaded, not cloned (storages.jobs.is_iso) #}
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#CloneVolume" data-volume="{{ volume.name }}"
+                                    aria-label="{% trans "Clone" %}"{% if volume.iso %} disabled{% endif %}>{% bs_icon 'files' %} <span class="d-none d-sm-inline">{% trans "Clone" %}</span></button>
+                            <div class="btn-group">
+                                {# fixed: the menu would be cut off by the table's scrolling box #}
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown" aria-expanded="false"
+                                        data-bs-popper-config='{"strategy": "fixed"}' aria-label="{% trans "More actions" %}">{% bs_icon 'three-dots' %}</button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow">
+                                    <li><form method="post">{% csrf_token %}
+                                        <input type="hidden" name="volname" value="{{ volume.name }}">
+                                        <button type="submit" class="dropdown-item text-danger" name="del_volume"
+                                                data-confirm="{% blocktrans with name=volume.name %}Delete volume {{ name }}? Its file and data are removed; a volume a VM uses is not deleted.{% endblocktrans %}">{% bs_icon 'trash' %} {% trans "Delete" %}</button>
+                                    </form></li>
+                                </ul>
+                            </div>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
                 </tbody>
             </table>
-        {% else %}
-            <div class="col-lg-12">
-                <div class="alert alert-warning shadow-sm">
-                    {% bs_icon 'exclamation-triangle' %}  <strong>{% trans "Warning" %}:</strong> {% trans "Hypervisor doesn't have any Volumes" %}
+        </div>
+        {# a live region from the start: screen readers hear the message when the search empties the table #}
+        <div role="status">
+            <div id="no-match" class="text-center text-body-secondary py-4" hidden>{% trans "No volume matches the search." %}</div>
+        </div>
+
+        {# one dialog for every volume: the button that opens it names the volume #}
+        <div class="modal fade" id="CloneVolume" tabindex="-1" aria-labelledby="CloneVolumeLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="CloneVolumeLabel">{% trans "Clone image" %} <span class="font-monospace text-break" id="clone-image-name"></span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
+                    </div>
+                    <form method="post" aria-labelledby="CloneVolumeLabel">{% csrf_token %}{% submission_key %}
+                        <div class="modal-body">
+                            <input type="hidden" name="image" id="clone-image">
+                            <div class="mb-3">
+                                <label class="form-label" for="clone-name">{% trans "Name of the copy" %}</label>
+                                <input type="text" class="form-control" name="name" id="clone-name" required pattern="[a-zA-Z0-9\.\-_]+" aria-describedby="clone-name-help">
+                                <div class="form-text" id="clone-name-help">{% trans "Letters, digits, dot, dash and underscore." %}</div>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="convert" value="true" id="clone-convert">
+                                <label class="form-check-label" for="clone-convert">{% trans "Convert it to another format" %}</label>
+                            </div>
+                            <div class="mt-3 d-none" id="clone-format-row">
+                                <label class="form-label" for="clone-format">{% trans "Format" %}</label>
+                                <select name="format" class="form-select" id="clone-format">
+                                    <option value="raw">{% trans "raw" %}</option>
+                                    <option value="qcow2">{% trans "qcow2" %}</option>
+                                </select>
+                            </div>
+                            <div class="form-check mt-3 d-none" id="clone-prealloc-row">
+                                <input class="form-check-input" type="checkbox" name="meta_prealloc" value="true" id="clone-prealloc">
+                                <label class="form-check-label" for="clone-prealloc">{% trans "Preallocate metadata (qcow2)" %}</label>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                            <button type="submit" class="btn btn-primary" name="cln_volume">{% trans "Clone" %}</button>
+                        </div>
+                    </form>
                 </div>
             </div>
-        {% endif %}
+        </div>
+    {% else %}
+        <div class="text-center text-body-secondary py-4">{% trans "This pool has no volumes." %}</div>
     {% endif %}
-    </div>
 
 {% endblock %}
 {% block script %}
-    <script src="{% static 'js/sortable.min.js' %}"></script>
-    <script src="{% static 'js/filter-table.js' %}"></script>
-    <script>
-        $('.format-convert').hide();
-        $(document).on('change', '.volume-convert', function () {
-            if ($(this).prop('checked')) {
-                $('.format-convert').show();
-                if ($('.image-format').val() == 'qcow2') {
-                    $('.meta-prealloc').show();
-                }
-            } else {
-                $('.format-convert').hide();
-                $('.meta-prealloc').hide();
-            }
-        });
-        $(document).on('change', '.image-format', function () {
-            if ($(this).val() == "qcow2") {
-                $('.meta-prealloc').show();
-            } else {
-                $('.meta-prealloc').hide();
-            }
-        });
-
-        $(document).ready(function() {
-            $('.confirm-form').on('submit', function(e) {
-                if (!confirm('{% trans "Are you sure?"|escapejs %}')) {
-                    e.preventDefault();
-                }
-            });
-
-            $('#isoUploadForm').on('submit', function(e) {
-                e.preventDefault();
-
-                var fileInput = $('#id_file')[0];
-                if (fileInput.files.length === 0) {
-                    alert("{% trans 'Please select a file to upload.'|escapejs %}");
-                    return;
-                }
-
-                var file = fileInput.files[0];
-                var fileName = file.name;
-                var chunkSize = 10 * 1024 * 1024; // 10MB
-                var totalChunks = Math.ceil(file.size / chunkSize);
-                var chunkIndex = 0;
-
-                var progressBar = $('#upload-progress-bar');
-                var progressContainer = $('#upload-progress-container');
-                var errorMessage = $('#upload-error-message');
-
-                progressContainer.show();
-                progressBar.width('0%').attr('aria-valuenow', 0).text('0%');
-                errorMessage.hide();
-
-                function uploadChunk() {
-                    if (chunkIndex >= totalChunks) {
-                        return;
-                    }
-
-                    var start = chunkIndex * chunkSize;
-                    var end = Math.min(start + chunkSize, file.size);
-                    var chunk = file.slice(start, end);
-
-                    var formData = new FormData();
-                    formData.append('file', chunk, fileName);
-                    formData.append('file_name', fileName);
-                    formData.append('chunk_index', chunkIndex);
-                    formData.append('total_chunks', totalChunks);
-                    formData.append('iso_upload', 'true');
-                    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-
-                    $.ajax({
-                        url: "{% url 'storage' compute.id pool %}",
-                        type: 'POST',
-                        data: formData,
-                        processData: false,
-                        contentType: false,
-                        success: function(data) {
-                            chunkIndex++;
-                            var percentComplete = Math.round((chunkIndex / totalChunks) * 100);
-                            progressBar.width(percentComplete + '%').attr('aria-valuenow', percentComplete).text(percentComplete + '%');
-
-                            if (data.reload) {
-                                location.reload();
-                            } else if (chunkIndex < totalChunks) {
-                                uploadChunk();
-                            }
-                        },
-                        error: function(jqXHR, textStatus, errorThrown) {
-                            var errorText = jqXHR.responseJSON && jqXHR.responseJSON.error ? jqXHR.responseJSON.error : "{% trans 'An error occurred during upload.'|escapejs %}";
-                            errorMessage.text(errorText).show();
-                            progressContainer.hide();
-                        }
-                    });
-                }
-                uploadChunk();
-            });
-        });
-    </script>
+    <script src="{% static 'js/poll.js' %}"></script>
+    {% job_panel_script job_resource %}
+    {% if volumes %}<script src="{% static 'js/table_filter.js' %}"></script>{% endif %}
+    <script src="{% static 'js/storage_page.js' %}"></script>
 {% endblock %}

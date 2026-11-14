@@ -1,0 +1,3 @@
+{% load i18n %}
+{# what the host has on a device (its network interfaces, disks, graphics card): giving it to a VM takes them from the host #}
+{% for resource in device.resources %}<span class="badge bg-warning-subtle text-warning-emphasis font-monospace me-1">{{ resource }}</span>{% empty %}–{% endfor %}

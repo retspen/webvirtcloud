@@ -1,17 +1,21 @@
 from django.conf import settings
 from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import path
-from django_otp.forms import OTPAuthenticationForm
 
 from . import views
-from .views import CustomLoginView
+from .forms import LoginForm
+from .otp import SingleDeviceOTPForm
 
 app_name = "accounts"
 
 urlpatterns = [
-    path("logout/", LogoutView.as_view(template_name="logout.html"), name="logout"),
+    # LOGOUT_REDIRECT_URL sends a signed-out user to the sign-in page
+    path("logout/", LogoutView.as_view(), name="logout"),
     path("profile/", views.profile, name="profile"),
     path("profile/<int:user_id>/", views.account, name="account"),
+    path("profile/<int:user_id>/api_token/<str:token_key>/delete/", views.api_token_delete,
+         name="account_api_token_delete"),
+    path("profile/<int:user_id>/ssh_key/<int:pk>/delete/", views.ssh_key_delete, name="account_ssh_key_delete"),
     path("change_password/", views.change_password, name="change_password"),
     path(
         "user_instance/create/<int:user_id>/",
@@ -30,12 +34,17 @@ urlpatterns = [
     ),
     path("ssh_key/create/", views.ssh_key_create, name="ssh_key_create"),
     path("ssh_key/<int:pk>/delete/", views.ssh_key_delete, name="ssh_key_delete"),
+    path("api_token/create/", views.api_token_create, name="api_token_create"),
+    path("api_token/created/", views.api_token_created, name="api_token_created"),
+    path("api_token/<str:token_key>/delete/", views.api_token_delete, name="api_token_delete"),
     path("email_otp/", views.email_otp, name="email_otp"),
+    path("otp_qr/", views.otp_qr, name="otp_qr"),
     path(
         "admin_email_otp/<int:user_id>/",
         views.admin_email_otp,
         name="admin_email_otp",
     ),
+    path("admin_reset_otp/<int:user_id>/", views.admin_reset_otp, name="admin_reset_otp"),
 ]
 
 if settings.OTP_ENABLED:
@@ -44,12 +53,14 @@ if settings.OTP_ENABLED:
             "login/",
             LoginView.as_view(
                 template_name="accounts/otp_login.html",
-                authentication_form=OTPAuthenticationForm,
+                authentication_form=SingleDeviceOTPForm,
+                redirect_authenticated_user=True,
             ),
             name="login",
         ),
     ]
 else:
     urlpatterns += (
-        path("login/", CustomLoginView.as_view(template_name="login.html"), name="login"),
+        path("login/", LoginView.as_view(template_name="login.html", authentication_form=LoginForm,
+                                           redirect_authenticated_user=True), name="login"),
     )

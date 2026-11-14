@@ -1,0 +1,12 @@
+#!/bin/sh
+# ssh for libvirt qemu+ssh connections (the URI's "command" parameter).
+# libvirt passes no connect timeout, so an unreachable host would keep this
+# ssh process waiting for the kernel's TCP timeout. BatchMode makes ssh fail
+# instead of waiting for a password or host key prompt nobody can answer.
+# The timeout is fixed: libvirt passes this script no environment or extra
+# arguments. It bounds only ssh's TCP connect; WebVirtCloud stops waiting
+# after LIBVIRT_CONNECT_TIMEOUT on its own, so an abandoned ssh lives at most
+# this long.
+# Everything else comes from the user's ssh configuration (aliases,
+# ProxyJump, keys).
+exec ssh -o ConnectTimeout=10 -o BatchMode=yes "$@"

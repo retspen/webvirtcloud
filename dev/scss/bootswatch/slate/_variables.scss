@@ -1,4 +1,4 @@
-// Slate 5.2.2
+// Slate 5.3.8
 // Bootswatch
 
 $theme: "slate" !default;
@@ -39,6 +39,8 @@ $danger:        $red !default;
 $light:         $gray-200 !default;
 $dark:          $gray-900 !default;
 
+$primary-bg-subtle:       lighten($gray-800, 10%) !default;
+
 $min-contrast-ratio:   1.95 !default;
 
 // Body
@@ -54,14 +56,14 @@ $link-color:                $white !default;
 
 // Tables
 
-$table-color:                 $white !default;
+$table-color:                 initial !default;
 $table-accent-bg:             rgba($white, .05) !default;
 $table-hover-bg:              rgba($white, .075) !default;
 $table-border-color:          rgba($black, .6) !default;
 $table-dark-border-color:     $table-border-color !default;
 $table-dark-color:            $white !default;
 
-$table-bg-scale:              0 !default;
+$table-bg-scale:              0% !default;
 
 // Buttons
 
@@ -70,12 +72,22 @@ $input-btn-padding-x:         1rem !default;
 
 // Forms
 
-$input-bg:                              $white !default;
-$input-disabled-bg:                     #ccc !default;
-
+$input-bg:                          $white !default;
 $input-color:                       $gray-900 !default;
+$input-border-color:                rgba($black, .6) !default;
+$input-group-addon-color:           $gray-500 !default;
+$input-group-addon-bg:              $gray-700 !default;
+$input-disabled-color:              $gray-600 !default;
+$input-disabled-bg:                 #ccc !default;
 
 $form-check-input-bg:                     $white !default;
+
+$form-select-disabled-bg:           $input-disabled-bg !default;
+$form-select-disabled-color:        $input-disabled-color !default;
+
+$form-file-button-color:          $input-group-addon-color !default;
+$form-file-button-bg:             $input-group-addon-bg !default;
+$form-file-button-hover-bg:       darken($form-file-button-bg, 5%) !default;
 
 // Dropdowns
 
@@ -95,15 +107,15 @@ $nav-tabs-link-hover-border-color:  $nav-tabs-border-color !default;
 $nav-tabs-link-active-color:        $white !default;
 $nav-tabs-link-active-border-color: $nav-tabs-border-color !default;
 
+$nav-underline-link-active-color:   $white !default;
+
 // Navbar
 
 $navbar-padding-y:                  0 !default;
-$navbar-dark-hover-color:           $white !default;
-$navbar-light-hover-color:          $gray-800 !default;
-$navbar-light-active-color:         $gray-800 !default;
-
 
 // Pagination
+$pagination-padding-y:              $input-btn-padding-y !default;
+$pagination-padding-x:              $input-btn-padding-x !default;
 
 $pagination-color:                  $white !default;
 $pagination-bg:                     transparent !default;
@@ -121,6 +133,12 @@ $pagination-disabled-border-color:  rgba($black, .6) !default;
 $card-border-color:                 rgba($black, .6) !default;
 $card-cap-bg:                       lighten($gray-800, 10%) !default;
 $card-bg:                           lighten($body-bg, 5%) !default;
+
+// Accordions
+
+$accordion-bg:                      lighten($body-bg, 5%) !default;
+$accordion-border-color:            $table-border-color !default;
+$accordion-button-active-color:     $white !default;
 
 // Popovers
 
@@ -149,6 +167,7 @@ $progress-bar-color:                $gray-600 !default;
 $list-group-color:                  $white !default;
 $list-group-bg:                     lighten($body-bg, 5%) !default;
 $list-group-border-color:           rgba($black, .6) !default;
+$list-group-item-bg-scale:          0% !default;
 $list-group-hover-bg:               lighten($body-bg, 10%) !default;
 $list-group-active-color:           $white !default;
 $list-group-active-bg:              $list-group-hover-bg !default;

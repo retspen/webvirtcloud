@@ -1,11 +1,25 @@
 {% load i18n %}
-{% load django_bootstrap5 %}
 {% load bootstrap_icons %}
-
-<div class="btn-group float-end mt-1" role="group" aria-label="Add host button group">
-    <a href="{% url 'add_tcp_host' %}" class="btn btn-success">{% trans "TCP" %}</a>
-    <a href="{% url 'add_ssh_host' %}" class="btn btn-success">{% trans "SSH" %}</a>
-    <a href="{% url 'add_tls_host' %}" class="btn btn-success">{% trans "TLS" %}</a>
-    <a href="{% url 'add_socket_host' %}" class="btn btn-success">{% trans "Local" %}</a>
-    <a href="#" class="btn btn-success disabled" title="{% trans "Add new host" %}">{% bs_icon "plus-circle-fill" %}</a>
+<div class="dropdown float-end mt-1 ms-1">
+    <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        {% bs_icon 'plus-lg' %} {% trans "Add host" %}
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end shadow" style="min-width: 18rem;">
+        <li><a class="dropdown-item" href="{% url 'add_tcp_host' %}">
+            <div class="fw-semibold">TCP</div>
+            <div class="small text-body-secondary text-wrap">{% trans "libvirt over TCP, with a SASL login" %}</div>
+        </a></li>
+        <li><a class="dropdown-item" href="{% url 'add_ssh_host' %}">
+            <div class="fw-semibold">SSH</div>
+            <div class="small text-body-secondary text-wrap">{% trans "libvirt over SSH, with the panel's SSH key" %}</div>
+        </a></li>
+        <li><a class="dropdown-item" href="{% url 'add_tls_host' %}">
+            <div class="fw-semibold">TLS</div>
+            <div class="small text-body-secondary text-wrap">{% trans "libvirt over TLS, with certificates" %}</div>
+        </a></li>
+        <li><a class="dropdown-item" href="{% url 'add_socket_host' %}">
+            <div class="fw-semibold">{% trans "Local" %}</div>
+            <div class="small text-body-secondary text-wrap">{% trans "the libvirt of the host the panel runs on, by its socket" %}</div>
+        </a></li>
+    </ul>
 </div>

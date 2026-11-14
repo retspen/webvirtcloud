@@ -1,258 +1,191 @@
 {% load i18n %}
+{% load static %}
 {% load bootstrap_icons %}
+{% load form_fields %}
 {% if request.user.is_superuser %}
-    <a href="#AddStgPool" type="button" class="btn btn-success float-end" data-bs-toggle="modal">
-        <span aria-hidden="true">{% bs_icon 'plus-circle-fill' %} </span>
-    </a>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#AddStgPool">
+        <span aria-hidden="true">{% bs_icon 'plus-lg' %}</span> {% trans "New pool" %}
+    </button>
 
-    <!-- Modal Storage pool -->
-    <div class="modal fade" id="AddStgPool" tabindex="-1" role="dialog" aria-labelledby="AddStgPoolLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
+    {# one form: a card per pool type, the fields of the chosen one (the others hidden and disabled, so not sent) #}
+    <div class="modal fade" id="AddStgPool" tabindex="-1" aria-labelledby="AddStgPoolLabel" aria-hidden="true"
+         {% if form.errors %}data-open{% endif %}>
+        <div class="modal-dialog modal-lg modal-dialog-scrollable modal-fullscreen-sm-down">
+            <form method="post" class="modal-content" id="pool-form"{% if ceph_secrets %} data-ceph-secrets{% endif %}>{% csrf_token %}
+                <input type="hidden" name="stg_type" value="{{ form.stg_type.value|default:"dir" }}">
                 <div class="modal-header">
-                    <h5 class="modal-title">{% trans "Create Storage Pool" %}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <div>
+                        <h5 class="modal-title" id="AddStgPoolLabel">{% trans "New storage pool" %}</h5>
+                        <div class="small text-body-secondary">{% blocktrans with host=compute.name %}On {{ host }}{% endblocktrans %}</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
                 </div>
                 <div class="modal-body">
-                    <ul class="nav nav-tabs" aria-label="Storage create types">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#dirtab" type="button" role="tab" aria-controls="dirtab" aria-selected="true">
-                                {% trans "DIR" %}
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#lvmtab" type="button" role="tab" aria-controls="lvmtab" aria-selected="false">
-                                {% trans "LVM" %}
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#cephtab" type="button" role="tab" aria-controls="cephtab" aria-selected="false">
-                                {% trans "CEPH" %}
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#netfstab" type="button" role="tab" aria-controls="netfstab" aria-selected="false">
-                                {% trans "NETFS" %}
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#isotab" type="button" role="tab" aria-controls="isotab" aria-selected="false">
-                                {% trans "ISO" %}
-                            </button>
-                        </li>
-                    </ul>
-                
-                    <div class="tab-content">
-                        <div class="tab-pane active" id="dirtab">
-                            <div class="modal-body">
-                                <form method="post" action="" role="form" aria-label="Create storage with pool dir path form">{% csrf_token %}
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Type" %}</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="stg_type" value="dir" disabled>
-                                            <input type="hidden" name="stg_type" value="dir">
-                                        </div>
+                    {% include "instances/form_errors.html" %}
+
+                    <fieldset class="mb-3">
+                        <legend class="form-label fs-6">{% trans "Storage type" %}</legend>
+                        <div class="row row-cols-1 row-cols-sm-2 g-2">
+                            {% trans "Directory" as title %}{% trans "Image files in a directory of the host." as help %}
+                            {% include "radio_card.html" with name="pool_kind" value="dir" chosen=pool_kind %}
+                            {% trans "LVM" as title %}{% trans "Logical volumes of a volume group made on a device." as help %}
+                            {% include "radio_card.html" with name="pool_kind" value="logical" chosen=pool_kind %}
+                            {% trans "Ceph RBD" as title %}{% trans "Images of a pool of an existing Ceph cluster." as help %}
+                            {% include "radio_card.html" with name="pool_kind" value="rbd" chosen=pool_kind %}
+                            {% trans "Network filesystem" as title %}{% trans "Image files on a server's share, mounted on the host." as help %}
+                            {% include "radio_card.html" with name="pool_kind" value="netfs" chosen=pool_kind %}
+                            {% if iso_pool %}
+                            {# the upload button is on the page of the pool named iso only #}
+                            <div class="col">
+                                <div class="border rounded p-2 h-100">
+                                    <div class="d-flex flex-wrap align-items-center gap-2">
+                                        <span class="fw-semibold">{% trans "ISO images" %}</span>
+                                        <span class="badge text-bg-light border">{% trans "Already on this host" %}</span>
                                     </div>
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="name" placeholder="{% trans "default" %}" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Path" %}</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" name="target" class="form-control" value="/var/lib/libvirt/images" required pattern="[a-zA-Z0-9\/\-_]+">
-                                        </div>
-                                    </div>
+                                    <div class="small text-body-secondary font-monospace text-break">{{ iso_pool.path }}</div>
+                                    <a class="small" href="{% url 'storage' compute.id 'iso' %}">{% trans "Open the ISO pool" %} →</a>
+                                </div>
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
-                                <button type="submit" class="btn btn-primary" name="create">{% trans "Create" %}</button>
-                            </div>
-                                </form>
+                            {% else %}
+                            {% trans "ISO images" as title %}{% trans "The directory pool named iso, for uploaded ISO images." as help %}
+                            {% include "radio_card.html" with name="pool_kind" value="iso" chosen=pool_kind %}
+                            {% endif %}
                         </div>
-                        <div class="tab-pane" id="lvmtab">
-                            <div class="modal-body">
-                                <form method="post" action="" role="form" aria-label="Create storage pool with LVM pool">{% csrf_token %}
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Type" %}</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="stg_type" value="logical" disabled>
-                                            <input type="hidden" name="stg_type" value="logical">
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="name" placeholder="{% trans "default" %}" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Device" %}</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="source" value="/dev/sdb" required pattern="[a-z0-9\/]+">
-                                        </div>
-                                    </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
-                                <button type="submit" class="btn btn-primary" name="create">{% trans "Create" %}</button>
-                            </div>
-                                </form>
-                        </div>
-                        <div class="tab-pane" id="cephtab">
-                            <div class="modal-body">
-                                <form method="post" action="" role="form" aria-label="Create storage pool with ceph form">{% csrf_token %}
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Type" %}</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="stg_type" value="rbd" disabled>
-                                            <input type="hidden" name="stg_type" value="rbd">
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="name" placeholder="rbdpool" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Ceph User" %}</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="ceph_user" placeholder="libvirt" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Ceph Pool" %}</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="ceph_pool" placeholder="libvirt-pool" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Ceph Host" %}</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="ceph_host" placeholder="mon0.ceph.host" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Secrets" %}</label>
-                                        <div class="col-sm-6">
-                                            <select name="secret" class="form-control">
-                                                {% if secrets %}
-                                                    {% for secret in secrets %}
-                                                        <option value="{{ secret }}">{{ secret }}</option>
-                                                    {% endfor %}
-                                                {% else %}
-                                                    <option value="None">{% trans "None" %}</option>
-                                                {% endif %}
-                                            </select>
-                                        </div>
-                                    </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                    {% trans "Close" %}
-                                </button>
-                                {% if secrets %}
-                                    <button type="submit" class="btn btn-primary" name="create">
-                                        {% trans "Create" %}
-                                    </button>
-                                {% else %}
-                                    <button class="btn btn-primary disabled" name="create">
-                                        {% trans "Create" %}
-                                    </button>
-                                {% endif %}
-                            </div>
-                                </form>
-                        </div>
-                        <div class="tab-pane" id="netfstab">
-                            <div class="modal-body">
-                                <form method="post" action="" role="form" aria-label="Create storage pool with net filesystem form">{% csrf_token %}
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Type" %}</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="stg_type" value="netfs" disabled>
-                                            <input type="hidden" name="stg_type" value="netfs">
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="name" placeholder="netfspool" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Hostname" %}</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="netfs_host" placeholder="nfs.example.com" maxlength="20" required pattern="[a-zA-Z0-9\.\-_]+">
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Remote Path" %}</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="source" placeholder="/srv/storage/" maxlength="40" required pattern="[a-zA-Z0-9\/\-_]+">
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Format" %}</label>
-                                        <div class="col-sm-6">
-                                            <select name="source_format" class="form-control" id="source_format">
-                                                <option value="auto">{% trans "auto" %}</option>
-                                                <option value="nfs">{% trans "nfs" %}</option>
-                                                <option value="glusterfs">{% trans "glusterfs" %}</option>
-                                                <option value="cifs">{% trans "cifs" %}</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Local Path" %}</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="target" placeholder="/srv/storage/" maxlength="40" required pattern="[a-zA-Z0-9\/\-_]+">
-                                        </div>
-                                    </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                    {% trans "Close" %}
-                                </button>
-                                <button type="submit" class="btn btn-primary" name="create">
-                                    {% trans "Create" %}
-                                </button>
-                            </div>
-                                </form>
-                        </div>
-                        <div class="tab-pane" id="isotab">
-                            <div class="modal-body">
-                                <form method="post" action="" role="form" aria-label="Create iso pool form">{% csrf_token %}
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Name" %}</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="name" value="iso" disabled>
-                                            <input type="hidden" name="name" value="iso">
-                                            <input type="hidden" name="stg_type" value="dir">
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <label class="col-sm-3 col-form-label">{% trans "Path" %}</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="target" value="/var/lib/libvirt/iso" required pattern="[a-zA-Z0-9\/\-_]+">
-                                        </div>
-                                    </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                    {% trans "Close" %}
-                                </button>
-                                <button type="submit" class="btn btn-primary" name="create">
-                                    {% trans "Create" %}
-                                </button>
-                            </div>
-                                </form>
-                        </div>
+                    </fieldset>
+
+                    <div class="mb-3">
+                        <label for="pool_name" class="form-label">{% trans "Pool name" %}</label>
+                        <input id="pool_name" type="text" class="form-control{{ form.name|invalid }}" name="name" value="{{ form.name.value|default:"" }}"
+                               placeholder="vm-images" maxlength="20" required pattern="[a-zA-Z0-9._\-]+" {% error_attrs form.name "pool_name" "pool_name_help" %}>
+                        <div class="form-text" id="pool_name_help">{% trans "Letters, digits, dots, dashes and underscores; up to 20." %}</div>
+                        {% field_error form.name "pool_name" %}
                     </div>
-                </div> <!-- /.modal-body -->
-            </div> <!-- /.modal-content -->
-        </div> <!-- /.modal-dialog -->
-    </div> <!-- /.modal -->
+
+                    <fieldset data-kinds="dir">
+                        <legend class="visually-hidden">{% trans "Directory" %}</legend>
+                        <div class="mb-3">
+                            <label for="pool_dir_target" class="form-label">{% trans "Directory" %}</label>
+                            <input id="pool_dir_target" type="text" class="form-control font-monospace{% if pool_kind == "dir" %}{{ form.target|invalid }}{% endif %}" name="target" value="{% if pool_kind == "dir" %}{{ form.target.value|default:"" }}{% endif %}"
+                                   data-follow-name="/var/lib/libvirt/" placeholder="/var/lib/libvirt/vm-images" maxlength="100" required {% if pool_kind == "dir" %}{% error_attrs form.target "pool_dir_target" "pool_dir_target_help" %}{% else %}aria-describedby="pool_dir_target_help"{% endif %}>
+                            <div class="form-text" id="pool_dir_target_help">{% trans "Made on the host if it does not exist." %}</div>
+                            {% if pool_kind == "dir" %}{% field_error form.target "pool_dir_target" %}{% endif %}
+                        </div>
+                    </fieldset>
+
+                    <fieldset data-kinds="logical">
+                        <legend class="visually-hidden">{% trans "LVM" %}</legend>
+                        <div class="mb-3">
+                            <label for="pool_lvm_source" class="form-label">{% trans "Device" %}</label>
+                            <input id="pool_lvm_source" type="text" class="form-control font-monospace{% if pool_kind == "logical" %}{{ form.source|invalid }}{% endif %}" name="source" value="{% if pool_kind == "logical" %}{{ form.source.value|default:"" }}{% endif %}"
+                                   placeholder="/dev/sdb" maxlength="100" required {% if pool_kind == "logical" %}{% error_attrs form.source "pool_lvm_source" "pool_lvm_source_help" %}{% else %}aria-describedby="pool_lvm_source_help"{% endif %}>
+                            <div class="form-text" id="pool_lvm_source_help">{% trans "The volume group takes the pool's name." %}</div>
+                            {% if pool_kind == "logical" %}{% field_error form.source "pool_lvm_source" %}{% endif %}
+                        </div>
+                        <div class="alert alert-danger">
+                            <div class="form-check mb-0">
+                                <input class="form-check-input{{ form.erase_device|invalid }}" type="checkbox" name="erase_device" value="true" id="pool_lvm_erase" required {% error_attrs form.erase_device "pool_lvm_erase" %}>
+                                <label class="form-check-label" for="pool_lvm_erase">{% trans "The device becomes a new volume group: what is on it now is erased." %}</label>
+                                {% field_error form.erase_device "pool_lvm_erase" %}
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset data-kinds="rbd">
+                        <legend class="visually-hidden">{% trans "Ceph RBD" %}</legend>
+                        {% if ceph_secrets %}
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label for="pool_ceph_host" class="form-label">{% trans "Ceph monitor" %}</label>
+                                <input id="pool_ceph_host" type="text" class="form-control{{ form.ceph_host|invalid }}" name="ceph_host" value="{{ form.ceph_host.value|default:"" }}"
+                                       placeholder="mon0.example.com" maxlength="253" required pattern="[a-zA-Z0-9._\-]+" {% error_attrs form.ceph_host "pool_ceph_host" %}>
+                                {% field_error form.ceph_host "pool_ceph_host" %}
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="pool_ceph_pool" class="form-label">{% trans "Ceph pool" %}</label>
+                                <input id="pool_ceph_pool" type="text" class="form-control{{ form.ceph_pool|invalid }}" name="ceph_pool" value="{{ form.ceph_pool.value|default:"" }}"
+                                       placeholder="libvirt-pool" required pattern="[a-zA-Z0-9._\-]+" {% error_attrs form.ceph_pool "pool_ceph_pool" %}>
+                                {% field_error form.ceph_pool "pool_ceph_pool" %}
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="pool_ceph_user" class="form-label">{% trans "Ceph user" %}</label>
+                                <input id="pool_ceph_user" type="text" class="form-control{{ form.ceph_user|invalid }}" name="ceph_user" value="{{ form.ceph_user.value|default:"" }}"
+                                       placeholder="libvirt" required pattern="[a-zA-Z0-9._\-]+" {% error_attrs form.ceph_user "pool_ceph_user" %}>
+                                {% field_error form.ceph_user "pool_ceph_user" %}
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="pool_ceph_secret" class="form-label">{% trans "Ceph secret" %}</label>
+                                <select id="pool_ceph_secret" name="secret" class="form-select{{ form.secret|invalid }}" required {% error_attrs form.secret "pool_ceph_secret" "pool_ceph_secret_help" %}>
+                                    <option value="">{% trans "Choose…" %}</option>
+                                    {% for secret in ceph_secrets %}
+                                    <option value="{{ secret.uuid }}"{% if secret.uuid == form.secret.value %} selected{% endif %}>{{ secret.usage }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text" id="pool_ceph_secret_help">{% trans "The libvirt secret holding that user's key." %}</div>
+                                {% field_error form.secret "pool_ceph_secret" %}
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            {% url 'virtsecrets' compute.id as secrets_url %}
+                            {% blocktrans %}A Ceph pool needs a libvirt secret of the Ceph type holding the Ceph user's key, and this host has none. <a href="{{ secrets_url }}">Add one on the Secrets page</a>, then come back.{% endblocktrans %}
+                        </div>
+                        {% endif %}
+                    </fieldset>
+
+                    <fieldset data-kinds="netfs">
+                        <legend class="visually-hidden">{% trans "Network filesystem" %}</legend>
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label for="pool_netfs_host" class="form-label">{% trans "Server" %}</label>
+                                <input id="pool_netfs_host" type="text" class="form-control{{ form.netfs_host|invalid }}" name="netfs_host" value="{{ form.netfs_host.value|default:"" }}"
+                                       placeholder="nfs.example.com" maxlength="253" required pattern="[a-zA-Z0-9._\-]+" {% error_attrs form.netfs_host "pool_netfs_host" %}>
+                                {% field_error form.netfs_host "pool_netfs_host" %}
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="pool_netfs_format" class="form-label">{% trans "Protocol" %}</label>
+                                <select id="pool_netfs_format" name="source_format" class="form-select">
+                                    {% for value, label in form.fields.source_format.choices %}
+                                    <option value="{{ value }}"{% if value == form.source_format.value %} selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="pool_netfs_source" class="form-label">{% trans "Share on the server" %}</label>
+                                <input id="pool_netfs_source" type="text" class="form-control font-monospace{% if pool_kind == "netfs" %}{{ form.source|invalid }}{% endif %}" name="source" value="{% if pool_kind == "netfs" %}{{ form.source.value|default:"" }}{% endif %}"
+                                       placeholder="/srv/storage" maxlength="100" required {% if pool_kind == "netfs" %}{% error_attrs form.source "pool_netfs_source" %}{% endif %}>
+                                {% if pool_kind == "netfs" %}{% field_error form.source "pool_netfs_source" %}{% endif %}
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="pool_netfs_target" class="form-label">{% trans "Mounted on" %}</label>
+                                <input id="pool_netfs_target" type="text" class="form-control font-monospace{% if pool_kind == "netfs" %}{{ form.target|invalid }}{% endif %}" name="target" value="{% if pool_kind == "netfs" %}{{ form.target.value|default:"" }}{% endif %}"
+                                       data-follow-name="/var/lib/libvirt/" placeholder="/var/lib/libvirt/nfs-share" maxlength="100" required {% if pool_kind == "netfs" %}{% error_attrs form.target "pool_netfs_target" "pool_netfs_target_help" %}{% else %}aria-describedby="pool_netfs_target_help"{% endif %}>
+                                <div class="form-text" id="pool_netfs_target_help">{% trans "A directory of the host; made if it does not exist." %}</div>
+                                {% if pool_kind == "netfs" %}{% field_error form.target "pool_netfs_target" %}{% endif %}
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    {% if not iso_pool %}
+                    <fieldset data-kinds="iso">
+                        <legend class="visually-hidden">{% trans "ISO images" %}</legend>
+                        <div class="mb-3">
+                            <label for="pool_iso_target" class="form-label">{% trans "Directory" %}</label>
+                            <input id="pool_iso_target" type="text" class="form-control font-monospace{% if pool_kind == "iso" %}{{ form.target|invalid }}{% endif %}" name="target"
+                                   value="{% if pool_kind == "iso" and form.target.value %}{{ form.target.value }}{% else %}/var/lib/libvirt/iso{% endif %}" maxlength="100" required {% if pool_kind == "iso" %}{% error_attrs form.target "pool_iso_target" %}{% endif %}>
+                            {% if pool_kind == "iso" %}{% field_error form.target "pool_iso_target" %}{% endif %}
+                        </div>
+                    </fieldset>
+                    {% endif %}
+
+                    <p class="small text-body-secondary mb-0">{% bs_icon 'info-circle' %} {% trans "The pool starts at once, and with the host from then on." %}</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                    <button type="submit" class="btn btn-primary" name="create">{% trans "Create pool" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="{% static 'js/choice_dialog.js' %}"></script>
+    <script src="{% static 'js/pool_dialog.js' %}"></script>
 {% endif %}

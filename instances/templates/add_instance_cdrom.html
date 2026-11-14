@@ -1,0 +1,43 @@
+{% load i18n %}
+{% load bootstrap_icons %}
+<button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#addInstanceCdrom"{% if not cdrom_buses %} disabled{% endif %}>{% bs_icon 'plus' %} {% trans "Add CD-ROM" %}</button>
+
+<div class="modal fade" id="addInstanceCdrom" tabindex="-1" role="dialog" aria-labelledby="addInstanceCdromLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form class="modal-content" action="{% url 'instances:add_cdrom' instance.id %}" method="post" aria-label="{% trans "Add CD-ROM form" %}">{% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title" id="addInstanceCdromLabel">{% trans "Add CD-ROM" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-sm-4">
+                        <label class="form-label" for="add-cdrom-bus">{% trans "Bus" %}</label>
+                        <select class="form-select" id="add-cdrom-bus" name="bus" aria-describedby="add-cdrom-help">
+                            {% for bus in cdrom_buses %}
+                            <option value="{{ bus }}">{{ bus }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-sm-8">
+                        <label class="form-label" for="add-cdrom-media">{% trans "ISO image" %}</label>
+                        <select class="form-select" id="add-cdrom-media" name="media">
+                            {% for iso in instance.media_iso %}
+                            <option value="{{ iso }}">{{ iso }}</option>
+                            {% endfor %}
+                            <option value="">{% trans "No media" %}</option>
+                        </select>
+                    </div>
+                    <div class="col-12 form-text mt-2" id="add-cdrom-help">
+                        {% trans "Windows sees USB, SATA and IDE drives without a driver; SCSI ones need the virtio driver." %}
+                        {% trans "A running VM takes USB and SCSI drives. A USB drive needs an ISO image, is detached instead of ejected, and needs a QEMU with usb-bot (not RHEL 9's)." %}
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                <button type="submit" class="btn btn-primary">{% trans "Add" %}</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,105 +1,61 @@
-import contextlib
+import io
+import json
 import string
 
+import pycdlib
 from vrtManager import util
 from vrtManager.connection import wvmConnect
+from vrtManager.storage import FILE_POOL_TYPES, rbd_source_children, wvmStorage
+
+# libvirt's CPU modes a new VM can have; any other value is a CPU model's name (mode custom)
+CPU_MODES = ("host-model", "host-passthrough", "maximum")
+# the PCIe root ports of a new q35 VM, its devices' and the spare ones together
+PCIE_ROOT_PORTS = 14
 
 
-def get_rbd_storage_data(stg):
-    xml = stg.XMLDesc(0)
-    ceph_user = util.get_xml_path(xml, "/pool/source/auth/@username")
+def cpu_choices(dom_caps):
+    """The CPU modes and named models a new VM can have on a host, from its
+    domain capabilities (get_dom_capabilities)."""
+    return [mode for mode in dom_caps["cpu_modes"] if mode in CPU_MODES] + dom_caps.get("cpu_custom_models", [])
 
-    def get_ceph_hosts(doc):
-        hosts = list()
-        for host in doc.xpath("/pool/source/host"):
-            name = host.get('name')
-            if name:
-                port = host.get('port')
-                if port:
-                    hosts.append({"name": name, "port": port})
-                else:
-                    hosts.append({"name": name})
-        return hosts
 
-    ceph_hosts = util.get_xml_path(xml, func=get_ceph_hosts)
-    secret_uuid = util.get_xml_path(xml, "/pool/source/auth/secret/@uuid")
-    return ceph_user, secret_uuid, ceph_hosts
+def nocloud_seed(instance_id, hostname, user_data):
+    """A cloud-init NoCloud seed: an ISO labelled cidata with the VM's
+    meta-data and user-data, read at first boot without the network.
+    cloud-init runs again only for a new instance-id."""
+    iso = pycdlib.PyCdlib()
+    iso.new(interchange_level=3, joliet=3, rock_ridge="1.09", vol_ident="cidata")
+    # JSON is YAML whose values stay strings: a VM named 123 or yes keeps its name
+    meta_data = json.dumps({"instance-id": instance_id, "local-hostname": hostname})
+    files = {"meta-data": meta_data, "user-data": user_data}
+    for name, text in files.items():
+        data = text.encode()
+        iso_name = name.replace("-", "").upper()
+        iso.add_fp(io.BytesIO(data), len(data), f"/{iso_name}.;1", rr_name=name, joliet_path=f"/{name}")
+    out = io.BytesIO()
+    iso.write_fp(out)
+    iso.close()
+    return out.getvalue()
 
 
 class wvmCreate(wvmConnect):
-    def get_storages_images(self):
-        """
-        Function return all images on all storages
-        """
-        images = []
-        storages = self.get_storages(only_actives=True)
-        for storage in storages:
-            stg = self.get_storage(storage)
-            with contextlib.suppress(Exception):
-                stg.refresh(0)
-            images.extend(img for img in stg.listVolumes() if not img.lower().endswith(".iso"))
-        return images
-
-    def get_os_type(self):
-        """Get guest os type"""
-        return util.get_xml_path(self.get_cap_xml(), "/capabilities/guest/os_type")
-
-    def get_host_arch(self):
-        """Get host architecture"""
-        return util.get_xml_path(self.get_cap_xml(), "/capabilities/host/cpu/arch")
-
     def create_volume(self, storage, name, size, image_format, metadata=False, disk_owner_uid=0, disk_owner_gid=0):
-        size = int(size) * 1073741824
-        stg = self.get_storage(storage)
-        storage_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
-        if storage_type == "dir":
-            name += f".{image_format}" if image_format in ("qcow", "qcow2") else ".img"
-            alloc = 0
-        else:
-            image_format = 'raw'
-            alloc = size
-            metadata = False
-        xml = f"""
-            <volume>
-                <name>{name}</name>
-                <capacity>{size}</capacity>
-                <allocation>{alloc}</allocation>
-                <target>
-                    <format type='{image_format}'/>
-                     <permissions>
-                        <owner>{disk_owner_uid}</owner>
-                        <group>{disk_owner_gid}</group>
-                        <mode>0644</mode>
-                        <label>virt_image_t</label>
-                    </permissions>
-                    <compat>1.1</compat>
-                    <features>
-                        <lazy_refcounts/>
-                    </features>
-                </target>
-            </volume>"""
-        stg.createXML(xml, metadata)
-
-        with contextlib.suppress(Exception):
-            stg.refresh(0)
-        vol = stg.storageVolLookupByName(name)
-        return vol.path()
+        """A new volume of size GiB in the pool storage, as the Storage page makes one; its path."""
+        stg = wvmStorage(self.host, self.login, self.passwd, self.conn, storage)
+        name = stg.create_volume(name, size, image_format, metadata, disk_owner_uid, disk_owner_gid)
+        return stg.get_volume(name).path()
 
     def get_volume_format_type(self, path):
         vol = self.get_volume_by_path(path)
-        vol_type = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
-        return "raw" if vol_type in ["unknown", "iso"] else vol_type or "raw"
+        return util.vol_driver_type(util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type"))
 
-    def get_volume_path(self, volume, pool=None):
-        storages = [pool] if pool else self.get_storages(only_actives=True)
-        for storage in storages:
-            stg = self.get_storage(storage)
-            if stg.info()[0] != 0:
-                stg.refresh(0)
-                for img in stg.listVolumes():
-                    if img == volume:
-                        vol = stg.storageVolLookupByName(img)
-                        return vol.path()
+    def get_volume_path(self, volume, pool):
+        """The path of that volume of the pool; None if an active pool has no such volume."""
+        stg = self.get_storage(pool)
+        if stg.info()[0] != 0:
+            stg.refresh(0)
+            if volume in stg.listVolumes():
+                return stg.storageVolLookupByName(volume).path()
 
     def get_storage_by_vol_path(self, vol_path):
         vol = self.get_volume_by_path(vol_path)
@@ -111,10 +67,11 @@ class wvmCreate(wvmConnect):
 
         storage_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
         format = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
-        if storage_type == "dir":
+        if storage_type in FILE_POOL_TYPES:
             clone += ".img"
         else:
             metadata = False
+        options = "<compat>1.1</compat><features><lazy_refcounts/></features>" if format == "qcow2" else ""
         xml = f"""
             <volume>
                 <name>{clone}</name>
@@ -128,10 +85,7 @@ class wvmCreate(wvmConnect):
                         <mode>0644</mode>
                         <label>virt_image_t</label>
                     </permissions>
-                    <compat>1.1</compat>
-                    <features>
-                        <lazy_refcounts/>
-                    </features>
+                    {options}
                 </target>
             </volume>"""
         stg.createXMLFrom(xml, vol, metadata)
@@ -144,6 +98,11 @@ class wvmCreate(wvmConnect):
     def delete_volume(self, path):
         vol = self.get_volume_by_path(path)
         vol.delete()
+
+    def create_seed(self, pool, uuid, hostname, user_data):
+        """The VM's NoCloud seed as a volume cidata-<uuid>.iso in the pool; its path."""
+        seed = nocloud_seed(uuid, hostname, user_data)
+        return self.upload_volume(self.get_storage(pool), f"cidata-{uuid}.iso", seed).path()
 
     def create_instance(
         self,
@@ -158,7 +117,6 @@ class wvmCreate(wvmConnect):
         volumes,
         networks,
         nwfilter,
-        graphics,
         virtio,
         listener_addr,
         net_model="virtio",
@@ -167,10 +125,12 @@ class wvmCreate(wvmConnect):
         mac=None,
         qemu_ga=True,
         add_cdrom="sata",
-        add_input="default"
+        add_input="default",
+        tpm_model=None,
     ):
         """
-        Create VM function
+        Create VM function. firmware: BIOS, UEFI or UEFI Secure Boot, of
+        get_firmwares; tpm_model: an emulated TPM 2.0 of get_tpm_model, or none.
         """
         caps = self.get_capabilities(arch)
         dom_caps = self.get_dom_capabilities(arch, machine)
@@ -185,44 +145,38 @@ class wvmCreate(wvmConnect):
                   <memory unit='KiB'>{memory}</memory>
                   <vcpu>{vcpu}</vcpu>"""
 
+        secure_boot = firmware == "UEFI Secure Boot"
         if dom_caps["os_support"] == "yes":
-            xml += f"""<os>
+            # UEFI: libvirt picks the firmware and its variables, for Secure
+            # Boot one with Microsoft's keys enrolled
+            efi = " firmware='efi'" if firmware in ("UEFI", "UEFI Secure Boot") else ""
+            xml += f"""<os{efi}>
                           <type arch='{arch}' machine='{machine}'>{caps["os_type"]}</type>"""
+            if secure_boot:
+                xml += """<firmware>
+                            <feature enabled='yes' name='secure-boot'/>
+                            <feature enabled='yes' name='enrolled-keys'/>
+                          </firmware>"""
+            elif efi:
+                xml += """<firmware><feature enabled='no' name='secure-boot'/></firmware>"""
             xml += """    <boot dev='hd'/>
                           <boot dev='cdrom'/>
                           <bootmenu enable='yes'/>"""
-            if firmware:
-                if firmware["secure"] == "yes":
-                    xml += """<loader readonly='%s' type='%s' secure='%s'>%s</loader>""" % (
-                        firmware["readonly"],
-                        firmware["type"],
-                        firmware["secure"],
-                        firmware["loader"],
-                    )
-                if firmware["secure"] == "no":
-                    xml += """<loader readonly='%s' type='%s'>%s</loader>""" % (
-                        firmware["readonly"],
-                        firmware["type"],
-                        firmware["loader"],
-                    )
             xml += """</os>"""
 
         if caps["features"]:
             xml += """<features>"""
             for feat in [x for x in ("acpi", "apic", "pae",) if x in caps["features"]]:
                 xml += f"""<{feat}/>"""
-            if firmware.get("secure", "no") == "yes":
+            if secure_boot:
                 xml += """<smm state="on"/>"""
             xml += """</features>"""
 
-        if vcpu_mode == "host-model":
-            xml += """<cpu mode='host-model'/>"""
-        elif vcpu_mode == "host-passthrough":
-            xml += """<cpu mode='host-passthrough'/>"""
-        elif vcpu_mode != "":
-            xml += f"""<cpu mode='custom' match='exact' check='none'>
-                        <model fallback='allow'>{vcpu_mode}</model>"""
-            xml += """</cpu>"""
+        # a named model is that model or none: libvirt checks before the start that the host runs it
+        if vcpu_mode in CPU_MODES:
+            xml += f"""<cpu mode='{vcpu_mode}'/>"""
+        else:
+            xml += f"""<cpu mode='custom' match='exact'><model fallback='forbid'>{vcpu_mode}</model></cpu>"""
 
         xml += """
                   <clock offset="utc"/>
@@ -267,25 +221,13 @@ class wvmCreate(wvmConnect):
                 add_cdrom = "None"
 
             if stg_type == "rbd":
-                ceph_user, secret_uuid, ceph_hosts = get_rbd_storage_data(stg)
                 xml += f"""<disk type='network' device='disk'>
-                            <driver name='qemu' type='{volume["type"]}' {disk_opts} />"""
-                xml += f"""  <auth username='{ceph_user}'>
-                                <secret type='ceph' uuid='{secret_uuid}'/>
-                            </auth>
-                            <source protocol='rbd' name='{volume["path"]}'>"""
-                if isinstance(ceph_hosts, list):
-                    for host in ceph_hosts:
-                        if host.get("port"):
-                            xml += f"""
-                                   <host name='{host.get("name")}' port='{host.get("port")}'/>"""
-                        else:
-                            xml += f"""<host name='{host.get("name")}'/>"""
-                xml += """</source>"""
+                            <driver name='qemu' type='{volume["type"]}' {disk_opts} />
+                            <source protocol='rbd' name='{util.xml_escape(volume["path"])}'>{rbd_source_children(stg)}</source>"""
             else:
                 xml += f"""<disk type='file' device='{volume["device"]}'>"""
                 xml += f""" <driver name='qemu' type='{volume["type"]}' {disk_opts}/>"""
-                xml += f""" <source file='{volume["path"]}'/>"""
+                xml += f""" <source file='{util.xml_escape(volume["path"])}'/>"""
 
             if volume.get("bus") in dom_caps["disk_bus"]:
                 dev_prefix = util.vol_dev_type(volume.get("bus"))
@@ -307,26 +249,27 @@ class wvmCreate(wvmConnect):
                 xml += """<target dev='%s%s' bus='%s'/>""" % (dev_prefix, get_letter(add_cdrom), add_cdrom)
             xml += """</disk>"""
 
-        if mac:
-            macs = mac.split(',')
+        # NICs without a given MAC get one from libvirt
+        macs = mac.split(",") if mac else []
         for idx, net in enumerate(networks.split(",")):
             xml += """<interface type='network'>"""
-            if mac:
-                xml += f"""<mac address='{macs[idx]}'/>"""
-            xml += f"""<source network='{net}'/>"""
+            if idx < len(macs):
+                xml += f"""<mac address='{macs[idx].strip()}'/>"""
+            xml += f"""<source network='{util.xml_escape(net)}'/>"""
             if nwfilter:
-                xml += f"""<filterref filter='{nwfilter}'/>"""
+                xml += f"""<filterref filter='{util.xml_escape(nwfilter)}'/>"""
             if virtio:
                 xml += f"""<model type='{net_model}'/>"""
             xml += """</interface>"""
 
         if console_pass == "random":
-            console_pass = "passwd='" + util.randomPasswd() + "'"
+            console_pass = "passwd='" + util.randomPasswd(8) + "'"  # the length VNC allows
         elif console_pass != "":
             console_pass = "passwd='" + console_pass + "'"
 
+        # No bare USB controller: libvirt adds the machine's default
+        # (qemu-xhci on q35) for USB inputs; a bare one is piix3-uhci.
         if add_input != "None":
-            xml += """<controller type='usb'/>"""
             if add_input in dom_caps["disk_bus"]:
                 xml += f"""<input type='mouse' bus='{add_input}'/>"""
                 xml += f"""<input type='keyboard' bus='{add_input}'/>"""
@@ -337,7 +280,7 @@ class wvmCreate(wvmConnect):
                 xml += """<input type='tablet'/>"""
 
         xml += f"""
-                <graphics type='{graphics}' port='-1' autoport='yes' {console_pass} listen='{listener_addr}'/>
+                <graphics type='vnc' port='-1' autoport='yes' {console_pass} listen='{listener_addr}'/>
                 <console type='pty'/> """
 
         if qemu_ga and virtio:
@@ -347,7 +290,16 @@ class wvmCreate(wvmConnect):
 
         xml += f""" <video>
                       <model type='{video}'/>
-                   </video>
+                   </video>"""
+        if tpm_model:
+            xml += f"""<tpm model='{tpm_model}'><backend type='emulator' version='2.0'/></tpm>"""
+        # q35 plugs each PCIe device (a virtio disk, a NIC) into a root port of
+        # its own and libvirt makes only as many as the VM is defined with: as
+        # virt-install, 14 ports, so a running VM can take more devices
+        if "q35" in machine:
+            xml += "<controller type='pci' model='pcie-root'/>"
+            xml += "<controller type='pci' model='pcie-root-port'/>" * PCIE_ROOT_PORTS
+        xml += """
               </devices>
             </domain>"""
         return self._defineXML(xml)

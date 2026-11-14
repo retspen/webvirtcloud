@@ -1,81 +1,74 @@
-FROM phusion/baseimage:noble-1.0.2
+# The panel in one container: supervisord runs nginx, gunicorn, the job
+# worker, the two console daemons and cron (conf/docker).
+FROM ubuntu:26.04 AS base
+
+RUN apt-get update -qq \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -qqy --no-install-recommends \
+        ca-certificates \
+        cron \
+        libldap2 \
+        libsasl2-modules \
+        libvirt0 \
+        nginx \
+        openssh-client \
+        python3 \
+        supervisor \
+        tzdata \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /srv/webvirtcloud
+
+# Compilers and headers for libvirt-python and python-ldap stay in this stage.
+FROM base AS build
+
+RUN apt-get update -qq \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -qqy --no-install-recommends \
+        gcc \
+        libldap2-dev \
+        libsasl2-dev \
+        libssl-dev \
+        libvirt-dev \
+        pkg-config \
+        python3-dev \
+        python3-venv \
+        zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY conf/requirements.txt conf/requirements-ldap.txt conf/
+# pip's cache stays on the build host for the next build; pip itself is not
+# shipped: a dependency change is a new image
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python3 -m venv venv \
+    && venv/bin/pip install -r conf/requirements.txt -r conf/requirements-ldap.txt \
+    && venv/bin/pip uninstall -y pip
+
+FROM base
+
+# 4 gunicorn workers of 4 threads (about 140 MB each); docker-compose.override.yml can set another number
+ENV GUNICORN_CMD_ARGS="--workers 4"
+
+COPY --from=build /srv/webvirtcloud/venv venv
+COPY . .
+
+# The code stays root's: the panel writes only to its data and backup
+# directories (made its own at start). A settings file and a key exist only
+# for collectstatic.
+RUN cp webvirtcloud/settings.py.template webvirtcloud/settings.py \
+    && SECRET_KEY=build-only WEBVIRTCLOUD_LOG_FILE=/tmp/build.log venv/bin/python3 manage.py collectstatic --noinput \
+    && rm -f webvirtcloud/settings.py /tmp/build.log  # the log handler makes the file at its first line only
+
+COPY conf/docker/nginx.conf /etc/nginx/nginx.conf
+COPY conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
+COPY conf/docker/supervisord.conf /etc/supervisor/supervisord.conf
+COPY --chmod=644 conf/docker/backup.cron /etc/cron.d/webvirtcloud-backup
+COPY --chmod=755 conf/docker/start conf/docker/healthcheck /usr/local/bin/
 
 EXPOSE 80
-EXPOSE 6080
+# the database, secret key and logs; SSH keys and TLS certificates for the
+# computes; the daily backups
+VOLUME ["/srv/webvirtcloud/data", "/var/www/.ssh", "/var/www/.pki", "/srv/webvirtcloud/backups"]
 
-# Use baseimage-docker's init system.
-CMD ["/sbin/my_init"]
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 CMD ["healthcheck"]
 
-RUN echo 'APT::Get::Clean=always;' >> /etc/apt/apt.conf.d/99AutomaticClean
-
-# hadolint ignore=DL3008
-RUN apt-get update -qqy \
-    && DEBIAN_FRONTEND=noninteractive apt-get -qyy install \
-	--no-install-recommends \
-	git \
-	python3-venv \
-	python3-pip \
-	python3-dev \
-	python3-lxml \
-	python3-libvirt \
-	libvirt-dev \
-	zlib1g-dev \
-	nginx \
-	pkg-config \
-	gcc \
-	libldap2-dev \
-	libssl-dev \
-	libsasl2-dev \
-	libsasl2-modules \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-# Setup webvirtcloud
-WORKDIR /srv/webvirtcloud
-
-# Install Python dependencies first with system-site-packages to leverage prebuilt bindings
-COPY conf/requirements.txt conf/requirements.txt
-# hadolint ignore=DL3013,DL3042,SC1091
-RUN python3 -m venv --system-site-packages venv && \
-	. venv/bin/activate && \
-	pip3 install --no-cache-dir -U pip wheel && \
-	pip3 install --no-cache-dir -r conf/requirements.txt
-
-# Copy application source
-COPY . /srv/webvirtcloud
-
-# Run collectstatic with temporary dummy key, then remove temporary settings file
-# hadolint ignore=SC1091
-RUN . venv/bin/activate && \
-	cp webvirtcloud/settings.py.template webvirtcloud/settings.py && \
-	SECRET_KEY="build-dummy-key-only-for-collectstatic" python3 manage.py collectstatic --noinput && \
-	rm -f webvirtcloud/settings.py && \
-	chown -R www-data:www-data /srv/webvirtcloud
-
-# Setup Nginx
-RUN printf "\n%s" "daemon off;" >> /etc/nginx/nginx.conf && \
-	rm -f /etc/nginx/sites-enabled/default && \
-	chown -R www-data:www-data /var/lib/nginx
-
-COPY conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
-
-# Register startup init script and services to runit
-RUN mkdir -p /etc/my_init.d \
-	/etc/service/nginx \
-	/etc/service/nginx-log-forwarder \
-	/etc/service/webvirtcloud \
-	/etc/service/novnc
-COPY conf/runit/10_webvirtcloud_init.sh	/etc/my_init.d/10_webvirtcloud_init.sh
-COPY conf/runit/nginx				/etc/service/nginx/run
-COPY conf/runit/nginx-log-forwarder	/etc/service/nginx-log-forwarder/run
-COPY conf/runit/novncd.sh			/etc/service/novnc/run
-COPY conf/runit/webvirtcloud.sh		/etc/service/webvirtcloud/run
-RUN chmod +x /etc/my_init.d/10_webvirtcloud_init.sh \
-	/etc/service/nginx/run \
-	/etc/service/nginx-log-forwarder/run \
-	/etc/service/novnc/run \
-	/etc/service/webvirtcloud/run
-
-# Declare mountable data directory for persistent SQLite and SSH keys
-VOLUME ["/srv/webvirtcloud/data", "/var/www/.ssh"]
-
-WORKDIR /srv/webvirtcloud
+ENTRYPOINT ["start"]
+CMD ["supervisord", "-c", "/etc/supervisor/supervisord.conf"]

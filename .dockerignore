@@ -1,59 +1,52 @@
-# Git
-**/.git
-**/.gitignore
+# What the image does not need. Runtime data and secrets of a used checkout
+# must never enter it (CI plants sentinels to check).
 
-# Python bytecode & cache
-**/__pycache__
-**/*.py[cod]
-**/*$py.class
-**/.pytest_cache
-**/.coverage
-**/htmlcov
+# runtime data, secrets and local settings
+data
+backups
+**/*.sqlite3*
+**/*.log
+**/*.log.*
+**/*.bak
+**/*~
+**/*.swp
+**/*.swo
+**/console/cert.pem*
+**/dhcpd.*
+webvirtcloud/settings.py
+# the copy the README has Docker users keep next to the compose file
+settings.py
+**/staticfiles
 
-# Virtual environments & environment files
+# virtualenvs, caches and editor files
 **/venv*
 **/.venv*
 **/env*
 **/.env*
-
-# Local databases and runtime data
-**/*.sqlite3*
-**/*.log
-**/console/cert.pem*
-**/dhcpd.*
-webvirtcloud/settings.py
-
-# IDEs and OS
+**/__pycache__
+**/*.py[cod]
+**/.ruff_cache
+**/.pytest_cache
+**/.coverage*
+**/htmlcov
 **/.idea
 **/.vscode
-**/.vs
 **/.DS_Store
-**/.classpath
-**/.project
-**/.settings
-**/.toolstarget
-**/*.*proj.user
-**/*.dbmdl
-**/*.jfm
 **/.vagrant
 
-# Docker and CI
-**/.dockerignore
-**/Dockerfile*
-**/docker-compose*
-**/azds.yaml
-**/charts
-**/secrets.dev.yaml
-**/values.dev.yaml
-
-# Node / frontend build leftovers
-**/node_modules
-**/npm-debug.log
-**/obj
-**/bin
-
-# Documentation / metadata
-README.md
-AGENTS.md
-CODEBASE_OVERVIEW.md
-DEPENDENCY_UPGRADE_PLAN.md
+# repository, CI, docs and the other ways to install
+.git
+.gitignore
+.github
+.hadolint.yaml
+.dockerignore
+Dockerfile
+docker-compose*.yml
+_config.yml
+pyproject.toml
+*.md
+doc
+dev
+Vagrantfile
+install.sh
+webvirtcloud.sh

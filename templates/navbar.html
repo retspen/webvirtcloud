@@ -20,16 +20,21 @@
         {% endif %}
       </ul>
       <ul class="navbar-nav ms-auto">
+        <li class="nav-item {% class_active request '^/jobs' %}">
+          <a class="nav-link" href="{% url 'operations:jobs' %}" aria-label="{% trans 'Jobs' %}">{% bs_icon 'list-task' %}</a>
+        </li>
         {% if request.user.is_superuser %}
         <li class="nav-item dropdown {% app_active request 'admin' %}">
-          <a class="nav-link" id="administration" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <a class="nav-link" id="administration" href="#" title="{% trans "Administration" %}" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             {% bs_icon 'wrench-adjustable' %}
           </a>
           <div class="dropdown-menu" aria-labelledby="administration">
             <a class="dropdown-item {% view_active request 'admin:user_list' %}" href="{% url 'admin:user_list' %}">{% bs_icon 'person-plus' %} {% trans "Users" %}</a>
             <a class="dropdown-item {% view_active request 'admin:group_list' %}" href="{% url 'admin:group_list' %}">{% bs_icon 'people-fill' %} {% trans "Groups" %}</a>
             <a class="dropdown-item {% view_active request 'admin:logs' %}" href="{% url 'admin:logs' %}">{% bs_icon 'card-list' %} {% trans "Logs" %}</a>
-            <a class="dropdown-item {% view_active request 'appsettings' %}" href="{% url 'appsettings' %}">{% bs_icon 'gear-wide-connected' %} {% trans "Settings" %}</i></a>
+            <a class="dropdown-item {% view_active request 'admin:tombstone_list' %}" href="{% url 'admin:tombstone_list' %}">{% bs_icon 'trash' %} {% trans "Removed VMs" %}</a>
+            <a class="dropdown-item" href="{% url 'instances:vm_report' %}">{% bs_icon 'download' %} {% trans "VM report (.xlsx)" %}</a>
+            <a class="dropdown-item {% view_active request 'appsettings' %}" href="{% url 'appsettings' %}">{% bs_icon 'gear-wide-connected' %} {% trans "Settings" %}</a>
           </div>
         </li>
         {% endif %}
@@ -44,7 +49,10 @@
             </a>
             <a class="dropdown-item {% view_active request 'accounts:profile' %}" href="{% url 'accounts:profile' %}">{% bs_icon 'person-vcard' %} {% trans "Profile" %}</a>
             <div class="dropdown-divider"></div>
-            <a class="dropdown-item" href="{% url 'accounts:logout' %}">{% bs_icon 'power' %}  {% trans "Log Out" %}</a>
+            <form method="post" action="{% url 'accounts:logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="dropdown-item">{% bs_icon 'power' %}  {% trans "Log Out" %}</button>
+            </form>
           </div>
         </li>
       </ul>

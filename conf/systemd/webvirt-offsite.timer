@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily off-site copy of the WebVirtCloud panel backups
+
+[Timer]
+# after the panel's backup at 03:15
+OnCalendar=*-*-* 03:45
+Persistent=true
+
+[Install]
+WantedBy=timers.target

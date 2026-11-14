@@ -7,9 +7,6 @@ For more information on this file, see
 https://docs.djangoproject.com/en/4.2/howto/deployment/wsgi/
 """
 
-import signal
-signal.signal(signal.SIGCHLD, signal.SIG_IGN)
-
 import os
 
 from django.core.wsgi import get_wsgi_application

@@ -1,61 +1,78 @@
-import base64
-import binascii
-import struct
+from decimal import Decimal
 
+import segno
+from cryptography.exceptions import UnsupportedAlgorithm
+from cryptography.hazmat.primitives.serialization import load_ssh_public_key
+from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
-from django.template.loader import render_to_string
+from django.core.signing import TimestampSigner
+from django.db import transaction
+from django.urls import reverse
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
 from django_otp import devices_for_user
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
 
-def get_user_totp_device(user):
-    devices = devices_for_user(user)
-    for device in devices:
+def get_existing_totp_device(user):
+    """The user's confirmed TOTP device, or None. Unlike get_user_totp_device
+    it never creates one, so an unauthenticated caller cannot turn a
+    password-only account into an OTP-required one."""
+    for device in devices_for_user(user, confirmed=True):
         if isinstance(device, TOTPDevice):
             return device
+    return None
 
-    device = user.totpdevice_set.create()
-    return device
+
+def get_user_totp_device(user):
+    """The user's TOTP device, made if they have none. The user's row is
+    locked meanwhile: two requests at once (a double click) make one device,
+    not two that both log in."""
+    with transaction.atomic():
+        get_user_model().objects.select_for_update().get(pk=user.pk)
+        for device in devices_for_user(user):
+            if isinstance(device, TOTPDevice):
+                return device
+        return user.totpdevice_set.create()
 
 
 def validate_ssh_key(key):
-    array = key.encode().split()
-    # Each rsa-ssh key has 3 different strings in it, first one being
-    # typeofkey second one being keystring third one being username .
-    if len(array) != 3:
+    """An OpenSSH public key: its type, a whole key of that type (security
+    keys too) and an optional comment, which may hold spaces: one line, as
+    authorized_keys holds it."""
+    if "\n" in key.strip() or "\r" in key.strip():
         return False
-    typeofkey = array[0]
-    string = array[1]
-
-    # must have only valid rsa-ssh key characters ie binascii characters
     try:
-        data = base64.decodebytes(string)
-    except binascii.Error:
-        return False
-    # unpack the contents of data, from data[:4] , property of ssh key .
-    try:
-        str_len = struct.unpack(">I", data[:4])[0]
-    except struct.error:
-        return False
-    # data[4:str_len] must have string which matches with the typeofkey, another ssh key property.
-    if data[4 : 4 + str_len] != typeofkey:
+        load_ssh_public_key(" ".join(key.split(maxsplit=2)[:2]).encode())
+    except (ValueError, UnsupportedAlgorithm):
         return False
     return True
 
 
-def send_email_with_otp(user, device):
+# the link a mail carries to its device's OTP QR code: the mail holds no secret.
+# Links once named the user: this salt refuses those, whose id may be another's device.
+OTP_LINK = TimestampSigner(salt="accounts.otp_qr.device")
+OTP_LINK_MAX_AGE = 3600
+
+
+def send_email_with_otp(request, device):
+    """Mail the device's user a link to the page of its OTP QR code, good for
+    OTP_LINK_MAX_AGE: the QR code's secret is never in a mailbox. The token
+    is the URL's fragment, which no request carries: it is in no access log.
+    It names the device, so after an OTP reset it shows nothing."""
+    user = device.user
+    url = request.build_absolute_uri(reverse("accounts:otp_qr")) + "#" + OTP_LINK.sign(str(device.pk))
     send_mail(
         _("OTP QR Code"),
-        _("Please view HTML version of this message."),
+        _("Open this link within an hour to see the OTP QR code of account '%(user)s':\n\n%(url)s")
+        % {"user": user, "url": url},
         None,
         [user.email],
-        html_message=render_to_string(
-            "accounts/email/otp.html",
-            {
-                "totp_url": device.config_url,
-                "user": user,
-            },
-        ),
         fail_silently=False,
     )
+
+
+def otp_qr_svg(device):
+    """The device's QR code as inline SVG: 1.8 mm modules, error correction M, a 4-module border."""
+    qr = segno.make(device.config_url, error="m", mode="byte", encoding="utf-8", micro=False)
+    return mark_safe(qr.svg_inline(scale=Decimal("1.8"), unit="mm", border=4, dark="black", light="white"))

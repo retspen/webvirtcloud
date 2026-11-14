@@ -1,4 +1,4 @@
-// Cerulean 5.2.2
+// Cerulean 5.3.8
 // Bootswatch
 
 $theme: "cerulean" !default;
@@ -49,9 +49,12 @@ $body-color:    $gray-700 !default;
 
 $headings-color:         $cyan !default;
 
+// Tables
+
+$table-color:            initial !default;
+
 // Dropdowns
 
-$dropdown-link-color:           $body-color !default;
 $dropdown-link-hover-color:     $white !default;
 $dropdown-link-hover-bg:        $primary !default;
 

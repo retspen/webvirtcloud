@@ -1,19 +1,14 @@
 [Unit]
-Description=Webvirt Cloud GSTFSD
+Description=WebVirtCloud gstfsd (root password and SSH keys of shut-off VMs)
 Wants=network-online.target
 After=network-online.target
 
 [Service]
-Type=simple
+# GSTFSD_KEY, the key the panel signs with (root, mode 600)
+EnvironmentFile=/etc/default/webvirt-gstfsd
+ExecStart=/usr/bin/python3 /usr/local/bin/gstfsd
 Restart=on-failure
 RestartSec=10
-LimitNOFILE=64000
-
-ExecStart=/usr/bin/python3 /usr/local/bin/gstfsd
-
-# Make sure stderr/stdout is captured in the systemd journal.
-StandardOutput=journal
-StandardError=journal
 
 [Install]
 WantedBy=multi-user.target

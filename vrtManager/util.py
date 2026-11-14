@@ -1,4 +1,6 @@
-import random
+from django.utils.translation import gettext_noop
+import hashlib
+import ipaddress
 import secrets
 import re
 import string
@@ -6,48 +8,71 @@ import string
 import libvirt
 import lxml.etree as etree
 
-from django.conf import UserSettingsHolder, settings
+from django.utils.translation import gettext
 
 
-def is_kvm_available(xml):
-    kvm_domains = get_xml_path(xml, "//domain/@type='kvm'")
-    return kvm_domains > 0
+
+def message(text, **values):
+    """Our text, marked with gettext_noop, with %(name)s for each of values.
+    A value may be a list of messages: they are put in its place one after
+    another."""
+    return {"text": str(text), "values": values}
 
 
-def randomMAC():
-    """Generate a random MAC address."""
-    # qemu MAC
-    mac = settings.MAC_OUI + ":%02x:%02x:%02x" % (
-        random.randint(0x00, 0xFF),
-        random.randint(0x00, 0xFF),
-        random.randint(0x00, 0xFF),
-    )
-    return mac
+def render(text, values, translate):
+    """text with its values, through translate (gettext, or str for English)."""
+    def shown(value):
+        if isinstance(value, list):
+            return "; ".join(render(m["text"], m["values"], translate) for m in value)
+        if isinstance(value, OperationError):
+            return render(value.text, value.values, translate)
+        return value
+    text = translate(text)
+    return text % {key: shown(value) for key, value in values.items()} if values else text
 
 
-def randomUUID():
-    """Generate a random UUID."""
-    u = [secrets.randbelow(256) for _ in range(16)]
-    u[6] = u[6] & 15 | 4 << 4
-    u[8] = u[8] & 63 | 2 << 6
-    return "-".join(["%02x" * 4, "%02x" * 2, "%02x" * 2, "%02x" * 2, "%02x" * 6]) % tuple(u)
+def digest(text):
+    """A fingerprint of a definition: a page sends back the one of the
+    definition it showed, and a change made meanwhile is not overwritten."""
+    return hashlib.sha256(text.encode()).hexdigest()
+
+
+class OperationError(libvirt.libvirtError):
+    """An error with WebVirtCloud's own message (see message()). Its args are
+    the English message, for logs and the audit log; str() is the message in
+    the active language, English outside a request. A job keeps the text and
+    values (operations.utils.said) and shows them in its reader's language.
+
+    libvirtError(msg) reports the thread's last libvirt error instead of msg
+    when there is one, so an earlier, unrelated failure would be shown.
+    """
+
+    def __init__(self, text, **values):
+        self.text, self.values = str(text), values
+        Exception.__init__(self, render(self.text, values, str))
+        self.err = None
+
+    def __str__(self):
+        return render(self.text, self.values, gettext)
+
+
+class InUse(OperationError):
+    """An object something still uses cannot be changed or deleted."""
+
+
+class ConnectionFailed(OperationError):
+    """The host could not be connected to; the message may name it and how it
+    is reached."""
+
+
+class HostBusy(ConnectionFailed):
+    """The host is connected, but this process's web requests to it
+    (HOST_REQUESTS) still wait for its answers."""
 
 
 def randomPasswd(length=12, alphabet=string.ascii_letters + string.digits):
     """Generate a random password"""
     return "".join([secrets.choice(alphabet) for _ in range(length)])
-
-
-def get_max_vcpus(conn, guest_type=None):
-    """@param conn: libvirt connection to poll for max possible vcpus
-    @param guest_type: optional guest type (kvm, etc.)"""
-    if type is None:
-        guest_type = conn.getType()
-    try:
-        m = conn.getMaxVcpus(guest_type.lower())
-    except libvirt.libvirtError:
-        m = 32
-    return m
 
 
 def xml_escape(xml_str):
@@ -63,24 +88,17 @@ def xml_escape(xml_str):
     return xml_str
 
 
-def compareMAC(p, q):
-    """Compare two MAC addresses"""
-    pa = p.split(":")
-    qa = q.split(":")
-
-    if len(pa) != len(qa):
-        if p > q:
-            return 1
-        else:
-            return -1
-
-    for i in range(len(pa)):
-        n = int(pa[i], 0x10) - int(qa[i], 0x10)
-        if n > 0:
-            return 1
-        elif n < 0:
-            return -1
-    return 0
+def parse_xml(xml):
+    """XML a user entered, read for the panel's checks: its entities not
+    expanded, nothing fetched and no DTD; libvirt gets the text itself."""
+    parser = etree.XMLParser(resolve_entities=False, no_network=True)
+    try:
+        tree = etree.fromstring(xml.encode(), parser)  # bytes: the XML may declare its encoding
+    except etree.XMLSyntaxError as err:
+        raise OperationError(gettext_noop("The XML is not valid: %(err)s"), err=err) from None
+    if tree.getroottree().docinfo.internalDTD is not None:
+        raise OperationError(gettext_noop("The XML may not declare a DTD"))
+    return tree
 
 
 def get_xml_path(xml, path=None, func=None):
@@ -116,76 +134,16 @@ def get_xpath(doc, path):
     return result
 
 
-def pretty_mem(val):
-    val = int(val)
-    if val > (10 * 1024 * 1024):
-        return "%2.2f GB" % (val / (1024.0 * 1024.0))
-    else:
-        return "%2.0f MB" % (val / 1024.0)
-
-
-def pretty_bytes(val):
-    val = int(val)
-    if val > (1024 * 1024 * 1024):
-        return "%2.2f GB" % (val / (1024.0 * 1024.0 * 1024.0))
-    else:
-        return "%2.2f MB" % (val / (1024.0 * 1024.0))
-
-
-def validate_uuid(val):
-    if not isinstance(val, str):
-        raise ValueError("UUID must be a string.")
-
-    form = re.match("[a-fA-F0-9]{8}[-]([a-fA-F0-9]{4}[-]){3}[a-fA-F0-9]{12}$", val)
-    if form is None:
-        form = re.match("[a-fA-F0-9]{32}$", val)
-        if form is None:
-            raise ValueError(
-                "UUID must be a 32-digit hexadecimal number. It may take "
-                "the form xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx or may "
-                "omit hyphens altogether."
-            )
-
-        else:  # UUID had no dashes, so add them in
-            val = val[0:8] + "-" + val[8:12] + "-" + val[12:16] + "-" + val[16:20] + "-" + val[20:32]
-    return val
-
-
 def validate_macaddr(val):
     if val is None:
         return
 
-    if not (isinstance(val, str) or isinstance(val, str)):
+    if not isinstance(val, str):
         raise ValueError("MAC address must be a string.")
 
     form = re.match("^([0-9a-fA-F]{1,2}:){5}[0-9a-fA-F]{1,2}$", val)
     if form is None:
-        raise ValueError("MAC address must be of the format AA:BB:CC:DD:EE:FF, was {}".format(val))
-
-
-# Mapping of UEFI binary names to their associated architectures. We
-# only use this info to do things automagically for the user, it shouldn't
-# validate anything the user explicitly enters.
-UEFI_ARCH_PATTERNS = {
-    "i686": [
-        r".*ovmf-ia32.*",  # fedora, gerd's firmware repo
-    ],
-    "x86_64": [
-        r".*OVMF_CODE\.fd",  # RHEL
-        r".*ovmf-x64/OVMF.*\.fd",  # gerd's firmware repo
-        r".*ovmf-x86_64-.*",  # SUSE
-        r".*ovmf.*",
-        ".*OVMF.*",  # generic attempt at a catchall
-    ],
-    "aarch64": [
-        r".*AAVMF_CODE\.fd",  # RHEL
-        r".*aarch64/QEMU_EFI.*",  # gerd's firmware repo
-        r".*aarch64.*",  # generic attempt at a catchall
-    ],
-    "armv7l": [
-        r".*arm/QEMU_EFI.*",  # fedora, gerd's firmware repo
-    ],
-}
+        raise ValueError(gettext("MAC address must be of the format AA:BB:CC:DD:EE:FF, was %(mac)s") % {"mac": val})
 
 
 def vol_dev_type(vol_bus):
@@ -195,6 +153,22 @@ def vol_dev_type(vol_bus):
         return "fd"
     elif vol_bus == "virtio":
         return "vd"
-    elif vol_bus in ["scsi", "sata"]:
+    elif vol_bus in ["scsi", "sata", "usb"]:
         return "sd"
 
+
+def vol_driver_type(vol_format, pool_type=None):
+    """The disk driver type for a volume of vol_format: raw for a volume
+    whose pool knows no image format of it (none, unknown, an ISO, a disk
+    pool's partition), as libvirt uses a disk without a driver type."""
+    if pool_type == "disk" or vol_format in (None, "", "none", "unknown", "iso"):
+        return "raw"
+    return vol_format
+
+
+def is_loopback(address):
+    """127.0.0.0/8, ::1 or localhost: reachable only on that host itself."""
+    try:
+        return ipaddress.ip_address(address).is_loopback
+    except ValueError:
+        return address == "localhost"

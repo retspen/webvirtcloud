@@ -1,15 +1,13 @@
-{% extends "base.html" %}
+{% extends "error.html" %}
 {% load i18n %}
-{% block title %}{% trans "404" %}{% endblock %}
-{% block content %}
-    <div class="row">
-        <div class="col-12 text-center">
-            <h1>{% trans 'Oops!'%}</h1>
 
-            <p class="lead">{% trans "404 Not Found" %}</p>
+{% block title %}{% trans "Page not found" %}{% endblock %}
+{% block code %}404{% endblock %}
+{% block status_classes %}text-bg-secondary{% endblock %}
+{% block icon %}bi-file-earmark-x{% endblock %}
+{% block heading %}{% trans "Page not found" %}{% endblock %}
 
-            <p>{% trans "The requested page was not found on this server." %}</p>
-            <a class="btn btn-success" href="javascript:history.back()">&larr; {% trans 'Back'%}</a>
-        </div>
-    </div>
+{% block text %}
+    <p class="mb-3">{% blocktrans with path=request_path %}Nothing was found at <code>{{ path }}</code>, or your account cannot see it.{% endblocktrans %}</p>
+    <p class="text-body-secondary mb-0">{% trans "The virtual machine or host may have been deleted, or the link is wrong." %}</p>
 {% endblock %}

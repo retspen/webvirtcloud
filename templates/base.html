@@ -1,18 +1,19 @@
 {% load static %}
 {% load django_bootstrap5 %}
+{% load i18n %}
 <!DOCTYPE html>
-<html lang="en">
+{% get_current_language as LANGUAGE_CODE %}<html lang="{{ LANGUAGE_CODE }}">
   <head>
     <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="WebVirtCloud panel for manage virtual machine">
     <meta name="author" content="anatoliy.guskov@gmail.com">
 
     <title>{% block title %}{% endblock %}</title>
 
     <!-- Bootstrap Core CSS -->
-    <link href="{% static "css/wvc-main.min.css" %}" rel="stylesheet" id="wvc_css">
+    {# error pages render without app_settings: they get zephyr #}
+    {% with theme=app_settings.BOOTSTRAP_THEME|default:"zephyr" %}<link href="{% static "css/themes/"|add:theme|add:".min.css" %}" rel="stylesheet" id="wvc_css">{% endwith %}
 
     <!-- WebVirtCloud CSS -->
     <link href="{% static "css/webvirtcloud.css" %}" rel="stylesheet">
@@ -23,36 +24,49 @@
     <!-- Custom Fonts -->
     <link href="{% static "css/bootstrap-icons.min.css" %}" rel="stylesheet" type="text/css">
 
-    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-    <!--[if lt IE 9]>
-        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
-    <![endif]-->
     <link rel="shortcut icon" href="{%  static 'favicon.ico' %}">
   </head>
 
-  <body>
+  <body class="pb-5"{% block body_attrs %}{% endblock %}>
 
     {% if request.user.is_authenticated %}
     {% include 'navbar.html' %}
     {% endif %}
 
     <div role="main" class="container">
-      <div class"row">
+      {% block page_header %}{# a page with a heading of its own leaves it out #}
+      <div>
         <div>
           <div class="float-end">
             {% block page_heading_extra %}
             {% endblock page_heading_extra %}
           </div>
-          <h3 class="ms-0 page-header">
+          <h3 class="mb-3">
             {% block page_heading %}
             {% endblock page_heading %}
           </h3>
         </div>
       </div>
-      {% bootstrap_messages %}
+      {% endblock page_header %}
+      <div id="messages">{% bootstrap_messages %}</div>
       {% block content %}{% endblock %}
+    </div>
+
+    {# the dialog every button with data-confirm asks in (confirm_dialog.js) #}
+    <div class="modal fade" id="confirm-dialog" tabindex="-1" aria-labelledby="confirm-dialog-title" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title text-break" id="confirm-dialog-title"></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
+          </div>
+          <div class="modal-body text-break"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+            <button type="button" class="btn btn-primary" data-confirm-ok></button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Bootstrap core JavaScript
@@ -62,8 +76,14 @@
     <script src="{% static 'js/jquery.js' %}"></script>
     <!-- Bootstrap Core JavaScript -->
     <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
-    <!-- JavaScript Cookie -->
-    <script src="{% static 'js/js.cookie.js' %}"></script>
+    <script src="{% static 'js/confirm_dialog.js' %}"></script>
+    <!-- Table sorting -->
+    <script src="{% static 'js/tablesort.min.js' %}"></script>
+    <script src="{% static 'js/tablesort.number.min.js' %}"></script>
+    <script src="{% static 'js/sort_tables.js' %}"></script>
+    <script src="{% static 'js/error_focus.js' %}"></script>
+    <script src="{% static 'js/back_links.js' %}"></script>
+    <script src="{% static 'js/console_window.js' %}"></script>
     {% block script %}{% endblock %}
   </body>
 </html>

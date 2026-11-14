@@ -1,32 +1,90 @@
+from django.utils.translation import gettext_noop
 import contextlib
 
+import libvirt
+from lxml import etree
 from vrtManager import util
 from vrtManager.connection import wvmConnect
+
+# pools whose volumes are files: they take any image format
+FILE_POOL_TYPES = ("dir", "fs", "netfs")
+
+
+def rbd_source_children(pool):
+    """The <auth> and <host> elements of an RBD disk's <source>, as XML text:
+    the disk reaches Ceph as its pool does, with its user, its secret (by
+    uuid or usage) and its monitors."""
+    source = etree.fromstring(pool.XMLDesc(0)).find("source")
+    children = [etree.Element("host", host.attrib) for host in source.findall("host")]
+    auth = source.find("auth")
+    if auth is not None:
+        disk_auth = etree.Element("auth", username=auth.get("username"))
+        secret = auth.find("secret")
+        etree.SubElement(disk_auth, "secret", type=auth.get("type"),
+                         **{key: value for key, value in secret.attrib.items() if key in ("uuid", "usage")})
+        children.insert(0, disk_auth)
+    return "".join(etree.tostring(child, encoding="unicode") for child in children)
+
+
+def volume_details(vol):
+    """A volume's name, capacity (size), allocation and format, from its XML:
+    one libvirt call, which refreshes the volume as info() does. Logical and
+    iSCSI volumes have no format (None)."""
+    def read(doc):
+        return {
+            "name": util.get_xpath(doc, "/volume/name"),
+            "size": int(util.get_xpath(doc, "/volume/capacity")),
+            "allocation": int(util.get_xpath(doc, "/volume/allocation")),
+            "type": util.get_xpath(doc, "/volume/target/format/@type"),
+        }
+    return util.get_xml_path(vol.XMLDesc(0), func=read)
 
 
 class wvmStorages(wvmConnect):
     def get_storages_info(self):
+        """Each pool's state, autostart, type, path (an RBD pool's Ceph pool),
+        volume count, size, free space and the percent used. An active pool
+        is refreshed first: libvirt measures its space only when it is
+        refreshed, so two hosts sharing a pool's storage told different free
+        space, each as of its own last refresh."""
         get_storages = self.get_storages()
         storages = []
         for pool in get_storages:
             stg = self.get_storage(pool)
             stg_status = stg.isActive()
-            stg_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
+            if stg_status:
+                with contextlib.suppress(libvirt.libvirtError):  # refused while a volume is cloned in it
+                    stg.refresh(0)
+            doc = etree.fromstring(stg.XMLDesc(0))
             stg_vol = len(stg.listVolumes()) if stg_status else None
-            stg_size = stg.info()[1]
+            _state, stg_size, _allocation, stg_free = stg.info()
             storages.append(
                 {
                     "name": pool,
                     "status": stg_status,
-                    "type": stg_type,
+                    "autostart": stg.autostart(),
+                    "type": doc.get("type"),
+                    "path": util.get_xpath(doc, "/pool/target/path") or util.get_xpath(doc, "/pool/source/name"),
                     "volumes": stg_vol,
                     "size": stg_size,
+                    "free": stg_free,
+                    "used_percent": (stg_size - stg_free) * 100 / stg_size if stg_size else 0,
                 }
             )
         return storages
 
-    def define_storage(self, xml, flag):
-        self.wvm.storagePoolDefineXML(xml, flag)
+    def define_storage(self, xml, flags):
+        """Define the pool, start it with flags and set it to autostart. A
+        pool that does not start is undefined again, so its name stays free
+        for another try."""
+        stg = self.wvm.storagePoolDefineXML(xml, 0)
+        try:
+            stg.create(flags)
+        except libvirt.libvirtError:
+            stg.undefine()
+            raise
+        stg.setAutostart(1)
+        return stg
 
     def get_pool_by_target(self, target):
         pool_names = self.get_storages()
@@ -54,18 +112,13 @@ class wvmStorages(wvmConnect):
                        <path>{target}</path>
                   </target>
                 </pool>"""
-        self.define_storage(xml, 0)
-        stg = self.get_storage(name)
-        if stg_type == "logical":
-            stg.build(0)
-        stg.create(0)
-        stg.setAutostart(1)
-
-        return stg
+        # builds the dir pool's directory or the logical pool's volume group
+        return self.define_storage(xml, libvirt.VIR_STORAGE_POOL_CREATE_WITH_BUILD)
 
     def create_storage_ceph(
         self, stg_type, name, ceph_pool, ceph_host, ceph_user, secret
     ):
+        ceph_pool, ceph_host, ceph_user, secret = map(util.xml_escape, (ceph_pool, ceph_host, ceph_user, secret))
         xml = f"""
                 <pool type='{stg_type}'>
                 <name>{name}</name>
@@ -79,13 +132,11 @@ class wvmStorages(wvmConnect):
                 </pool>
                 """
         self.define_storage(xml, 0)
-        stg = self.get_storage(name)
-        stg.create(0)
-        stg.setAutostart(1)
 
     def create_storage_netfs(
         self, stg_type, name, netfs_host, source, source_format, target
     ):
+        netfs_host, source_format = util.xml_escape(netfs_host), util.xml_escape(source_format)
         xml = f"""
                 <pool type='{stg_type}'>
                 <name>{name}</name>
@@ -99,12 +150,8 @@ class wvmStorages(wvmConnect):
                 </target>
                 </pool>
                 """
-        self.define_storage(xml, 0)
-        stg = self.get_storage(name)
-        stg.create(0)
-        stg.setAutostart(1)
-
-        return stg
+        # builds the mount point
+        return self.define_storage(xml, libvirt.VIR_STORAGE_POOL_CREATE_WITH_BUILD)
 
 
 class wvmStorage(wvmConnect):
@@ -121,14 +168,16 @@ class wvmStorage(wvmConnect):
             "Initializing pool, not available",
             "Running normally",
             "Running degraded",
+            "Inaccessible",  # running, but its storage cannot be reached: a share whose server is gone
         ]
         try:
             return status[self.pool.info()[0]]
-        except ValueError:
+        except IndexError:  # a state newer than these
             return "Unknown"
 
     def get_size(self):
-        return [self.pool.info()[1], self.pool.info()[3]]
+        _state, capacity, _allocation, available = self.pool.info()
+        return [capacity, available]
 
     def _XMLDesc(self, flags):
         return self.pool.XMLDesc(flags)
@@ -152,9 +201,37 @@ class wvmStorage(wvmConnect):
         return self.pool.create(0)
 
     def stop(self):
+        """Refused while it holds a disk of a running VM, named by the pool
+        or by a volume's path: that VM would lose the disk."""
+        name = self.pool.name()
+        paths = {vol.path() for vol in self.pool.listAllVolumes()}
+        vms = self.domains_using(
+            lambda domain: domain.xpath("devices/disk/source[@pool=$name]", name=name)
+            or paths.intersection(self._source_paths(domain)),
+            running_only=True,
+        )
+        if vms:
+            raise util.OperationError(gettext_noop("Pool %(name)s holds disks of the running VMs %(vms)s; shut them down first"), name=name, vms=', '.join(vms))
         return self.pool.destroy()
 
     def delete(self):
+        """Refused while a VM's definition names it for a disk: that VM would
+        no longer start. So is a disk given by its path in a pool that mounts
+        or activates its storage (a share, a file system, an LVM group): the
+        path is gone with the pool. A directory pool's files stay; the device
+        directories of iSCSI and disk pools are every pool's, not this one's."""
+        name, kind = self.pool.name(), self.get_type()
+        target = (self.get_target_path() or "").rstrip("/")
+        under = (target + "/",) if kind in ("fs", "netfs", "logical") and target else ()
+        if kind == "logical" and (group := self.get_source_name()):
+            under += ("/dev/mapper/" + group.replace("-", "--") + "-",)  # device mapper's name of its volumes
+
+        def needs(domain):
+            return domain.xpath("devices/disk/source[@pool=$name]", name=name) or any(
+                path.startswith(under) for path in domain.xpath("devices/disk//source/@file | devices/disk//source/@dev"))
+
+        if vms := self.domains_using(needs):
+            raise util.OperationError(gettext_noop("VMs %(vms)s have disks in pool %(name)s and would no longer start; detach those disks first"), vms=', '.join(vms), name=name)
         self.pool.undefine()
 
     def get_autostart(self):
@@ -172,73 +249,30 @@ class wvmStorage(wvmConnect):
     def get_source_name(self):
         return util.get_xml_path(self._XMLDesc(0), "/pool/source/name")
 
-    def get_allocation(self):
-        return int(util.get_xml_path(self._XMLDesc(0), "/pool/allocation"))
-
-    def get_available(self):
-        return int(util.get_xml_path(self._XMLDesc(0), "/pool/available"))
-
-    def get_capacity(self):
-        return int(util.get_xml_path(self._XMLDesc(0), "/pool/capacity"))
-
-    def get_rbd_source(self):
-        def hosts(doc):
-            hosts_array = []
-
-            for host in doc.xpath("/pool/source/host"):
-                name = host.get("name")
-                if name:
-                    port = host.get("port")
-                    if port:
-                        hosts_array.append({"hostname": name, "hostport": port})
-                    else:
-                        hosts_array.append({"hostname": name})
-
-            name = doc.get("name")
-            auth = doc.xpath("/pool/source/auth")
-            auth_type = auth[0].get("type")
-            auth_user = auth[0].get("username")
-            auth_uuid = auth[0].xpath("secret/@uuid")[0]
-
-            return {
-                "name": name,
-                "auth_type": auth_type,
-                "auth_user": auth_user,
-                "auth_uuid": auth_uuid,
-                "hosts": hosts_array,
-            }
-
-        return util.get_xml_path(self._XMLDesc(0), func=hosts)
-
-    def get_pretty_allocation(self):
-        return util.pretty_bytes(self.get_allocation())
-
-    def get_pretty_available(self):
-        return util.pretty_bytes(self.get_available())
-
-    def get_pretty_capacity(self):
-        return util.pretty_bytes(self.get_capacity())
-
     def get_volumes(self):
         return self.pool.listVolumes()
 
     def get_volume(self, name):
         return self.pool.storageVolLookupByName(name)
 
-    def get_volume_size(self, name):
-        vol = self.get_volume(name)
-        return vol.info()[1]
-
-    def get_volume_allocation(self, name):
-        vol = self.get_volume(name)
-        return vol.info()[2]
-
     def _vol_XMLDesc(self, name):
         vol = self.get_volume(name)
         return vol.XMLDesc(0)
 
+    def check_unused_elsewhere(self, name, elsewhere):
+        """Refuses a volume a VM of another host sharing this storage uses:
+        elsewhere(paths) gives those the other hosts use
+        (instances.utils.paths_used_on_other_computes). Asked before this
+        host's lock, which a host that does not answer would hold meanwhile."""
+        path = self.pool.storageVolLookupByName(name).path()
+        if path in elsewhere([path]):
+            raise util.InUse(gettext_noop("Volume %(name)s is in use on another compute that shares this storage"), name=name)
+
     def del_volume(self, name):
+        """libvirt deletes any volume; one a VM of this host still needs is refused."""
         vol = self.pool.storageVolLookupByName(name)
+        if vol.path() in self.paths_in_use():
+            raise util.InUse(gettext_noop("Volume %(name)s is in use: a VM's disk, a backing file or a snapshot's file"), name=name)
         vol.delete(0)
 
     def get_volume_format_type(self, name):
@@ -252,44 +286,26 @@ class wvmStorage(wvmConnect):
     def refresh(self):
         return self.pool.refresh(0)
 
-    def get_volumes_details(self):
-        with contextlib.suppress(Exception):
-            self.refresh()
-
-        vols = self.get_volumes()
-        return [
-            {
-                "name": volname,
-                "size": self.get_volume_size(volname),
-                "allocation": self.get_volume_allocation(volname),
-                "type": self.get_volume_format_type(volname),
-            }
-            for volname in vols
-        ]
-
     def get_volume_details(self, volname):
-        with contextlib.suppress(Exception):
+        """The volume's details (volume_details), the pool refreshed first."""
+        with contextlib.suppress(libvirt.libvirtError):  # refused while a volume is cloned in the pool
             self.refresh()
-        return {
-            "name": volname,
-            "size": self.get_volume_size(volname),
-            "allocation": self.get_volume_allocation(volname),
-            "type": self.get_volume_format_type(volname),
-        }
+        return volume_details(self.get_volume(volname))
 
     def update_volumes(self):
-        with contextlib.suppress(Exception):
+        """Every volume's details (volume_details) by name, the pool refreshed
+        first: two calls and one per volume, where a lookup, info() and the
+        XML of each took six. A volume deleted meanwhile is left out."""
+        with contextlib.suppress(libvirt.libvirtError):  # refused while a volume is cloned in the pool
             self.refresh()
-        vols = self.get_volumes()
-        return [
-            {
-                "name": volname,
-                "size": self.get_volume_size(volname),
-                "allocation": self.get_volume_allocation(volname),
-                "type": self.get_volume_format_type(volname),
-            }
-            for volname in vols
-        ]
+        volumes = []
+        for vol in self.pool.listAllVolumes(0):
+            try:
+                volumes.append(volume_details(vol))
+            except libvirt.libvirtError as err:
+                if err.get_error_code() != libvirt.VIR_ERR_NO_STORAGE_VOL:
+                    raise
+        return sorted(volumes, key=lambda volume: volume["name"])
 
     def create_volume(
         self,
@@ -301,16 +317,18 @@ class wvmStorage(wvmConnect):
         disk_owner_gid=0,
     ):
         size = int(size) * 1073741824
-        storage_type = self.get_type()
-        alloc = size
-        if vol_fmt == "unknown":
-            vol_fmt = "raw"
-        if storage_type == "dir":
+        if self.get_type() in FILE_POOL_TYPES:
             name += f".{vol_fmt}" if vol_fmt in ("qcow", "qcow2") else ".img"
             alloc = 0
+        else:  # a block device, an LVM volume or an RBD image is raw and allocated whole
+            vol_fmt = "raw"
+            alloc = size
+            metadata = False
+        if vol_fmt == "unknown":
+            vol_fmt = "raw"
         xml = f"""
             <volume>
-                <name>{name}</name>
+                <name>{util.xml_escape(name)}</name>
                 <capacity>{size}</capacity>
                 <allocation>{alloc}</allocation>
                 <target>
@@ -332,6 +350,24 @@ class wvmStorage(wvmConnect):
         self._createXML(xml, metadata)
         return name
 
+    def clone_name(self, target_file, vol_fmt, file_suffix="img"):
+        """The name clone_volume gives a copy: a dir pool adds the format's suffix."""
+        if self.get_type() not in FILE_POOL_TYPES:
+            return target_file
+        if vol_fmt in ("qcow", "qcow2"):
+            return f"{target_file}.{vol_fmt}"
+        return f"{target_file}.{file_suffix}" if file_suffix else target_file
+
+    def refuse_running_copy(self, name):
+        """A volume a running guest writes is not copied: the copy would mix
+        instants."""
+        path, pool = self.get_volume(name).path(), self.pool.name()
+        # a disk names it by its path (an RBD image by pool/image) or by its pool and name
+        uses = "devices/disk/source[@file=$p or @dev=$p or @name=$p or (@pool=$pool and @volume=$v)]"
+        if vms := self.domains_using(lambda domain: domain.xpath(uses, p=path, pool=pool, v=name), running_only=True):
+            raise util.OperationError(gettext_noop("The running VMs %(vms)s use volume %(name)s; shut them down to copy it"),
+                                      vms=", ".join(vms), name=name)
+
     def clone_volume(
         self,
         name,
@@ -347,13 +383,7 @@ class wvmStorage(wvmConnect):
         if not vol_fmt:
             vol_fmt = self.get_volume_format_type(name)
 
-        storage_type = self.get_type()
-        if storage_type == "dir":
-            if vol_fmt in ["qcow", "qcow2"]:
-                target_file += f".{vol_fmt}"
-            else:
-                suffix = f".{file_suffix}"
-                target_file += suffix if len(suffix) > 1 else ""
+        target_file = self.clone_name(target_file, vol_fmt, file_suffix)
 
         xml = f"""
             <volume>

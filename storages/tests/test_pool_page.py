@@ -1,0 +1,194 @@
+"""The pool page and its volume list still answer while a volume is cloned in
+the pool (libvirt refuses to refresh it then) and for a pool without a size;
+the page measures the pool after refreshing it and says what it cannot show;
+a new volume is at least 1 GiB."""
+
+from unittest.mock import call, patch
+
+from computes.models import Compute
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.urls import reverse
+from libvirt import libvirtError
+from lxml import html
+
+from storages.forms import CreateVolumeForm
+
+
+class PoolPageTests(TestCase):
+    def setUp(self):
+        self.compute = Compute.objects.create(name="pp", hostname="192.0.2.22", login="root", password="", type=1)
+        self.client.force_login(get_user_model().objects.create_superuser("pp-admin", "pp@example.com", "pw"))
+        patcher = patch("storages.views.wvmStorage")
+        self.conn = patcher.start().return_value
+        self.addCleanup(patcher.stop)
+        self.conn.is_active.return_value = True
+        self.conn.refresh.side_effect = libvirtError("pool 'default' has asynchronous jobs running.")
+        self.conn.get_volumes.return_value = ["base.qcow2"]
+        self.conn.update_volumes.return_value = [{"name": "base.qcow2", "size": 1, "allocation": 1, "type": "qcow2"}]
+
+    def test_the_page_answers_while_a_volume_is_cloned(self):
+        self.conn.get_size.return_value = (0, 0)  # an iSCSI pool without LUNs
+        response = self.client.get(reverse("storage", args=[self.compute.pk, "default"]))
+        self.assertContains(response, "base.qcow2")
+        self.conn.get_storages.assert_not_called()  # the page lists no other pools
+
+    def test_the_volume_list_answers_while_a_volume_is_cloned(self):
+        response = self.client.get(reverse("volumes", args=[self.compute.pk, "default"]))
+        self.assertEqual(response.json(), {"vols": ["base.qcow2"]})
+
+    def test_a_new_volume_has_a_size_in_gib(self):
+        form = CreateVolumeForm({"name": "disk1", "format": "qcow2", "size": 0})
+        self.assertIn("size", form.errors)
+        self.assertIn("Size (GiB)", str(form["size"].label_tag()))
+
+    def test_the_dialogs_label_every_field_above_it(self):
+        self.conn.get_size.return_value = (10, 4)
+        self.conn.get_status.return_value = 1  # running: the add dialogs show
+        for pool, dialog in (("default", "AddImage"), ("default", "CloneVolume"), ("iso", "IsoUpload")):
+            with self.subTest(pool=pool, dialog=dialog):
+                doc = html.fromstring(self.client.get(reverse("storage", args=[self.compute.pk, pool])).content)
+                fields = doc.xpath("//div[@id=$d]//*[self::input or self::select][not(@type='hidden')]", d=dialog)
+                self.assertTrue(fields)
+                for field in fields:
+                    self.assertTrue(doc.xpath("//label[@for=$i]", i=field.get("id") or "-"), field.get("name"))
+                self.assertFalse(doc.xpath("//div[@id=$d]//*[contains(@class, 'col-form-label')]", d=dialog))
+                self.assertEqual(doc.xpath("//div[@id=$d]//button[@data-bs-dismiss='modal'][not(@aria-label)]/text()",
+                                           d=dialog), ["Cancel"])
+
+    def test_a_new_volume_is_made_from_the_pool_page(self):
+        self.conn.get_size.return_value = (10, 4)
+        self.conn.create_volume.return_value = "disk1.qcow2"
+        url = reverse("storage", args=[self.compute.pk, "default"])
+        response = self.client.post(url, {"name": "disk1", "size": "2", "format": "qcow2", "meta_prealloc": "on",
+                                          "create_volume": ""})
+        self.assertRedirects(response, url, fetch_redirect_response=False)
+        self.conn.create_volume.assert_called_once_with("disk1", 2, "qcow2", True, 0, 0)
+
+    def test_a_refused_new_volume_comes_back_with_what_was_entered(self):
+        self.conn.get_size.return_value = (10, 4)
+        self.conn.get_status.return_value = 1
+        response = self.client.post(reverse("storage", args=[self.compute.pk, "default"]),
+                                    {"name": "bad name!", "size": "3", "format": "raw", "create_volume": ""})
+        self.assertEqual(response.status_code, 200)
+        self.conn.create_volume.assert_not_called()
+        doc = html.fromstring(response.content)
+        # the dialog opens again on the values sent, the name marked with why
+        self.assertEqual(doc.xpath("//div[@id='AddImage']/@data-open"), [""])
+        self.assertEqual(doc.xpath("//div[@id='AddImage']//input[@name='name']/@value"), ["bad name!"])
+        self.assertEqual(doc.xpath("//div[@id='AddImage']//input[@name='size']/@value"), ["3"])
+        self.assertTrue(doc.xpath("//div[@id='AddImage']//input[@name='name'][contains(@class, 'is-invalid')]"))
+        # a pool stopped meanwhile shows no dialog: the page says why
+        self.conn.is_active.return_value = False
+        response = self.client.post(reverse("storage", args=[self.compute.pk, "default"]),
+                                    {"name": "bad name!", "size": "3", "format": "raw", "create_volume": ""})
+        self.assertContains(response, "The image name must not contain any special characters")
+
+    def test_the_pool_is_measured_after_its_refresh(self):
+        # update_volumes refreshes the pool: libvirt's space figures are as of the last refresh
+        self.conn.get_size.return_value = (10, 4)
+        self.client.get(reverse("storage", args=[self.compute.pk, "default"]))
+        calls = [c for c in self.conn.mock_calls if c in (call.update_volumes(), call.get_size())]
+        self.assertEqual(calls, [call.update_volumes(), call.get_size()])
+
+    def test_a_space_it_cannot_read_is_not_zero(self):
+        # the size and the status both read the pool's info: neither failure is a server error
+        self.conn.get_size.side_effect = libvirtError("cannot read")
+        self.conn.get_status.side_effect = libvirtError("cannot read")
+        response = self.client.get(reverse("storage", args=[self.compute.pk, "default"]))
+        self.assertContains(response, "The pool's space could not be read.")
+        self.assertNotContains(response, "0 bytes")
+
+    def test_a_stopped_pool_says_why_it_lists_no_volumes(self):
+        # and loads no search script: the page has no search box for it
+        self.conn.is_active.return_value = False
+        self.conn.get_size.return_value = (0, 0)
+        response = self.client.get(reverse("storage", args=[self.compute.pk, "default"]))
+        self.assertContains(response, "This pool is stopped")
+        self.assertContains(response, "Unavailable while the pool is stopped.")
+        self.assertNotContains(response, "0 bytes")
+        self.assertNotContains(response, "table_filter.js")
+        self.conn.update_volumes.assert_not_called()
+
+    def test_volumes_are_searched_by_name_and_share_one_clone_dialog(self):
+        self.conn.get_size.return_value = (10, 4)
+        self.conn.update_volumes.return_value = [
+            {"name": name, "size": 1, "allocation": 1, "type": "raw"} for name in ("data.img", "install.iso", "Boot.ISO")]
+        page = html.fromstring(self.client.get(reverse("storage", args=[self.compute.pk, "default"])).content)
+        self.assertEqual(page.xpath("//tbody/tr/@data-search"), ["data.img", "install.iso", "Boot.ISO"])
+        self.assertEqual(len(page.xpath("//div[contains(concat(' ', @class, ' '), ' modal ')][.//button[@name='cln_volume']]")), 1)
+        # an ISO image is not cloned, whatever case its name has
+        clone = {b.get("data-volume"): b.get("disabled") is None for b in page.xpath("//button[@data-volume]")}
+        self.assertEqual(clone, {"data.img": True, "install.iso": False, "Boot.ISO": False})
+        self.assertTrue(page.xpath("//div[@id='no-match'][@hidden]"))
+
+    def test_the_heading_offers_what_the_pool_state_allows(self):
+        # an active pool is stopped, a stopped one started or deleted; autostart either way
+        self.conn.get_size.return_value = (10, 4)
+        url = reverse("storage", args=[self.compute.pk, "default"])
+        for active, names in ((True, ["stop", "set_autostart"]), (False, ["start", "set_autostart", "delete"])):
+            with self.subTest(active=active):
+                self.conn.is_active.return_value = active
+                self.conn.get_autostart.return_value = 0
+                page = html.fromstring(self.client.get(url).content)
+                group = page.xpath("//div[@aria-label='Actions for pool default']")[0]
+                self.assertEqual(group.xpath(".//button[@type='submit']/@name"), names)
+
+
+class PoolApiTests(TestCase):
+    """The API's pool, like the page, is measured after its refresh; a stopped pool lists no volumes."""
+
+    def setUp(self):
+        self.compute = Compute.objects.create(name="pa", hostname="192.0.2.24", login="root", password="", type=1)
+        self.client.force_login(get_user_model().objects.create_superuser("pa-admin", "pa@example.com", "pw"))
+        patcher = patch("storages.api.viewsets.wvmStorage")
+        self.conn = patcher.start().return_value
+        self.addCleanup(patcher.stop)
+        self.conn.get_size.return_value = (10, 4)
+        self.conn.get_status.return_value = "Running normally"
+        self.conn.get_target_path.return_value = "/var/lib/libvirt/images"
+        self.conn.get_type.return_value = "dir"
+        self.conn.get_autostart.return_value = 1
+        self.conn.update_volumes.return_value = []
+        self.url = f"/api/v1/computes/{self.compute.id}/storages/default/"
+
+    def test_an_active_pool_is_measured_after_its_refresh(self):
+        self.conn.is_active.return_value = True
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200, response.content)
+        calls = [c for c in self.conn.mock_calls if c in (call.update_volumes(), call.get_size())]
+        self.assertEqual(calls, [call.update_volumes(), call.get_size()])
+
+    def test_a_stopped_pool_lists_no_volumes(self):
+        self.conn.is_active.return_value = False
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertIsNone(response.json()["volumes"])
+        self.conn.update_volumes.assert_not_called()
+
+class PoolListTests(TestCase):
+    """The pool list: a card per pool with its state, autostart, path and space; a stopped pool's space is not zero."""
+
+    def test_cards(self):
+        compute = Compute.objects.create(name="pl", hostname="192.0.2.23", login="root", password="", type=1)
+        self.client.force_login(get_user_model().objects.create_superuser("pl-admin", "pl@example.com", "pw"))
+        pools = [
+            {"name": "default", "status": 1, "autostart": 1, "type": "dir", "path": "/var/lib/libvirt/images",
+             "volumes": 3, "size": 100, "free": 60, "used_percent": 40.0},
+            {"name": "ceph-vms", "status": 1, "autostart": 0, "type": "rbd", "path": "vms",
+             "volumes": 9, "size": 100, "free": 5, "used_percent": 95.0},
+            {"name": "backup", "status": 0, "autostart": 0, "type": "dir", "path": "/srv/backup",
+             "volumes": None, "size": 0, "free": 0, "used_percent": 0},
+        ]
+        with patch("storages.views.wvmStorages") as storages:
+            storages.return_value.get_storages_info.return_value = pools
+            storages.return_value.get_secrets_info.return_value = []
+            page = html.fromstring(self.client.get(reverse("storages", args=[compute.pk])).content)
+        cards = [" ".join(" ".join(card.itertext()).split()) for card in page.xpath("//div[@class='card h-100']")]
+        self.assertEqual(cards, [
+            "default Active Autostart Type DIR Path /var/lib/libvirt/images Volumes 3 60 bytes free of 100 bytes",
+            "ceph-vms Active Type RBD Path vms Volumes 9 5 bytes free of 100 bytes",
+            "backup Stopped Type DIR Path /srv/backup Volumes – Space unavailable while stopped",
+        ])
+        self.assertEqual(page.xpath("//div[contains(@class,'progress-bar')]/@class"),
+                         ["progress-bar ", "progress-bar bg-danger"])

@@ -1,6 +1,8 @@
 from appsettings.settings import app_settings
 from django.contrib.auth import get_user_model
-from django.forms import EmailField, Form, ModelForm, ValidationError
+from django.contrib.auth.forms import AuthenticationForm
+from django.core.validators import MaxLengthValidator
+from django.forms import CharField, EmailField, Form, ModelForm, Select, TypedChoiceField, ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from .models import UserInstance, UserSSHKey
@@ -19,9 +21,9 @@ class UserInstanceForm(ModelForm):
 
     def clean_instance(self):
         instance = self.cleaned_data["instance"]
-        if app_settings.ALLOW_INSTANCE_MULTIPLE_OWNER == "False":
-            exists = UserInstance.objects.filter(instance=instance)
-            if exists:
+        # a new owner only: rights of one the VM has may still be changed after the setting is turned off
+        if app_settings.ALLOW_INSTANCE_MULTIPLE_OWNER == "False" and self.instance.pk is None:
+            if UserInstance.objects.filter(instance=instance).exists():
                 raise ValidationError(_("Instance owned by another user"))
 
         return instance
@@ -29,9 +31,26 @@ class UserInstanceForm(ModelForm):
     class Meta:
         model = UserInstance
         fields = "__all__"
+        # the rights beyond power and console, as the VM's Users tab names them
+        labels = {"is_change": _("Change settings"), "is_delete": _("Delete the VM"),
+                  "is_vnc": _("Change console settings")}
+        help_texts = {"is_vnc": _("Only together with Change settings")}
+        # a list of every user and every VM
+        widgets = {"user": Select(attrs={"data-searchable": ""}), "instance": Select(attrs={"data-searchable": ""})}
 
 
-class ProfileForm(ModelForm):
+class UniqueEmailMixin:
+    """"Lost OTP?" mails only an address that is one user's: a second user
+    with the same address would switch it off for both."""
+
+    def clean_email(self):
+        email = self.cleaned_data["email"]
+        if email and get_user_model().objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
+            raise ValidationError(_("Another user has this email address"))
+        return email
+
+
+class ProfileForm(UniqueEmailMixin, ModelForm):
     class Meta:
         model = get_user_model()
         fields = ("first_name", "last_name", "email")
@@ -51,8 +70,9 @@ class UserSSHKeyForm(ModelForm):
         return self.cleaned_data["keyname"]
 
     def clean_keypublic(self):
+        # the same key with another comment is the same key
         for key in self.publickeys:
-            if self.cleaned_data["keypublic"] == key.keypublic:
+            if self.cleaned_data["keypublic"].split()[:2] == key.keypublic.split()[:2]:
                 raise ValidationError(_("Public key already exist"))
 
         if not validate_ssh_key(self.cleaned_data["keypublic"]):
@@ -71,5 +91,28 @@ class UserSSHKeyForm(ModelForm):
         fields = ("keyname", "keypublic")
 
 
+class ApiTokenForm(Form):
+    name = CharField(label=_("Name"), max_length=64, help_text=_("What uses it, such as a script or a host"))
+    days = TypedChoiceField(
+        label=_("Expires"), coerce=int, empty_value=None, required=False, initial=90,
+        choices=[(30, _("in 30 days")), (90, _("in 90 days")), (365, _("in a year")), ("", _("never"))],
+    )
+
+
 class EmailOTPForm(Form):
     email = EmailField(label=_("Email"))
+
+
+class BoundedUsernameMixin:
+    """Django's login form gives the username its max_length after the field
+    is built, so a longer one is not refused and reaches authentication;
+    django-axes then cannot store it (PostgreSQL refuses it: 500)."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        username = self.fields["username"]
+        username.validators.append(MaxLengthValidator(username.max_length))
+
+
+class LoginForm(BoundedUsernameMixin, AuthenticationForm):
+    pass

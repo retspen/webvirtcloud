@@ -1,4 +1,4 @@
-// Simplex 5.2.2
+// Simplex 5.3.8
 // Bootswatch
 
 
@@ -6,11 +6,7 @@
 
 $web-font-path: "https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap" !default;
 @if $web-font-path {
-  @import url($web-font-path);
-}
-
-:root {
-  color-scheme: light;
+  @import url("#{$web-font-path}");
 }
 
 // Mixins
@@ -37,7 +33,6 @@ $web-font-path: "https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700
   }
 
   &.bg-primary {
-    background-color: $primary !important;
     border-color: shade-color($primary, 13%) !important;
   }
 
@@ -112,6 +107,18 @@ $web-font-path: "https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700
 
 .text-secondary {
   color: $gray-600 !important;
+}
+
+// Tables
+
+.table-primary,
+.table-secondary,
+.table-success,
+.table-warning,
+.table-danger,
+.table-info,
+.table-light {
+  --#{$prefix}table-color: #{$body-color};
 }
 
 // Forms

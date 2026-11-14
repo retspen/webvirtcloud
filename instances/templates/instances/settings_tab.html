@@ -1,17 +1,20 @@
 {% load i18n %}
 {% load django_bootstrap5 %}
 {% load bootstrap_icons %}
+{% load operations %}
 <div class="tab-pane" id="settings" role="tabpanel">
     <!-- Nav tabs -->
-    <ul class="nav nav-tabs" role="tablist" aria-label="Instance settings">
-        {% if request.user.is_superuser %}
-            {% if instance.guest_agent_ready %}
+    <div class="card">
+    <div class="card-header bg-transparent pb-0">
+    <ul class="nav nav-underline nav-fill small" role="tablist" aria-label="Instance settings">
+        {% if instance.guest_agent_ready %}
             <li class="nav-item" role="presentation">
-                <button class="px-1 nav-link" data-bs-toggle="tab" id="osinfo-tab" data-bs-target="#osinfo" type="button" role="tab" aria-controls="osinfo" aria-selected="false" onclick="get_osinfo();">
+                <button class="px-1 nav-link" data-bs-toggle="tab" id="osinfo-tab" data-bs-target="#osinfo" type="button" role="tab" aria-controls="osinfo" aria-selected="false">
                     <span>{% bs_icon 'info-circle' %} </span>
                 </button>
             </li>
-            {% endif %}
+        {% endif %}
+        {% if request.user.is_superuser %}
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#boot_opt" type="button" role="tab" aria-controls="boot_opt" aria-selected="true">
                     {% trans "Boot" %}
@@ -23,7 +26,7 @@
                 </button>
             </li>
         {% endif %}
-        {% if request.user.is_superuser or request.user.is_staff or userinstance.is_vnc %}
+        {% if can_manage_console %}
             <li class="nav-item" role="presentation">
                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#vncsettings" type="button" role="tab" aria-controls="vncsettings" aria-selected="false">
                     {% trans "Console" %}
@@ -37,7 +40,14 @@
                 </button>
             </li>
         {% endif %}
-        {% if perms.instances.clone_instances %}
+        {% if show_hostdevs %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#hostdevs" type="button" role="tab" aria-controls="hostdevs" aria-selected="false">
+                    {% trans "Host devices" %}
+                </button>
+            </li>
+        {% endif %}
+        {% if can_clone %}
             <li class="nav-item" role="presentation">
                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#clone" type="button" role="tab" aria-controls="clone" aria-selected="false">
                     {% trans "Clone" %}
@@ -56,7 +66,7 @@
                 </button>
             </li>
         {% endif %}
-        {% if perms.instances.clone_instances %}
+        {% if can_change %}
             <li class="nav-item" role="presentation">
                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#options" type="button" role="tab" aria-controls="options" aria-selected="false">
                     {% trans "Options" %}
@@ -65,869 +75,921 @@
         {% endif %}
         {% if request.user.is_superuser %}
             <li class="nav-item" role="presentation">
-                <button class="px-1 nav-link" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab" aria-controls="users" aria-selected="false">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab" aria-controls="users" aria-selected="false">
                     {% trans "Users" %}
                 </button>
             </li>
         {% endif %}
     </ul>
+    </div>
+    {% if instance.status != 5 %}
+        <p class="small text-body-secondary px-3 pt-3 mb-0" id="next-start-note">{% trans "While the VM runs, most settings here apply at its next start." %}</p>
+    {% endif %}
     <!-- Tab panes -->
-    <div class="tab-content">
-        {% if request.user.is_superuser %}
+    <div class="tab-content card-body">
+        {% if instance.guest_agent_ready %}
         {% include 'instances/info_tab.html' %}
-        <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="boot_opt">
-            <p class="fw-bold">{% trans 'Autostart' %}</p>
-                <div class="row">
-                    <div class="col-sm-12 text-center">
-                    <p>{% trans "Autostart your instance when host server is power on " %}
-                        {% if instance.autostart == 0 %}
-                            <a class="btn btn-success" href="{% url 'instances:set_autostart' instance.id %}">{% trans "Enable" %}</a>
-                        {% else %}
-                            <a class="btn btn-danger" href="{% url 'instances:unset_autostart' instance.id %}">{% trans "Disable" %}</a>
-                        {% endif %}
+        {% endif %}
+        {% if request.user.is_superuser %}
+        <div role="tabpanel" class="tab-pane active" id="boot_opt">
+            {# the devices the VM tries in turn when it starts, and those it does not try; each moves on its own #}
+            <section class="mb-4" aria-labelledby="boot-order-heading">
+                <h2 class="h6" id="boot-order-heading">{% trans "Boot order" %}</h2>
+                <p class="small text-body-secondary" id="boot-order-help">{% trans "When the VM starts it tries these devices in turn and boots from the first that works." %}</p>
+                <form action="{% url 'instances:set_bootorder' instance.id %}" method="post" aria-labelledby="boot-order-heading" aria-describedby="boot-order-help">{% csrf_token %}
+                    <input type="hidden" id="bootorder" name="bootorder">
+                    <ol id="boot-chain" class="boot-chain list-unstyled mb-0">
+                        {% for device in instance.config_boot_devices %}{% if device.checked %}{% include "instances/boot_device.html" %}{% endif %}{% endfor %}
+                    </ol>
+                    <p class="small text-body-secondary py-2 mb-0" id="boot-chain-empty"{% if instance.config_boot_devices.0.checked %} hidden{% endif %}>
+                        {% if instance.config_boot_types %}{% blocktrans with types=instance.config_boot_types %}The VM boots by device type: {{ types }}. Add a device to choose the order yourself.{% endblocktrans %}
+                        {% else %}{% trans "No device is in the boot order. Add one." %}{% endif %}
                     </p>
-                    </div>
-                </div>
-            <p class="fw-bold">{% trans 'Boot Order' %}</p>
-                <div class="row">
-                    <div class="col-sm-12 text-center">
-                    {% if instance.status == 5 %}
-                        <p>{% trans "Enable Boot Menu for your instance when it starts up " %}
-                        {% if instance.bootmenu == 0 %}
-                            <form action="{% url 'instances:set_bootmenu' instance.id %}" method="post" role="form" aria-label="Enable/disable instance boot order form">{% csrf_token %}
-                                <input type="submit" class="btn btn-success" name="set_bootmenu" title="{% trans 'Show boot menu' %}" value="{% trans "Enable" %}">
-                            </form>
-                        {% else %}
-                            <form action="{% url 'instances:unset_bootmenu' instance.id %}" method="post" role="form" aria-label="Enable/disable instance boot order form">{% csrf_token %}
-                                <input type="submit" class="btn btn-danger" name="unset_bootmenu" title="{% trans 'Hide boot menu' %}" value="{% trans "Disable" %}">
-                            </form>
-                        {% endif %}
-                    {% else %}
-                        {% if instance.bootmenu == 0  %}
-                            <p>**** {% trans "Please shutdown instance to modify boot menu" %} ****</p>
-                        {% endif %}
-                    {% endif %}
-                    </div>
-                </div>
-
-            {% if instance.bootmenu == 1  %}
-                <div class="d-flex justify-content-center">
-                    <div class="col-sm-6 bg-light rounded shadow-sm">
-                        {% for idx, val in instance.boot_order.items %}
-                            <label>{{ idx|add:1 }}:{{ val.target }}, </label>
-                        {% endfor %}
-                    </div>
-                </div>
-                <form action="{% url 'instances:set_bootorder' instance.id %}" method="post" role="form" aria-label="Boot order edit form">{% csrf_token %}
-                    <input id="bootorder" name="bootorder" hidden>
-                    <div class="d-flex justify-content-center">
-                        <div id="b_order" class="multipleselect border-0">
-                            {% for disk in instance.disks %}
-                                <label><input type="checkbox" name="disk:{{ disk.dev }}" value="disk:{{ disk.dev }}" onclick="set_orderlist($('#bootorder'))" />{{ disk.dev }} - {{ disk.image }}</label>
-                            {% endfor %}
-                            {% for cd in instance.media %}
-                                <label><input type="checkbox" name="cdrom:{{ cd.dev }}" value="cdrom:{{ cd.dev }}" onclick="set_orderlist($('#bootorder'))"/>{{ cd.dev }} - {{ cd.image }}</label>
-                            {% endfor %}
-                            {% for net in instance.networks %}
-                                <label><input type="checkbox" name="network:{{ net.mac }}" value="network:{{ net.mac }}" onclick="set_orderlist($('#bootorder'))"/>NIC - {{ net.mac|slice:"9:" }}</label>
-                            {% endfor %}
-                        </div>
-                        <div>
-                            <div class="row mt-4">
-                                <a href="#" id="boot_order_up" class="btn btn-light shadow-sm"><span title="{% trans 'up: move selected devices' %}">{% bs_icon 'arrow-up' %} </span></a>
-                            </div>
-                            <div class="row mt-2">
-                                <a href="#" id="boot_order_down" class="btn btn-light shadow-sm"><span title="{% trans 'down: move selected devices' %}">{% bs_icon 'arrow-down' %} </span></a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-center">
-                        <div class="d-grid col-sm-6">
-                            <input type="submit" class="btn btn-success" name="set_bootorder" value="{% trans "Apply" %}">
-                        </div>
-                    </div>
+                    <h3 class="h6 small text-body-secondary mt-3 mb-1">{% trans "Not in the boot order" %}</h3>
+                    <ul id="boot-spare" class="boot-spare list-unstyled mb-3">
+                        {% for device in instance.config_boot_devices %}{% if not device.checked %}{% include "instances/boot_device.html" %}{% endif %}{% endfor %}
+                    </ul>
+                    <button type="submit" class="btn btn-sm btn-primary">{% trans "Save order" %}</button>
                 </form>
-            {% endif %}
-            <div class="clearfix"></div>
+            </section>
+            <section class="border-top pt-3" aria-labelledby="startup-heading">
+                <h2 class="h6" id="startup-heading">{% trans "Startup settings" %}</h2>
+                <div class="row g-3">
+                    <form class="col-12 col-md-6" action="{% if instance.autostart %}{% url 'instances:unset_autostart' instance.id %}{% else %}{% url 'instances:set_autostart' instance.id %}{% endif %}" method="post">{% csrf_token %}
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="autostart" aria-describedby="autostart-help"{% if instance.autostart %} checked{% elif instance.is_template or not instance.persistent %} disabled{% endif %} data-submit-on-change>
+                            <label class="form-check-label" for="autostart">{% trans "Autostart" %}</label>
+                        </div>
+                        <p class="small text-body-secondary mb-0" id="autostart-help">{% if instance.autostart %}{% trans "Start this VM when the host starts." %}{% elif instance.is_template %}{% trans "A template is not started: clone it to make a VM." %}{% elif not instance.persistent %}{% trans "A VM that exists only while it runs does not start with the host." %}{% else %}{% trans "Start this VM when the host starts." %}{% endif %}</p>
+                    </form>
+                    <form class="col-12 col-md-6" action="{% if instance.config_bootmenu %}{% url 'instances:unset_bootmenu' instance.id %}{% else %}{% url 'instances:set_bootmenu' instance.id %}{% endif %}" method="post">{% csrf_token %}
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="bootmenu" aria-describedby="bootmenu-help"{% if instance.config_bootmenu %} checked{% endif %} data-submit-on-change>
+                            <label class="form-check-label" for="bootmenu">{% trans "Boot menu" %}</label>
+                        </div>
+                        <p class="small text-body-secondary mb-0" id="bootmenu-help">{% trans "Show a device chooser when the VM starts." %}</p>
+                    </form>
+                </div>
+            </section>
         </div>
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="disks">
-                <form action="{% url 'instances:add_cdrom' instance.id %}" method="post" role="form" aria-label="Add CD-ROM form">{% csrf_token %}
-                    <p class="fw-bold">
-                        {% trans "Instance Media" %}
-                        <button class="btn btn-success float-end"
-                                type="submit" type="button"
-                                title="{% trans 'Add CD-ROM' %}"
-                                {% if instance.status != 5 %} disabled {% endif %}>
-                            <span>{% bs_icon 'plus' %} </span>
-                        </button>
-                    </p>
-                </form>
-                <div class="clearfix"></div>
-                {% for cd in instance.media %}
-                <div class="row mt-2">
-                    <div class="col-sm-12">
-                        {% if not cd.image %}
-                            <form action="{% url 'instances:mount_iso' instance.id %}" method="post">
-                                {% csrf_token %}
-                                <div class="input-group">
-                                    <a class="btn btn-secondary"
-                                        role="button"        
-                                        name="details"
-                                        title="{% trans 'Details' %}"
-                                        tabindex="0"
-                                        data-trigger="focus"
-                                        data-bs-toggle="popover"
-                                        data-bs-html="true"
-                                        data-bs-content="<strong>{% trans 'Bus' %}:</strong> {{ cd.bus }} <br/>
-                                            <strong>{% trans 'Device' %}:</strong> {{ cd.dev }}">
-                                            {% trans "CD-ROM" %} {{ forloop.counter }}
-                                    </a>
-                                    <select name="media" class="form-select">
-                                    {% if instance.media_iso %}
-                                        {% for iso in instance.media_iso %}
-                                            <option value="{{ iso }}">{{ iso }}</option>
-                                        {% endfor %}
-                                    {% else %}
-                                        <option value="none">{% trans "None" %}</option>
-                                    {% endif %}
-                                    </select>
-                                    
-                                    {% if instance.media_iso and allow_admin_or_not_template %}
-                                        <button type="submit" class="btn btn-sm btn-success" name="mount_iso" value="{{ cd.dev }}">{% trans "Mount" %}</button>
-                                    {% else %}
-                                        <button class="btn btn-sm btn-success disabled">{% trans "Mount" %}</button>
-                                    {% endif %}
-                                    {% if instance.status == 5 and allow_admin_or_not_template %}
-                                        <a  href="{% url 'instances:detach_cdrom' instance.id cd.dev %}" class="btn btn-sm btn-danger float-end" title="{% trans "Detach CD-ROM (remove device)" %}">
-                                            {% bs_icon 'dash-circle' %}
-                                        </a>
-                                    {% endif %}
-                                    
-                                </div>
-                            </form>
-                        {% else %}
-                            <form action="{% url 'instances:unmount_iso' instance.id %}" method="post">
-                                {% csrf_token %}
-                                <div class="input-group">
-                                    <a class="btn btn-secondary"
-                                        role="button"        
-                                        name="details"
-                                        title="{% trans 'Details' %}"
-                                        tabindex="0"
-                                        data-trigger="focus"
-                                        data-bs-toggle="popover"
-                                        data-bs-html="true"
-                                        data-bs-content="<strong>{% trans 'Bus' %}:</strong> {{ cd.bus }} <br/>
-                                            <strong>{% trans 'Device' %}:</strong> {{ cd.dev }}">
-                                            {% trans "CD-ROM" %} {{ forloop.counter }}
-                                    </a>
-                                    <input type="text" class="form-control" value="{{ cd.image }}" disabled/>
-                                    <input type="hidden" name="path" value="{{ cd.path }}">
-                                    {% if allow_admin_or_not_template %}
-                                        <button type="submit" class="btn btn-sm btn-success" value="{{ cd.dev }}" name="umount_iso">{% trans "Unmount" %}</button>
-                                    {% else %}
-                                        <button class="btn btn-sm btn-success disabled" value="{{ cd.dev }}" name="umount_iso">{% trans "Unmount" %}</button>
-                                    {% endif %}
-                                </div>
-                            </form>
-                        {% endif %}
+        <div role="tabpanel" class="tab-pane" id="disks">
+            {# its CD-ROM drives, then its disks as list rows; the forms are those of the actions #}
+            {% if instance.status != 5 %}
+            <p class="small text-body-secondary">{% bs_icon 'lock' %} {% trans "The VM is running: CD-ROM drives added now use the USB or SCSI bus. Shut it down to detach a SATA or IDE CD-ROM drive, or to detach or delete disks." %}</p>
+            {% endif %}
+            <section class="mb-4" aria-labelledby="media-heading">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <h2 class="h6 mb-0" id="media-heading">{% trans "Removable media" %}</h2>
+                    <div class="d-flex gap-2">
+                        {# the pools are read again: an ISO image copied to one by hand is listed then #}
+                        <form method="post" action="{% url 'instances:refresh_iso' instance.id %}">{% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="{% trans "Read the storage pools again: an ISO image copied to a pool by hand is listed then" %}">{% bs_icon 'arrow-clockwise' %} {% trans "Refresh ISO list" %}</button>
+                        </form>
+                        {% include 'add_instance_cdrom.html' %}
                     </div>
+                </div>
+                {% for cd in instance.media %}
+                <div class="card mb-2">
+                    <form class="card-body" method="post" action="{% if cd.image %}{% url 'instances:unmount_iso' instance.id %}{% else %}{% url 'instances:mount_iso' instance.id %}{% endif %}">
+                        {% csrf_token %}
+                        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="fs-4 text-body-secondary" aria-hidden="true">{% bs_icon 'disc' %}</span>
+                                <div>
+                                    <div class="fw-semibold">{% trans "CD-ROM" %} {{ forloop.counter }}</div>
+                                    <div class="small text-body-secondary">{{ cd.dev }} · {{ cd.bus }} · {% if cd.image %}{{ cd.image }}{% else %}{% trans "No media" %}{% endif %}</div>
+                                </div>
+                            </div>
+                            {% if not cd.image or cd.bus == "usb" %}
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" formaction="{% url 'instances:detach_cdrom' instance.id cd.dev %}" formmethod="post"{% if instance.status != 5 and cd.bus != "scsi" and cd.bus != "usb" %} disabled{% endif %}>{% trans "Detach" %}</button>
+                            {% endif %}
+                        </div>
+                        {% if cd.bus == "usb" %}
+                        {# libvirt has no empty USB drive: it is detached, not ejected #}
+                        {% elif cd.image %}
+                        <input type="hidden" name="path" value="{{ cd.path }}">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary" value="{{ cd.dev }}" name="umount_iso">{% bs_icon 'eject' %} {% trans "Unmount" %}</button>
+                        {% else %}
+                        <label class="form-label small" for="media-{{ cd.dev }}">{% trans "ISO image" %}</label>
+                        <div class="row g-2">
+                            <div class="col-12 col-sm">
+                                <select name="media" class="form-select form-select-sm" id="media-{{ cd.dev }}">
+                                {% for iso in instance.media_iso %}
+                                    <option value="{{ iso }}">{{ iso }}</option>
+                                {% empty %}
+                                    <option value="none">{% trans "None" %}</option>
+                                {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-auto d-grid">
+                                <button type="submit" class="btn btn-sm btn-primary" name="mount_iso" value="{{ cd.dev }}"{% if not instance.media_iso %} disabled{% endif %}>{% trans "Mount" %}</button>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </form>
                 </div>
                 {% empty %}
-                <div class="offset-3 col-sm-6">
-                    <div class="bg-warning rounded shadow-sm">{% trans 'There is not any CD-ROM device.' %}</div>
-                </div>
+                <p class="small text-body-secondary mb-0">{% trans "The VM has no CD-ROM drive." %}</p>
                 {% endfor %}
-                <div class="clearfix"></div>
-                <p class="fw-bold">
-                    {% trans "Instance Volume" %}
+            </section>
+            <section aria-labelledby="disks-heading">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <h2 class="h6 mb-0" id="disks-heading">{% trans "Disks" %} <span class="text-body-secondary fw-normal">· {{ instance.config_disks|length }}</span></h2>
                     {% include 'add_instance_volume.html' %}
-                </p>    
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th scope="col">{% trans "Device" %}</th>
-                            <th scope="col">{% trans "Used" %}</th>
-                            <th scope="col">{% trans "Capacity" %}</th>
-                            <th scope="col">{% trans "Storage" %}</th>
-                            <th scope="col">{% trans "Source" %}</th>
-                            <th scope="col">{% trans "Action" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {% for disk in instance.disks %}
-                        <tr>
-                            <td>
-                                <button type="submit" class="btn btn-sm btn-secondary"
-                                        name="details{{ forloop.counter0 }}"
-                                        title="{% trans 'Details' %}"
-                                        tabindex="1"
-                                        data-trigger="focus"
-                                        data-bs-toggle="popover"
-                                        data-bs-html="true"
-                                        data-bs-content="<strong>{% trans 'Bus' %}:</strong> {{ disk.bus }} <br/>
-                                                        <strong>{% trans 'Format' %}:</strong> {{ disk.format }} <br/>
-                                                        <strong>{% trans 'Cache' %}:</strong> {{ disk.cache }} <br/>
-                                                        <strong>{% trans 'Serial' %}:</strong> {{ disk.serial }} <br/>
-                                                        <strong>{% trans 'Readonly' %}:</strong> {{ disk.readonly }} <br/>
-                                                        <strong>{% trans 'Shareable' %}:</strong> {{ disk.shareable }}</br>
-                                                        <strong>{% trans 'IO Mode' %}:</strong> {{ disk.io }} <br/>
-                                                        <strong>{% trans 'Discard' %}:</strong> {{ disk.discard }} <br/>
-                                                        <strong>{% trans 'Detect Zeroes' %}:</strong> {{ disk.detect_zeroes }}">
-                                    <span>{% bs_icon 'info' %} </span>
-                                </button>
-                                {{ disk.dev }}
-                            </td>
-                        {% if disk.storage is None %}
-                            <td colspan="4">
-                                <div class="alert alert-danger">
-                                    {% trans "Error getting disk info" %}
+                </div>
+                <div class="card">
+                <div class="list-group list-group-flush">
+                {% for disk in instance.config_disks %}
+                    <article class="list-group-item py-3" aria-labelledby="disk-{{ disk.dev }}">
+                        <div class="row g-3 align-items-start small">
+                            <div class="col-12 col-md-2">
+                                <h3 class="h6 mb-1" id="disk-{{ disk.dev }}">{% bs_icon 'device-hdd' %} {{ disk.dev }}</h3>
+                                <div class="text-body-secondary">{{ disk.bus }} · {{ disk.format }}</div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                {% if disk.storage is None %}
+                                <div class="alert alert-danger mb-0">{% trans "Error getting disk info" %}</div>
+                                {% else %}
+                                {% widthratio disk.used disk.size 100 as used_percent %}
+                                {# a qcow2 file's metadata can take it past its capacity: the bar stops full #}
+                                {% if used_percent|add:0 > 100 %}{% widthratio 100 1 1 as used_percent %}{% endif %}
+                                <div class="d-flex flex-wrap justify-content-between gap-1">
+                                    <strong>{% trans "Capacity" %} {{ disk.size|filesizeformat }}</strong>
+                                    <span class="text-body-secondary">{% blocktrans with used=disk.used|filesizeformat %}{{ used }} used{% endblocktrans %}</span>
                                 </div>
-                            </td>
-                        {% else %}
-                            <td>{{ disk.used | filesizeformat}}</td>
-                            <td>{{ disk.size | filesizeformat }}</td>
-                            <td>{{ disk.storage }}</td>
-                            <td>{{ disk.path }}</td>
-                        {% endif %}
-                            <td class="text-nowrap">
-                                <form class="d-inline" action="{% url 'instances:edit_volume' instance.id %}" method="post" role="form" aria-label="Edit instance volume form">
+                                <div class="progress my-2" style="height: .25rem;" role="progressbar" aria-label="{% blocktrans with dev=disk.dev %}{{ dev }} used{% endblocktrans %}" aria-valuenow="{{ used_percent }}" aria-valuemin="0" aria-valuemax="100">
+                                    <div class="progress-bar" style="width: {{ used_percent }}%"></div>
+                                </div>
+                                <div><span class="text-body-secondary">{% trans "Storage pool" %}</span> <strong>{{ disk.storage }}</strong></div>
+                                <div class="text-body-secondary text-break"><span class="visually-hidden">{% trans "Source" %}: </span>{{ disk.path }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-md-4 d-flex flex-wrap justify-content-md-end gap-2">
+                                <form class="d-inline" action="{% url 'instances:edit_volume' instance.id %}" method="post" aria-label="{% trans "Edit instance volume form" %}">
                                     {% csrf_token %}
-                                    <input type="hidden" name="path" value="{{ disk.path }}">
+                                    <input type="hidden" name="path" value="{{ disk.path|default:'' }}">
                                     <input type="hidden" name="dev" value="{{ disk.dev }}">
                                     <input type="hidden" name="storage" value="{{ disk.storage }}">
                                     <input type="hidden" name="name" value="{{ disk.image }}">
                                     {% include 'instances/edit_instance_volume.html' with id=forloop.counter0 %}
                                 </form>
+                                {% if request.user.is_superuser %}{% include 'instances/move_disk.html' with id=forloop.counter0 %}{% endif %}
                                 <form class="d-inline" action="{% url 'instances:detach_vol' instance.id %}" method="post">
                                     {% csrf_token %}
-                                    <input type="hidden" name="path" value="{{ disk.path }}">
+                                    <input type="hidden" name="path" value="{{ disk.path|default:'' }}">
                                     <input type="hidden" name="dev" value="{{ disk.dev }}">
                                     <input type="hidden" name="storage" value="{{ disk.storage }}">
                                     <input type="hidden" name="name" value="{{ disk.image }}">
-                                    {% if instance.status == 5 %}
-                                        <button type="submit" class="btn btn-sm btn-secondary" value="{{ disk.dev }}" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure to detach volume?" %}')">
-                                            {% bs_icon 'eject' %}
-                                        </button>
-                                    {% else %}
-                                        <button class="btn btn-sm btn-secondary disabled" value="{{ disk.dev }}" title="{% trans "Detach" %}" onclick="return confirm('{% trans "Are you sure? This may lead data corruption!" %}')">
-                                            {% bs_icon 'eject' %}
-                                        </button>
-                                    {% endif %}
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" value="{{ disk.dev }}"{% if instance.status != 5 %} disabled{% endif %} data-confirm="{% blocktrans with dev=disk.dev %}Detach {{ dev }}? Its file is kept.{% endblocktrans %}">{% trans "Detach" %}</button>
                                 </form>
                                 <form class="d-inline" action="{% url 'instances:delete_vol' instance.id %}" method="post">
                                     {% csrf_token %}
-                                    <input type="hidden" name="path" value="{{ disk.path }}">
+                                    <input type="hidden" name="path" value="{{ disk.path|default:'' }}">
                                     <input type="hidden" name="dev" value="{{ disk.dev }}">
                                     <input type="hidden" name="storage" value="{{ disk.storage }}">
                                     <input type="hidden" name="name" value="{{ disk.image }}">
-                                    {% if instance.status == 5 %}
-                                        <button type="submit" class="btn btn-sm btn-secondary" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure to delete volume?" %}')">
-                                            {% bs_icon 'trash' %}
-                                        </button>
-                                    {% else %}
-                                        <button class="btn btn-sm btn-secondary disabled" title="{% trans "Delete" %}" onclick="return confirm('{% trans "Are you sure? This may lead data corruption!" %}')">
-                                            {% bs_icon 'trash' %}
-                                        </button>
-                                    {% endif %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"{% if instance.status != 5 %} disabled{% endif %} data-confirm="{% blocktrans with dev=disk.dev %}Delete {{ dev }}? It is detached and its file and data are removed.{% endblocktrans %}">{% trans "Delete" %}</button>
                                 </form>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-                <div class="clearfix"></div>
+                            </div>
+                        </div>
+                        <details class="small mt-2">
+                            <summary class="text-body-secondary">{% trans "Device details" %}</summary>
+                            <dl class="row mb-0 mt-2" style="max-width: 32rem">
+                                <dt class="col-6 fw-normal text-body-secondary">{% trans "Cache" %}</dt><dd class="col-6 mb-1">{{ disk.cache }}</dd>
+                                <dt class="col-6 fw-normal text-body-secondary">{% trans "IO mode" %}</dt><dd class="col-6 mb-1">{{ disk.io }}</dd>
+                                <dt class="col-6 fw-normal text-body-secondary">{% trans "Discard" %}</dt><dd class="col-6 mb-1">{{ disk.discard }}</dd>
+                                <dt class="col-6 fw-normal text-body-secondary">{% trans "Detect zeroes" %}</dt><dd class="col-6 mb-1">{{ disk.detect_zeroes }}</dd>
+                                <dt class="col-6 fw-normal text-body-secondary">{% trans "Serial" %}</dt><dd class="col-6 mb-1">{{ disk.serial|default:"—" }}</dd>
+                                <dt class="col-6 fw-normal text-body-secondary">{% trans "Read-only" %}</dt><dd class="col-6 mb-1">{{ disk.readonly|yesno }}</dd>
+                                <dt class="col-6 fw-normal text-body-secondary">{% trans "Shareable" %}</dt><dd class="col-6 mb-0">{{ disk.shareable|yesno }}</dd>
+                            </dl>
+                        </details>
+                    </article>
+                {% endfor %}
+                </div>
+                </div>
+                {% if instance.pcie_slots %}
+                {# a PCIe machine gives each virtio disk and network device a slot; a running VM gets no new one #}
+                {% with total=instance.pcie_slots.0 free=instance.pcie_slots.1 next=instance.config_pcie_slots %}
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 small mt-3">
+                    <span class="{% if not free %}text-danger{% else %}text-body-secondary{% endif %}">
+                        {% blocktrans %}PCIe slots: {{ free }} free of {{ total }}{% endblocktrans %}{% if next and next.1 != free %} · {% blocktrans with next_free=next.1 %}{{ next_free }} free from the next start{% endblocktrans %}{% endif %}
+                    </span>
+                    {% if request.user.is_superuser %}
+                    <form action="{% url 'instances:add_pcie_slots' instance.id %}" method="post">{% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">{% trans "Add PCIe slots" %}</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endwith %}
+                {% endif %}
+            </section>
         </div>
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="network">
-            <p>
-                {% trans "Add a network device" %}
-                {% include 'add_instance_network_block.html' %}
-            </p>
-
-            <div class="row mt-3">
-                <div class="col-lg-12 mt-3">
-                <h5 class="fw-bold">{% trans "Network Devices" %}</h5>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th scope="col">{% trans 'Name' %}</th>
-                            <th scope="col" class="d-none d-table-cell d-sm-table-cell" colspan="2">{% trans 'Info' %}</th>
-                            <th scope="colgroup" colspan="3" class="col-sm-2">{% trans 'Actions' %}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {% for network in instance.networks %}
-                        <tr>
-                            <td rowspan="2">eth{{ forloop.counter0 }}({{ network.target|default:"no target" }})
-                                <form action="{% url 'instances:set_link_state' instance.id %}" method="post" aria-label="set instance link state form">
-                                    {% csrf_token %}
-                                    <input name="mac" value="{{ network.mac }}" hidden/>
-                                    <input name="set_link_state" value="{{ network.state }}" hidden/>
-                                    <input type="checkbox" {% if network.state == 'up' %} checked{% endif %} onclick='submit();' />
-                                    <strong>{% trans 'active' %}</strong>
-                                    <small>{{ network.type }}</small>
+        <div role="tabpanel" class="tab-pane" id="network">
+            {# a row per NIC in one list, as the disks; its QoS limits fold out like its device details #}
+            <section aria-labelledby="nics-heading">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <h2 class="h6 mb-0" id="nics-heading">{% trans "Network devices" %} <span class="text-body-secondary fw-normal">({{ instance.config_networks|length }})</span></h2>
+                    {% include 'add_instance_network_block.html' %}
+                </div>
+                <div class="card">
+                <div class="list-group list-group-flush">
+                {% for network in instance.config_networks %}
+                    <article class="list-group-item py-3" aria-labelledby="nic-{{ forloop.counter0 }}">
+                        {# the NIC as a cable from the VM to its source: solid while its link is up, dashed while down #}
+                        <div class="d-flex flex-wrap align-items-center column-gap-3 row-gap-2">
+                            <div class="d-flex align-items-center gap-2 me-auto text-break">
+                                <h3 class="h6 mb-0" id="nic-{{ forloop.counter0 }}">eth{{ forloop.counter0 }}</h3>
+                                <span class="nic-wire{% if network.state == 'up' %} nic-up{% endif %}" aria-hidden="true"></span>
+                                <span class="fw-semibold">{{ network.nic|default:"—" }}</span>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                {# a NIC that is a host device is changed in the XML editor #}
+                                {% if network.type != "hostdev" %}
+                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#editInstanceNetwork{{ forloop.counter0 }}">{% trans "Edit" %}</button>
+                                {% endif %}
+                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#AddQos{{ forloop.counter0 }}">{% trans "Add QoS" %}</button>
+                                {% if network.type != "hostdev" %}
+                                <form action="{% url 'instances:delete_network' instance.id %}" method="post" aria-label="{% trans "Delete network device form" %}">{% csrf_token %}
+                                    <button class="btn btn-sm btn-outline-danger" value="{{ network.mac }}" name="delete_network"
+                                            data-confirm="{% blocktrans with mac=network.mac %}Remove network card {{ mac }}? A running VM loses its connection through it at once.{% endblocktrans %}">{% trans "Delete" %}</button>
                                 </form>
-                            </td>
-                            <td>
-                                <div class="input-group">
-                                    <span class="input-group-text">{% trans 'MAC' %}</span>
-                                    <input type="text" class="form-control" value="{{ network.mac }}" aria-label="mac" aria-describedby="mac" readonly>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap align-items-center column-gap-4 row-gap-1 mt-2">
+                            <span class="text-break text-body-secondary" data-address-mac="{{ network.mac }}" data-address-family="ipv4" data-empty="{% trans "No IPv4 address known" %}">{% trans "Reading…" %}</span>
+                            <form action="{% url 'instances:set_link_state' instance.id %}" method="post" aria-label="{% trans "Link state form" %}">{% csrf_token %}
+                                <input type="hidden" name="mac" value="{{ network.mac }}">
+                                <input type="hidden" name="set_link_state" value="{{ network.state }}">
+                                <div class="form-check form-switch mb-0 small">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="link-{{ forloop.counter0 }}"{% if network.state == 'up' %} checked{% endif %} data-submit-on-change>
+                                    <label class="form-check-label" for="link-{{ forloop.counter0 }}">{% if network.state == 'up' %}{% trans "Link up" %}{% else %}{% trans "Link down" %}{% endif %}</label>
                                 </div>
-                            </td>
-                            <td class="d-none d-table-cell">
-                                <div class="input-group">
-                                    <span class="input-group-text">{% trans 'Filter' %}</span>
-                                    <input type="text" class="form-control" value="{{ network.filterref|default:'None' }}" aria-label="filter" aria-describedby="filter" readonly>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="input-group">
-                                    <span class="input-group-text">{% trans 'Source' %}</span>
-                                    <input type="text" class="form-control" value="{{ network.nic }}" aria-label="source" aria-describedby="source" readonly>
-                                </div>
-                            </td>
-                            <td>
-                                <form action="{% url 'instances:change_network' instance.id %}" method="post" name="edit_network{{ forloop.counter0 }}" role="form">{% csrf_token %}
-                                    <button class="btn btn-sm btn-primary"
-                                            type="button"
-                                            title="{% trans "Edit NIC" %}" 
-                                            data-bs-target="#editInstanceNetwork{{ forloop.counter0 }}"
-                                            data-bs-toggle="modal">
-                                            <span aria-hidden="true">{% bs_icon 'pencil-square' %} </span>
-                                    </button>
-
-                                    <div class="modal fade" id="editInstanceNetwork{{ forloop.counter0 }}" role="dialog" aria-labelledby="editInstanceNetworkLabel" aria-hidden="true">
-                                        <div class="modal-dialog">
-                                            <div class="modal-content">
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title">{% trans "Edit Instance Network" %}</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <div class="container">
-                                                    <div class="row">
-                                                        <label class="col-form-label">{% trans "MAC" %}</label>
-                                                        <div class="input-group">
-                                                            <input class="form-control" type="text" value="{{ network.mac }}" readonly/>
-                                                            <input class="form-control" type="text" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
-                                                        </div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <label class="col-form-label">{% trans "Net Source" %}</label>
-                                                        <div class="input-group">
-                                                            <input class="form-control" type="text" value="{{ network.nic }}" readonly/>
-                                                            <select class="form-select" name="net-source-{{ forloop.counter0 }}">
-                                                                {% for c_net in networks_host %}
-                                                                <option value="net:{{ c_net }}" {% if c_net == network.nic %} selected {% endif %}>{% trans 'Network' %} {{ c_net }}</option>
-                                                                {% endfor %}
-                                                                {% for c_iface in interfaces_host %}
-                                                                <option value="iface:{{ c_iface }}" {% if c_iface == network.nic %} selected {% endif %}>{% trans 'Interface' %} {{ c_iface }}</option>
-                                                                {% endfor %}
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <label class="col-form-label">{% trans "NWFilter" %}</label>
-                                                        <div class="input-group">
-                                                            <input class="form-control" type="text" value="{{ network.filterref }}" readonly/>
-                                                            <select class="form-select" name="net-nwfilter-{{ forloop.counter0 }}">
-                                                                <option value="">{% trans "None" %}</option>
-                                                                {% for c_filters in nwfilters_host %}
-                                                                <option value="{{ c_filters }}" {% if c_filters == network.filterref  %} selected {% endif %}>{{ c_filters }}</option>
-                                                                {% endfor %}
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <label class="col-form-label">{% trans "Model" %} </label>
-                                                        <div class="input-group">
-                                                            <input class="form-control" type="text" value="{{ network.model }}" readonly/>
-                                                            <select class="form-select" name="net-model-{{ forloop.counter0 }}">
-                                                                {% for model in net_models_host %}
-                                                                <option value="{{ model }}" {% if model == network.model  %} selected {% endif %}>{{ model }}</option>
-                                                                {% endfor %}
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">{% trans 'Close' %}</button>
-                                                    <button class="btn btn-success" name="change_network" title="{% trans "Apply network changes" %}">{% trans "Apply" %}</button>
-                                                </div>
+                            </form>
+                        </div>
+                        <div class="small text-body-secondary text-break mt-1">{{ network.model|default:"—" }}, {{ network.mac }}{% if network.filterref %}, {% blocktrans with filter=network.filterref %}filter {{ filter }}{% endblocktrans %}{% endif %}{% if network.inbound or network.outbound %}, {% trans "bandwidth limited" %}{% endif %}</div>
+                        {% if network.type == 'direct' %}
+                        <p class="small text-body-secondary mt-1 mb-0">{% trans "In most configurations, macvtap does not work for host to guest network communication" %}</p>
+                        {% endif %}
+                        <details class="small mt-2">
+                            <summary class="text-body-secondary">{% trans "Device details" %}</summary>
+                            <dl class="row mb-0 mt-2" style="max-width: 32rem">
+                                <dt class="col-4 fw-normal text-body-secondary">{% trans "Type" %}</dt><dd class="col-8 mb-1">{{ network.type }}</dd>
+                                <dt class="col-4 fw-normal text-body-secondary">{% trans "Host device" %}</dt><dd class="col-8 mb-1 text-break">{{ network.target|default:_("no target") }}</dd>
+                                <dt class="col-4 fw-normal text-body-secondary">{% trans "IPv6" %}</dt><dd class="col-8 mb-1 text-break" data-address-mac="{{ network.mac }}" data-address-family="ipv6" data-empty="{% trans "unknown" %}">{% trans "Reading…" %}</dd>
+                            </dl>
+                        </details>
+                        {% if network.inbound or network.outbound %}
+                        <details class="small">
+                            <summary class="text-body-secondary">{% trans "QoS limits" %}: {% if network.inbound and network.outbound %}{% trans "inbound, outbound" %}{% elif network.inbound %}{% trans "inbound" %}{% else %}{% trans "outbound" %}{% endif %}</summary>
+                            {% if network.inbound %}{% include 'instances/nic_qos_form.html' with nic=forloop.counter0 direction="inbound" limit=network.inbound %}{% endif %}
+                            {% if network.outbound %}{% include 'instances/nic_qos_form.html' with nic=forloop.counter0 direction="outbound" limit=network.outbound %}{% endif %}
+                            <p class="text-body-secondary mt-2 mb-0">{% trans "Average and peak are in KiB/s, burst in KiB. A running VM gets a change after it is powered off and on." %}</p>
+                        </details>
+                        {% endif %}
+                    {# the dialogs of Edit and Add QoS #}
+                    {% if network.type != "hostdev" %}
+                    <form action="{% url 'instances:change_network' instance.id %}" method="post" name="edit_network{{ forloop.counter0 }}">{% csrf_token %}
+                        <div class="modal fade" id="editInstanceNetwork{{ forloop.counter0 }}" tabindex="-1" aria-labelledby="editInstanceNetworkLabel{{ forloop.counter0 }}" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header align-items-start">
+                                        <div>
+                                            <h5 class="modal-title" id="editInstanceNetworkLabel{{ forloop.counter0 }}">{% blocktrans with nic=forloop.counter0 %}Edit eth{{ nic }}{% endblocktrans %}</h5>
+                                            <p class="small text-body-secondary mb-0 mt-1">{{ network.model|default:"—" }} · {{ network.mac }}</p>
+                                        </div>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        {% if instance.status != 5 %}
+                                            <p class="small text-body-secondary">{% trans "The VM is running: the changes apply at its next start." %}</p>
+                                        {% endif %}
+                                        <input type="hidden" name="net-old-mac-{{ forloop.counter0 }}" value="{{ network.mac }}">
+                                        <input type="hidden" name="net-seen-{{ forloop.counter0 }}" value="{{ network.seen }}">
+                                        <div class="row g-3">
+                                            <div class="col-12">
+                                                <label class="form-label" for="net-source-{{ forloop.counter0 }}">{% trans "Source" %}</label>
+                                                <select class="form-select" id="net-source-{{ forloop.counter0 }}" name="net-source-{{ forloop.counter0 }}">
+                                                    {# the NIC keeps its source, whatever its kind, unless another is chosen #}
+                                                    <option value="" selected>{% blocktrans with nic=network.nic|default:_("none") %}{{ nic }}, as it is{% endblocktrans %}</option>
+                                                    <optgroup label="{% trans "Networks" %}">
+                                                        {% for c_net in networks_host %}
+                                                        <option value="net:{{ c_net }}">{{ c_net }}</option>
+                                                        {% endfor %}
+                                                    </optgroup>
+                                                    <optgroup label="{% trans "Interfaces" %}">
+                                                        {% for c_iface in interfaces_host %}
+                                                        <option value="iface:{{ c_iface }}">{{ c_iface }}</option>
+                                                        {% endfor %}
+                                                    </optgroup>
+                                                </select>
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <label class="form-label" for="net-model-{{ forloop.counter0 }}">{% trans "Model" %}</label>
+                                                <select class="form-select" id="net-model-{{ forloop.counter0 }}" name="net-model-{{ forloop.counter0 }}">
+                                                    {% for model in net_models_host %}
+                                                    <option value="{{ model }}"{% if model == network.model %} selected{% endif %}>{{ model }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <label class="form-label" for="net-nwfilter-{{ forloop.counter0 }}">{% trans "NWFilter" %}</label>
+                                                <select class="form-select" id="net-nwfilter-{{ forloop.counter0 }}" name="net-nwfilter-{{ forloop.counter0 }}">
+                                                    <option value="">{% trans "None" %}</option>
+                                                    {% for c_filters in nwfilters_host %}
+                                                    <option value="{{ c_filters }}"{% if c_filters == network.filterref %} selected{% endif %}>{{ c_filters }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label" for="net-mac-{{ forloop.counter0 }}">{% trans "MAC" %}</label>
+                                                <input class="form-control font-monospace" type="text" id="net-mac-{{ forloop.counter0 }}" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}">
                                             </div>
                                         </div>
                                     </div>
-                                </form>
-                            </td>
-                            <td>
-                                <form action="{% url 'instances:set_qos' instance.id %}" method="post" name="add_qos{{ forloop.counter0 }}" role="form" aria-label="Add network qos form">
-                                    {% csrf_token %}
-                                    <input type="text" name="net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}" hidden/>
-                                    {% include 'add_network_qos.html' with id=forloop.counter0 %}
-                                </form>
-                            </td>
-                            <td>
-                                <form action="{% url 'instances:delete_network' instance.id %}" method="post" name="delete_network" role="form">{% csrf_token %}
-                                    <button class="btn btn-sm btn-danger" value="{{ network.mac }}" name="delete_network" title="{% trans "Delete Device" %}"
-                                        onclick="return confirm('{% trans "Are you sure?" %}')">
-                                        {% bs_icon 'trash' %} 
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
+                                    <div class="modal-footer">
+                                        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                                        <button class="btn btn-primary" name="change_network">{% trans "Save" %}</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                    {% endif %}
+                    <form action="{% url 'instances:set_qos' instance.id %}" method="post" name="add_qos{{ forloop.counter0 }}" aria-label="{% trans "Add network QoS form" %}">{% csrf_token %}
+                        <input type="hidden" name="net-mac" value="{{ network.mac }}">
+                        {% include 'add_network_qos.html' with id=forloop.counter0 %}
+                    </form>
+                    </article>
+                {% empty %}
+                    <div class="list-group-item small text-body-secondary">{% trans "The VM has no network device." %}</div>
+                {% endfor %}
+                </div>
+                </div>
+            </section>
+        </div>
+        {% if show_hostdevs %}
+        <div role="tabpanel" class="tab-pane" id="hostdevs">
+            <p class="small text-body-secondary">{% trans "Devices of the host given to the VM. The VM starts only on a host that has them; it is not migrated while it has them, and its clones get none." %}</p>
+            {% if request.user.is_superuser %}
+            {# the add forms come when the tab opens: their choices scan every VM of the host #}
+            <div id="host-devices" class="mb-3" data-url="{% url 'instances:host_devices' instance.id %}" data-failed="{% trans "The host's devices could not be read." %}">
+                <span class="small text-body-secondary">{% trans "Reading the host's devices…" %}</span>
+            </div>
+            {% endif %}
+            {% if usb_hostdevs %}
+            <div class="table-responsive position-relative">
+                <table class="table align-middle">
+                    <thead>
                         <tr>
-                            <td>
-                                <div class="input-group">
-                                    <span class="input-group-text">{% trans 'IPv4' %}</span>
-                                    <input type="text" class="form-control" value="{% for ipv4 in network.ipv4|default:'unknown' %}{{ ipv4 }}{% endfor %}" aria-label="ipv4" aria-describedby="ipv4" readonly>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="input-group">
-                                    <span class="input-group-text">{% trans 'IPv6' %}</span>
-                                    <input type="text" class="form-control" value="{% for ipv6 in network.ipv6|default:'unknown' %}{{ ipv6 }}{% endfor %}" aria-label="ipv6" aria-describedby="ipv6" readonly>
-                                </div>
-                            </td>
-                            <td colspan="3">
-                                <div class="input-group">
-                                    <span class="input-group-text px-2">{% trans 'Model' %}</span>
-                                    <input type="text" class="form-control px-2" value="{{ network.model }}" aria-label="model" aria-describedby="model" readonly>
-                                </div>
-                            </td>
+                            <th scope="col">{% trans "USB device" %}</th>
+                            <th scope="col">{% trans "Chosen by" %}</th>
+                            <th scope="col">{% trans "Running VM" %}</th>
+                            <th scope="col">{% trans "Next start" %}</th>
+                            {% if request.user.is_superuser %}<th scope="col"><span class="visually-hidden">{% trans "Actions" %}</span></th>{% endif %}
                         </tr>
+                    </thead>
+                    <tbody>
+                    {% for device in usb_hostdevs %}
                         <tr>
-                            <td class="py-1 bg-primary text-white" colspan="9">
-                                {% if network.type == 'direct' %}
-                                <small>{% trans 'In most configurations, macvtap does not work for host to guest network communication' %}</small>
-                                {% endif %}
+                            <td>{{ device.name|default:"–" }} <span class="small text-body-secondary font-monospace">{{ device.vendor|slice:"2:" }}:{{ device.product|slice:"2:" }}</span></td>
+                            <td>{% if device.address %}{% blocktrans with bus=device.address.0 device=device.address.1 %}Its address {{ bus }}/{{ device }}{% endblocktrans %}{% else %}{% trans "Its model: any device of it" %}{% endif %}</td>
+                            <td>{% if device.now %}{% blocktrans with bus=device.now.0 device=device.now.1 %}Has {{ bus }}/{{ device }}{% endblocktrans %}{% else %}–{% endif %}</td>
+                            <td>{% if device.next %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</td>
+                            {% if request.user.is_superuser %}
+                            <td class="text-end">
+                                <form method="post" action="{% url 'instances:delete_usb_hostdev' instance.id %}">{% csrf_token %}
+                                    <input type="hidden" name="vendor" value="{{ device.vendor }}">
+                                    <input type="hidden" name="product" value="{{ device.product }}">
+                                    <input type="hidden" name="address" value="{% if device.address %}{{ device.address.0 }}/{{ device.address.1 }}{% endif %}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans "Remove the USB device" %}"
+                                            data-confirm="{% trans "Remove this USB device from the VM? A running VM loses it at once." %}">{% bs_icon 'trash' %}</button>
+                                </form>
                             </td>
+                            {% endif %}
                         </tr>
                     {% endfor %}
                     </tbody>
                 </table>
             </div>
-            </div>
-
-            {% if instance.qos %}
-            <div class="row mt-3">
-                <div class="col-sm-10">
-                    <p><strong>{% trans "QoS Configuration" %}</strong></p>
-                </div>
-                <div class="col-12 col-sm-12">
-                    <table class="table table-hover">
-                        <thead>
-                        <tr class="d-flex">
-                            <th scope="col" class="col-2">{% trans "MAC" %}/{% trans "Direction" %}</th>
-                            <th scope="col" class="col-2">{% trans "Average" %}</th>
-                            <th scope="col" class="col-3">{% trans "Peak" %}</th>
-                            <th scope="col" class="col-3">{% trans "Burst" %}</th>
-                            <th scope="col" class="col-2">{% trans "Actions" %}</th>
+            {% endif %}
+            {% if pci_hostdevs %}
+            <div class="table-responsive position-relative">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th scope="col">{% trans "PCI device" %}</th>
+                            <th scope="col">{% trans "Running VM" %}</th>
+                            <th scope="col">{% trans "Next start" %}</th>
+                            {% if request.user.is_superuser %}<th scope="col"><span class="visually-hidden">{% trans "Actions" %}</span></th>{% endif %}
                         </tr>
-                        </thead>
-                        <tbody>
-                        {% for q, attrs in instance.qos.items %}
-                            {% for att in attrs  %}
-                                <tr class="d-flex">
-                                    <form action="{% url 'instances:set_qos' instance.id %}" method="post" role="form" aria-label="Instance QoS configuration form">
-                                        {% csrf_token %}
-                                        <td class="col-2"><label class="col-form-label">{{ q }} {{ att.direction | capfirst }}</label></td>
-                                        <td class="col-2"><input id="qos_average" class="form-control" name="qos_average"
-                                                value="{{ att.average|default:'' }}"/>
-                                        </td>
-                                        <td class="col-3"><input id="qos_peak" class="form-control" name="qos_peak"
-                                                value="{{ att.peak|default:'' }}"/>
-                                        </td>
-                                        <td class="col-3"><input id="qos_burst" class="form-control" name="qos_burst"
-                                                value="{{ att.burst|default:'' }}"/>
-                                        </td>
-                                        <td class="col-sm-2">
-                                            <input name="qos_direction" value="{{ att.direction }}" hidden/>
-                                            <input name="net-mac" value="{{ q }}" hidden/>
-                                            <button type="submit" class="btn btn-sm btn-primary"
-                                                    name="set_qos" data-bs-toggle="modal"
-                                                    title="{% trans "Edit QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                <span>{% bs_icon 'save' %} </span>
-                                            </button>
-                                    </form>
-                                            <form action="{% url 'instances:unset_qos' instance.id %}" method="post" role="form" aria-label="Instance QoS configuration form">
-                                                {% csrf_token %}
-                                                <input name="qos_direction" value="{{ att.direction }}" hidden/>
-                                                <input name="net-mac" value="{{ q }}" hidden/>
-                                                <button type="submit" class="btn btn-sm btn-danger"
-                                                        name="unset_qos"
-                                                        title="{% trans "Delete QoS" %}" onclick="return confirm('{% trans "Are you sure?" %}')">
-                                                        {% bs_icon 'trash' %} 
-                                                </button>
-                                            </form>
-                                        </td>
-                                </tr>
-                            {% endfor %}
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                    </thead>
+                    <tbody>
+                    {% for device in pci_hostdevs %}
+                        <tr>
+                            <td>{{ device.name|default:"–" }} <span class="small text-body-secondary font-monospace">{{ device.address }}</span></td>
+                            <td>{% if device.now %}{% trans "Has it" %}{% else %}–{% endif %}</td>
+                            <td>{% if device.next %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</td>
+                            {% if request.user.is_superuser %}
+                            <td class="text-end">
+                                <form method="post" action="{% url 'instances:delete_pci_hostdev' instance.id %}">{% csrf_token %}
+                                    <input type="hidden" name="address" value="{{ device.address }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans "Remove the PCI device" %}"
+                                            {% if instance.status != 1 and instance.status != 5 or instance.has_managed_save_image %}disabled title="{% trans "A paused VM, or one with a saved state, does not change its PCI devices" %}"{% endif %}
+                                            data-confirm="{% trans "Remove this PCI device from the VM? A running VM's guest has to let it go." %}">{% bs_icon 'trash' %}</button>
+                                </form>
+                            </td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
             </div>
             {% endif %}
-            <div class="clearfix"></div>
+            {% for device in other_hostdevs %}
+            <p class="mb-1">
+                {% if device.type == "nic" %}{% trans "Network interface" %}{% else %}{{ device.type|upper }}{% endif %} <span class="font-monospace">{{ device.address }}</span>
+                <span class="small text-body-secondary">{% if device.now and device.next %}{% trans "running VM and next start" %}{% elif device.now %}{% trans "running VM only" %}{% else %}{% trans "next start only" %}{% endif %}; {% trans "changed in the XML editor" %}</span>
+            </p>
+            {% endfor %}
+            {% if not usb_hostdevs and not pci_hostdevs and not other_hostdevs %}
+            <p class="small text-body-secondary mb-0">{% trans "The VM has no host devices." %}</p>
+            {% endif %}
         </div>
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="migrate">
-            <p>{% trans "For migration both host servers must have equal settings and OS type" %}</p>
-            <form action="{% url 'instances:migrate' instance.id %}" class="ms-3 form" method="post" role="form" aria-label="Migrate instance form">
-                {% csrf_token %}
-                <div class="row">
-                    <label class="col-sm-3 col-form-label">{% trans "Original host" %}</label>
-                    <div class="col-sm-6">
-                        <label class="form-control" readonly="readonly">{{ compute.name }}</label>
-                    </div>
-                </div>
-                <div class="row">
-                    <label class="col-sm-3 col-form-label">{% trans "Host migration" %}</label>
-                    <div class="col-sm-6">
-                        <select name="compute_id" class="form-select">
-                            {% if computes_count != 1 %}
+        {% endif %}
+        <div role="tabpanel" class="tab-pane" id="migrate">
+            <form action="{% url 'instances:migrate' instance.id %}" method="post" aria-labelledby="migrate-route">{% csrf_token %}{% submission_key %}
+                <header class="border-bottom pb-3 mb-4">
+                    <h2 class="h6" id="migrate-route">{% trans "Migration route" %}</h2>
+                    <div class="row g-2 align-items-end">
+                        <div class="col">
+                            <label class="form-label small" for="migrate-from">{% trans "From" %}</label>
+                            <input class="form-control" id="migrate-from" value="{{ compute.name }}" readonly>
+                        </div>
+                        <div class="col-auto pb-2 text-body-secondary" aria-hidden="true">→</div>
+                        <div class="col">
+                            <label class="form-label small" for="migrate_compute">{% trans "To" %}</label>
+                            <select class="form-select" name="compute_id" id="migrate_compute">
                                 {% for comp in computes %}
-                                    {% if comp.id != compute.id %}
-                                        <option value="{{ comp.id }}">{{ comp.name }}</option>
-                                    {% endif %}
+                                {% if comp.id != compute.id %}<option value="{{ comp.id }}">{{ comp.name }}</option>{% endif %}
                                 {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <p class="small text-body-secondary mt-3 mb-0">
+                        {% if instance.status == 1 %}{% trans "The VM is running: it migrates live, or paused for the transfer when Live migration is off." %}
+                        {% elif instance.status == 3 %}{% trans "The VM is paused: it stays paused on the destination." %}
+                        {% elif instance.status == 5 %}{% trans "The VM is shut off: it moves offline." %}{% endif %}
+                        {% trans "Both hosts need the same emulator; the VM's definition leaves the source host." %}
+                    </p>
+                </header>
+                {# a VM that cannot go anywhere gets the reason, not the disks and settings #}
+                {% if not migrate_refusal %}
+                <section class="card mb-3" aria-labelledby="migrate-storage">
+                    <div class="card-body">
+                        <h2 class="h6 mb-3" id="migrate-storage">{% bs_icon 'device-hdd' %} {% trans "Storage" %}</h2>
+                        <div id="migrate-plan" data-url="{% url 'instances:migrate_plan' instance.id %}" data-targets-url="{% url 'instances:migrate_targets' instance.id %}" aria-live="polite"
+                             data-checking-hosts="{% trans "Checking the hosts…" %}" data-hosts-failed="{% trans "The hosts could not be checked." %}"
+                             data-no-host="{% trans "No host can take the VM now." %}" data-checking-disks="{% trans "Checking the disks…" %}"
+                             data-disks-failed="{% trans "The disks could not be checked." %}"></div>
+                    </div>
+                </section>
+                <section class="card mb-4" aria-labelledby="migrate-transfer">
+                    <div class="card-body">
+                        <h2 class="h6 mb-3" id="migrate-transfer">{% bs_icon 'arrow-left-right' %} {% trans "Transfer settings" %}</h2>
+                        {% if instance.status == 1 or instance.status == 3 %}
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="live_migrate" value="true" id="vm_live_migrate" aria-describedby="live-help" checked>
+                                    <label class="form-check-label fw-semibold" for="vm_live_migrate">{% trans "Live migration" %}</label>
+                                </div>
+                                <p class="small text-body-secondary mt-1 mb-0" id="live-help">{% trans "The VM keeps running while its memory is copied. Off, it is paused for the transfer." %}</p>
+                            </div>
+                            {% if instance.status == 1 %}
+                            <div class="col-12 col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="autoconverge" value="true" id="autoconverge" aria-describedby="autoconverge-help" checked>
+                                    <label class="form-check-label fw-semibold" for="autoconverge">{% trans "Auto converge" %}</label>
+                                </div>
+                                <p class="small text-body-secondary mt-1 mb-0" id="autoconverge-help">{% trans "Slows the guest's CPUs so that a busy VM's live migration can finish. Only with Live migration." %}</p>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="compress" value="true" id="compress" aria-describedby="compress-help">
+                                    <label class="form-check-label fw-semibold" for="compress">{% trans "Compressed" %}</label>
+                                </div>
+                                <p class="small text-body-secondary mt-1 mb-0" id="compress-help">{% trans "Compresses the memory sent: less network, more CPU on both hosts." %}</p>
+                            </div>
                             {% endif %}
-                        </select>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-6 offset-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="live_migrate" value="true" id="vm_live_migrate" {% if instance.status != 5 %}checked{% else %}disabled{% endif %}>
-                            <label class="form-check-label" for="vm_live_migrate">{% trans "Live migration" %}</label>
+                        </div>
+                        {% endif %}
+                        {# the switches that can lose data, set apart from how the memory moves #}
+                        <div{% if instance.status == 1 or instance.status == 3 %} class="border-top pt-3 mt-3"{% endif %}>
+                        <div class="row g-3">
+                            {% if instance.status == 1 %}
+                            <div class="col-12 col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="unsafe_migrate" value="true" id="vm_unsafe_migrate" aria-describedby="unsafe-help">
+                                    <label class="form-check-label fw-semibold" for="vm_unsafe_migrate">{% trans "Unsafe migration" %}</label>
+                                </div>
+                                <p class="small text-danger mt-1 mb-0" id="unsafe-help">{% trans "Skips libvirt's safety checks, such as a disk cache mode that can corrupt data in a migration." %}</p>
+                            </div>
+                            {% endif %}
+                            <div class="col-12 col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="delete_source" value="true" id="delete_source" aria-describedby="delete-source-help">
+                                    <label class="form-check-label fw-semibold" for="delete_source">{% trans "Delete the source files of copied disks" %}</label>
+                                </div>
+                                <p class="small text-danger mt-1 mb-0" id="delete-source-help">{% trans "After a migration that copied disks, their files on the source host go. Disks on shared storage stay." %}</p>
+                            </div>
+                        </div>
                         </div>
                     </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-6 offset-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="unsafe_migrate" value="true" id="vm_unsafe_migrate">
-                            <label class="form-check-label" for="vm_unsafe_migrate">{% trans "Unsafe migration" %}</label>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-6 offset-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="xml_delete" value="true" id="xml_delete" checked>
-                            <label class="form-check-label" for="xml_delete">{% trans "Delete original" %}</label>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-6 offset-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="offline_migrate" value="true" id="offline_migrate" {% if instance.status == 5 %}checked{% else %}disabled{% endif %}>
-                            <label class="form-check-label" for="offline_migrate">{% trans "Offline migration" %}</label>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-6 offset-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="postcopy" value="true" id="postcopy" {% if instance.status != 1 %}disabled{% endif %}>
-                            <label class="form-check-label" for="postcopy">{% trans "Post copy" %}</label>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-6 offset-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="autoconverge" value="true" id="autoconverge" {% if instance.status != 1 %}disabled{% endif %}>
-                            <label class="form-check-label" for="autoconverge" title="{% trans 'Forces CPU convergence during live migration' %}">{% trans "Auto converge" %}</label>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-6 offset-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="compress" value="true" id="compress" {% if instance.status != 1 %}disabled{% endif %}>
-                            <label class="form-check-label" for="compress" title="{% trans 'Compress instance memory for fast migration' %}">{% trans "Compressed" %}</label>
-                        </div>
-                    </div>
-                </div>
-                {% if computes_count != 1 %}
-                    <button type="submit" class="btn btn-lg btn-success float-end" onclick="showPleaseWaitDialog()" name="migrate" >{% trans "Migrate" %}</button>
-                {% else %}
-                    <button class="btn btn-lg btn-success float-end disabled">{% trans "Migrate" %}</button>
+                </section>
                 {% endif %}
+                <footer class="border-top pt-3">
+                    {% if migrate_refusal %}<p class="small text-body-secondary mb-2">{{ migrate_refusal }}</p>{% endif %}
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                        <p class="small text-body-secondary mb-0">{% trans "Migration runs as a background job." %}</p>
+                        {% if migrate_refusal %}
+                        <button type="button" class="btn btn-primary ms-auto" disabled>{% trans "Migrate" %}</button>
+                        {% else %}
+                        {# enabled once the disks of the chosen destination are shown #}
+                        <button type="submit" class="btn btn-primary ms-auto" name="migrate" disabled>{% trans "Migrate" %}</button>
+                        {% endif %}
+                    </div>
+                </footer>
             </form>
             <div class="clearfix"></div>
         </div>
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="xmledit">
+        <div role="tabpanel" class="tab-pane" id="xmledit">
             {% if instance.status != 5 %}
-                <p>{% trans "If you need to edit XML please Power Off the instance" %}</p>
+                <p class="small text-body-secondary" id="xml-next-start">{% trans "This is the definition for the VM's next start; a saved change applies then." %}</p>
             {% endif %}
-            <form action="{% url 'instances:change_xml' instance.id %}" method="post" role="form" aria-label="Edit instance XML form">
+            <form action="{% url 'instances:change_xml' instance.id %}" method="post" role="form" aria-label="Edit instance XML form" id="xml-form">
                 {% csrf_token %}
-                <div class="col-sm-12" id="xmlheight">
+                <div class="xml-editor mb-3">
                     <textarea id="editor">{{ instance.inst_xml }}</textarea>
                 </div>
-                {% if instance.status == 5 %}
-                    <input type="hidden" name="inst_xml">
-                    <button type="submit" class="btn btn-lg btn-success float-end" name="change_xml">
-                        {% trans "Change" %}
-                    </button>
-                {% else %}
-                    <button class="btn btn-lg btn-success float-end disabled">
-                        {% trans "Change" %}
-                    </button>
-                {% endif %}
+                <button type="submit" class="btn btn-primary float-end" name="change_xml">{% trans "Review changes" %}</button>
             </form>
             <div class="clearfix"></div>
-        </div>
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="users">
-            <div>
-            <p class="fw-bold">
-                {% trans "Instance owners" %}
-                {% include 'add_instance_owner_block.html' %}
-            </p>
+            <div class="modal fade" id="xml-review" tabindex="-1" aria-labelledby="xml-review-title" aria-hidden="true"
+                 data-failed="{% trans "The request did not go through; your edit is still in the editor. Try again, or copy it and reload the page." %}">
+                <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="xml-review-title">{% trans "Review the XML change" %}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-danger d-none" role="alert" id="xml-review-error"></div>
+                            <p class="d-none" id="xml-review-same">{% trans "The XML is the same as the VM's definition; there is nothing to save." %}</p>
+                            <pre class="d-none mb-0 xml-diff" id="xml-review-diff" data-line="{% blocktrans with line="__line__" %}Line {{ line }}{% endblocktrans %}"></pre>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                            <button type="button" class="btn btn-primary" id="xml-review-save">{% trans "Save" %}</button>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="table-responsive">
-                <table class="table table-striped sortable-theme-bootstrap mt-3" data-sortable>
-                    <tbody class="searchable">
+        </div>
+        <div role="tabpanel" class="tab-pane" id="users">
+            <section aria-labelledby="owners-heading">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <h2 class="h6 mb-0" id="owners-heading">{% trans "Instance owners" %}</h2>
+                    {% include 'add_instance_owner_block.html' %}
+                </div>
+                <p class="small text-body-secondary">{% trans "Every owner can power the VM and open its console. A new owner has no other right until it is given one." %}</p>
+                {% if userinstances %}
+                <ul class="list-group">
                     {% for userinstance in userinstances %}
-                        <tr>
-                            <td><a href="{% url 'accounts:account' userinstance.user.id %}">{{ userinstance.user }}</a></td>
-                            <td style="width:30px;">
-                                <a href="{% url 'accounts:user_instance_delete' userinstance.id %}?next={% url 'instances:instance' instance.id %}#users">
-                                    {% bs_icon 'trash' %}
-                                </a>
-                            </td>
-                        </tr>
+                    <li class="list-group-item p-3">
+                        <div class="row g-3 align-items-center">
+                            <div class="col-12 col-md">
+                                <a class="fw-semibold text-break" href="{% url 'accounts:account' userinstance.user.id %}">{{ userinstance.user }}</a>
+                                <p class="small mb-0 mt-1">
+                                    {% if userinstance.is_change or userinstance.is_delete %}
+                                    {% if userinstance.is_change %}{% trans "Change settings" %}{% endif %}{% if userinstance.is_change and userinstance.is_delete %} · {% endif %}{% if userinstance.is_delete %}{% trans "Delete the VM" %}{% endif %}{% if userinstance.is_change and userinstance.is_vnc %} · {% trans "Change console settings" %}{% endif %}
+                                    {% else %}
+                                    <span class="text-body-secondary">{% trans "Power and console only" %}</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            {% if request.user.is_superuser %}
+                            <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
+                                <a class="btn btn-sm btn-outline-secondary" href="{% url 'accounts:user_instance_update' userinstance.id %}?next={% filter urlencode:'' %}{% url 'instances:instance' instance.id %}#users{% endfilter %}">{% trans "Edit rights" %}<span class="visually-hidden"> {{ userinstance.user }}</span></a>
+                                <a class="btn btn-sm btn-outline-danger" href="{% url 'accounts:user_instance_delete' userinstance.id %}?next={% filter urlencode:'' %}{% url 'instances:instance' instance.id %}#users{% endfilter %}">{% trans "Remove" %}<span class="visually-hidden"> {{ userinstance.user }}</span></a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </li>
                     {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            <div class="clearfix"></div>
+                </ul>
+                {% else %}
+                <p class="mb-0">{% trans "The VM has no owner: only administrators can use it." %}</p>
+                {% endif %}
+            </section>
         </div>
         {% endif %}
-        {% if request.user.is_superuser or request.user.is_staff or userinstance.is_vnc %}
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="vncsettings">
-            <form method="post" action="{% url 'instances:update_console' instance.id %}">
-                {% csrf_token %}
+        {% if can_manage_console %}
+        <div role="tabpanel" class="tab-pane" id="vncsettings">
+            <form method="post" action="{% url 'instances:update_console' instance.id %}" aria-label="{% trans "Console settings" %}">{% csrf_token %}{{ console_form.seen }}
                 {% if instance.status != 5 %}
-                    <div class="alert alert-warning">
-                        {% trans "To change console settings, shutdown the instance." %}
-                    </div>
+                <p class="small text-body-secondary">{% trans "The running console keeps its current settings; changes here apply after the VM is shut down and started." %}</p>
                 {% endif %}
-                {% bootstrap_form console_form layout='horizontal' %}
-                <div class="float-end">
-                    {% if instance.status != 5 %}
-                        <button class="btn btn-success" name="set_console_type" disabled>{% trans "Update" %}</button>
+                <div class="mb-4">
+                    <label class="form-label" for="{{ console_form.console_type.id_for_label }}">{{ console_form.console_type.label }}</label>
+                    {{ console_form.console_type }}
+                    {% if console_form.keymap %}
+                    <p class="small text-body-secondary mt-1 mb-0">{% trans "The settings below apply to a VNC console." %}</p>
                     {% else %}
-                        <button type="submit" class="btn btn-success ">{% trans "Update" %}</button>
+                    <p class="small text-body-secondary mt-1 mb-0">{% trans "The VNC settings appear once the console type VNC is saved." %}</p>
                     {% endif %}
+                </div>
+                {% if console_form.keymap %}
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-lg-6">
+                        <section class="card h-100" aria-labelledby="console-connection">
+                            <div class="card-body">
+                                <h2 class="h6 mb-3" id="console-connection">{% bs_icon 'display' %} {% trans "VNC connection" %}</h2>
+                                <div class="mb-4">
+                                    <label class="form-label" for="{{ console_form.listen_on.id_for_label }}">{{ console_form.listen_on.label }}</label>
+                                    {{ console_form.listen_on }}
+                                    <p class="small text-body-secondary mt-1 mb-0">
+                                        {% if not request.user.is_superuser %}{% trans "Only administrators can change this." %} {% endif %}{% trans "Beyond localhost the console is reachable from the network." %}
+                                    </p>
+                                </div>
+                                <label class="form-label" for="{{ console_form.keymap.id_for_label }}">{{ console_form.keymap.label }}</label>
+                                {{ console_form.keymap }}
+                            </div>
+                        </section>
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <section class="card h-100" aria-labelledby="console-password">
+                            <div class="card-body">
+                                <h2 class="h6 mb-3" id="console-password">{% bs_icon 'key' %} {% trans "VNC password" %}</h2>
+                                <fieldset>
+                                    <legend class="fs-6 mb-1">{{ console_form.password_action.label }}</legend>
+                                    <p class="small text-body-secondary mb-2">{% if instance.config_console_passwd %}{% trans "A password is set." %}{% else %}{% trans "No password is set." %}{% endif %}</p>
+                                    {% for choice in console_form.password_action %}
+                                    <div class="form-check">
+                                        {{ choice.tag }}
+                                        <label class="form-check-label" for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                                    </div>
+                                    {% if choice.data.value == "set" %}
+                                    {# shown while "Set a new one" is chosen (webvirtcloud.css) #}
+                                    <div class="console-new-password ms-4 mt-1 mb-2">
+                                        <label class="form-label small" for="{{ console_form.password.id_for_label }}">{{ console_form.password.label }}</label>
+                                        {{ console_form.password }}
+                                        <p class="small text-body-secondary mt-1 mb-0">{% trans "Up to 8 letters, digits or symbols, without accents." %}</p>
+                                    </div>
+                                    {% endif %}
+                                    {% endfor %}
+                                </fieldset>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary">{% trans "Save console settings" %}</button>
                 </div>
             </form>
-            <div class="clearfix"></div>
         </div>
         {% endif %}
-        {% if perms.instances.clone_instances %}
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="clone">
-            <p class="fw-bold">{% trans "Create a clone" %}</p>
-            <form class="form" action="{% url 'instances:clone' instance.id %}" method="post" role="form" aria-label="Create clone form">{% csrf_token %}
-                <div class="row">
-                    <label class="col-sm-3 col-form-label fw-normal">{% trans "Clone Name" %}</label>
+        {% if can_clone %}
+        <div role="tabpanel" class="tab-pane" id="clone">
+            <form action="{% url 'instances:clone' instance.id %}" method="post" aria-labelledby="clone-heading">{% csrf_token %}{% submission_key %}
+                <header class="mb-4">
+                    <h2 class="h6 mb-1" id="clone-heading">{% trans "Create a clone" %}</h2>
+                    <p class="small text-body-secondary mb-0">{% blocktrans with name=instance.name %}Source VM: {{ name }}{% endblocktrans %}</p>
+                    {% if instance.config_tpm == "emulator" %}
+                    <p class="small text-body-secondary mb-0" id="clone-tpm">{% trans "The clone gets a new, empty TPM: keys in this VM's TPM, such as BitLocker's, do not come along." %}</p>
+                    {% endif %}
+                </header>
+                <div class="mb-4">
                     {% if request.user.is_superuser %}
-                    <div class="col-sm-6">
-                        <div class="input-group">
-                            <input id="clone_name" type="text" class="form-control" name="name" value="{{ instance.name }}-clone">
-                            <button type="button" class="btn btn-success" name="guess-clone-name"
-                                        onclick="guess_clone_name()">{% trans "Guess" %}</button>
+                    <label class="form-label" for="clone_name">{% trans "Clone name" %}</label>
+                    <div class="row g-2">
+                        <div class="col-12 col-sm">
+                            <input class="form-control" id="clone_name" name="name" type="text" maxlength="64" value="{{ instance.name }}-clone" aria-describedby="clone-name-help"
+                                   data-source="{{ instance.name }}" data-guess-url="{% url 'instances:guess_clone_name' %}"
+                                   data-guess-mac-url="{% url 'instances:guess_mac_address' '__name__' %}">
+                        </div>
+                        <div class="col-12 col-sm-auto">
+                            <button class="btn btn-outline-secondary" type="button" id="guess-clone-name">{% trans "Guess" %}</button>
                         </div>
                     </div>
-                    {% elif app_settings.CLONE_INSTANCE_AUTO_NAME == 'True'%}
-                    <div class="col-sm-4">
-                        <input id="clone_instance_auto_name" type="text" class="form-control" name="auto_name" value="Automatic" disabled/>
-                    </div>
+                    <p class="small text-body-secondary mt-1 mb-0" id="clone-name-help" data-no-name="{% trans "The DHCP file has no free name to suggest." %}"></p>
+                    {% elif app_settings.CLONE_INSTANCE_AUTO_NAME == 'True' %}
+                    <label class="form-label" for="clone_instance_auto_name">{% trans "Clone name" %}</label>
+                    <input class="form-control" id="clone_instance_auto_name" type="text" value="{% trans "Automatic" %}" disabled>
                     {% else %}
-                    <div class="col-sm-4">
-                        <select id="select_clone_name" class="form-control" name="name" size="1">
+                    <label class="form-label" for="select_clone_name">{% trans "Clone name" %}</label>
+                    <select class="form-select" id="select_clone_name" name="name">
                         {% for name in clone_free_names %}
-                            <option value="{{ name }}">{{ name }}</option>
+                        <option value="{{ name }}">{{ name }}</option>
                         {% endfor %}
-                        </select>
-                    </div>
+                    </select>
                     {% endif %}
                 </div>
                 {% if request.user.is_superuser %}
-                    <label>{% trans "Network devices" %}:</label>
-                    {% for network in instance.networks %}
-                    <p>
-                        <div class="row">
-                            <label class="col-sm-2 col-form-label offset-1">eth{{ forloop.counter0 }} ({{ network.nic }})</label>
-                            <div class="col-sm-6">
-                                <div class="input-group">
-                                    <input type="text" class="form-control" name="clone-net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
-                                    <button type="button" class="btn btn-success" name="random-mac-{{ forloop.counter0 }}"
-                                            onclick="random_mac('clone-net-mac-{{ forloop.counter0 }}')">{% trans "Random" %}</button>
-                                    <button type="button" class="btn btn-success" name="guess-mac-{{ forloop.counter0 }}"
-                                            onclick="guess_mac_address('#clone_name', {{ forloop.counter0 }})">{% trans "Guess" %}</button>
+                <div class="row g-3 mb-4">
+                    {% if instance.config_networks %}
+                    <div class="col-12 col-lg-6">
+                        <section class="card h-100" aria-labelledby="clone-network-heading">
+                            <div class="card-body">
+                                <h3 class="h6 mb-3" id="clone-network-heading">{% bs_icon 'ethernet' %} {% trans "Network" %}</h3>
+                                {% for network in instance.config_networks %}
+                                <div{% if not forloop.first %} class="border-top pt-3 mt-3"{% endif %}>
+                                    <p class="small mb-2"><strong>eth{{ forloop.counter0 }}</strong> <span class="text-body-secondary">{{ network.nic }}</span></p>
+                                    <label class="form-label small" for="clone-net-mac-{{ forloop.counter0 }}">{% trans "New MAC address" %}</label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="clone-net-mac-{{ forloop.counter0 }}" name="clone-net-mac-{{ forloop.counter0 }}" type="text" value="{{ network.mac }}" data-new-mac>
+                                        <button class="btn btn-outline-secondary" type="button" data-random-mac="clone-net-mac-{{ forloop.counter0 }}">{% trans "Random" %}</button>
+                                        {% if forloop.first %}
+                                        {# the DHCP host entry of the clone's name holds one address: the first NIC's #}
+                                        <button class="btn btn-outline-secondary" type="button" id="guess-clone-mac">{% trans "Guess" %}</button>
+                                        {% endif %}
+                                    </div>
                                 </div>
+                                {% endfor %}
                             </div>
-                        </div>
-                    </p>
-                    {% endfor %}
-                {% else %}
-                    {% for network in instance.networks %}
-                        <input type="hidden" class="form-control" name="clone-net-mac-{{ forloop.counter0 }}" value="{{ network.mac }}"/>
-                    {% endfor %}
-                {% endif %}
-                {% if request.user.is_superuser %}
-                    <label>{% trans "Storage devices" %}:</label>
-                    {% for disk in instance.disks %}
-                        <div class="row">
-                            <label class="col-sm-2 col-form-label offset-1">{{ disk.dev }} ({{ disk.storage }})</label>
-                            <div class="col-sm-6">
-                            <div class="input-group mb-3">
-                                    <input id="disk_name-{{ disk.dev }}" type="text" class="form-control" name="disk-{{ disk.dev }}" value="{{ disk.image }}"/>
-                                    {% if disk.format == 'qcow2' %}
-                                            <span class="input-group-text" >{% trans 'Metadata' %}</span>
-                                            <div class="input-group-text">
-                                                <input type="checkbox" name="meta-{{ disk.dev }}" value="true">
-                                            </div>
-                                        
+                        </section>
+                    </div>
+                    {% endif %}
+                    <div class="col-12{% if instance.config_networks %} col-lg-6{% endif %}">
+                        <section class="card h-100" aria-labelledby="clone-storage-heading">
+                            <div class="card-body">
+                                <h3 class="h6 mb-3" id="clone-storage-heading">{% bs_icon 'device-hdd' %} {% trans "Storage" %}</h3>
+                                {% for disk in instance.config_disks %}
+                                <div{% if not forloop.first %} class="border-top pt-3 mt-3"{% endif %}>
+                                    <p class="small mb-2"><strong>{{ disk.dev }}</strong> <span class="text-body-secondary">{% blocktrans with pool=disk.storage %}{{ pool }} pool{% endblocktrans %}, {{ disk.format }}</span></p>
+                                    <label class="form-label small" for="disk_name-{{ disk.dev }}">{% trans "New volume name" %}</label>
+                                    <input class="form-control" id="disk_name-{{ disk.dev }}" name="disk-{{ disk.dev }}" type="text" value="{{ disk.image }}" data-image="{{ disk.image }}">
+                                    {# a running or paused VM's disks are copied by a backup job, which does not preallocate #}
+                                    {% if disk.format == 'qcow2' and instance.status == 5 %}
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" id="meta-{{ disk.dev }}" name="meta-{{ disk.dev }}" type="checkbox" value="true">
+                                        <label class="form-check-label small" for="meta-{{ disk.dev }}">{% trans "Preallocate qcow2 metadata" %}</label>
+                                    </div>
                                     {% endif %}
                                 </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    {% for disk in instance.disks %}
-                        <input id="disk_name-{{ disk.dev }}" type="hidden" class="form-control" name="disk-{{ disk.dev }}" value="{{ disk.image }}"/>
-                    {% endfor %}
-                {% endif %}
-                <div class="row mb-3">
-                    <label class="col-sm-3 col-form-label">{% trans "Title" %}</label>
-                    <div class="col-sm-6">
-                        <input type="text" name="clone-title" class="form-control">
-                    </div>
-                </div>
-                <div class="row">
-                    <label class="col-sm-3 col-form-label">{% trans "Description" %}</label>
-                    <div class="col-sm-6">
-                        <textarea name="clone-description" class="form-control"></textarea>
-                    </div>
-                </div>
-                {% if instance.status == 5 %}
-                    <button type="submit" class="btn btn-lg btn-success float-end" name="clone" onclick="showPleaseWaitDialog();">{% trans "Clone" %}</button>
-                {% else %}
-                    <button class="btn btn-lg btn-success float-end disabled" name="clone">{% trans "Clone" %}</button>
-                {% endif %}
-            </form>
-            <div class="clearfix"></div>
-        </div>
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="options">
-            <p>{% trans "To set instance template name description, shutdown the instance." %}</p>
-            <form action="{% url 'instances:change_options' instance.id %}" method="post" role="form" aria-label="Set instance template name description form">{% csrf_token %}
-                <div class="row">
-                    <label class="col-sm-3 col-form-label">{% trans "Title" %}</label>
-                    <div class="col-sm-6">
-                        <input type="text" name="title" class="form-control" value="{{ instance.title }}">
-                    </div>
-                </div>
-                <div class="row">
-                    <label class="col-sm-3 col-form-label">{% trans "Description" %}</label>
-                    <div class="col-sm-6">
-                        <textarea name="description" class="form-control">{{ instance.description }}</textarea>
-                    </div>
-                </div>
-                <div class="row">
-                    <label class="col-sm-3 col-form-label">{% trans "Is template" %}</label>
-                    <div class="col-sm-6">
-                        <input type="checkbox"
-                            name="is_template"
-                            value="True"
-                            id="is_template"
-                            {% if instance.is_template %}checked{% endif %}
-                            {% if not request.user.is_superuser and not request.user.is_staff %}disabled{% endif %}>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="d-grid offset-3 col-sm-6">
-                    {% if instance.status == 5 %}
-                        <button type="submit" class="btn btn-success" name="change_options">{% trans "Change" %}</button>
-                    {% else %}
-                        <button class="btn btn-success disabled" name="change_options">{% trans "Change" %}</button>
-                    {% endif %}
-                    </div>
-                </div>
-            </form>
-        
-            <p class="fw-bold">{% trans "To set instance video model, shutdown the instance." %}</p>
-            <form action="{% url 'instances:set_video_model' instance.id %}" method="post" role="form" aria-label="Set instance video model form">{% csrf_token %}
-                <div class="row">
-                    <label class="col-sm-3 col-form-label" for="video_model_select">{% trans "Primary Video Model" %}</label>
-                    <div class="col-sm-6">
-                        <div class="input-group">
-                            <select id="video_model_select" class="form-select" name="video_model">
-                                <option class="fw-bold" value="">{% trans "please choose" %}</option>
-                                {% for vmodel in instance.video_models %}
-                                    <option value="{{ vmodel }}"{% if vmodel == instance.video_model %} selected{% endif %}>{{ vmodel }}</option>
+                                {% empty %}
+                                <p class="small text-body-secondary mb-0">{% trans "The VM has no disk to copy." %}</p>
                                 {% endfor %}
-                            </select>
-                            {% if instance.status == 5 %}
-                            <button type="submit" class="btn btn-success" name="set_video_model">{% trans "Set" %}</button>
-                            {% else %}
-                            <button class="btn btn-success disabled" name="set_video_model">{% trans "Set" %}</button>
-                            {% endif %}
-                        </div>
+                            </div>
+                        </section>
                     </div>
                 </div>
-            </form>
-    
-            <p class="fw-bold">{% trans "To set instance vCPUs hotpluggable" %}</p>
-            <form  action="{% url 'instances:set_vcpu_hotplug' instance.id %}" method="post" role="form" aria-label="Set instance vCPUs hotpluggable form">{% csrf_token %}
-                <div class="row">
-                    <label for="vcpu_hotplug" class="col-sm-3 col-form-label">{% trans "vCPU Hot Plug" %}</label>
-                    <div class="col-sm-6">
-                        <div class="input-group">
-                            <select id="vcpu_hotplug" class="form-control" name="vcpu_hotplug">
-                                <option value="True" {% if instance.vcpus %} selected {% endif %}>{% trans 'Enabled' %}</option>
-                                <option value="False" {% if not instance.vcpus %} selected {% endif %}>{% trans 'Disabled' %}</option>
-                            </select>
-                            {% if instance.status == 5 %}
-                            <button type="submit" class="btn btn-success" name="set_vcpu_hotplug">{% trans "Set" %}</button>
-                            {% else %}
-                            <button class="btn btn-success" name="set_vcpu_hotplug" disabled>{% trans "Set" %}</button>
-                            {% endif %}
+                {% endif %}
+                <fieldset class="mb-4" aria-describedby="clone-size-help">
+                    <legend class="h6">{% trans "Size" %}</legend>
+                    <div class="row g-3">
+                        <div class="col-6 col-md-3">
+                            <label class="form-label" for="clone-vcpu">{% trans "vCPUs" %}</label>
+                            <input class="form-control" id="clone-vcpu" name="clone-vcpu" type="number" min="1" max="{{ vcpu_host }}" inputmode="numeric" value="{{ instance.config_vcpu }}">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label" for="clone-memory">{% trans "Memory (MiB)" %}</label>
+                            <input class="form-control" id="clone-memory" name="clone-memory" type="number" min="1" inputmode="numeric" value="{{ instance.config_memory }}">
                         </div>
                     </div>
-                </div>
-            </form>
-        
-            <p class="fw-bold">{% trans "To Enable/Disable Qemu Guest Agent. Status" %}:
-            {% if instance.status == 1 %}
-                {% if instance.guest_agent_ready %}
-                    <label class="badge bg-success">{% trans 'Connected' %}</label>
-                {% else %}
-                    <label class="badge bg-danger">{% trans 'Disconnected' %}</label>
-                {% endif %}</p>
-            {% else %}
-                <label class="badge bg-default">{% trans 'Unknown' %}</label>
-            {% endif %}
-            <form action="{% url 'instances:set_guest_agent' instance.id %}" method="post" role="form" aria-label="Enable/Disable Qemu Guest Agent form">{% csrf_token %}
-                <div class="row">
-                    <label class="col-sm-3 col-form-label" for="guest_agent">{% trans "Qemu Guest Agent" %}</label>
-                    <div class="col-sm-6">
-                        <div class="input-group">
-                            <select id="guest_agent" class="form-select" name="guest_agent">
-                                <option value="True" {% if instance.guest_agent %} selected {% endif %}>{% trans 'Enabled' %}</option>
-                                <option value="False" {% if not instance.guest_agent %} selected {% endif %}>{% trans 'Disabled' %}</option>
-                            </select>
-                            <button type="submit" class="btn btn-success" name="set_guest_agent">{% trans "Set" %}</button>
-                        </div>
+                    <p class="small text-body-secondary mt-1 mb-2" id="clone-size-help">{% trans "The VM's size to start from; the quota counts the larger of the two." %}</p>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="clone-start" name="clone-start" value="true">
+                        <label class="form-check-label" for="clone-start">{% trans "Start the clone when it is made" %}</label>
                     </div>
-                </div>
+                </fieldset>
+                <fieldset class="mb-4">
+                    <legend class="h6">{% trans "Optional details" %}</legend>
+                    <label class="form-label" for="clone-title">{% trans "Title" %}</label>
+                    <input class="form-control mb-3" id="clone-title" name="clone-title" type="text">
+                    <label class="form-label" for="clone-description">{% trans "Description" %}</label>
+                    <textarea class="form-control" id="clone-description" name="clone-description" rows="3"></textarea>
+                </fieldset>
+                <footer class="border-top pt-3">
+                    {% if usb_hostdevs or pci_hostdevs or other_hostdevs %}
+                    <p class="small text-body-secondary mb-2">{% trans "The clone gets none of the VM's host devices: one VM holds a device of the host." %}</p>
+                    {% endif %}
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                        <p class="small text-body-secondary mb-0">{% trans "Cloning runs as a background job." %}</p>
+                        {% if instance.status == 1 or instance.status == 3 or instance.status == 5 %}
+                        <button type="submit" class="btn btn-primary ms-auto" name="clone">{% trans "Clone" %}</button>
+                        {% else %}
+                        <button type="button" class="btn btn-primary ms-auto" disabled name="clone">{% trans "Clone" %}</button>
+                        {% endif %}
+                    </div>
+                </footer>
             </form>
             <div class="clearfix"></div>
         </div>
         {% endif %}
+        {% if can_change %}
+        <div role="tabpanel" class="tab-pane" id="options">
+            {# what the VM is (its name, a template or not), then what the guest sees and what happens when it crashes #}
+            <div class="list-group">
+                <div class="list-group-item p-3 p-md-4">
+                    <h2 class="h6 mb-3" id="options-details">{% trans "VM details" %}</h2>
+                    <form action="{% url 'instances:change_options' instance.id %}" method="post" aria-labelledby="options-details">{% csrf_token %}
+                        <div class="row g-2 mb-2">
+                            <label class="col-sm-2 col-form-label" for="options-title">{% trans "Title" %}</label>
+                            <div class="col-sm-10"><input class="form-control" type="text" id="options-title" name="title" value="{{ instance.config_title }}"></div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <label class="col-sm-2 col-form-label" for="options-description">{% trans "Description" %}</label>
+                            <div class="col-sm-10"><textarea class="form-control" id="options-description" name="description" rows="2">{{ instance.config_description }}</textarea></div>
+                        </div>
+                        <div class="text-end">
+                            <button class="btn btn-primary" type="submit" name="change_options">{% trans "Save" %}</button>
+                        </div>
+                    </form>
+                    <form class="border-top mt-3 pt-3" action="{% url 'instances:set_template' instance.id %}" method="post">{% csrf_token %}
+                        <div class="form-check form-switch mb-1">
+                            <input class="form-check-input" type="checkbox" role="switch" name="is_template" value="True" id="is_template" aria-describedby="template-help"
+                                   {% if instance.is_template %}checked{% endif %}
+                                   {% if instance.status != 5 or not request.user.is_superuser and not request.user.is_staff %}disabled{% endif %} data-submit-on-change>
+                            <label class="form-check-label" for="is_template">{% trans "Use as a template" %}</label>
+                        </div>
+                        <p class="small text-body-secondary mb-0" id="template-help">{% trans "A template is a VM to clone: it is not counted in quotas and cannot be started." %}
+                            {% if not request.user.is_superuser and not request.user.is_staff %}{% trans "Only administrators and staff can change this." %}
+                            {% elif instance.status != 5 %}{% trans "Shut the VM down to change this." %}{% endif %}</p>
+                    </form>
+                </div>
+                {% if request.user.is_superuser %}
+                <div class="list-group-item p-3 p-md-4" role="group" aria-labelledby="options-devices">
+                    <div class="d-flex flex-wrap justify-content-between column-gap-3 mb-2">
+                        <h2 class="h6 mb-0" id="options-devices">{% trans "Devices the guest sees" %}</h2>
+                        <span class="small text-body-secondary">{% trans "Changes apply from the next start; the guest agent's at once." %}</span>
+                    </div>
+                    <form class="option-row" action="{% url 'instances:set_video_model' instance.id %}" method="post">{% csrf_token %}
+                        <label class="option-name" for="video_model_select">{% trans "Video" %}</label>
+                        <select id="video_model_select" class="form-select form-select-sm w-auto" name="video_model" data-submit-on-change>
+                            {% for vmodel in instance.video_models %}
+                            <option value="{{ vmodel }}"{% if vmodel == instance.config_video_model %} selected{% endif %}>{{ vmodel }}</option>
+                            {% endfor %}
+                        </select>
+                        <span class="small text-body-secondary">{% trans "The graphics device the guest sees." %}</span>
+                    </form>
+                    <form class="option-row border-top" action="{% url 'instances:set_rng' instance.id %}" method="post">{% csrf_token %}
+                        <label class="option-name" for="rng">{% trans "Virtio RNG" %}</label>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" name="rng" value="True" id="rng" aria-describedby="rng-help"
+                                   {% if instance.config_rng %}checked{% endif %}{% if instance.config_rng == "custom" %} disabled{% endif %} data-submit-on-change>
+                        </div>
+                        <span class="small text-body-secondary" id="rng-help">{% if instance.config_rng == "custom" %}{% trans "The VM has its own RNG device: change it in the XML editor." %}{% else %}{% trans "Feeds the guest's entropy from the host, so a new VM does not wait for it at boot." %}{% endif %}</span>
+                    </form>
+                    <form class="option-row border-top" action="{% url 'instances:set_tpm' instance.id %}" method="post">{% csrf_token %}
+                        <label class="option-name" for="tpm">{% trans "TPM 2.0" %}</label>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" name="tpm" value="True" id="tpm" aria-describedby="tpm-help"
+                                   {% if instance.config_tpm %}checked{% endif %}{% if instance.config_tpm == "custom" or not instance.config_tpm and not tpm_support %} disabled{% endif %} data-submit-on-change>
+                        </div>
+                        <span class="small text-body-secondary" id="tpm-help">
+                            {% if instance.config_tpm == "custom" %}{% trans "The VM has its own TPM: change it in the XML editor." %}
+                            {% elif not instance.config_tpm and not tpm_support %}{% trans "This host offers no TPM 2.0: install swtpm on it." %}
+                            {% elif instance.config_tpm %}{% trans "Turned off, its state stays on the host until the VM is destroyed; turned on again, it is back." %}
+                            {% else %}{% trans "Windows 11 needs it, with UEFI Secure Boot." %}{% endif %}</span>
+                    </form>
+                    <form class="option-row border-top" action="{% url 'instances:set_guest_agent' instance.id %}" method="post">{% csrf_token %}
+                        <input type="hidden" name="guest_agent" value="{% if instance.config_guest_agent %}False{% else %}True{% endif %}">
+                        <label class="option-name" for="guest_agent">{% trans "Guest agent" %}</label>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="guest_agent" aria-describedby="agent-help"{% if instance.config_guest_agent %} checked{% endif %} data-submit-on-change>
+                        </div>
+                        <span class="small d-inline-flex align-items-center gap-2" id="agent-help">
+                            {% if not instance.config_guest_agent %}<span class="text-body-secondary">{% trans "The channel to the agent in the guest: a running VM gets it at once." %}</span>
+                            {% elif instance.status != 1 and instance.status != 3 %}<span class="power-dot" aria-hidden="true"></span>{% trans "VM not running" %}
+                            {% elif not instance.guest_agent %}<span class="power-dot" aria-hidden="true"></span>{% trans "No channel" %}
+                            {% elif instance.guest_agent_ready %}<span class="power-dot bg-success" aria-hidden="true"></span>{% trans "Connected" %}
+                            {% else %}<span class="power-dot bg-danger" aria-hidden="true"></span>{% trans "Not connected: is the agent installed and running in the guest?" %}{% endif %}
+                        </span>
+                    </form>
+                </div>
+                <form class="list-group-item p-3 p-md-4" action="{% url 'instances:set_on_crash' instance.id %}" method="post" aria-labelledby="options-crash">{% csrf_token %}
+                    <h2 class="h6 mb-2" id="options-crash">{% trans "When the guest crashes" %}</h2>
+                    <div class="d-flex flex-wrap align-items-center column-gap-3 row-gap-2">
+                        {% if instance.config_on_crash == "restart" or instance.config_on_crash == "destroy" %}
+                        <div class="btn-group btn-group-sm" role="radiogroup" aria-labelledby="options-crash">
+                            <input type="radio" class="btn-check" name="on_crash" value="restart" id="on_crash_restart"{% if instance.config_on_crash == "restart" %} checked{% endif %} data-submit-on-change>
+                            <label class="btn btn-outline-primary" for="on_crash_restart">{% trans "Restart" %}</label>
+                            <input type="radio" class="btn-check" name="on_crash" value="destroy" id="on_crash_destroy"{% if instance.config_on_crash == "destroy" %} checked{% endif %} data-submit-on-change>
+                            <label class="btn btn-outline-primary" for="on_crash_destroy">{% trans "Stop" %}</label>
+                        </div>
+                        <span class="small text-body-secondary">{% trans "For a crash the guest reports, not a hang. Stop keeps a VM that crashes again and again down for a look. From the next start." %}</span>
+                        {% else %}
+                        <p class="small mb-0" id="on_crash">{% blocktrans with action=instance.config_on_crash %}{{ action }}: change it in the XML editor.{% endblocktrans %}</p>
+                        {% endif %}
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
     </div>
 </div>

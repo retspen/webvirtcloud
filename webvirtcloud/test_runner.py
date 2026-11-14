@@ -1,0 +1,71 @@
+"""manage.py test --parallel on the SQLite database in WAL mode."""
+
+import contextlib
+import multiprocessing
+import os
+import secrets
+
+from django.db import connections
+from django.test.runner import DiscoverRunner
+
+# Python 3.14 starts processes with forkserver on Linux, which Django 5.2's
+# parallel runner does not support (a worker imports the tests before
+# django.setup(), and --parallel without a number falls back to one process):
+# fork there, as up to 3.13; macOS keeps spawn. Set on import: the command
+# resolves --parallel while it parses.
+if (
+    multiprocessing.get_start_method(allow_none=True) is None
+    and multiprocessing.get_all_start_methods()[0] == "forkserver"
+):
+    multiprocessing.set_start_method("fork")
+
+
+def remove_wal_files(name):
+    """Django replaces a SQLite test database by its main file only. A run
+    that was killed or whose pool crashed leaves the database's WAL behind,
+    and SQLite would replay that run's writes into the new database."""
+    for suffix in ("-wal", "-shm"):
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(f"{name}{suffix}")
+
+
+class TestRunner(DiscoverRunner):
+    def build_suite(self, *args, **kwargs):
+        suite = super().build_suite(*args, **kwargs)
+        if not isinstance(suite, self.parallel_test_suite):
+            return suite
+        # Pool workers are daemonic and may start no processes: the test
+        # cases tagged "processes" run in this process after the pool.
+        serial = [case for case in suite.subsuites if "processes" in getattr(next(iter(case)), "tags", ())]
+        suite.subsuites = [case for case in suite.subsuites if case not in serial]
+        return self.test_suite([suite, *serial])
+
+    def setup_databases(self, **kwargs):
+        # migrate creates the admin user (accounts.apps.create_admin): with a
+        # password given it writes no data/admin_password into the checkout
+        if not os.environ.get("ADMIN_PASSWORD"):  # an empty one counts as none
+            os.environ["ADMIN_PASSWORD"] = secrets.token_urlsafe(16)
+        # Django clones a SQLite test database by copying its main file, but
+        # migrate's writes are still in the WAL file (the init_command's
+        # journal mode): create the database alone, write the WAL back, then clone.
+        parallel, self.parallel = self.parallel, 0
+        test_files = [c.settings_dict["TEST"]["NAME"] for c in connections.all() if c.vendor == "sqlite"]
+        for name in filter(None, test_files) if not self.keepdb else ():
+            remove_wal_files(name)
+        old_config = super().setup_databases(**kwargs)
+        self.parallel = parallel
+        for connection, _, created in old_config:
+            if not created or parallel < 2:
+                continue
+            if connection.vendor == "sqlite":
+                with connection.cursor() as cursor:
+                    cursor.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                    if cursor.fetchone()[0]:
+                        raise RuntimeError("The test database's WAL could not be written back before cloning")
+            for index in range(parallel):
+                if connection.vendor == "sqlite" and not self.keepdb:
+                    remove_wal_files(connection.creation.get_test_db_clone_settings(str(index + 1))["NAME"])
+                connection.creation.clone_test_db(
+                    suffix=str(index + 1), verbosity=self.verbosity, keepdb=self.keepdb
+                )
+        return old_config

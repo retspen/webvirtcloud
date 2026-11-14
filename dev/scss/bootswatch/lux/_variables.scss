@@ -1,4 +1,4 @@
-// Lux 5.2.2
+// Lux 5.3.8
 // Bootswatch
 
 $theme: "lux" !default;
@@ -9,9 +9,9 @@ $theme: "lux" !default;
 
 $white:    #fff !default;
 $gray-100: #f8f9fa !default;
-$gray-200: #f7f7f9 !default;
-$gray-300: #eceeef !default;
-$gray-400: #ced4da !default;
+$gray-200: #f0f1f2 !default;
+$gray-300: #e0e1e2 !default;
+$gray-400: #cdcecf !default;
 $gray-500: #adb5bd !default;
 $gray-600: #919aa1 !default;
 $gray-700: #55595c !default;
@@ -36,10 +36,10 @@ $success:       $green !default;
 $info:          $cyan !default;
 $warning:       $yellow !default;
 $danger:        $red !default;
-$light:         $white !default;
+$light:         $gray-200 !default;
 $dark:          $gray-800 !default;
 
-$min-contrast-ratio:   2.3 !default;
+$min-contrast-ratio:   1.9 !default;
 
 // Options
 
@@ -53,6 +53,15 @@ $body-color:                $gray-700 !default;
 
 // stylelint-disable-next-line value-keyword-case
 $font-family-sans-serif:      "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !default;
+
+$font-weight-lighter:         lighter !default;
+$font-weight-light:           200 !default;
+$font-weight-normal:          300 !default;
+$font-weight-medium:          400 !default;
+$font-weight-semibold:        500 !default;
+$font-weight-bold:            600 !default;
+$font-weight-bolder:          bolder !default;
+
 $h1-font-size:                2rem !default;
 $h2-font-size:                1.75rem !default;
 $h3-font-size:                1.5rem !default;
@@ -64,11 +73,11 @@ $headings-color:              $gray-900 !default;
 
 // Tables
 
+$table-color:                 initial !default;
+
 $table-border-color:          rgba(0, 0, 0, .05) !default;
 
 // Buttons + Forms
-
-$input-btn-border-width:      0 !default;
 
 // Buttons
 
@@ -88,6 +97,9 @@ $input-bg:                              $gray-200 !default;
 $input-disabled-bg:                     $gray-300 !default;
 $input-group-addon-bg:                  $gray-300 !default;
 
+$form-select-disabled-color:        $gray-600 !default;
+$form-select-disabled-bg:           $input-disabled-bg !default;
+
 // Navbar
 
 $navbar-padding-y:                  1.5rem !default;
@@ -101,3 +113,12 @@ $navbar-light-active-color:         $gray-900 !default;
 $pagination-border-color:           transparent !default;
 $pagination-hover-border-color:     $pagination-border-color !default;
 $pagination-disabled-border-color:  $pagination-border-color !default;
+
+// Popovers
+
+$popover-header-bg:                 transparent !default;
+$popover-header-color:              var(--bs-popover-header-color) !default;
+
+// Toasts
+
+$toast-header-background-color:     transparent !default;

@@ -1,0 +1,2 @@
+{# the VMs whose definitions name a device, linked when the panel has them #}
+{% for vm in device.vms %}{% if vm.id %}<a href="{% url 'instances:instance' vm.id %}">{{ vm.name }}</a>{% else %}{{ vm.name }}{% endif %}{% if not forloop.last %}, {% endif %}{% empty %}–{% endfor %}

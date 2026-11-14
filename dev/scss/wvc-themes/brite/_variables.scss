@@ -1,0 +1,21 @@
+@import "dev/scss/bootswatch/brite/variables";
+
+// Breadcrumbs
+
+$breadcrumb-padding-y:              .375rem !default;
+$breadcrumb-padding-x:              .75rem !default;
+
+$link-decoration:                   none !default;
+
+// Navbar
+$nav-link-padding-x:                1.5rem;
+
+$navbar-padding-y:                  .7rem;
+
+// navbar.html uses navbar-dark on bg-primary; Brite's lime needs dark text
+$navbar-dark-color:                 $black;
+$navbar-dark-hover-color:           $black;
+$navbar-dark-active-color:          $black;
+$navbar-dark-disabled-color:        rgba($black, .3);
+$navbar-dark-icon-color:            $black;
+$navbar-dark-toggler-border-color:  $black;

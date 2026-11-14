@@ -6,8 +6,10 @@ app_name = "instances"
 
 urlpatterns = [
     path("", views.index, name="index"),
+    path("states/", views.states, name="states"),
+    path("find_address/", views.find_address, name="find_address"),
+    path("report.xlsx", views.vm_report, name="vm_report"),
     path("flavor/create/", views.flavor_create, name="flavor_create"),
-    path("flavor/<int:pk>/update/", views.flavor_update, name="flavor_update"),
     path("flavor/<int:pk>/delete/", views.flavor_delete, name="flavor_delete"),
     path("<int:pk>/", views.instance, name="instance"),
     path("<int:pk>/poweron/", views.poweron, name="poweron"),
@@ -19,6 +21,7 @@ urlpatterns = [
     path("<int:pk>/destroy/", views.destroy, name="destroy"),
     path("<int:pk>/migrate/", views.migrate, name="migrate"),
     path("<int:pk>/status/", views.status, name="status"),
+    path("<int:pk>/addresses/", views.nic_addresses, name="nic_addresses"),
     path("<int:pk>/stats/", views.stats, name="stats"),
     path("<int:pk>/osinfo/", views.osinfo, name="osinfo"),
     path("<int:pk>/rootpasswd/", views.set_root_pass, name="rootpasswd"),
@@ -33,9 +36,11 @@ urlpatterns = [
     path("<int:pk>/edit_volume/", views.edit_volume, name="edit_volume"),
     path("<int:pk>/detach_vol/", views.detach_vol, name="detach_vol"),
     path("<int:pk>/add_cdrom/", views.add_cdrom, name="add_cdrom"),
+    path("<int:pk>/add_pcie_slots/", views.add_pcie_slots, name="add_pcie_slots"),
     path("<int:pk>/detach_cdrom/<str:dev>/", views.detach_cdrom, name="detach_cdrom"),
     path("<int:pk>/unmount_iso/", views.unmount_iso, name="unmount_iso"),
     path("<int:pk>/mount_iso/", views.mount_iso, name="mount_iso"),
+    path("<int:pk>/refresh_iso/", views.refresh_iso, name="refresh_iso"),
     path("<int:pk>/snapshot/", views.snapshot, name="snapshot"),
     path("<int:pk>/delete_snapshot/", views.delete_snapshot, name="delete_snapshot"),
     path("<int:pk>/revert_snapshot/", views.revert_snapshot, name="revert_snapshot"),
@@ -52,18 +57,27 @@ urlpatterns = [
     path("<int:pk>/change_xml/", views.change_xml, name="change_xml"),
     path("<int:pk>/set_guest_agent/", views.set_guest_agent, name="set_guest_agent"),
     path("<int:pk>/set_video_model/", views.set_video_model, name="set_video_model"),
+    path("<int:pk>/set_rng/", views.set_rng, name="set_rng"),
+    path("<int:pk>/set_tpm/", views.set_tpm, name="set_tpm"),
+    path("<int:pk>/set_on_crash/", views.set_on_crash, name="set_on_crash"),
     path("<int:pk>/change_network/", views.change_network, name="change_network"),
     path("<int:pk>/add_network/", views.add_network, name="add_network"),
     path("<int:pk>/delete_network/", views.delete_network, name="delete_network"),
+    path("<int:pk>/host_devices/", views.host_devices, name="host_devices"),
+    path("<int:pk>/migrate_plan/", views.migrate_plan, name="migrate_plan"),
+    path("<int:pk>/migrate_targets/", views.migrate_targets, name="migrate_targets"),
+    path("<int:pk>/move_disk/", views.move_disk, name="move_disk"),
+    path("<int:pk>/add_usb_hostdev/", views.add_usb_hostdev, name="add_usb_hostdev"),
+    path("<int:pk>/delete_usb_hostdev/", views.delete_usb_hostdev, name="delete_usb_hostdev"),
+    path("<int:pk>/add_pci_hostdev/", views.add_pci_hostdev, name="add_pci_hostdev"),
+    path("<int:pk>/delete_pci_hostdev/", views.delete_pci_hostdev, name="delete_pci_hostdev"),
     path("<int:pk>/set_link_state/", views.set_link_state, name="set_link_state"),
     path("<int:pk>/set_qos/", views.set_qos, name="set_qos"),
-    path("<int:pk>/unset_qos/", views.unset_qos, name="unset_qos"),
-    path(
-        "<int:pk>/del_owner/", views.del_owner, name="del_owner"
-    ),  # no links to this one???
+    path("<int:pk>/unset_qos/", views.unset_qos, name="unset_qos"),  # no links to this one???
     path("<int:pk>/clone/", views.clone, name="clone"),
     path("<int:pk>/update_console/", views.update_console, name="update_console"),
     path("<int:pk>/change_options/", views.change_options, name="change_options"),
+    path("<int:pk>/set_template/", views.set_template, name="set_template"),
     path(
         "<int:pk>/getvvfile/", views.getvvfile, name="getvvfile"
     ),  # no links to this one???
@@ -82,6 +96,5 @@ urlpatterns = [
     ),
     path("guess_clone_name/", views.guess_clone_name, name="guess_clone_name"),
     path("random_mac_address/", views.random_mac_address, name="random_mac_address"),
-    path("check_instance/<vname>/", views.check_instance, name="check_instance"),
     path("<int:pk>/sshkeys/", views.sshkeys, name="sshkeys"),
 ]

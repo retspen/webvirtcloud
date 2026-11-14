@@ -1,0 +1,4 @@
+{% load static %}
+{{ settings|json_script:"job-panel-settings" }}
+<script src="{% static 'operations/job_panel.js' %}"></script>
+<script src="{% static 'operations/job_panel_start.js' %}"></script>

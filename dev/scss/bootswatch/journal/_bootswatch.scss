@@ -1,4 +1,4 @@
-// Journal 5.2.2
+// Journal 5.3.8
 // Bootswatch
 
 
@@ -6,32 +6,22 @@
 
 $web-font-path: "https://fonts.googleapis.com/css2?family=News+Cycle:wght@400;700&display=swap" !default;
 @if $web-font-path {
-  @import url($web-font-path);
+  @import url("#{$web-font-path}");
 }
 
-:root {
-  color-scheme: light;
+// Tables
+
+.table-primary,
+.table-secondary,
+.table-success,
+.table-warning,
+.table-danger,
+.table-info,
+.table-light {
+  --#{$prefix}table-color: #{$body-color};
 }
 
 // Navbar
-
-.bg-dark {
-  background-color: $black !important;
-}
-
-.bg-light {
-  color: $black;
-  background-color: $white !important;
-  border: 1px solid $gray-200;
-
-  &.navbar-fixed-top {
-    border-width: 0 0 1px;
-  }
-
-  &.navbar-fixed-bottom {
-    border-width: 1px 0 0;
-  }
-}
 
 .navbar {
   font-family: $headings-font-family;

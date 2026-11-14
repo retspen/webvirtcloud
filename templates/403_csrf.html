@@ -1,0 +1,14 @@
+{% extends "error.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Form could not be submitted" %}{% endblock %}
+{% block code %}403{% endblock %}
+{% block status_classes %}text-bg-warning{% endblock %}
+{% block icon %}bi-shield-exclamation{% endblock %}
+{% block heading %}{% trans "Form could not be submitted" %}{% endblock %}
+
+{% block text %}
+    <p class="mb-3">{% trans "This submission was rejected because its security check failed. It usually happens when the page was open for a long time, or after signing in or out in another tab." %}</p>
+    <p class="fw-semibold mb-3">{% trans "Go back, reload the page and submit the form again." %}</p>
+    <p class="small text-body-secondary border-top pt-3 mb-0">{% trans "If it happens on every form, the browser may block cookies, or the panel's proxy or address settings may be wrong. The reason is written to the panel's log." %}</p>
+{% endblock %}

@@ -1,4 +1,4 @@
-from .settings import app_settings, get_settings
+from .settings import get_settings
 
 
 class AppSettingsMiddleware(object):

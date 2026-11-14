@@ -3,22 +3,25 @@ from django.urls import include, path, re_path
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
-    SpectacularSwaggerView,
+    SpectacularSwaggerSplitView,
 )
+from drf_spectacular.utils import extend_schema
+from rest_framework.decorators import api_view
+from rest_framework.exceptions import NotFound
+
 from appsettings.views import appsettings
 from console.views import console
 from instances.views import index
 
-# Fallback for existing installations where REST_FRAMEWORK.DEFAULT_SCHEMA_CLASS is not configured in settings.py
-user_rf = getattr(settings, "REST_FRAMEWORK", None)
-if not user_rf or "DEFAULT_SCHEMA_CLASS" not in user_rf:
-    try:
-        from rest_framework.settings import api_settings
-        from drf_spectacular.openapi import AutoSchema
 
-        api_settings.DEFAULT_SCHEMA_CLASS = AutoSchema
-    except (ImportError, AttributeError):
-        pass
+@extend_schema(exclude=True)
+@api_view(["GET", "HEAD", "OPTIONS", "POST", "PUT", "PATCH", "DELETE"])
+def api_not_found(request):
+    """An API URL that names nothing: JSON, after the API's authentication, as
+    every other API answer. Only one with a trailing slash: one without is
+    redirected to it first."""
+    raise NotFound
+
 
 urlpatterns = [
     path("", index, name="index"),
@@ -26,26 +29,23 @@ urlpatterns = [
     path("accounts/", include("accounts.urls")),
     path("appsettings/", appsettings, name="appsettings"),
     path("computes/", include("computes.urls")),
-    path("console/", console, name="console"),
+    path("console/<int:compute_id>/<str:uuid>/", console, name="console"),
     path("datasource/", include("datasource.urls")),
     path("instances/", include("instances.urls")),
     path("i18n/", include("django.conf.urls.i18n")),
     path("logs/", include("logs.urls")),
-    path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    path("jobs/", include("operations.urls")),
     path('api/v1/', include("webvirtcloud.urls-api")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     re_path(r"^swagger\.(?P<format>json|yaml)$", SpectacularAPIView.as_view(), name="schema-json"),
-    path("swagger/", SpectacularSwaggerView.as_view(url_name="schema"), name="schema-swagger-ui"),
+    path("swagger/", SpectacularSwaggerSplitView.as_view(url_name="schema"), name="schema-swagger-ui"),
     path("redoc/", SpectacularRedocView.as_view(url_name="schema"), name="schema-redoc"),
+    re_path(r"^api/(?:.*/)?$", api_not_found),
 ]
 
-if settings.DEBUG:
-    try:
-        import debug_toolbar
+# settings-dev installs the toolbar; WEBVIRTCLOUD_DEBUG alone does not
+if "debug_toolbar" in settings.INSTALLED_APPS:
+    import debug_toolbar
 
-        urlpatterns += [
-            path("__debug__/", include(debug_toolbar.urls)),
-        ]
-    except ImportError:
-        pass
+    urlpatterns += [path("__debug__/", include(debug_toolbar.urls))]
 

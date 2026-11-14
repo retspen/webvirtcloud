@@ -2,44 +2,130 @@
 {% load i18n %}
 {% load static %}
 {% block title %}{% trans "Instances" %}{% endblock %}
-{% block style %}
-    <link rel="stylesheet" href="{% static 'css/sortable-theme-bootstrap.css' %}" />
-{% endblock %}
 {% block page_heading %}{% trans "Instances" %}{% endblock page_heading %}
 
 {% block page_heading_extra %}
-{% if request.user.is_superuser %}
-    {% include 'create_inst_block.html' %}
-{% endif %}
-    {% include 'search_block.html' %}
+    <div class="d-flex flex-wrap justify-content-end gap-2 mt-1">
+        {# the list's search and the address search, as one control #}
+        <div class="input-group w-auto">
+            <input id="filter" class="form-control" type="text" placeholder="{% trans 'Search' %}" aria-label="{% trans 'Search' %}">
+            <button type="button" class="btn btn-outline-secondary" id="find-address-open"
+                    data-bs-toggle="modal" data-bs-target="#find-address">{% trans "Find IP / MAC" %}</button>
+        </div>
+        {% if request.user.is_superuser %}
+            {% include 'create_inst_block.html' %}
+        {% endif %}
+    </div>
 {% endblock page_heading_extra %}
 
 {% block content %}
-    {% for compute in computes %}
-        {% if compute.status is not True %}
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                {% trans 'Problem occurred with host' %} {{ compute.name }}: {{ compute.status }}
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    {% if show_hosts %}
+        {% if unreachable_computes %}
+            {# one alert for every host the panel cannot reach, each with why #}
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <div class="fw-semibold">{% blocktrans count counter=unreachable_computes|length %}The panel cannot reach {{ counter }} host:{% plural %}The panel cannot reach {{ counter }} hosts:{% endblocktrans %}</div>
+                <ul class="mb-0">
+                    {% for compute in unreachable_computes %}
+                        <li><span class="fw-semibold">{{ compute.name }}</span>: {{ compute.connection_error }}</li>
+                    {% endfor %}
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{% trans "Close" %}"></button>
             </div>
         {% endif %}
-    {% endfor %}
+    {% elif own_hosts_down %}
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            {% trans 'A host of some of your virtual machines cannot be reached right now.' %}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endif %}
     <div class="col-lg-12">
-        {% if app_settings.VIEW_INSTANCES_LIST_STYLE == 'grouped' and request.user.is_superuser %}
+        {% if instances %}
+            {# the state filter: table_filter.js counts each state's VMs the search finds #}
+            <input type="hidden" id="state-filter" value="">
+            <nav class="mb-3" aria-label="{% trans "VM states" %}">
+                <div class="nav nav-pills flex-wrap gap-1" id="state-pills">
+                    <button type="button" class="nav-link active py-1 px-2" data-pill-state="" aria-pressed="true">
+                        {% trans "All" %} <span class="badge text-bg-light ms-1" data-count-state=""></span>
+                    </button>
+                    {% for state in states %}
+                    <button type="button" class="nav-link py-1 px-2" data-pill-state="{{ state }}" aria-pressed="false" hidden>
+                        {{ state }} <span class="badge text-bg-light ms-1" data-count-state="{{ state }}"></span>
+                    </button>
+                    {% endfor %}
+                </div>
+            </nav>
+            <div id="filter-status" class="visually-hidden" role="status" data-text="{% trans "%(shown)s of %(all)s VMs match" %}"></div>
+        {% endif %}
+        {% if not instances %}
+            <p class="text-center text-body-secondary py-4">{% trans "There are no VMs here yet." %}</p>
+        {% elif app_settings.VIEW_INSTANCES_LIST_STYLE == 'grouped' and request.user.is_superuser %}
             {% include 'allinstances_index_grouped.html' %}
         {% else %}
             {% include 'allinstances_index_nongrouped.html' %}
         {% endif %}
+        {% if instances %}
+        {# table_filter.js shows it while no row matches #}
+        <div id="no-match" class="text-center text-body-secondary py-4" hidden>
+            {% trans "No VM matches the search and the state." %}
+            <button type="button" class="btn btn-link" id="clear-filters">{% trans "Clear the filters" %}</button>
+        </div>
+        {% endif %}
+    </div>
+    <div class="modal fade" id="find-address" tabindex="-1" aria-labelledby="find-address-title" aria-hidden="true"
+         data-url="{% url 'instances:find_address' %}" data-failed="{% trans "The search did not go through. Try again." %}"
+         data-none="{% trans "No running VM reports this address." %}"
+         data-none-mac="{% trans "No VM has a network card with this MAC address." %}"
+         data-unregistered="{% trans "(not registered in the panel)" %}" data-conflict="{% trans "possible conflict" %}"
+         data-checked="{% trans "Running VMs checked: %(n)s." %}"
+         data-no-agent="{% trans "%(n)s had no connected guest agent; a static address on them cannot be seen." %}"
+         data-unread="{% trans "Guest agents not read (a paused VM, no answer in time, or an error): %(n)s." %}"
+         data-hosts-down="{% trans "Not reached: %(hosts)s." %}"
+         data-hosts-unfinished="{% trans "Not finished in time: %(hosts)s." %}"
+         data-read-at="{% trans "Read at %(time)s." %}"
+         data-some-unchecked="{% trans "Some of your VMs could not be checked." %}">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="find-address-title">{% trans "Find the VMs using an IP or MAC address" %}</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="find-address-form" class="d-flex gap-2 mb-3">
+                        <label class="visually-hidden" for="find-address-q">{% trans "IP address, network or MAC address" %}</label>
+                        <input type="text" class="form-control" name="q" id="find-address-q" required
+                               placeholder="192.0.2.10, 192.0.2.0/24 {% trans "or" %} 52:54:00:12:34:56">
+                        <button type="submit" class="btn btn-primary">{% trans "Find" %}</button>
+                    </form>
+                    <div class="alert alert-danger d-none" role="alert" id="find-address-error"></div>
+                    <div class="table-responsive">
+                        <table class="table table-sm d-none align-middle" id="find-address-results">
+                            <thead>
+                                <tr>
+                                    <th scope="col">{% trans "Address" %}</th>
+                                    <th scope="col">{% trans "VM" %}</th>
+                                    <th scope="col">{% trans "MAC" %}</th>
+                                    <th scope="col">{% trans "Source" %}</th>
+                                    {% if show_hosts %}<th scope="col">{% trans "Host" %}</th>{% endif %}
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <p class="small text-body-secondary mb-0" id="find-address-coverage"></p>
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock content %}
 {% block script %}
-    <script src="{% static 'js/sortable.min.js' %}"></script>
-    <script src="{% static 'js/filter-table.js' %}"></script>
+    <script src="{% static 'js/poll.js' %}"></script>
+    {% include "instances/vm_states_poll.html" %}
+    <script src="{% static 'js/table_filter.js' %}"></script>
+    <script src="{% static 'js/find_address.js' %}"></script>
+    {% if app_settings.VIEW_INSTANCES_LIST_STYLE == 'grouped' and request.user.is_superuser %}
+        <script src="{% static 'js/host_groups.js' %}"></script>
+    {% endif %}
     {% if request.user.is_superuser %}
-        <script>
-            function goto_compute(compute) {
-                //let compute = $("#compute_select").val();
-                window.location.href = "{% url 'instances:create_instance_select_type' 1 %}".replace(1, compute);
-            }
-        </script>
+        <script src="{% static 'js/new_vm_dialog.js' %}"></script>
     {% endif %}
 {% endblock script %}

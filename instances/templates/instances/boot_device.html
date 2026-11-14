@@ -1,0 +1,19 @@
+{% load i18n %}
+{% load bootstrap_icons %}
+{# one device of the boot order editor: in #boot-chain it is numbered and moves up, down or out; in #boot-spare it is added #}
+<li class="boot-node d-flex flex-wrap align-items-center gap-2 gap-sm-3" data-boot-value="{{ device.value }}">
+    <span class="boot-step" aria-hidden="true"></span>
+    <span class="fs-5 text-body-secondary" aria-hidden="true">{% if device.icon == "disc" %}{% bs_icon 'disc' %}{% elif device.icon == "ethernet" %}{% bs_icon 'ethernet' %}{% else %}{% bs_icon 'device-hdd' %}{% endif %}</span>
+    <span class="boot-text flex-grow-1 text-break">
+        <span class="fw-semibold">{{ device.kind }} {{ device.name }}</span>
+        <span class="d-block small text-body-secondary">{{ device.source|default:_("empty") }}</span>
+    </span>
+    <span class="boot-chain-only d-flex gap-1 ms-auto">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-boot="up" aria-label="{% blocktrans with kind=device.kind name=device.name %}Move {{ kind }} {{ name }} up{% endblocktrans %}">{% bs_icon 'arrow-up' %}</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-boot="down" aria-label="{% blocktrans with kind=device.kind name=device.name %}Move {{ kind }} {{ name }} down{% endblocktrans %}">{% bs_icon 'arrow-down' %}</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-boot="remove">{% trans "Remove" %}</button>
+    </span>
+    <span class="boot-spare-only ms-auto text-nowrap">
+        <button type="button" class="btn btn-sm btn-outline-primary" data-boot="add">{% bs_icon 'plus-lg' %} {% trans "Add" %}</button>
+    </span>
+</li>

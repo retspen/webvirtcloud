@@ -1,0 +1,20 @@
+[Unit]
+Description=WebVirtCloud job worker
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/srv/webvirtcloud
+EnvironmentFile=-/etc/default/webvirtcloud
+Environment=WEBVIRTCLOUD_LOG_FILE=/srv/webvirtcloud/data/webvirtcloud-worker.log
+ExecStart=/srv/webvirtcloud/venv/bin/python3 /srv/webvirtcloud/manage.py run_worker
+# the worker finishes its jobs for up to 60 s; its libvirt connections stay meanwhile
+KillMode=mixed
+TimeoutStopSec=90
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

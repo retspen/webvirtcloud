@@ -1,18 +1,32 @@
+import contextlib
+
+from admin.permissions import IsSuperUser
 from appsettings.settings import app_settings
 from computes.models import Compute
+from computes.utils import libvirt_compute_lock
+from instances.utils import paths_used_on_other_computes
 from django.shortcuts import get_object_or_404
-from rest_framework import status, viewsets
+from django.utils.translation import gettext as _
+from drf_spectacular.utils import extend_schema, inline_serializer
+from libvirt import libvirtError
+from logs.audit import audit, failed
+from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from vrtManager.storage import wvmStorage, wvmStorages
+from webvirtcloud.serializers import ErrorSerializer, StatusSerializer
 
-from .serializers import StorageSerializer, StoragesSerializer, VolumeSerializer
+from .serializers import CreateVolumeSerializer, StorageSerializer, StoragesSerializer, VolumeSerializer
 
 
 class StorageViewSet(viewsets.ViewSet):
     """
     A viewset for listing retrieving storages.
     """
+
+    permission_classes = [IsSuperUser]
+    serializer_class = StoragesSerializer
+    lookup_value_converter = "str"
 
     def list(self, request, compute_pk=None):
 
@@ -29,6 +43,7 @@ class StorageViewSet(viewsets.ViewSet):
 
         return Response(serializer.data)
 
+    @extend_schema(responses=StorageSerializer)
     def retrieve(self, request, pk=None, compute_pk=None):
         compute = get_object_or_404(Compute, pk=compute_pk)
 
@@ -36,15 +51,20 @@ class StorageViewSet(viewsets.ViewSet):
             compute.hostname, compute.login, compute.password, compute.type, pk
         )
 
+        state = conn.is_active()
+        # first: it refreshes the pool, and libvirt measures a pool's space only then;
+        # a stopped pool lists none
+        volumes = conn.update_volumes() if state else None
+        size, free = conn.get_size()
         infoset = {
-            "state": conn.is_active(),
-            "size": conn.get_size()[0],
-            "free": conn.get_size()[1],
+            "state": state,
+            "size": size,
+            "free": free,
             "status": conn.get_status(),
             "path": conn.get_target_path(),
             "type": conn.get_type(),
             "autostart": conn.get_autostart(),
-            "volumes": conn.update_volumes(),
+            "volumes": volumes,
         }
 
         serializer = StorageSerializer(
@@ -52,6 +72,7 @@ class StorageViewSet(viewsets.ViewSet):
         )
         return Response(serializer.data)
 
+    @extend_schema(request=None, responses=StatusSerializer)
     @action(detail=True, methods=["post"])
     def start(self, request, pk=None, compute_pk=None):
         compute = get_object_or_404(Compute, pk=compute_pk)
@@ -59,10 +80,11 @@ class StorageViewSet(viewsets.ViewSet):
         conn = wvmStorage(
             compute.hostname, compute.login, compute.password, compute.type, pk
         )
-        ret = conn.start()
-        conn.close()
+        with audit(request, compute, f"Storage pool {pk}", "start"):
+            ret = conn.start()
         return Response({"status": "Pool start command send: " + str(ret)})
 
+    @extend_schema(request=None, responses=StatusSerializer)
     @action(detail=True, methods=["post"])
     def stop(self, request, pk=None, compute_pk=None):
         compute = get_object_or_404(Compute, pk=compute_pk)
@@ -70,10 +92,11 @@ class StorageViewSet(viewsets.ViewSet):
         conn = wvmStorage(
             compute.hostname, compute.login, compute.password, compute.type, pk
         )
-        ret = conn.stop()
-        conn.close()
+        with audit(request, compute, f"Storage pool {pk}", "stop"):
+            ret = conn.stop()
         return Response({"status": "Pool stop command send: " + str(ret)})
 
+    @extend_schema(request=None, responses=StatusSerializer)
     @action(detail=True, methods=["post"])
     def refresh(self, request, pk=None, compute_pk=None):
         compute = get_object_or_404(Compute, pk=compute_pk)
@@ -82,9 +105,12 @@ class StorageViewSet(viewsets.ViewSet):
             compute.hostname, compute.login, compute.password, compute.type, pk
         )
         ret = conn.refresh()
-        conn.close()
         return Response({"status": "Pool refresh command send: " + str(ret)})
 
+    @extend_schema(
+        request=None,
+        responses=inline_serializer("PoolXML", {"return": serializers.CharField()}),
+    )
     @action(detail=True, methods=["post"])
     def XML_description(self, request, pk=None, compute_pk=None):
         compute = get_object_or_404(Compute, pk=compute_pk)
@@ -93,7 +119,6 @@ class StorageViewSet(viewsets.ViewSet):
             compute.hostname, compute.login, compute.password, compute.type, pk
         )
         ret = conn._XMLDesc(0)
-        conn.close()
         return Response({"return": str(ret)})
 
 
@@ -103,9 +128,11 @@ class VolumeViewSet(viewsets.ViewSet):
     A simple ViewSet for listing or retrieving Storage Volumes.
     """
 
+    permission_classes = [IsSuperUser]
     serializer_class = VolumeSerializer
-    lookup_value_regex = "[^/]+"
+    lookup_value_converter = "str"
 
+    @extend_schema(responses={200: VolumeSerializer(many=True), 409: ErrorSerializer})
     def list(self, request, storage_pk=None, compute_pk=None):
 
         compute = get_object_or_404(Compute, pk=compute_pk)
@@ -113,36 +140,32 @@ class VolumeViewSet(viewsets.ViewSet):
         conn = wvmStorage(
             compute.hostname, compute.login, compute.password, compute.type, storage_pk
         )
-        state = conn.is_active()
-
-        if state:
-            conn.refresh()
-            volume_queryset = conn.update_volumes()
-        else:
-            volume_queryset = None
-        conn.close()
+        if not conn.is_active():
+            return Response({"detail": _("Pool is not active")}, status=status.HTTP_409_CONFLICT)
+        volume_queryset = conn.update_volumes()
         serializer = VolumeSerializer(
             volume_queryset, many=True, context={"request": request}
         )
 
         return Response(serializer.data)
 
+    @extend_schema(responses={200: VolumeSerializer, 409: ErrorSerializer})
     def retrieve(self, request, storage_pk=None, compute_pk=None, pk=None):
         compute = get_object_or_404(Compute, pk=compute_pk)
 
         conn = wvmStorage(
             compute.hostname, compute.login, compute.password, compute.type, storage_pk
         )
-        state = conn.is_active()
-
-        volume_queryset = conn.get_volume_details(pk) if state else None
-        conn.close()
+        if not conn.is_active():
+            return Response({"detail": _("Pool is not active")}, status=status.HTTP_409_CONFLICT)
+        volume_queryset = conn.get_volume_details(pk)
         serializer = VolumeSerializer(
             volume_queryset, many=False, context={"request": request}
         )
 
         return Response(serializer.data)
 
+    @extend_schema(request=CreateVolumeSerializer, responses={200: StatusSerializer, 400: dict, 409: ErrorSerializer})
     def create(self, request, storage_pk=None, compute_pk=None):
         compute = get_object_or_404(Compute, pk=compute_pk)
 
@@ -150,26 +173,31 @@ class VolumeViewSet(viewsets.ViewSet):
             compute.hostname, compute.login, compute.password, compute.type, storage_pk
         )
 
-        serializer = VolumeSerializer(data=request.data)
+        serializer = CreateVolumeSerializer(data=request.data)
         if serializer.is_valid():
+            subject, action = f"Storage pool {storage_pk}", f"add volume {serializer.validated_data['name']}"
             state = conn.is_active()
             if state:
-                conn.refresh()
-                ret = conn.create_volume(
-                    serializer.validated_data["name"],
-                    serializer.validated_data["size"],
-                    serializer.validated_data["type"],
-                    serializer.validated_data["meta_prealloc"],
-                    int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID),
-                    int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID),
-                )
-                conn.close()
+                with contextlib.suppress(libvirtError):  # refused while a volume is cloned in the pool
+                    conn.refresh()
+                with audit(request, compute, subject, action) as entry:
+                    ret = conn.create_volume(
+                        serializer.validated_data["name"],
+                        serializer.validated_data["size"],
+                        serializer.validated_data["type"],
+                        serializer.validated_data["meta_prealloc"] and serializer.validated_data["type"] == "qcow2",
+                        int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_UID),
+                        int(app_settings.INSTANCE_VOLUME_DEFAULT_OWNER_GID),
+                    )
+                    entry.action = f"add volume {ret}"
                 return Response({"status": "Volume: " + ret + " is created"})
             else:
-                return Response({"status": "Pool is not active"})
+                failed(request, compute, subject, action, "pool is not active")
+                return Response({"detail": _("Pool is not active")}, status=status.HTTP_409_CONFLICT)
         else:
-            return Response({"status": "Data is not right for create volume"})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(responses={200: StatusSerializer, 409: ErrorSerializer})
     def destroy(self, request, storage_pk=None, compute_pk=None, pk=None):
         compute = get_object_or_404(Compute, pk=compute_pk)
 
@@ -177,9 +205,14 @@ class VolumeViewSet(viewsets.ViewSet):
             compute.hostname, compute.login, compute.password, compute.type, storage_pk
         )
 
+        subject, action = f"Storage pool {storage_pk}", f"delete volume {pk}"
         if conn.is_active():
-            conn.del_volume(pk)
-            conn.close()
+            with audit(request, compute, subject, action):
+                conn.check_unused_elsewhere(pk, lambda paths: paths_used_on_other_computes(compute, paths))
+                # no VM operation attaches it between the check and the delete
+                with libvirt_compute_lock(compute):
+                    conn.del_volume(pk)
             return Response({"status": "Volume: " + pk + " is deleted"})
         else:
-            return Response({"status": "Pool is not active"})
+            failed(request, compute, subject, action, "pool is not active")
+            return Response({"detail": _("Pool is not active")}, status=status.HTTP_409_CONFLICT)

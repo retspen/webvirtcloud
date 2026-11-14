@@ -1,0 +1,17 @@
+{% load i18n %}
+{% load bootstrap_icons %}
+{# a VM's name, its title, and with owners its owners: the first as a badge, the others counted #}
+<a class="fw-semibold text-break" href="{% url 'instances:instance' instance.id %}">{{ instance.name }}</a>
+{% if instance.info and instance.title %}<div class="small text-body-secondary text-break">{{ instance.title }}</div>{% endif %}
+{% if owners %}
+    {% with users=instance.userinstance_set.all %}
+    {% if users %}
+    <div class="mt-1">
+        <span class="badge text-bg-light border">{% bs_icon 'person' %} {{ users.0.user }}</span>
+        {% if users|length > 1 %}
+            <span class="badge text-bg-light border" title="{% for owner in users|slice:"1:" %}{{ owner.user }}{% if not forloop.last %}, {% endif %}{% endfor %}">+{{ users|length|add:"-1" }}<span class="visually-hidden"> {% trans "more owners" %}: {% for owner in users|slice:"1:" %}{{ owner.user }}{% if not forloop.last %}, {% endif %}{% endfor %}</span></span>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endwith %}
+{% endif %}

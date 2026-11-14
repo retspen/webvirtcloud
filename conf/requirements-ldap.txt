@@ -1,0 +1,6 @@
+# LDAP login (README: LDAP); pip builds python-ldap against the system's
+# openldap and sasl headers
+django-auth-ldap==5.3.0
+# the venv can otherwise keep older distro copies (openSUSE 15.6)
+python-ldap>=3.4.5
+pyasn1>=0.6.4

@@ -1,0 +1,11 @@
+{% load i18n %}
+{# where the VM is: its host and the host's VM list (host pages are for administrators); its owner's VM list otherwise #}
+<nav class="small" aria-label="{% trans "Location" %}">
+    {% if request.user.is_superuser %}
+    <a href="{% url 'overview' compute.id %}">{{ compute.name }}</a>
+    <span class="text-body-secondary mx-1" aria-hidden="true">/</span>
+    <a href="{% url 'instances' compute.id %}">{% trans "Instances" %}</a>
+    {% else %}
+    <a href="{% url 'instances:index' %}">{% trans "Instances" %}</a>
+    {% endif %}
+</nav>

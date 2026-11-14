@@ -1,11 +1,11 @@
 <domain type="kvm">
-    <name>test-vm</name>
+    <name>wvc-test-vm</name>
     <uuid>1bd3c1f2-dd12-4b8d-a298-dff387cb9f93</uuid>
     <memory unit="KiB">131072</memory>
     <currentMemory unit="KiB">131072</currentMemory>
     <vcpu placement="static">1</vcpu>
     <os>
-        <type arch="x86_64" machine="pc-q35-5.1">hvm</type>
+        <type arch="x86_64" machine="q35">hvm</type>
         <boot dev="hd" />
         <boot dev="cdrom" />
         <bootmenu enable="yes" />
@@ -20,10 +20,9 @@
     <on_reboot>restart</on_reboot>
     <on_crash>restart</on_crash>
     <devices>
-        <emulator>/usr/bin/qemu-system-x86_64</emulator>
         <disk type="file" device="disk">
             <driver name="qemu" type="qcow2" cache="directsync" />
-            <source file="/var/lib/libvirt/images/test-volume.qcow2" />
+            <source file="/var/lib/libvirt/wvc-test/wvc-test-volume.qcow2" />
             <target dev="vda" bus="virtio" />
             <address type="pci" domain="0x0000" bus="0x03" slot="0x00" function="0x0" />
         </disk>
@@ -105,7 +104,7 @@
         </input>
         <input type="mouse" bus="ps2" />
         <input type="keyboard" bus="ps2" />
-        <graphics type="spice" autoport="yes" listen="0.0.0.0">
+        <graphics type="vnc" autoport="yes" listen="0.0.0.0">
             <listen type="address" address="0.0.0.0" />
         </graphics>
         <video>

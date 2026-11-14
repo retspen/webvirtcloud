@@ -1,31 +1,81 @@
-import re
-import socket
+from django.utils.translation import gettext_noop
+import contextlib
+import io
+import logging
+import os
 import threading
+import time
+import uuid
+from urllib.parse import quote
 
 import libvirt
 from django.conf import settings
+from django.core.signals import request_finished, request_started
+from django.utils.functional import cached_property
 from libvirt import libvirtError
+from lxml import etree
 from vrtManager import util
-from vrtManager.rwlock import ReadWriteLock
 
 CONN_SOCKET = 4
 CONN_TLS = 3
 CONN_SSH = 2
 CONN_TCP = 1
-TLS_PORT = 16514
-SSH_PORT = 22
-TCP_PORT = 16509
+
+# libvirt has no timeout for opening a connection: an unreachable host
+# blocks for the kernel's TCP connect timeout (about 2 minutes), a daemon
+# that accepts but never answers blocks forever, and such an open cannot be
+# cancelled. Connections are opened in a helper thread, at most one per
+# connection at a time, so a stuck host holds one thread and nothing else;
+# the caller waits at most CONNECT_TIMEOUT seconds, and a host that failed is
+# not tried again for RETRY_AFTER seconds.
+CONNECT_TIMEOUT = getattr(settings, "LIBVIRT_CONNECT_TIMEOUT", 5)
+RETRY_AFTER = getattr(settings, "LIBVIRT_RETRY_AFTER", 30)
+# A call to a host that is up but stuck (a hung NFS mount, for one) waits as
+# long as the host does: libvirt has no call timeout, and keepalive does not
+# end it, since the daemon still answers keepalives. So in a process at most
+# HOST_REQUESTS web requests use one host (by its name, whatever the login)
+# at a time; another waits up to
+# CONNECT_TIMEOUT for one of them to end, and is then refused. A request
+# counts on the host it connected to last, until it ends. Threads outside a
+# request (the job worker's, the consoles') are not counted: a job holds its
+# host for as long as it runs.
+HOST_REQUESTS = getattr(settings, "LIBVIRT_HOST_REQUESTS", 2)
+# libvirt's close reasons, one whole message each
+CLOSE_REASONS = {
+    0: gettext_noop("Connection closed (error)"),
+    1: gettext_noop("Connection closed (end of file)"),
+    2: gettext_noop("Connection closed (keepalive timeout)"),
+    3: gettext_noop("Connection closed (client closed)"),
+}
+# ssh with a connect timeout for qemu+ssh (libvirt runs the "command" binary
+# in place of ssh and never passes one itself)
+SSH_COMMAND = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libvirt-ssh")
+
+logger = logging.getLogger(__name__)
+
+
+def _on_libvirt_error(context, error):
+    """libvirt prints each error on stderr without saying where it came from;
+    every process that talks to libvirt imports this module. The errors are
+    raised to the callers, which handle or report them.
+
+    A daemon behind the host's virtproxyd (virtstoraged, virtnetworkd, ...)
+    that restarts leaves the connection open and alive, but every later call
+    to it fails with "client socket is closed". libvirt reports that as an
+    RPC internal error and does not say on which connection, so the process
+    opens new ones."""
+    code, domain = error[0], error[1]
+    if code == libvirt.VIR_ERR_INTERNAL_ERROR and domain == libvirt.VIR_FROM_RPC:
+        connection_manager.reopen = True
+
+
+libvirt.registerErrorHandler(_on_libvirt_error, None)
 
 
 class wvmEventLoop(threading.Thread):
     """ Event Loop Class"""
 
     def __init__(self, group=None, target=None, name=None, args=(), kwargs={}):
-        # register the default event implementation
-        # of libvirt, as we do not have an existing
-        # event loop.
-        libvirt.virEventRegisterDefaultImpl()
-
         if name is None:
             name = "libvirt event loop"
 
@@ -43,10 +93,110 @@ class wvmEventLoop(threading.Thread):
             libvirt.virEventRunDefaultImpl()
 
 
+# The event loop (keepalive, close callbacks) starts with the first connection
+# of a process, not at import: novncd imports this module and then forks a child
+# per console, and libvirt must not be used after a fork of a process with
+# running libvirt threads. Threads do not survive a fork, so a child starts its
+# own loop. This is process state, shared by all connection managers.
+_event_loop = {"lock": threading.Lock(), "running": False, "registered": False}
+
+
+def start_event_loop():
+    if _event_loop["running"]:
+        return
+    with _event_loop["lock"]:
+        if _event_loop["running"]:
+            return
+        if not _event_loop["registered"]:
+            # the registration is libvirt's process state and a child inherits it
+            libvirt.virEventRegisterDefaultImpl()
+            _event_loop["registered"] = True
+        wvmEventLoop().start()
+        _event_loop["running"] = True
+
+
+def _after_fork_in_child():
+    # the loop thread and any thread holding these locks are gone
+    _event_loop["lock"] = threading.Lock()
+    _event_loop["running"] = False
+    connection_manager.forget_connections()
+
+
+os.register_at_fork(after_in_child=_after_fork_in_child)
+
+
+_request = threading.local()  # in a web request: the connection it counts on (HOST_REQUESTS)
+
+
+def _request_started(**kwargs):
+    _leave_host()  # a request that ended without request_finished (an error outside Django's handling)
+    _request.active = True
+
+
+def _request_finished(**kwargs):
+    _leave_host()
+    _request.active = False
+
+
+def _leave_host():
+    held = getattr(_request, "held", None)
+    if held is not None:
+        _request.held = None
+        held.requests.release()
+
+
+def _count_on(connection):
+    """A web request uses the host of connection from now on (HOST_REQUESTS)."""
+    if not getattr(_request, "active", False) or getattr(_request, "held", None) is connection:
+        return
+    _leave_host()
+    if not connection.requests.acquire(timeout=CONNECT_TIMEOUT):
+        logger.warning("%s: request refused, %s requests still wait for the host", connection.host, HOST_REQUESTS)
+        raise util.HostBusy(gettext_noop("Connection Failed: %(host)s does not answer: %(requests)s requests still wait for it"),
+                            host=connection.host, requests=HOST_REQUESTS)
+    _request.held = connection
+
+
+@contextlib.contextmanager
+def counted_thread():
+    """A thread a web request starts to use a host counts as a request of its
+    own (HOST_REQUESTS): one stuck on a host it asks holds a place there, and
+    the next ones are refused, not piled up."""
+    _request.active = True
+    try:
+        yield
+    finally:
+        _request_finished()
+
+
+@contextlib.contextmanager
+def other_hosts():
+    """For code that reads other hosts in the middle of a web request, which
+    then goes on with the host it used before, through the objects it kept:
+    the request counts on that host again after the block (HOST_REQUESTS)."""
+    held = getattr(_request, "held", None)
+    try:
+        yield
+    finally:
+        if held is not None:
+            _count_on(held)
+
+
+request_started.connect(_request_started, dispatch_uid="vrtManager.connection.request_started")
+request_finished.connect(_request_finished, dispatch_uid="vrtManager.connection.request_finished")
+
+
+# libvirt's per-host directory of the VMs' UEFI variables (NVRAM)
+NVRAM_DIR = "/var/lib/libvirt/qemu/nvram"
+# the files and devices of a definition's disks that may grow from others; a
+# raw one does not
+UNREAD_DISKS = etree.XPath("devices/disk[@device='disk'][not(driver/@type='raw')]/source/@file|"
+                           "devices/disk[@device='disk'][not(driver/@type='raw')]/source/@dev")
+
+
 class wvmConnection(object):
     """
     class representing a single connection stored in the Connection Manager
-    # to-do: may also need some locking to ensure to not connect simultaniously in 2 threads
     """
 
     def __init__(self, host, login, passwd, conn):
@@ -58,6 +208,10 @@ class wvmConnection(object):
         self.connection_state_lock = threading.Lock()
         self.connection = None
         self.last_error = None
+        self._opening = None  # threading.Event of the open in progress
+        self._retry_at = 0.0  # monotonic time before which no new open is tried
+        self._failing = False  # the last open failed: its failure is logged, the next ones are not
+        self.requests = None  # the web requests using the host (HOST_REQUESTS), set by the manager
 
         # credentials
         self.host = host
@@ -65,51 +219,98 @@ class wvmConnection(object):
         self.passwd = passwd
         self.type = conn
 
-        # connect
-        self.connect()
-
     def connect(self):
-        self.connection_state_lock.acquire()
-        try:
-            # recheck if we have a connection (it may have been
-            if not self.connected:
-                if self.type == CONN_TCP:
-                    self.__connect_tcp()
-                elif self.type == CONN_SSH:
-                    self.__connect_ssh()
-                elif self.type == CONN_TLS:
-                    self.__connect_tls()
-                elif self.type == CONN_SOCKET:
-                    self.__connect_socket()
-                else:
-                    raise ValueError(f'"{self.type}" is not a valid connection type')
+        """Open the connection if needed, waiting at most CONNECT_TIMEOUT.
+        On failure last_error says why and connected stays False."""
+        with self.connection_state_lock:
+            if self.connected:
+                return
+            if self._opening is not None and self._opening.abandoned:
+                # A caller already waited for this open in vain; nobody waits
+                # again until it ends (one thread per connection, however long).
+                return
+            if time.monotonic() < self._retry_at:
+                return  # failed recently: answer with the last error at once
+            if self._opening is None:
+                self._opening = threading.Event()
+                self._opening.abandoned = False
+                threading.Thread(target=self._open, args=(self._opening,), daemon=True).start()
+            opening = self._opening
 
-                if self.connected:
-                    # do some preprocessing of the connection:
-                    #     * set keep alive interval
-                    #     * set connection close/fail handler
-                    try:
-                        self.connection.setKeepAlive(
-                            connection_manager.keepalive_interval, connection_manager.keepalive_count
-                        )
-                        try:
-                            self.connection.registerCloseCallback(self.__connection_close_callback, None)
-                        except Exception:
-                            # Temporary fix for libvirt > libvirt-0.10.2-41
-                            pass
-                    except libvirtError as e:
-                        # hypervisor driver does not seem to support persistent connections
-                        self.last_error = str(e)
+        if not opening.wait(CONNECT_TIMEOUT):
+            with self.connection_state_lock:
+                if self._opening is opening:  # still running: give up waiting, not the open
+                    self.last_error = util.message(gettext_noop("Connection Failed: %(host)s did not answer within %(seconds)s s"),
+                                                   host=self.host, seconds=CONNECT_TIMEOUT)
+                    opening.abandoned = True
+                    self._log_failure()
+
+    def _open(self, opening):
+        """Helper thread: open, configure and publish the connection."""
+        connection = error = None
+        try:
+            connection = self._open_transport()
+            if not connection.isAlive():  # closed again before it was published
+                raise util.OperationError(gettext_noop("the connection closed right after opening"))
+            # Drivers without keepalive or close callbacks work without them
+            try:
+                connection.setKeepAlive(connection_manager.keepalive_interval, connection_manager.keepalive_count)
+            except libvirtError:
+                pass
+            try:
+                connection.registerCloseCallback(self.__connection_close_callback, None)
+            except libvirtError:
+                pass
+        except Exception as e:  # libvirtError, or anything else from the transport
+            # libvirt's own text stays as it is; one of ours is a message of its own
+            reason = [util.message(e.text, **e.values)] if isinstance(e, util.OperationError) else str(e)
+            error = util.message(gettext_noop("Connection Failed: %(error)s"), error=reason)
         finally:
-            self.connection_state_lock.release()
+            with self.connection_state_lock:
+                if error is None:
+                    self.connection = connection
+                    self.last_error = None
+                    self._retry_at = 0.0
+                    self._failing = False
+                    logger.info("%s: connected", self.host)
+                else:
+                    self.connection = None
+                    self.last_error = error
+                    self._retry_at = time.monotonic() + RETRY_AFTER
+                    self._log_failure()
+                self._opening = None
+            opening.set()
+
+    def _log_failure(self):
+        """Log last_error if it starts a run of failures (the caller holds connection_state_lock)."""
+        if not self._failing:
+            self._failing = True
+            logger.warning("%s: %s", self.host, util.render(self.last_error["text"], self.last_error["values"], str))
+
+    def _open_transport(self):
+        if self.type == CONN_TCP:
+            return self.__connect_tcp()
+        if self.type == CONN_SSH:
+            return self.__connect_ssh()
+        if self.type == CONN_TLS:
+            return self.__connect_tls()
+        if self.type == CONN_SOCKET:
+            return self.__connect_socket()
+        raise ValueError(f'"{self.type}" is not a valid connection type')
+
+    def alive_connection(self):
+        """The libvirt connection if it is alive, else None. self.connection
+        is read once: the close callback can clear it at any moment."""
+        connection = self.connection
+        try:
+            return connection if connection is not None and connection.isAlive() else None
+        except libvirtError:
+            # isAlive failed for some reason
+            return None
 
     @property
     def connected(self):
-        try:
-            return self.connection is not None and self.connection.isAlive()
-        except libvirtError:
-            # isAlive failed for some reason
-            return False
+        return self.alive_connection() is not None
 
     def __libvirt_auth_credentials_callback(self, credentials, user_data):
         for credential in credentials:
@@ -124,65 +325,45 @@ class wvmConnection(object):
         return 0
 
     def __connection_close_callback(self, connection, reason, opaque=None):
-        self.connection_state_lock.acquire()
-        try:
-            # on server shutdown libvirt module gets freed before the close callbacks are called
-            # so we just check here if it is still present
-            if libvirt is not None:
-                self.last_error = reason
-
+        with self.connection_state_lock:
+            # A late callback of a connection that was already replaced must
+            # not drop its successor.
+            if connection is not self.connection:
+                return
+            if reason in CLOSE_REASONS:
+                self.last_error = util.message(CLOSE_REASONS[reason])
+            else:
+                self.last_error = util.message(gettext_noop("Connection closed (%(reason)s)"), reason=reason)
             # prevent other threads from using the connection (in the future)
             self.connection = None
-        finally:
-            self.connection_state_lock.release()
+            logger.warning("%s: %s", self.host, util.render(self.last_error["text"], self.last_error["values"], str))
 
     def __connect_tcp(self):
         flags = [libvirt.VIR_CRED_AUTHNAME, libvirt.VIR_CRED_PASSPHRASE]
         auth = [flags, self.__libvirt_auth_credentials_callback, None]
-        uri = f"qemu+tcp://{self.host}/system"
-
-        try:
-            self.connection = libvirt.openAuth(uri, auth, 0)
-            self.last_error = None
-
-        except libvirtError as e:
-            self.last_error = f"Connection Failed: {str(e)}"
-            self.connection = None
+        return libvirt.openAuth(f"qemu+tcp://{self.host}/system", auth, 0)
 
     def __connect_ssh(self):
-        uri = "qemu+ssh://%s@%s/system" % (self.login, self.host)
-
-        try:
-            self.connection = libvirt.open(uri)
-            self.last_error = None
-
-        except libvirtError as e:
-            self.last_error = f"Connection Failed: {str(e)} --- " + repr(libvirt.virGetLastError())
-            self.connection = None
+        return libvirt.open(f"qemu+ssh://{self.login}@{self.host}/system?command={quote(SSH_COMMAND)}")
 
     def __connect_tls(self):
         flags = [libvirt.VIR_CRED_AUTHNAME, libvirt.VIR_CRED_PASSPHRASE]
         auth = [flags, self.__libvirt_auth_credentials_callback, None]
-        uri = "qemu+tls://%s@%s/system" % (self.login, self.host)
-
-        try:
-            self.connection = libvirt.openAuth(uri, auth, 0)
-            self.last_error = None
-
-        except libvirtError as e:
-            self.last_error = f"Connection Failed: {str(e)}"
-            self.connection = None
+        return libvirt.openAuth(f"qemu+tls://{self.login}@{self.host}/system", auth, 0)
 
     def __connect_socket(self):
-        uri = "qemu:///system"
+        return libvirt.open("qemu:///system")
 
-        try:
-            self.connection = libvirt.open(uri)
-            self.last_error = None
-
-        except libvirtError as e:
-            self.last_error = f"Connection Failed: {str(e)}"
-            self.connection = None
+    def retire(self):
+        """Open a new connection when next asked, and leave the current one to
+        the threads using it: it closes when they are done. A connection that
+        failed or is opening keeps its state (connection_manager.reopen)."""
+        with self.connection_state_lock:
+            connection, self.connection = self.connection, None
+        if connection is not None:
+            # libvirt holds the callback, and through it the connection
+            with contextlib.suppress(libvirtError):
+                connection.unregisterCloseCallback()
 
     def close(self):
         """
@@ -238,99 +419,76 @@ class wvmConnectionManager(object):
         # connections are shared between all threads, see:
         #     http://wiki.libvirt.org/page/FAQ#Is_libvirt_thread_safe.3F
         self._connections = dict()
-        self._connections_lock = ReadWriteLock()
+        self._connections_lock = threading.RLock()  # the dict only: connecting runs outside it
+        self._inherited = []
+        self._host_requests = {}  # host: the web requests using it, whatever the login (HOST_REQUESTS)
+        self.reopen = False  # an RPC error (_on_libvirt_error): the next get_connection retires the open connections
 
-        # start event loop to handle keepalive requests and other events
-        self._event_loop = wvmEventLoop()
-        self._event_loop.start()
+    def forget_connections(self):
+        """For a forked child: stop using the inherited connections (the
+        parent's sockets). They are kept, not released: their destructors
+        would call libvirt in the child."""
+        self._inherited.append(self._connections)
+        self._connections = dict()
+        self._connections_lock = threading.RLock()
+        self._host_requests = {}
 
     def _search_connection(self, host, login, passwd, conn):
         """
         search the connection dict for a connection with the given credentials
         if it does not exist return None
         """
-        self._connections_lock.acquireRead()
-        try:
-            if host in self._connections:
-                connections = self._connections[host]
-
-                for connection in connections:
-                    if connection.login == login and connection.passwd == passwd and connection.type == conn:
-                        return connection
-        finally:
-            self._connections_lock.release()
-
+        with self._connections_lock:
+            for connection in self._connections.get(host, []):
+                if connection.login == login and connection.passwd == passwd and connection.type == conn:
+                    return connection
         return None
+
+    def retire_connection(self, host, login, passwd, conn):
+        """The connection with these credentials, of a compute changed or
+        deleted, is not used again: asked again, it connects anew."""
+        connection = self._search_connection(str(host), str(login), str(passwd) if passwd is not None else None, conn)
+        if connection is not None:
+            connection.retire()
 
     def get_connection(self, host, login, passwd, conn):
         """
         returns a connection object (as returned by the libvirt.open* methods) for the given host and credentials
         raises libvirtError if (re)connecting fails
         """
+        start_event_loop()
         # force all string values to unicode
         host = str(host)
         login = str(login)
         passwd = str(passwd) if passwd is not None else None
 
-        connection = self._search_connection(host, login, passwd, conn)
+        with self._connections_lock:
+            if self.reopen:
+                self.reopen = False
+                for entries in self._connections.values():
+                    for entry in entries:
+                        entry.retire()
+            connection = self._search_connection(host, login, passwd, conn)
+            if connection is None:
+                # Only register it here: connecting under the global lock
+                # would make every other host wait for a slow one.
+                connection = wvmConnection(host, login, passwd, conn)
+                connection.requests = self._host_requests.setdefault(
+                    host, threading.BoundedSemaphore(HOST_REQUESTS))
+                self._connections.setdefault(host, []).append(connection)
 
-        if connection is None:
-            self._connections_lock.acquireWrite()
-            try:
-                # we have to search for the connection again after acquiring the write lock
-                # as the thread previously holding the write lock may have already added our connection
-                connection = self._search_connection(host, login, passwd, conn)
-                if connection is None:
-                    # create a new connection if a matching connection does not already exist
-                    connection = wvmConnection(host, login, passwd, conn)
-
-                    # add new connection to connection dict
-                    if host in self._connections:
-                        self._connections[host].append(connection)
-                    else:
-                        self._connections[host] = [connection]
-            finally:
-                self._connections_lock.release()
-
-        elif not connection.connected:
-            # try to (re-)connect if connection is closed
+        _count_on(connection)
+        live = connection.alive_connection()
+        if live is None:
+            # (re-)connect within CONNECT_TIMEOUT; one open per connection at a time
             connection.connect()
-
-        if connection.connected:
-            # return libvirt connection object
-            return connection.connection
-        else:
-            # raise libvirt error
-            raise libvirtError(connection.last_error)
-
-    def host_is_up(self, conn_type, hostname):
-        """
-        returns True if the given host is up and we are able to establish
-        a connection using the given credentials.
-        """
-        try:
-            socket_host = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            socket_host.settimeout(1)
-            if conn_type == CONN_SSH:
-                if ":" in hostname:
-                    libvirt_host, PORT = hostname.split(":")
-                    PORT = int(PORT)
-                else:
-                    PORT = SSH_PORT
-                    libvirt_host = hostname
-                socket_host.connect((libvirt_host, PORT))
-            if conn_type == CONN_TCP:
-                socket_host.connect((hostname, TCP_PORT))
-            if conn_type == CONN_TLS:
-                socket_host.connect((hostname, TLS_PORT))
-            if conn_type == CONN_SOCKET:
-                socket_host = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                socket_host.connect("/var/run/libvirt/libvirt-sock")
-            socket_host.close()
-            return True
-        except Exception as err:
-            return err
-
+            live = connection.alive_connection()
+        if live is None:
+            # a connection that died without a close callback leaves no error behind
+            error = connection.last_error or util.message(gettext_noop("Connection Failed: %(host)s is not connected"),
+                                                          host=connection.host)
+            raise util.ConnectionFailed(error["text"], **error["values"])
+        return live
 
 connection_manager = wvmConnectionManager(
     settings.LIBVIRT_KEEPALIVE_INTERVAL if hasattr(settings, "LIBVIRT_KEEPALIVE_INTERVAL") else 5,
@@ -351,26 +509,51 @@ class wvmConnect(object):
     def is_qemu(self):
         return self.wvm.getURI().startswith("qemu")
 
+    @cached_property
+    def capabilities_xml(self):
+        """The host's capabilities, read once per object (a request): most getters below parse them"""
+        return self.wvm.getCapabilities()
+
+    def host_uuid(self):
+        """The host's UUID (capabilities): compute records of one host share it"""
+        return util.get_xml_path(self.capabilities_xml, "/capabilities/host/uuid")
+
+    @cached_property
+    def host_info(self):
+        """The host's info (architecture, memory in MiB, CPUs, ...), read once per object"""
+        return self.wvm.getInfo()
+
+    @cached_property
+    def dom_cap_xmls(self):
+        """The domain capabilities read so far, by emulator, arch, machine and domain type"""
+        return {}
+
     def get_cap_xml(self):
         """Return xml capabilities"""
-        return self.wvm.getCapabilities()
+        return self.capabilities_xml
 
     def get_dom_cap_xml(self, arch, machine):
         """ Return domain capabilities xml"""
         emulatorbin = self.get_emulator(arch)
-        virttype = "kvm" if "kvm" in self.get_hypervisors_domain_types()[arch] else "qemu"
+        domain_types = self.get_hypervisors_domain_types().get(arch)
+        if domain_types is None:  # the architecture comes from the URL
+            raise util.OperationError(gettext_noop("This host has no architecture %(arch)s"), arch=arch)
+        virttype = "kvm" if "kvm" in domain_types else "qemu"
 
         machine_types = self.get_machine_types(arch)
         if not machine or machine not in machine_types:
             machine = "pc" if "pc" in machine_types else machine_types[0]
-        return self.wvm.getDomainCapabilities(emulatorbin, arch, machine, virttype)
+        key = (emulatorbin, arch, machine, virttype)
+        if key not in self.dom_cap_xmls:
+            self.dom_cap_xmls[key] = self.wvm.getDomainCapabilities(*key)
+        return self.dom_cap_xmls[key]
 
     def get_capabilities(self, arch):
         """ Host Capabilities for specified architecture """
 
         def guests(ctx):
             result = dict()
-            for arch_el in ctx.xpath("/capabilities/guest/arch[@name='{}']".format(arch)):
+            for arch_el in ctx.xpath("/capabilities/guest/arch[@name=$arch]", arch=arch):
                 result["wordsize"] = arch_el.find("wordsize").text
                 result["emulator"] = arch_el.find("emulator").text
                 result["domain"] = [v for v in arch_el.xpath("domain/@type")]
@@ -395,15 +578,15 @@ class wvmConnect(object):
         """Return domain capabilities"""
         result = dict()
 
-        xml = self.get_dom_cap_xml(arch, machine)
-        result["path"] = util.get_xml_path(xml, "/domainCapabilities/path")
-        result["domain"] = util.get_xml_path(xml, "/domainCapabilities/domain")
-        result["machine"] = util.get_xml_path(xml, "/domainCapabilities/machine")
-        result["vcpu_max"] = util.get_xml_path(xml, "/domainCapabilities/vcpu/@max")
-        result["iothreads_support"] = util.get_xml_path(xml, "/domainCapabilities/iothreads/@supported")
-        result["os_support"] = util.get_xml_path(xml, "/domainCapabilities/os/@supported")
+        doc = etree.fromstring(self.get_dom_cap_xml(arch, machine))
+        result["path"] = util.get_xpath(doc, "/domainCapabilities/path")
+        result["domain"] = util.get_xpath(doc, "/domainCapabilities/domain")
+        result["machine"] = util.get_xpath(doc, "/domainCapabilities/machine")
+        result["vcpu_max"] = util.get_xpath(doc, "/domainCapabilities/vcpu/@max")
+        result["iothreads_support"] = util.get_xpath(doc, "/domainCapabilities/iothreads/@supported")
+        result["os_support"] = util.get_xpath(doc, "/domainCapabilities/os/@supported")
 
-        result["loader_support"] = util.get_xml_path(xml, "/domainCapabilities/os/loader/@supported")
+        result["loader_support"] = util.get_xpath(doc, "/domainCapabilities/os/loader/@supported")
         if result["loader_support"] == "yes":
             result["loaders"] = self.get_os_loaders(arch, machine)
             result["loader_enums"] = self.get_os_loader_enums(arch, machine)
@@ -413,31 +596,25 @@ class wvmConnect(object):
             # supported and unknown cpu models
             result["cpu_custom_models"] = self.get_cpu_custom_types(arch, machine)
 
-        result["disk_support"] = util.get_xml_path(xml, "/domainCapabilities/devices/disk/@supported")
+        result["disk_support"] = util.get_xpath(doc, "/domainCapabilities/devices/disk/@supported")
         if result["disk_support"] == "yes":
             result["disk_devices"] = self.get_disk_device_types(arch, machine)
             result["disk_bus"] = self.get_disk_bus_types(arch, machine)
 
-        result["graphics_support"] = util.get_xml_path(xml, "/domainCapabilities/devices/graphics/@supported")
-        if result["graphics_support"] == "yes":
-            result["graphics_types"] = self.get_graphics_types(arch, machine)
-
-        result["video_support"] = util.get_xml_path(xml, "/domainCapabilities/devices/video/@supported")
+        result["video_support"] = util.get_xpath(doc, "/domainCapabilities/devices/video/@supported")
         if result["video_support"] == "yes":
             result["video_types"] = self.get_video_models(arch, machine)
 
-        result["hostdev_support"] = util.get_xml_path(xml, "/domainCapabilities/devices/hostdev/@supported")
+        result["hostdev_support"] = util.get_xpath(doc, "/domainCapabilities/devices/hostdev/@supported")
         if result["hostdev_support"] == "yes":
             result["hostdev_types"] = self.get_hostdev_modes(arch, machine)
             result["hostdev_startup_policies"] = self.get_hostdev_startup_policies(arch, machine)
             result["hostdev_subsys_types"] = self.get_hostdev_subsys_types(arch, machine)
 
-        result["features_gic_support"] = util.get_xml_path(xml, "/domainCapabilities/features/gic/@supported")
-        result["features_genid_support"] = util.get_xml_path(xml, "/domainCapabilities/features/genid/@supported")
-        result["features_vmcoreinfo_support"] = util.get_xml_path(
-            xml, "/domainCapabilities/features/vmcoreinfo/@supported"
-        )
-        result["features_sev_support"] = util.get_xml_path(xml, "/domainCapabilities/features/sev/@supported")
+        result["features_gic_support"] = util.get_xpath(doc, "/domainCapabilities/features/gic/@supported")
+        result["features_genid_support"] = util.get_xpath(doc, "/domainCapabilities/features/genid/@supported")
+        result["features_vmcoreinfo_support"] = util.get_xpath(doc, "/domainCapabilities/features/vmcoreinfo/@supported")
+        result["features_sev_support"] = util.get_xpath(doc, "/domainCapabilities/features/sev/@supported")
 
         return result
 
@@ -461,12 +638,6 @@ class wvmConnect(object):
         ver %= 1000
         release = ver
         return f"{major}.{minor}.{release}"
-
-    def is_kvm_supported(self):
-        """
-        :return: kvm support or not
-        """
-        return util.is_kvm_available(self.get_cap_xml())
 
     def get_storages(self, only_actives=False):
         """
@@ -492,15 +663,8 @@ class wvmConnect(object):
         return virtnet
 
     def get_ifaces(self):
-        """
-        :return: list of host interfaces
-        """
-        interface = []
-        for inface in self.wvm.listInterfaces():
-            interface.append(inface)
-        for inface in self.wvm.listDefinedInterfaces():
-            interface.append(inface)
-        return interface
+        """The names of the host's interfaces, in every state."""
+        return [iface.name() for iface in self.wvm.listAllInterfaces(0)]
 
     def get_nwfilters(self):
         """
@@ -510,6 +674,18 @@ class wvmConnect(object):
         for nwfilter in self.wvm.listNWFilters():
             nwfilters.append(nwfilter)
         return nwfilters
+
+    def unknown_networks(self, trees):
+        """The networks and the network filters that the network cards in
+        trees (VM definitions or cards) name and this host does not have,
+        each sorted: libvirt saves such a card, and the VM then does not
+        start."""
+        networks = {name for tree in trees for name in tree.xpath(
+            "descendant-or-self::interface[@type='network']/source/@network")}
+        filters = {name for tree in trees for name in tree.xpath("descendant-or-self::interface/filterref/@filter")}
+        # the host is asked only about what the cards name
+        return (sorted(networks - set(self.get_networks())) if networks else [],
+                sorted(filters - set(self.get_nwfilters())) if filters else [])
 
     def get_cache_modes(self):
         """
@@ -589,7 +765,12 @@ class wvmConnect(object):
         """
         :return: emulator list
         """
-        return util.get_xml_path(self.get_cap_xml(), "/capabilities/guest/arch[@name='{}']/emulator".format(arch))
+        # arch comes from the URL: an XPath variable, not part of the expression
+        def emulator(ctx):
+            found = ctx.xpath("/capabilities/guest/arch[@name=$arch]/emulator", arch=arch)
+            return found[0].text if found else None
+
+        return util.get_xml_path(self.get_cap_xml(), func=emulator)
 
     def get_machine_types(self, arch):
         """
@@ -598,29 +779,14 @@ class wvmConnect(object):
 
         def machines(ctx):
             result = list()
-            canonical_name = ctx.xpath("/capabilities/guest/arch[@name='{}']/machine[@canonical]".format(arch))
+            canonical_name = ctx.xpath("/capabilities/guest/arch[@name=$arch]/machine[@canonical]", arch=arch)
             if not canonical_name:
-                canonical_name = ctx.xpath("/capabilities/guest/arch[@name='{}']/machine".format(arch))
+                canonical_name = ctx.xpath("/capabilities/guest/arch[@name=$arch]/machine", arch=arch)
             for archi in canonical_name:
                 result.append(archi.text)
             return result
 
         return util.get_xml_path(self.get_cap_xml(), func=machines)
-
-    def get_emulators(self):
-        """
-        :return: host emulators list
-        """
-
-        def emulators(ctx):
-            result = {}
-            for arch in ctx.xpath("/capabilities/guest/arch"):
-                emulator = arch.xpath("emulator")
-                arch_name = arch.xpath("@name")[0]
-                result[arch_name] = emulator
-            return result
-
-        return util.get_xml_path(self.get_cap_xml(), func=emulators)
 
     def get_os_loaders(self, arch="x86_64", machine="pc"):
         """
@@ -661,7 +827,6 @@ class wvmConnect(object):
         def get_bus_list(ctx):
             return [v.text for v in ctx.xpath("/domainCapabilities/devices/disk/enum[@name='bus']/value")]
 
-        # return [ 'ide', 'scsi', 'usb', 'virtio' ]
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_bus_list)
 
     def get_disk_device_types(self, arch, machine):
@@ -674,20 +839,7 @@ class wvmConnect(object):
         def get_device_list(ctx):
             return [v.text for v in ctx.xpath("/domainCapabilities/devices/disk/enum[@name='diskDevice']/value")]
 
-        # return [ 'disk', 'cdrom', 'floppy', 'lun' ]
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_device_list)
-
-    def get_graphics_types(self, arch, machine):
-        """
-        :param arch: architecture
-        :param machine:
-        :return: available graphics types
-        """
-
-        def get_graphics_list(ctx):
-            return [v.text for v in ctx.xpath("/domainCapabilities/devices/graphics/enum[@name='type']/value")]
-
-        return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_graphics_list)
 
     def get_cpu_modes(self, arch, machine):
         """
@@ -753,23 +905,18 @@ class wvmConnect(object):
 
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=get_hostdev_list)
 
-    def get_network_models(self):
-        """
-        :return: network card models
-        """
-        return ["default", "e1000", "e1000e","rt18139", "virtio"]
+    def get_network_models(self, arch):
+        """The network card models for a VM of arch: s390x machines have no
+        PCI bus for the emulated ones."""
+        if arch == "s390x":
+            return ["default", "virtio"]
+        return ["default", "e1000", "e1000e", "rtl8139", "virtio"]
 
     def get_image_formats(self):
         """
         :return: available image formats
         """
         return ["raw", "qcow", "qcow2"]
-
-    def get_file_extensions(self):
-        """
-        :return: available image filename extensions
-        """
-        return ["img", "qcow", "qcow2"]
 
     def get_video_models(self, arch, machine):
         """
@@ -791,11 +938,27 @@ class wvmConnect(object):
     def get_iface(self, name):
         return self.wvm.interfaceLookupByName(name)
 
-    def get_secrets(self):
-        return self.wvm.listSecrets()
-
-    def get_secret(self, uuid):
-        return self.wvm.secretLookupByUUIDString(uuid)
+    def get_secrets_info(self):
+        """Every secret of the host: UUID, usage type and usage (a volume
+        path, an iSCSI target, a Ceph or TLS or vTPM name), whether it is
+        ephemeral and private. One listing, one XML read per secret; a secret
+        gone meanwhile is left out."""
+        secrets = []
+        for secret in self.wvm.listAllSecrets(0):
+            try:
+                tree = etree.fromstring(secret.XMLDesc(0))
+            except libvirtError as err:
+                if err.get_error_code() != libvirt.VIR_ERR_NO_SECRET:
+                    raise
+                continue
+            secrets.append({
+                "uuid": secret.UUIDString(),
+                "usage_type": tree.xpath("string(usage/@type)") or "none",
+                "usage": tree.xpath("string(usage/*)"),
+                "ephemeral": tree.get("ephemeral") == "yes",
+                "private": tree.get("private") == "yes",
+            })
+        return sorted(secrets, key=lambda secret: (secret["usage_type"], secret["usage"]))
 
     def get_storage(self, name):
         return self.wvm.storagePoolLookupByName(name)
@@ -803,17 +966,134 @@ class wvmConnect(object):
     def get_volume_by_path(self, path):
         return self.wvm.storageVolLookupByPath(path)
 
+    def backing_path(self, path):
+        """The backing file of a volume; None if it has none or is in no pool.
+        Any other error is raised: a chain cut short would let a file a kept
+        one needs count as deletable."""
+        try:
+            vol = self.get_volume_by_path(path)
+        except libvirtError as err:
+            if err.get_error_code() != libvirt.VIR_ERR_NO_STORAGE_VOL:
+                raise
+            return None
+        return util.get_xml_path(vol.XMLDesc(0), "/volume/backingStore/path")
+
+    def remove_nvram(self, path, destination):
+        """Deletes the NVRAM file of a VM that migrated from this host to
+        destination (a wvmConnect). Only a file in libvirt's per-host NVRAM
+        directory, and only when destination does not see that directory too
+        (shared storage would hold the migrated VM's own file). Returns
+        whether a file was deleted."""
+        if os.path.dirname(path) != NVRAM_DIR:
+            return False
+        with self._nvram_pool() as pool, destination._nvram_pool() as other:
+            try:
+                if self.same_directory(pool, other):
+                    return False
+            except libvirtError:
+                return False  # not known to be the source's own file
+            vol = self._find_volume(pool, os.path.basename(path))
+            if vol is None:
+                return False
+            vol.delete(0)
+            return True
+
+    @staticmethod
+    def same_directory(pool, other):
+        """Whether pools of two hosts are one directory: creating the same
+        file in both fails then, as it exists already. The create is
+        exclusive on the file server, unlike a directory listing, which an
+        NFS client may cache. Any other failure raises: it tells nothing."""
+        marker = (
+            f"<volume><name>webvirtcloud-check-{uuid.uuid4().hex}</name><capacity>0</capacity>"
+            "<target><format type='raw'/></target></volume>"
+        )
+        mine = pool.createXML(marker, 0)
+        try:
+            other.createXML(marker, 0).delete(0)
+        except libvirtError as error:
+            # the file exists (OPERATION_INVALID), or the pool lists it already
+            if error.get_error_code() in (libvirt.VIR_ERR_OPERATION_INVALID, libvirt.VIR_ERR_STORAGE_VOL_EXIST):
+                return True
+            raise
+        finally:
+            mine.delete(0)
+        return False
+
+    def pool_at(self, directory):
+        """The active pool whose directory is directory, or None. A pool
+        without a target path (rbd, gluster, ...) holds no files."""
+        for pool in self.wvm.listAllStoragePools(libvirt.VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE):
+            if (util.get_xml_path(pool.XMLDesc(0), "/pool/target/path") or "").rstrip("/") == directory:
+                return pool
+        return None
+
+    def file_pools(self):
+        """The active pools of this host that keep disks as files, a copy's
+        destination: {name: (pool, directory)}."""
+        pools = {}
+        for pool in self.wvm.listAllStoragePools(libvirt.VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE):
+            tree = etree.fromstring(pool.XMLDesc(0))
+            if tree.get("type") in ("dir", "fs", "netfs") and tree.findtext("target/path"):
+                pools[pool.name()] = (pool, tree.findtext("target/path").rstrip("/"))
+        return pools
+
+    @contextlib.contextmanager
+    def _nvram_pool(self):
+        """An active, refreshed pool on NVRAM_DIR: libvirt reads and deletes
+        files only as volumes of a pool. A transient one when none exists."""
+        pool = self.pool_at(NVRAM_DIR)
+        if pool is not None:
+            pool.refresh(0)
+            yield pool
+            return
+        pool = self.wvm.storagePoolCreateXML(
+            f"<pool type='dir'><name>webvirtcloud-nvram-{uuid.uuid4().hex[:8]}</name>"
+            f"<target><path>{NVRAM_DIR}</path></target></pool>",
+            0,
+        )
+        try:
+            yield pool
+        finally:
+            # a transient pool left by a failed destroy goes with libvirtd's next restart
+            with contextlib.suppress(libvirtError):
+                pool.destroy()
+
+    def upload_volume(self, pool, name, data):
+        """A new raw volume in pool holding data, written through a libvirt
+        stream, which every connection type carries. A failed write leaves
+        no volume."""
+        stream = self.wvm.newStream(0)
+        vol = None
+        try:
+            vol = pool.createXML(
+                f"<volume><name>{util.xml_escape(name)}</name><capacity>{len(data)}</capacity>"
+                "<target><format type='raw'/></target></volume>",
+                0,
+            )
+            vol.upload(stream, 0, len(data), 0)
+            stream.sendAll(lambda _stream, size, buffer: buffer.read(size), io.BytesIO(data))
+            stream.finish()
+        except Exception:
+            # libvirt: a stream that did not finish is aborted before it is freed
+            with contextlib.suppress(libvirtError):
+                stream.abort()
+            if vol is not None:
+                vol.delete(0)
+            raise
+        return vol
+
+    @staticmethod
+    def _find_volume(pool, name):
+        try:
+            return pool.storageVolLookupByName(name)
+        except libvirtError as err:
+            if err.get_error_code() == libvirt.VIR_ERR_NO_STORAGE_VOL:
+                return None
+            raise
+
     def get_network(self, net):
         return self.wvm.networkLookupByName(net)
-
-    def get_network_forward(self, net_name):
-        def get_forward(doc):
-            forward_mode = util.get_xpath(doc, "/network/forward/@mode")
-            return forward_mode or "isolated"
-
-        net = self.get_network(net_name)
-        xml = net.XMLDesc(0)
-        return util.get_xml_path(xml, func=get_forward)
 
     def get_nwfilter(self, name):
         return self.wvm.nwfilterLookupByName(name)
@@ -830,143 +1110,194 @@ class wvmConnect(object):
             instances.append(name)
         return instances
 
-    def get_snapshots(self):
-        instance = []
-        for snap_id in self.wvm.listDomainsID():
-            dom = self.wvm.lookupByID(int(snap_id))
-            if dom.snapshotNum(0) != 0:
-                instance.append(dom.name())
-        for name in self.wvm.listDefinedDomains():
-            dom = self.wvm.lookupByName(name)
-            if dom.snapshotNum(0) != 0:
-                instance.append(dom.name())
-        return instance
+    def get_domain_states(self):
+        """{uuid: [name, state]} of every domain, in one call."""
+        return {dom.UUIDString(): [dom.name(), stats["state.state"]]
+                for dom, stats in self.wvm.getAllDomainStats(libvirt.VIR_DOMAIN_STATS_STATE)}
+
+    def get_domain_rows(self, uuids=None):
+        """{uuid: (info, title)} of every domain, or of those in uuids, as the
+        VM lists show them: info in virDomainGetInfo's shape (state, max
+        memory KiB, memory KiB, vCPUs), the states in one call and the rest
+        from each domain's live XML, which the title needs anyway. A domain
+        gone meanwhile is left out."""
+        rows = {}
+        for dom, stats in self.wvm.getAllDomainStats(libvirt.VIR_DOMAIN_STATS_STATE):
+            if uuids is not None and dom.UUIDString() not in uuids:
+                continue  # a VM the list does not show: its XML is not read
+            try:
+                doc = etree.fromstring(dom.XMLDesc(0))
+            except libvirtError:
+                continue
+            vcpu = doc.find("vcpu")
+            info = [stats["state.state"], int(doc.findtext("memory")), int(doc.findtext("currentMemory")),
+                    int(vcpu.get("current", vcpu.text))]
+            rows[dom.UUIDString()] = (info, doc.findtext("title") or "")
+        return rows
+
+    def domain_trees(self, running_only=False):
+        """Each domain's name with its definitions, parsed: the live one, and
+        for a persistent domain the one saved for its next boot too, read
+        whether it runs or not (it may stop meanwhile); with running_only the
+        live one of each running domain. A domain gone meanwhile is left out."""
+        listing = libvirt.VIR_CONNECT_LIST_DOMAINS_ACTIVE if running_only else 0
+        for dom in self.wvm.listAllDomains(listing):
+            try:
+                xmls = [dom.XMLDesc(0)]
+                if not running_only and dom.isPersistent():
+                    xmls.append(dom.XMLDesc(libvirt.VIR_DOMAIN_XML_INACTIVE))
+            except libvirtError as err:
+                if err.get_error_code() != libvirt.VIR_ERR_NO_DOMAIN:
+                    raise
+                continue
+            yield dom.name(), [etree.fromstring(xml) for xml in xmls]
+
+    def domains_using(self, match, running_only=False):
+        """Names of the domains with a definition (domain_trees) that
+        match(tree) holds for."""
+        return sorted(name for name, trees in self.domain_trees(running_only) if any(map(match, trees)))
+
+    def paths_in_use(self, skip_uuid=None, own=()):
+        """Paths (names for network disks) a domain uses as a disk or a
+        backing file of one, in its saved state too, or as a file of its
+        snapshots (overlays, memory, the disks they were taken on); and the
+        backing files of volumes.
+        skip_uuid leaves out one domain, own the volumes whose backing files
+        do not count. util.InUse when a disk not running has its file in an
+        inactive pool: the files it is made from cannot be read."""
+        used, unread = set(), set()
+        for dom in self.wvm.listAllDomains():
+            if dom.UUIDString() == skip_uuid:
+                continue
+            live, config = (etree.fromstring(dom.XMLDesc(flags)) for flags in (0, libvirt.VIR_DOMAIN_XML_INACTIVE))
+            used.update(self._source_paths(live), self._source_paths(config))
+            # a running disk's definition has its backing chain; the others' volumes have it
+            unread.update(set(UNREAD_DISKS(config)) - (set(UNREAD_DISKS(live)) if dom.isActive() else set()))
+            # a saved state starts with the disks it was saved with, detached since or not
+            if dom.hasManagedSaveImage(0):
+                try:
+                    saved = dom.managedSaveGetXMLDesc(0)
+                except libvirtError as err:
+                    if err.get_error_code() == libvirt.VIR_ERR_NO_DOMAIN:
+                        continue
+                    if err.get_error_code() != libvirt.VIR_ERR_OPERATION_INVALID:
+                        raise
+                    # the image went meanwhile: the VM may have started from it
+                    saved = dom.XMLDesc(0)
+                saved = etree.fromstring(saved)
+                used.update(self._source_paths(saved))
+                unread.update(UNREAD_DISKS(saved))
+            for snap in dom.listAllSnapshots(0):
+                tree = etree.fromstring(snap.getXMLDesc(0))
+                used.update(tree.xpath("disks/disk/source/@file|memory/@file"))
+                for saved in tree.xpath("domain|inactiveDomain"):
+                    used.update(self._source_paths(saved))
+                    unread.update(UNREAD_DISKS(saved))
+        # A stopped domain's XML has no backing chain; the volumes have it.
+        # Any volume backed by a path keeps that path, even an unattached one.
+        for pool in self.wvm.listAllStoragePools():
+            if not pool.isActive():
+                target = util.get_xml_path(pool.XMLDesc(0), "/pool/target/path")
+                if target and any(path.startswith(target.rstrip("/") + "/") for path in unread):
+                    raise util.InUse(gettext_noop(
+                        "Pool %(pool)s is not active: the files the disks of the VMs in it are made from cannot be "
+                        "checked; start the pool first"), pool=pool.name())
+                continue
+            with contextlib.suppress(libvirtError):
+                pool.refresh(0)
+            for vol in pool.listAllVolumes():
+                # only a volume removed meanwhile is skipped: one that cannot
+                # be read may still keep a backing file
+                try:
+                    if vol.path() not in own:
+                        used.update(etree.fromstring(vol.XMLDesc(0)).xpath("./backingStore/path/text()"))
+                except libvirtError as err:
+                    if err.get_error_code() != libvirt.VIR_ERR_NO_STORAGE_VOL:
+                        raise
+        return used
+
+    def _source_paths(self, domain):
+        """The files, devices or network names of a domain definition's
+        disks and of their backing chains ("//" reaches a running domain's
+        backingStore); a pool volume source as its volume's path."""
+        paths = []
+        for source in domain.xpath("devices/disk//source"):
+            if source.get("pool") and source.get("volume"):
+                try:
+                    pool = self.wvm.storagePoolLookupByName(source.get("pool"))
+                    paths.append(pool.storageVolLookupByName(source.get("volume")).path())
+                except libvirtError as err:
+                    # a volume that is not there cannot be the one deleted
+                    if err.get_error_code() not in (libvirt.VIR_ERR_NO_STORAGE_VOL, libvirt.VIR_ERR_NO_STORAGE_POOL):
+                        raise
+            else:
+                paths += [v for v in (source.get("file"), source.get("dev"), source.get("name")) if v]
+        return paths
+
+    def can_change_interfaces(self):
+        """Whether the host's libvirt can define interfaces: the udev backend
+        only reads them. The definition sent is invalid, so nothing is
+        defined: a backend without define refuses it as unsupported, one with
+        define as bad XML. Any other refusal, of the connection say, is not an
+        answer and is raised; one the host's access rules give is a no."""
+        try:
+            self.wvm.interfaceDefineXML("<interface/>", 0)
+        except libvirtError as err:
+            if err.get_error_code() in (libvirt.VIR_ERR_NO_SUPPORT, libvirt.VIR_ERR_OPERATION_DENIED):
+                return False
+            if err.get_error_code() in (libvirt.VIR_ERR_XML_ERROR, libvirt.VIR_ERR_XML_DETAIL):
+                return True
+            raise
+        return True
 
     def get_net_devices(self):
-        netdevice = []
+        """The host's network interface names; libvirt lists only the network devices"""
+        return [
+            util.get_xml_path(dev.XMLDesc(0), "/device/capability/interface")
+            for dev in self.wvm.listAllDevices(libvirt.VIR_CONNECT_LIST_NODE_DEVICES_CAP_NET)
+        ]
 
-        def get_info(doc):
-            dev_type = util.get_xpath(doc, "/device/capability/@type")
-            interface = util.get_xpath(doc, "/device/capability/interface")
-            return dev_type, interface
+    def get_firmwares(self, arch, machine):
+        """The firmware a new VM can have: BIOS on x86, UEFI without Secure Boot
+        when libvirt picks the firmware itself, and on x86_64 UEFI Secure Boot
+        with Microsoft's keys enrolled, as Windows 11 needs."""
 
-        for dev in self.wvm.listAllDevices(0):
-            xml = dev.XMLDesc(0)
-            (dev_type, interface) = util.get_xml_path(xml, func=get_info)
-            if dev_type == "net":
-                netdevice.append(interface)
-        return netdevice
+        def firmwares(ctx):
+            os_caps = "/domainCapabilities/os[@supported='yes']"
+            features = f"{os_caps}/firmwareFeatures[@supported='yes']"
+            if ctx.xpath(features):  # libvirt 12.1 and later: what its firmware offers
+                secure_boot = ctx.xpath(f"{features}/enum[@name='secureBoot']/value/text()")
+                enrolled_keys = ctx.xpath(f"{features}/enum[@name='enrolledKeys']/value/text()")
+            else:  # earlier: the loaders; libvirt refuses the VM if no firmware has the keys
+                secure_boot = ctx.xpath(f"{os_caps}/loader[@supported='yes']/enum[@name='secure']/value/text()") or ["no"]
+                enrolled_keys = secure_boot
+            choices = ["BIOS"] if arch in ("i686", "x86_64") else []
+            if "efi" in ctx.xpath(f"{os_caps}/enum[@name='firmware']/value/text()"):
+                if "no" in secure_boot:
+                    choices.append("UEFI")
+                if arch == "x86_64" and "yes" in secure_boot and "yes" in enrolled_keys:
+                    choices.append("UEFI Secure Boot")
+            return choices
 
-    def get_host_instances(self, raw_mem_size=False):
-        vname = {}
+        return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=firmwares)
 
-        def get_info(doc):
-            mem = util.get_xpath(doc, "/domain/currentMemory")
-            mem = int(mem) // 1024
-            if raw_mem_size:
-                mem = int(mem) * (1024 * 1024)
-            cur_vcpu = util.get_xpath(doc, "/domain/vcpu/@current")
-            if cur_vcpu:
-                vcpu = cur_vcpu
-            else:
-                vcpu = util.get_xpath(doc, "/domain/vcpu")
-            title = util.get_xpath(doc, "/domain/title")
-            title = title if title else ""
-            description = util.get_xpath(doc, "/domain/description")
-            description = description if description else ""
-            return mem, vcpu, title, description
+    def get_tpm_model(self, arch, machine):
+        """The model of an emulated TPM 2.0 for a new VM; None when the host has
+        none (no swtpm)."""
 
-        for name in self.get_instances():
-            dom = self.get_instance(name)
-            xml = dom.XMLDesc(0)
-            (mem, vcpu, title, description) = util.get_xml_path(xml, func=get_info)
-            vname[dom.name()] = {
-                "status": dom.info()[0],
-                "uuid": dom.UUIDString(),
-                "vcpu": vcpu,
-                "memory": mem,
-                "title": title,
-                "description": description,
-            }
-        return vname
+        def tpm_model(ctx):
+            tpm = "/domainCapabilities/devices/tpm[@supported='yes']"
+            if ("emulator" not in ctx.xpath(f"{tpm}/enum[@name='backendModel']/value/text()")
+                    or "2.0" not in ctx.xpath(f"{tpm}/enum[@name='backendVersion']/value/text()")):
+                return None
+            models = ctx.xpath(f"{tpm}/enum[@name='model']/value/text()")
+            # x86: CRB, which Windows takes, or TIS; another machine: its own
+            for model in ("tpm-crb", "tpm-tis", *models):
+                if model in models:
+                    return model
+            return None
 
-    def get_user_instances(self, name):
-        dom = self.get_instance(name)
-        xml = dom.XMLDesc(0)
-
-        def get_info(ctx):
-            mem = util.get_xpath(ctx, "/domain/currentMemory")
-            mem = int(mem) // 1024
-            cur_vcpu = util.get_xpath(ctx, "/domain/vcpu/@current")
-            if cur_vcpu:
-                vcpu = cur_vcpu
-            else:
-                vcpu = util.get_xpath(ctx, "/domain/vcpu")
-            title = util.get_xpath(ctx, "/domain/title")
-            title = title if title else ""
-            description = util.get_xpath(ctx, "/domain/description")
-            description = description if description else ""
-            return mem, vcpu, title, description
-
-        (mem, vcpu, title, description) = util.get_xml_path(xml, func=get_info)
-        return {
-            "name": dom.name(),
-            "status": dom.info()[0],
-            "uuid": dom.UUIDString(),
-            "vcpu": vcpu,
-            "memory": mem,
-            "title": title,
-            "description": description,
-        }
-
-    def close(self):
-        """Close connection"""
-        # to-do: do not close connection ;)
-        # self.wvm.close()
-        pass
-
-    def find_uefi_path_for_arch(self, arch, machine):
-        """
-        Search the loader paths for one that matches the passed arch
-        """
-        if not self.arch_can_uefi(arch):
-            return
-
-        loaders = self.get_os_loaders(arch, machine)
-        patterns = util.UEFI_ARCH_PATTERNS.get(arch)
-        for pattern in patterns:
-            for path in loaders:
-                if re.match(pattern, path):
-                    return path
-
-    def label_for_firmware_path(self, arch, path):
-        """
-        Return a pretty label for passed path, based on if we know
-        about it or not
-        """
-        if not path:
-            if arch in ["i686", "x86_64"]:
-                return "BIOS"
-            return
-
-        for arch, patterns in util.UEFI_ARCH_PATTERNS.items():
-            for pattern in patterns:
-                if re.match(pattern, path):
-                    return "UEFI %(arch)s: %(path)s" % {"arch": arch, "path": path}
-
-        return "Custom: %(path)s" % {"path": path}
-
-    def arch_can_uefi(self, arch):
-        """
-        Return True if we know how to setup UEFI for the passed arch
-        """
-        return arch in list(util.UEFI_ARCH_PATTERNS.keys())
-
-    def supports_uefi_xml(self, loader_enums):
-        """
-        Return True if libvirt advertises support for proper UEFI setup
-        """
-        return "readonly" in loader_enums and "yes" in loader_enums.get("readonly")
+        return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=tpm_model)
 
     def is_supports_virtio(self, arch, machine):
         if not self.is_qemu():

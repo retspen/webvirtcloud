@@ -1,228 +1,749 @@
+from django.utils.translation import gettext_noop
+import base64
 import contextlib
+import ipaddress
 import json
+import logging
+import math
 import os.path
+import re
+import string
 import time
 
-try:
-    from libvirt import (
-        VIR_DOMAIN_AFFECT_CONFIG,
-        VIR_DOMAIN_AFFECT_LIVE,
-        VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT,
-        VIR_DOMAIN_RUNNING,
-        VIR_DOMAIN_XML_SECURE,
-        VIR_MIGRATE_AUTO_CONVERGE,
-        VIR_MIGRATE_COMPRESSED,
-        VIR_MIGRATE_LIVE,
-        VIR_MIGRATE_OFFLINE,
-        VIR_MIGRATE_PERSIST_DEST,
-        VIR_MIGRATE_POSTCOPY,
-        VIR_MIGRATE_UNDEFINE_SOURCE,
-        VIR_MIGRATE_UNSAFE,
-        VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY,
-        VIR_DOMAIN_SNAPSHOT_DELETE_METADATA_ONLY,
-        VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL,
-        VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL,
-        VIR_DOMAIN_BLOCK_COMMIT_DELETE,
-        VIR_DOMAIN_BLOCK_COMMIT_ACTIVE,
-        VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT,
-        VIR_DOMAIN_START_PAUSED,
-        libvirtError,
-    )
-    from libvirt_qemu import VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT, qemuAgentCommand
-except Exception:
-    from libvirt import libvirtError, VIR_DOMAIN_XML_SECURE, VIR_MIGRATE_LIVE
+from libvirt import (
+    VIR_DOMAIN_AFFECT_CONFIG,
+    VIR_DOMAIN_AFFECT_LIVE,
+    VIR_DOMAIN_STATS_BLOCK,
+    VIR_DOMAIN_STATS_CPU_TOTAL,
+    VIR_DOMAIN_STATS_INTERFACE,
+    VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP,
+    VIR_DOMAIN_PAUSED,
+    VIR_DOMAIN_RUNNING,
+    VIR_DOMAIN_SHUTDOWN_ACPI_POWER_BTN,
+    VIR_DOMAIN_SHUTOFF,
+    VIR_DOMAIN_START_PAUSED,
+    VIR_DOMAIN_XML_SECURE,
+    VIR_DOMAIN_XML_INACTIVE,
+    VIR_DOMAIN_XML_MIGRATABLE,
+    VIR_DOMAIN_UNDEFINE_KEEP_NVRAM,
+    VIR_ERR_NO_DOMAIN,
+    VIR_ERR_NO_STORAGE_POOL,
+    VIR_ERR_NO_STORAGE_VOL,
+    VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE,
+    VIR_DOMAIN_BLOCK_COPY_TRANSIENT_JOB,
+    VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT,
+    VIR_DOMAIN_BLOCK_RESIZE_BYTES,
+    VIR_STORAGE_VOL_FILE,
+    VIR_MIGRATE_AUTO_CONVERGE,
+    VIR_MIGRATE_COMPRESSED,
+    VIR_MIGRATE_LIVE,
+    VIR_MIGRATE_NON_SHARED_DISK,
+    VIR_MIGRATE_OFFLINE,
+    VIR_MIGRATE_PARAM_DEST_XML,
+    VIR_MIGRATE_PARAM_MIGRATE_DISKS,
+    VIR_MIGRATE_PARAM_PERSIST_XML,
+    VIR_MIGRATE_PARAM_URI,
+    VIR_MIGRATE_PERSIST_DEST,
+    VIR_MIGRATE_UNDEFINE_SOURCE,
+    VIR_MIGRATE_UNSAFE,
+    VIR_DOMAIN_SNAPSHOT_CREATE_ATOMIC,
+    VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY,
+    VIR_DOMAIN_SNAPSHOT_CREATE_QUIESCE,
+    VIR_DOMAIN_SNAPSHOT_REVERT_PAUSED,
+    VIR_DOMAIN_SNAPSHOT_REVERT_RUNNING,
+    VIR_ERR_CONFIG_UNSUPPORTED,
+    VIR_ERR_OPERATION_INVALID,
+    VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL,
+    VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL,
+    VIR_DOMAIN_BACKUP_BEGIN_REUSE_EXTERNAL,
+    VIR_DOMAIN_JOB_NONE,
+    VIR_DOMAIN_JOB_OPERATION_BACKUP,
+    VIR_DOMAIN_JOB_STATS_COMPLETED,
+    VIR_DOMAIN_JOB_STATS_KEEP_COMPLETED,
+    VIR_ERR_NO_DOMAIN_BACKUP,
+    libvirtError,
+)
+from libvirt_qemu import qemuAgentCommand
 
 from collections import OrderedDict
-from datetime import datetime
+from datetime import datetime, timezone
 from xml.etree import ElementTree
 
 from lxml import etree
 
 from vrtManager import util
-from vrtManager.connection import wvmConnect
+from vrtManager.connection import NVRAM_DIR, wvmConnect
+from vrtManager.nodedevs import check_hostdevs, pci_address, pci_label, usb_selector, usb_selector_label
+from vrtManager.nwfilters import same_text
 from vrtManager.storage import wvmStorage, wvmStorages
+from vrtManager.virtsecrets import REF_USAGE_TYPES
+
+logger = logging.getLogger(__name__)
+
+# Edits that redefine the domain start from this: the persistent definition,
+# with secrets. Live XML would drop pending changes, non-secure XML the VNC
+# password.
+PERSISTENT_XML = VIR_DOMAIN_XML_INACTIVE | VIR_DOMAIN_XML_SECURE
+
+USB_HOSTDEVS = "devices/hostdev[@mode='subsystem'][@type='usb']"
+PCI_HOSTDEVS = "devices/hostdev[@mode='subsystem'][@type='pci']"
+# what of the host a VM holds: host devices, and NICs that are host devices
+RNG_DEVICE = "<rng model='virtio'><backend model='random'>/dev/urandom</backend></rng>"
+GUEST_AGENT_CHANNEL = "/domain/devices/channel[@type='unix']/target[@name='org.qemu.guest_agent.0']"
+HOST_DEVICES = "devices/hostdev | devices/interface[@type='hostdev'] | devices/interface/actual[@type='hostdev']"
+
+# External snapshot names become part of overlay and memory file names.
+SNAPSHOT_NAME = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9._-]{0,63}")
+# the longest window wvmInstance.usage() averages over
+USAGE_MAX_WINDOW = 30
+USAGE_STATS = VIR_DOMAIN_STATS_CPU_TOTAL | VIR_DOMAIN_STATS_BLOCK | VIR_DOMAIN_STATS_INTERFACE
+# seconds the guest agent has to set a password or add a key
+AGENT_TIMEOUT = 10
+# libvirt's values; bindings built against older libvirt (Ubuntu 24.04's) lack
+# the names, and the code comes from the host's libvirtd
+VIR_ERR_AGENT_COMMAND_TIMEOUT = 112
+VIR_ERR_AGENT_COMMAND_FAILED = 113  # the agent answered with an error: a command it lacks or has disabled
+# A running VM is cloned with a push backup that keeps the VM alive when the
+# guest shuts down during the copy: libvirt 11.10.
+LIVE_CLONE_MIN_LIBVIRT = 11_010_000
+# libvirt 11.10's value; bindings built against older libvirt lack the name,
+# and the flag is sent to the host, whose version is checked.
+VIR_DOMAIN_BACKUP_BEGIN_PRESERVE_SHUTDOWN_DOMAIN = 2
+
+
+def _rate(before, after, seconds, scale=1):
+    """Growth per second of a counter, or None when a reading is unsupported
+    (-1) or the counter went back."""
+    if before < 0 or after < before:
+        return None
+    return scale * (after - before) / seconds
+
 
 class wvmInstances(wvmConnect):
-    def get_instance_status(self, name):
-        inst = self.get_instance(name)
-        return inst.info()[0]
+    def nwfilters_unlike(self, source, names):
+        """Of the network filters named and those they reference: the ones
+        this host does not have, and the ones it has with other rules than
+        source (another connection), each sorted. A VM runs with its host's
+        filters of those names, whatever their rules."""
+        def rules(wvm, name):
+            tree = etree.fromstring(wvm.nwfilterLookupByName(name).XMLDesc(0))
+            for uuid in tree.findall("uuid"):  # each host's own
+                tree.remove(uuid)
+            return same_text(etree.tostring(tree, encoding="unicode")), tree.xpath("filterref/@filter")
 
-    def get_instance_memory(self, name):
-        inst = self.get_instance(name)
-        mem = util.get_xml_path(inst.XMLDesc(0), "/domain/currentMemory")
-        return int(mem) // 1024
+        if not names:  # the hosts are asked only about what the cards name
+            return [], []
+        here = set(self.get_nwfilters())
+        missing, unlike, seen, todo = [], [], set(), list(names)
+        while todo:
+            name = todo.pop()
+            if name in seen:
+                continue
+            seen.add(name)
+            text, refs = rules(source.wvm, name)
+            todo += refs
+            if name not in here:
+                missing.append(name)
+            elif rules(self.wvm, name)[0] != text:
+                unlike.append(name)
+        return sorted(missing), sorted(unlike)
 
-    def get_instance_vcpu(self, name):
-        inst = self.get_instance(name)
-        cur_vcpu = util.get_xml_path(inst.XMLDesc(0), "/domain/vcpu/@current")
-        return cur_vcpu or util.get_xml_path(inst.XMLDesc(0), "/domain/vcpu")
+    def moveto(self, conn, name, live, unsafe, offline, autoconverge=False, compress=False, uri=None,
+               pools=None, on_copy=None):
+        """Migrates the VM of conn (a wvmInstance on the source) here.
 
-    def get_instance_managed_save_image(self, name):
-        inst = self.get_instance(name)
-        return inst.hasManagedSaveImage(0)
+        The mode follows the VM's state, read once: a running VM migrates
+        live or, without live, paused for the transfer (non-live); a paused
+        VM stays paused; a shut-off VM moves offline, also when the request
+        was made while it ran (live). An offline request for a running or
+        paused VM is refused. unsafe, autoconverge (live only) and
+        compress apply to a running VM. uri: the native migration URI
+        (tcp://address) on the destination; None lets libvirt use the
+        destination's own hostname. pools: {target: pool here} of the disks
+        libvirt copies into those pools during the migration (disk_copies);
+        the other disks must be on storage both hosts share. on_copy is
+        called with the copies ({pool, dest}: a pool here and its path) before
+        libvirt makes them. Returns the mode and options used, for the log,
+        and each copied disk's path and the path of its copy here."""
+        state = conn.get_status()
+        if state == 5:
+            mode = ["offline"]
+        elif state in (1, 3):
+            if offline:
+                raise util.OperationError(gettext_noop("A running or paused VM cannot be migrated offline"))
+            mode = ["live" if live else "non-live"]
+        else:
+            raise util.OperationError(gettext_noop("The VM can be migrated when it is running, paused or shut off"))
 
-    def get_uuid(self, name):
-        inst = self.get_instance(name)
-        return inst.UUIDString()
-
-    def start(self, name):
-        dom = self.get_instance(name)
-        dom.create()
-
-    def shutdown(self, name):
-        dom = self.get_instance(name)
-        dom.shutdown()
-
-    def force_shutdown(self, name):
-        dom = self.get_instance(name)
-        dom.destroy()
-
-    def managedsave(self, name):
-        dom = self.get_instance(name)
-        dom.managedSave(0)
-
-    def managed_save_remove(self, name):
-        dom = self.get_instance(name)
-        dom.managedSaveRemove(0)
-
-    def suspend(self, name):
-        dom = self.get_instance(name)
-        dom.suspend()
-
-    def resume(self, name):
-        dom = self.get_instance(name)
-        dom.resume()
-
-    def moveto(
-        self,
-        conn,
-        name,
-        live,
-        unsafe,
-        undefine,
-        offline,
-        autoconverge=False,
-        compress=False,
-        postcopy=False,
-    ):
-        flags = VIR_MIGRATE_PERSIST_DEST
-        if live and conn.get_status() != 5:
-            flags |= VIR_MIGRATE_LIVE
-        if unsafe and conn.get_status() == 1:
-            flags |= VIR_MIGRATE_UNSAFE
-        if offline and conn.get_status() == 5:
+        # The source definition always goes: one left behind points at the
+        # same (shared) disks as the migrated VM and could be started again.
+        flags = VIR_MIGRATE_PERSIST_DEST | VIR_MIGRATE_UNDEFINE_SOURCE
+        if state == 5:
             flags |= VIR_MIGRATE_OFFLINE
-        if not offline and autoconverge:
-            flags |= VIR_MIGRATE_AUTO_CONVERGE
-        if not offline and compress and conn.get_status() == 1:
-            flags |= VIR_MIGRATE_COMPRESSED
-        if not offline and postcopy and conn.get_status() == 1:
-            flags |= VIR_MIGRATE_POSTCOPY
-        if undefine:
-            flags |= VIR_MIGRATE_UNDEFINE_SOURCE
+        elif live:
+            flags |= VIR_MIGRATE_LIVE
+        if state == 1:
+            for wanted, flag, label in (
+                (unsafe, VIR_MIGRATE_UNSAFE, "unsafe"),
+                (autoconverge and live, VIR_MIGRATE_AUTO_CONVERGE, "auto converge"),
+                (compress, VIR_MIGRATE_COMPRESSED, "compressed"),
+            ):
+                if wanted:
+                    flags |= flag
+                    mode.append(label)
 
-        dom = conn.get_instance(name)
+        dom = conn.instance
+        # libvirt keeps snapshot metadata on the source host: shared disks do
+        # not carry it to the destination.
+        if dom.snapshotNum(0):
+            raise util.OperationError(gettext_noop("A VM with snapshots cannot be migrated"))
+        # a shut-off VM moves as its definition or started paused: either loses the saved memory
+        if state == 5 and dom.hasManagedSaveImage(0):
+            raise util.OperationError(gettext_noop("A VM with a saved state cannot be migrated"))
+        # the definition the migration carries first: it has the disks a migration copies
+        definitions = [dom.XMLDesc(0)]
+        if state != 5:
+            definitions.append(dom.XMLDesc(VIR_DOMAIN_XML_INACTIVE))
+        # a host device is of the source host: the destination may have none, or another one
+        if any(etree.fromstring(xml).xpath(HOST_DEVICES) for xml in definitions):
+            raise util.OperationError(gettext_noop("A VM with host devices cannot be migrated; remove them first"))
+        trees = [etree.fromstring(xml) for xml in definitions]
+        networks, _ = self.unknown_networks(trees)
+        if networks:
+            raise util.OperationError(gettext_noop("The destination host does not have these networks of the VM: %(names)s"),
+                                      names=", ".join(networks))
+        filters, unlike = self.nwfilters_unlike(conn, {name for tree in trees for name in tree.xpath("devices/interface/filterref/@filter")})
+        if filters:
+            raise util.OperationError(gettext_noop("The destination host does not have these network filters of the VM: %(names)s"),
+                                      names=", ".join(filters))
+        if unlike:
+            raise util.OperationError(gettext_noop("These network filters of the VM have other rules on the destination host: %(names)s"),
+                                      names=", ".join(unlike))
+        if secrets := self.unknown_secrets([etree.fromstring(xml) for xml in definitions]):
+            raise util.OperationError(gettext_noop("The destination host does not have these secrets of the VM: %(names)s"),
+                                      names=", ".join(secrets))
+        copies = self.disk_copies(conn, definitions, pools or {})
+        if copies:
+            mode.append("disks copied: " + ", ".join(f"{copy['target']} to {copy['pool'].name()}" for copy in copies))
+        missing = self.missing_disks(definitions, copied={copy["path"] for copy in copies})
+        if missing:
+            raise util.OperationError(gettext_noop("The destination host does not have these disks of the VM: %(disks)s"),
+                                      disks=[util.message(gettext_noop("%(target)s (%(source)s)"), target=target,
+                                                          source=source) for target, source in missing])
 
         dom_arch = conn.get_arch()
         dom_emulator = conn.get_dom_emulator()
 
         if dom_emulator != self.get_emulator(dom_arch):
-            raise libvirtError(
-                "Destination host emulator is different. Cannot be migrated"
+            raise util.OperationError(
+                gettext_noop("Destination host emulator is different. Cannot be migrated")
             )
 
-        dom.migrate(self.wvm, flags, None, None, 0)
+        # the TPM state is a file of the source host: a live migration carries it
+        tpm_state = etree.fromstring(definitions[0]).xpath("devices/tpm/backend[@type='emulator']")
+        if copies or (state == 5 and tpm_state):
+            if copies and on_copy is not None:
+                on_copy([{"pool": copy["pool"].name(), "dest": copy["dest"]} for copy in copies])
+            note = self.migrate_running(conn, state, flags, uri, copies)
+            if note:
+                mode.append(note)
+        elif state == 5:
+            # Workaround for a libvirt bug (RHEL-156800), see move_definition.
+            # Once supported hosts all run a fixed libvirt, this branch and
+            # move_definition can go: the flags above are those for
+            # dom.migrate.
+            self.move_definition(dom, conn)
+        else:
+            dom.migrate(self.wvm, flags, None, uri, 0)
+        return ", ".join(mode), [(copy["path"], copy["dest"]) for copy in copies]
 
-    def graphics_type(self, name):
-        inst = self.get_instance(name)
-        console_type = util.get_xml_path(
-            inst.XMLDesc(0), "/domain/devices/graphics/@type"
-        )
-        return "None" if console_type is None else console_type
+    def migrate_running(self, conn, state, flags, uri, copies):
+        """Migrates the VM of conn as a running VM, which carries its TPM
+        state, while libvirt copies the disks of copies into their pools here
+        (NON_SHARED_DISK), the definitions naming the new paths. A shut-off
+        VM is started paused for it, its CPUs never run, and is shut off here
+        after it; its UEFI variables are copied first, as this host would
+        start from the firmware's template. Returns a note for the log when
+        the VM could not be shut off here."""
+        dom = conn.instance
+        nvram = None
+        xml_flags = VIR_DOMAIN_XML_SECURE | VIR_DOMAIN_XML_MIGRATABLE
+        params = {
+            VIR_MIGRATE_PARAM_DEST_XML: self.moved_disks(dom.XMLDesc(xml_flags), copies),
+            VIR_MIGRATE_PARAM_PERSIST_XML: self.moved_disks(dom.XMLDesc(xml_flags | VIR_DOMAIN_XML_INACTIVE), copies),
+        }
+        if copies:
+            params[VIR_MIGRATE_PARAM_MIGRATE_DISKS] = [copy["target"] for copy in copies]
+            flags |= VIR_MIGRATE_NON_SHARED_DISK
+        if uri:
+            params[VIR_MIGRATE_PARAM_URI] = uri
+        try:
+            if state == 5:
+                flags &= ~VIR_MIGRATE_OFFLINE
+                nvram = self.copy_nvram(conn)
+                dom.createWithFlags(VIR_DOMAIN_START_PAUSED)
+            dom.migrate3(self.wvm, params, flags)
+        except libvirtError as error:
+            if state == 5:
+                with contextlib.suppress(libvirtError):
+                    dom.destroy()  # shut off on the source again
+            self.remove_partial_copies(dom.UUIDString(), copies, error, nvram)
+            raise
+        if state == 5:
+            try:
+                self.wvm.lookupByUUIDString(dom.UUIDString()).destroy()
+            except libvirtError as error:
+                return f"left paused here, shut it off: {error}"
+        return None
 
-    def graphics_listen(self, name):
-        inst = self.get_instance(name)
-        listener_addr = util.get_xml_path(
-            inst.XMLDesc(0), "/domain/devices/graphics/@listen"
-        )
-        if listener_addr is None:
-            listener_addr = util.get_xml_path(
-                inst.XMLDesc(0), "/domain/devices/graphics/listen/@address"
-            )
-        return "None" if listener_addr is None else listener_addr
+    @staticmethod
+    def moved_disks(xml, copies):
+        """xml with each copied disk's source at its path here; a disk is
+        found by its source path before the copy, as the next start's
+        definition may name it with another target (a changed bus)."""
+        tree = etree.fromstring(xml)
+        sources = [(source, copy["dest"]) for copy in copies for source in tree.xpath(
+            "devices/disk/source[@file=$path]", path=copy["path"])]
+        for source, dest in sources:
+            source.set("file", dest)
+        return etree.tostring(tree, encoding="unicode")
 
-    def graphics_port(self, name):
-        inst = self.get_instance(name)
-        console_port = util.get_xml_path(
-            inst.XMLDesc(0), "/domain/devices/graphics/@port"
-        )
-        return "None" if console_port is None else console_port
+    def disk_plan(self, conn, xml):
+        """How the file disks of the VM of conn (on the source) in xml, the
+        definition the migration carries, can reach this host: a list of
+        {target, path, capacity, shared, refusal}. shared: both hosts see the
+        file at its path, as the directory both have as a storage pool is
+        one (same_directory); False when not, or when it cannot be told.
+        refusal: why the disk cannot be copied, or None."""
+        rows, shared = [], {}
+        for disk in ElementTree.fromstring(xml).iter("disk"):
+            source = disk.find("source")
+            if disk.get("type") != "file" or source is None or not source.get("file"):
+                continue
+            path = source.get("file")
+            directory = os.path.dirname(path)
+            if directory not in shared:
+                here, there = self.pool_at(directory), conn.pool_at(directory)
+                try:
+                    shared[directory] = here is not None and there is not None and self.same_directory(there, here)
+                except libvirtError:
+                    shared[directory] = False  # not known to be shared: copied, never assumed
+            try:
+                volume = conn.wvm.storageVolLookupByPath(path)
+            except libvirtError:
+                volume = None
+            rows.append({"target": disk.find("target").get("dev"), "path": path, "shared": shared[directory],
+                         "capacity": volume.info()[1] if volume else None,
+                         "refusal": self.copy_refusal(disk, volume)})
+        return rows
 
-    def domain_name(self, name):
-        inst = self.get_instance(name)
-        domname = util.get_xml_path(inst.XMLDesc(0), "/domain/name")
-        return "NoName" if domname is None else domname
+    def migration_plan(self, conn, live_xml, next_xml):
+        """The disks of the Migrate tab for a VM coming here (disk_plan of
+        live_xml), each with the pools here it can be copied into, as
+        disk_copies takes them: {free_pools, default} added, and the file
+        disks of next_xml (the next start's definition) that the migration
+        does not carry, which must be on shared storage. Disks of one file
+        name ({same_name} added) are copied into different pools by default."""
+        here = self.file_pools()
+        for pool, directory in here.values():
+            pool.refresh(0)
+        disks = self.disk_plan(conn, live_xml)
+        files = [os.path.basename(disk["path"]) for disk in disks]
+        taken = {}  # file name: the pools the disks before of that name are copied into by default
+        for disk, file in zip(disks, files):
+            # a copy never replaces a file: a pool that has one of its name cannot take it
+            disk["free_pools"] = [name for name, (pool, directory) in sorted(here.items())
+                                  if self._find_volume(pool, file) is None]
+            # a copy goes by default to the pool on the same directory, else the first,
+            # but not where another disk of its name goes
+            free = [name for name in disk["free_pools"] if name not in taken.get(file, [])]
+            names = [name for name in free if here[name][1] == os.path.dirname(disk["path"])] or free
+            disk["default"] = names[0] if names else None
+            disk["same_name"] = files.count(file) > 1
+            if not disk["shared"]:
+                taken.setdefault(file, []).append(disk["default"])
+        carried = {disk["path"] for disk in disks}
+        pending = [row for row in self.disk_plan(conn, next_xml) if row["path"] not in carried]
+        return disks, pending
 
-    def graphics_passwd(self, name):
-        inst = self.get_instance(name)
-        password = util.get_xml_path(
-            inst.XMLDesc(VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics/@passwd"
-        )
-        return "None" if password is None else password
+    @staticmethod
+    def copy_refusal(disk, volume):
+        """Why the disk (its volume on the source, None if no pool has it) cannot be copied, or None."""
+        if disk.get("device") != "disk":
+            return gettext_noop("an image is not copied; eject it first")
+        if disk.find("readonly") is not None or disk.find("encryption") is not None \
+                or disk.find("source/encryption") is not None:
+            return gettext_noop("a read-only or encrypted disk is not copied")
+        driver = disk.find("driver")
+        if driver is None or driver.get("type") not in ("raw", "qcow2"):
+            return gettext_noop("only raw and qcow2 disks are copied")
+        if volume is None:
+            return gettext_noop("no storage pool of the source host has it")
+        if ElementTree.fromstring(volume.XMLDesc(0)).findtext("backingStore/path"):
+            return gettext_noop("a disk with a backing file is not copied")
+        return None
+
+    def disk_copies(self, conn, definitions, pools):
+        """The copies of the disks pools names a pool here for: {target, path,
+        dest, pool}, from the first of definitions (XML, the one the migration
+        carries). Each other file disk (see disk_plan), also of the next
+        start's definition, must be on shared storage. A copy never replaces a file: one
+        of the same name in the pool refuses it (libvirt would write into it).
+        Every problem is named in one refusal."""
+        here = self.file_pools() if pools else {}
+        copies, problems, targets, carried = [], [], set(), set()
+        for row in self.disk_plan(conn, definitions[0]):
+            targets.add(row["target"])
+            carried.add(row["path"])
+            name = pools.get(row["target"])
+            disk = {"target": row["target"], "path": row["path"]}
+            if not name:
+                if not row["shared"]:
+                    problems.append(util.message(gettext_noop(
+                        "%(target)s (%(path)s): the destination host does not share it; choose a pool to copy it to"),
+                        **disk))
+                continue
+            if row["refusal"]:
+                problems.append(util.message(gettext_noop("%(target)s (%(path)s): %(refusal)s"), **disk,
+                                             refusal=[util.message(row["refusal"])]))
+                continue
+            if name not in here:
+                problems.append(util.message(gettext_noop(
+                    "%(target)s (%(path)s): the destination host has no pool %(pool)s for disk files"), **disk, pool=name))
+                continue
+            pool, directory = here[name]
+            pool.refresh(0)
+            file = os.path.basename(row["path"])
+            if self._find_volume(pool, file) is not None:
+                problems.append(util.message(gettext_noop(
+                    "%(target)s (%(path)s): pool %(pool)s of the destination host already has a file %(file)s"),
+                    **disk, pool=name, file=file))
+                continue
+            # one file, one copy: the definitions name a disk's copy by its path
+            other = next((copy for copy in copies if copy["dest"] == f"{directory}/{file}"
+                          or copy["path"] == row["path"]), None)
+            if other is not None:
+                problems.append(util.message(gettext_noop("%(target)s (%(path)s): another disk is copied to %(dest)s"),
+                                             **disk, dest=other["dest"]))
+                continue
+            copies.append({"target": row["target"], "path": row["path"], "dest": f"{directory}/{file}",
+                           "pool": pool})
+        problems += [util.message(gettext_noop("%(target)s: the VM has no disk file to copy"), target=target)
+                     for target in pools.keys() - targets if pools[target]]
+        for xml in definitions[1:]:
+            problems += [util.message(gettext_noop(
+                "%(target)s (%(path)s) of the next start: the destination host does not share it"),
+                target=row["target"], path=row["path"])
+                for row in self.disk_plan(conn, xml) if row["path"] not in carried and not row["shared"]]
+        if problems:
+            raise util.OperationError(gettext_noop("The disks cannot be migrated: %(problems)s"), problems=problems)
+        return copies
+
+    def remove_partial_copies(self, uuid, copies, error, nvram=None):
+        """Deletes the copies libvirt made here for a migration that failed,
+        and the copy of its NVRAM file, while this host has no VM of uuid (a
+        VM here has them as its disks)."""
+        try:
+            self.wvm.lookupByUUIDString(uuid)
+            return
+        except libvirtError as lookup_error:
+            if lookup_error.get_error_code() != VIR_ERR_NO_DOMAIN:
+                raise util.OperationError(
+                    gettext_noop("%(error)s; remove the partial disk copies from the destination host: %(copies)s"),
+                    error=error, copies=", ".join(copy["dest"] for copy in copies)) from error
+        left = []
+        for copy in copies:
+            copy["pool"].refresh(0)
+            volume = self._find_volume(copy["pool"], os.path.basename(copy["dest"]))
+            try:
+                if volume is not None:
+                    volume.delete(0)
+            except libvirtError:
+                left.append(copy["dest"])
+        try:
+            self.delete_nvram(nvram)
+        except libvirtError:
+            left.append(f"{NVRAM_DIR}/{nvram}")
+        if left:
+            raise util.OperationError(
+                gettext_noop("%(error)s; remove the partial disk copies from the destination host: %(left)s"), error=error, left=', '.join(left)
+            ) from error
+
+    def copy_nvram(self, conn):
+        """Copies the UEFI variables file of the shut-off VM of conn (on the
+        source) from libvirt's NVRAM directory there to the same path here,
+        unless both hosts share that directory. Returns the copy's name. A
+        file elsewhere is refused: it would stay behind, and the VM start
+        here from the firmware's template."""
+        path = conn.get_nvram()
+        if not path:
+            return None
+        if os.path.dirname(path) != NVRAM_DIR:
+            raise util.OperationError(gettext_noop(
+                "The NVRAM file %(path)s is not in libvirt's NVRAM directory %(dir)s and cannot be copied"),
+                path=path, dir=NVRAM_DIR)
+        name = os.path.basename(path)
+        with conn._nvram_pool() as source, self._nvram_pool() as target:
+            vol = self._find_volume(source, name)
+            if vol is None:
+                return None  # never started: libvirt creates it at the first start
+            if self.same_directory(source, target):
+                if self._find_volume(target, name) is None:
+                    raise util.OperationError(gettext_noop("The destination host cannot see the NVRAM file %(path)s"), path=path)
+                return None
+            chunks = []
+            stream = conn.wvm.newStream(0)
+            try:
+                vol.download(stream, 0, 0, 0)
+                stream.recvAll(lambda _stream, data, out: out.append(data), chunks)
+                stream.finish()
+            except Exception:
+                with contextlib.suppress(libvirtError):
+                    stream.abort()
+                raise
+            self.upload_volume(target, name, b"".join(chunks))
+        return name
+
+    def delete_nvram(self, name):
+        if name:
+            with self._nvram_pool() as pool:
+                pool.storageVolLookupByName(name).delete(0)
+
+    def unknown_secrets(self, trees):
+        """The secrets that the VM definitions in trees name (in their disks,
+        host devices and vTPM) and this host does not have, by UUID or usage,
+        sorted: libvirt defines such a VM, and it then does not start."""
+        refs = {(ref.get("uuid"), REF_USAGE_TYPES.get(ref.get("type")), ref.get("usage"))
+                for tree in trees for ref in tree.xpath("devices//secret")}
+        refs |= {(uuid, None, None) for tree in trees for uuid in tree.xpath("devices/tpm/backend/encryption/@secret")}
+        if not refs:  # the host is asked only when the VM names one
+            return []
+        have = self.get_secrets_info()
+        uuids = {secret["uuid"] for secret in have}
+        usages = {(secret["usage_type"], secret["usage"]) for secret in have}
+        return sorted(uuid or usage for uuid, usage_type, usage in refs
+                      if (uuid.lower() not in uuids if uuid else (usage_type, usage) not in usages))
+
+    def missing_disks(self, definitions, copied=()):
+        """(target, source) of the disks in the VM definitions (XML) that are
+        not volumes of this host's active storage pools: the VM's own files,
+        their backing files (as the definition or this host's volume lists
+        them), CD-ROM images, block devices and pool volumes. Network disks
+        (RBD, iSCSI, ...) are reached the same way from every host and are not
+        checked; other types (dir, nvme, ...) cannot be and count as missing.
+        A volume of an LVM or disk pool here counts as missing too: such
+        storage is each host's own, and one of the same name is other data.
+        Pools are refreshed before a disk counts as missing, as a file another
+        host made on shared storage is listed after that."""
+        disks = {}
+        for xml in definitions:
+            for disk in ElementTree.fromstring(xml).iter("disk"):
+                target = disk.find("target")
+                target = target.get("dev") if target is not None else "?"
+                for element in (disk, *disk.iter("backingStore")):
+                    source = element.find("source")
+                    kind = element.get("type")
+                    if source is None or kind == "network":
+                        continue
+                    if kind == "volume":
+                        disks[(source.get("pool"), source.get("volume"))] = target
+                    elif kind in ("file", "block") and (source.get("file") or source.get("dev")):
+                        if element is disk and source.get("file") in copied:
+                            continue
+                        disks[(None, source.get("file") or source.get("dev"))] = target
+                    elif kind not in ("file", "block"):
+                        disks[(kind, None)] = target
+
+        def missing():
+            checked, unseen, queue = set(), [], list(disks.items())
+            while queue:
+                key, target = queue.pop()
+                if key in checked:
+                    continue
+                checked.add(key)
+                volume = self.find_volume(*key)
+                if volume is None or ElementTree.fromstring(
+                        volume.storagePoolLookupByVolume().XMLDesc(0)).get("type") in ("logical", "disk"):
+                    unseen.append((target, key))
+                    continue
+                backing = ElementTree.fromstring(volume.XMLDesc(0)).findtext("backingStore/path")
+                if backing and "://" not in backing:  # a URI is a network backing image
+                    queue.append(((None, backing), target))
+            return unseen
+
+        if missing():
+            for pool in self.wvm.listAllStoragePools(VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE):
+                with contextlib.suppress(libvirtError):
+                    pool.refresh(0)
+        return [(target, self.disk_label(*key)) for target, key in missing()]
+
+    @staticmethod
+    def disk_label(pool, name):
+        if name is None:
+            return [util.message(gettext_noop("%(type)s disk, cannot be checked"), type=pool)]
+        return name if pool is None else f"{pool}/{name}"
+
+    def find_volume(self, pool, name):
+        """The volume name of pool, or with pool None the volume at path name;
+        None when this host has none (or name is None: a disk type that
+        cannot be checked)."""
+        if name is None:
+            return None
+        try:
+            if pool is None:
+                return self.wvm.storageVolLookupByPath(name)
+            pool = self.wvm.storagePoolLookupByName(pool)
+            return pool.storageVolLookupByName(name) if pool.isActive() else None
+        except libvirtError as error:
+            if error.get_error_code() in (VIR_ERR_NO_STORAGE_VOL, VIR_ERR_NO_STORAGE_POOL):
+                return None
+            raise
+
+    def move_definition(self, dom, conn):
+        """Migrates a shut-off VM: that is only its definition, as the disks
+        are on storage both hosts share, and its UEFI variables file
+        (copy_nvram; a VM with TPM state migrates paused: migrate_running). The destination's
+        qemu migration hook does not run for it.
+
+        Workaround, to be removed in a later version: libvirt's own offline
+        migration (VIR_MIGRATE_OFFLINE) fails with "operation failed: domain
+        is no longer running" on libvirt builds that have upstream commit
+        a4f610ff ("Always offer block dirty bitmaps during migration") but not
+        its fix 59fde80f, which is in libvirt 12.2.0. RHEL backported the
+        first (RHEL-145770) and tracks the fix as RHEL-156800; RHEL/Rocky 9.8
+        with libvirt 11.10.0-12.el9_8 is affected. When supported hosts all
+        have the fix, offline migration can go back to dom.migrate."""
+        for lookup, key in ((self.wvm.lookupByUUIDString, dom.UUIDString()), (self.wvm.lookupByName, dom.name())):
+            try:
+                lookup(key)
+            except libvirtError as error:
+                if error.get_error_code() != VIR_ERR_NO_DOMAIN:
+                    raise
+            else:
+                raise util.OperationError(gettext_noop("The destination host already has a VM %(key)s"), key=key)
+
+        xml = dom.XMLDesc(VIR_DOMAIN_XML_SECURE | VIR_DOMAIN_XML_MIGRATABLE)
+        autostart = dom.autostart()
+        nvram = self.copy_nvram(conn)
+        try:
+            new = self.wvm.defineXML(xml)
+        except Exception:
+            self.delete_nvram(nvram)
+            raise
+        try:
+            # libvirt refuses to undefine a VM with NVRAM without this; the file stays for the cleanup
+            dom.undefineFlags(VIR_DOMAIN_UNDEFINE_KEEP_NVRAM)
+            try:
+                started = dom.isActive()
+            except libvirtError as error:
+                if error.get_error_code() != VIR_ERR_NO_DOMAIN:
+                    raise
+                started = False  # gone from the source: the move is done
+            if started:
+                # started meanwhile by another client: it stays on the source
+                dom.connect().defineXML(xml).setAutostart(autostart)
+                raise util.OperationError(gettext_noop("The VM was started on the source host during the migration"))
+        except Exception as error:
+            self.undo_definition(dom, new, error)  # raises when the destination keeps the VM
+            self.delete_nvram(nvram)
+            raise
+
+    @staticmethod
+    def undo_definition(dom, new, error):
+        """After a failed move, the VM is defined on one host only: the
+        destination definition goes only while the source still has its own."""
+        try:
+            on_source = dom.isPersistent()
+        except libvirtError:
+            on_source = False
+        if not on_source:
+            raise util.OperationError(
+                gettext_noop("%(error)s; the VM may now be defined only on the destination host: check both hosts"), error=error
+            ) from error
+        try:
+            new.undefineFlags(VIR_DOMAIN_UNDEFINE_KEEP_NVRAM)
+        except libvirtError as undo_error:
+            raise util.OperationError(
+                gettext_noop("%(error)s; the VM is now defined on both hosts, remove it from the destination: %(undo_error)s"), error=error, undo_error=undo_error
+            ) from error
+
+
+def check_snapshot_name(name):
+    if not SNAPSHOT_NAME.fullmatch(name):
+        raise util.OperationError(gettext_noop("Snapshot names are 1-64 letters, digits, '.', '_' or '-' and do not start with '.'"))
+
+
+def agent_command(dom, command, arguments=None):
+    """The answer of one guest agent command that waits AGENT_TIMEOUT seconds
+    at most: libvirt's own calls for it wait for a hung agent indefinitely,
+    and the domain's agent timeout is shared by every agent call."""
+    request = {"execute": command}
+    if arguments is not None:
+        request["arguments"] = arguments
+    return json.loads(qemuAgentCommand(dom, json.dumps(request), AGENT_TIMEOUT, 0))["return"]
+
+
+def agent_interfaces(dom):
+    """The guest's interfaces from its agent, in interfaceAddresses()'s form,
+    which waits for a hung agent indefinitely."""
+    interfaces = {}
+    for iface in agent_command(dom, "guest-network-get-interfaces"):
+        addrs = []
+        for address in iface.get("ip-addresses", []):
+            kind = 0 if address["ip-address-type"] == "ipv4" else 1
+            addrs.append({"type": kind, "addr": address["ip-address"], "prefix": address["prefix"]})
+        interfaces[iface["name"]] = {"hwaddr": iface.get("hardware-address"), "addrs": addrs}
+    return interfaces
 
 
 class wvmInstance(wvmConnect):
-    def __init__(self, host, login, passwd, conn, vname):
+    # set by cached_reads(): libvirt answers reused within the block
+    _read_cache = None
+
+    def __init__(self, host, login, passwd, conn, vname, uuid=None):
         wvmConnect.__init__(self, host, login, passwd, conn)
-        self._ip_cache = None
-        self.instance = self.get_instance(vname)
+        # A known VM is found by UUID: a name can be renamed or swapped
+        # outside WebVirtCloud. No fallback to the name.
+        self.instance = self.wvm.lookupByUUIDString(uuid) if uuid else self.get_instance(vname)
 
     def osinfo(self):
-        info_results = qemuAgentCommand(
-            self.instance,
-            '{"execute":"guest-get-osinfo"}',
-            VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT,
-            0,
-        )
-
-        timezone_results = qemuAgentCommand(
-            self.instance,
-            '{"execute":"guest-get-timezone"}',
-            VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT,
-            0,
-        )
-
-        hostname_results = qemuAgentCommand(
-            self.instance,
-            '{"execute":"guest-get-host-name"}',
-            VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT,
-            0,
-        )
-
-        info_results = json.loads(info_results).get("return")
-
-        timezone_results = json.loads(timezone_results).get("return")
-        hostname_results = json.loads(hostname_results).get("return")
-
-        info_results.update(timezone_results)
-        info_results.update(hostname_results)
-
-        return info_results
+        info = agent_command(self.instance, "guest-get-osinfo")
+        # an agent without one of these commands still gives the rest
+        for command in ("guest-get-timezone", "guest-get-host-name"):
+            with contextlib.suppress(libvirtError):
+                info.update(agent_command(self.instance, command))
+        return info
 
     def start(self, flags=0):
         self.instance.createWithFlags(flags)
 
+    def check_start_hostdevs(self, restore=True):
+        """Refuses a start whose host devices the host cannot give now
+        (check_hostdevs): a device given while free may since be another
+        VM's or the host's, and libvirt takes a managed one from its host
+        driver as the VM starts. The definition checked is the one the VM
+        starts from: its saved state's when restored."""
+        dom = self.instance
+        restore = restore and dom.hasManagedSaveImage(0)
+        xml = dom.managedSaveGetXMLDesc(0) if restore else dom.XMLDesc(VIR_DOMAIN_XML_INACTIVE)
+        check_hostdevs(self, dom.name(), [etree.fromstring(xml)], restore)
+
     def shutdown(self):
-        self.instance.shutdown()
+        """libvirt asks a connected guest agent first and waits 60 s for one
+        that hangs before it presses the ACPI power button: an agent that
+        does not answer a ping in AGENT_TIMEOUT is passed over. One that
+        answers with an error (guest-ping disabled) may still shut it down."""
+        flags = 0
+        if self.instance.state()[0] == VIR_DOMAIN_RUNNING and self.is_agent_ready():
+            try:
+                self.ping_agent()
+            except libvirtError as err:
+                if err.get_error_code() != VIR_ERR_AGENT_COMMAND_FAILED:
+                    flags = VIR_DOMAIN_SHUTDOWN_ACPI_POWER_BTN
+        self.instance.shutdownFlags(flags)
 
     def force_shutdown(self):
         self.instance.destroy()
-
-    def managedsave(self):
-        self.instance.managedSave(0)
-
-    def managed_save_remove(self):
-        self.instance.managedSaveRemove(0)
 
     def suspend(self):
         self.instance.suspend()
@@ -233,10 +754,39 @@ class wvmInstance(wvmConnect):
     def delete(self, flags=0):
         self.instance.undefineFlags(flags)
 
+    @contextlib.contextmanager
+    def cached_reads(self):
+        """
+        Within the block the domain XML (per flags value), the VM's state and
+        each disk's volume are read from libvirt once (the host's info and
+        capabilities are read once per object anyway), for pages that only
+        read: a VM page reads the XML in some 30 getters and each disk in two
+        lists. Code that changes the VM must not run inside: most changes
+        (devices, QoS, memory) do not go through _defineXML, the only call
+        that drops the cache.
+        """
+        if self._read_cache is not None:
+            raise RuntimeError("cached_reads blocks do not nest")
+        self._read_cache = {}
+        try:
+            yield self
+        finally:
+            self._read_cache = None
+
+    def _cached(self, key, read):
+        cache = self._read_cache
+        if cache is None:
+            return read()
+        if key not in cache:
+            cache[key] = read()
+        return cache[key]
+
     def _XMLDesc(self, flag):
-        return self.instance.XMLDesc(flag)
+        return self._cached(("xml", flag), lambda: self.instance.XMLDesc(flag))
 
     def _defineXML(self, xml):
+        if self._read_cache is not None:
+            self._read_cache.clear()
         return self.wvm.defineXML(xml)
 
     def get_status(self):
@@ -246,7 +796,7 @@ class wvmInstance(wvmConnect):
         VIR_DOMAIN_PAUSED = 3
         VIR_DOMAIN_SHUTOFF = 5
         """
-        return self.instance.info()[0]
+        return self._cached("status", lambda: self.instance.info()[0])
 
     def get_autostart(self):
         return self.instance.autostart()
@@ -257,16 +807,13 @@ class wvmInstance(wvmConnect):
     def get_uuid(self):
         return self.instance.UUIDString()
 
-    def get_vcpu(self):
-        vcpu = util.get_xml_path(self._XMLDesc(0), "/domain/vcpu")
+    def get_vcpu(self, config=False):
+        vcpu = util.get_xml_path(self._XMLDesc(PERSISTENT_XML if config else 0), "/domain/vcpu")
         return int(vcpu)
 
-    def get_cur_vcpu(self):
-        cur_vcpu = util.get_xml_path(self._XMLDesc(0), "/domain/vcpu/@current")
-        return int(cur_vcpu) if cur_vcpu else self.get_vcpu()
-
-    def get_vcpu_mode(self):
-        return util.get_xml_path(self._XMLDesc(0), "/domain/cpu/@current")
+    def get_cur_vcpu(self, config=False):
+        cur_vcpu = util.get_xml_path(self._XMLDesc(PERSISTENT_XML if config else 0), "/domain/vcpu/@current")
+        return int(cur_vcpu) if cur_vcpu else self.get_vcpu(config)
 
     def get_arch(self):
         return util.get_xml_path(self._XMLDesc(0), "/domain/os/type/@arch")
@@ -274,11 +821,32 @@ class wvmInstance(wvmConnect):
     def get_machine_type(self):
         return util.get_xml_path(self._XMLDesc(0), "/domain/os/type/@machine")
 
+    def get_pcie_slots(self, config=False):
+        """(PCIe root ports, free ones) of the running or the persistent
+        definition, None when it has none (not a PCIe machine): each PCIe
+        device takes a port, the one whose index is its address's bus."""
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML if config else 0))
+        ports = tree.xpath("./devices/controller[@type='pci'][@model='pcie-root-port']/@index")
+        if not ports:
+            return None
+        used = {int(bus, 16) for bus in tree.xpath("./devices/*/address[@type='pci']/@bus")}
+        return len(ports), sum(int(index) not in used for index in ports)
+
+    def add_pcie_slots(self, count):
+        """Add count PCIe root ports to the persistent definition, which libvirt
+        numbers and places; a running VM gets them at its next start."""
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        devices = tree.find("devices")
+        for _ in range(count):
+            etree.SubElement(devices, "controller", type="pci", model="pcie-root-port")
+        self._defineXML(etree.tostring(tree).decode())
+
     def get_dom_emulator(self):
         return util.get_xml_path(self._XMLDesc(0), "/domain/devices/emulator")
 
     def get_nvram(self):
-        return util.get_xml_path(self._XMLDesc(0), "/domain/os/nvram")
+        xml = self._XMLDesc(0)  # a path as text, or a <source file=...> since libvirt 8.5
+        return util.get_xml_path(xml, "/domain/os/nvram/source/@file") or util.get_xml_path(xml, "/domain/os/nvram")
 
     def get_loader(self):
         xml = self._XMLDesc(0)
@@ -287,9 +855,9 @@ class wvmInstance(wvmConnect):
         readonly = util.get_xml_path(xml, "/domain/os/loader/@readonly")
         return {"loader": loader, "type": loader_type, "readonly": readonly}
 
-    def get_vcpus(self):
+    def get_vcpus(self, config=False):
         vcpus = OrderedDict()
-        tree = etree.fromstring(self._XMLDesc(0))
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML if config else 0))
         for vcpu in tree.xpath("/domain/vcpus/vcpu"):
             vcpu_id = vcpu.get("id")
             enabled = vcpu.get("enabled")
@@ -303,114 +871,76 @@ class wvmInstance(wvmConnect):
 
         return vcpus
 
-    def get_memory(self):
-        mem = util.get_xml_path(self._XMLDesc(0), "/domain/memory")
+    def get_memory(self, config=False):
+        mem = util.get_xml_path(self._XMLDesc(PERSISTENT_XML if config else 0), "/domain/memory")
         return int(mem) // 1024
 
     def get_cur_memory(self):
         mem = util.get_xml_path(self._XMLDesc(0), "/domain/currentMemory")
         return int(mem) // 1024
 
-    def get_title(self):
-        title = util.get_xml_path(self._XMLDesc(0), "/domain/title")
+    def get_title(self, config=False):
+        title = util.get_xml_path(self._XMLDesc(PERSISTENT_XML if config else 0), "/domain/title")
         return title or ""
 
-    def get_filterrefs(self):
-        def filterrefs(ctx):
-            result = []
-            for net in ctx.xpath("/domain/devices/interface"):
-                filterref = net.xpath("filterref/@filter")
-                if filterref:
-                    result.append(filterref[0])
-            return result
-
-        return util.get_xml_path(self._XMLDesc(0), func=filterrefs)
-
-    def get_description(self):
-        description = util.get_xml_path(self._XMLDesc(0), "/domain/description")
+    def get_description(self, config=False):
+        description = util.get_xml_path(self._XMLDesc(PERSISTENT_XML if config else 0), "/domain/description")
         return description or ""
 
     def get_max_memory(self):
-        return self.wvm.getInfo()[1] * 1048576
+        return self.host_info[1] * 1048576
 
-    def get_max_cpus(self):
-        """Get number of physical CPUs."""
-        hostinfo = self.wvm.getInfo()
+    def get_max_cpus(self, at_least=0):
+        """The vCPU counts to offer: up to the host's logical CPUs, or up to
+        at_least when that is more (a VM's own maximum, kept by a resize)."""
+        hostinfo = self.host_info
         pcpus = hostinfo[4] * hostinfo[5] * hostinfo[6] * hostinfo[7]
-        return range(1, int(pcpus + 1))
+        return range(1, max(int(pcpus), at_least) + 1)
 
-    def get_interface_addresses(self, iface_mac):
-        if self._ip_cache is None:
-            self.refresh_interface_addresses()
-
-        qemuga = self._ip_cache["qemuga"]
-        arp = self._ip_cache["arp"]
-        leases = []
-
-        def extract_dom(info):
-            ipv4 = []
-            ipv6 = []
-            for addrs in info.values():
-                if addrs["hwaddr"] != iface_mac:
-                    continue
-                if not addrs["addrs"]:
-                    continue
-                for addr in addrs["addrs"]:
+    def get_addresses(self):
+        """The running VM's addresses, {MAC: (IPv4 list, IPv6 list with
+        prefix)}, each MAC's from the first source that has some: the guest
+        agent, else the host's ARP table. The agent may take its whole
+        timeout: the VM page reads them after it loads (views.nic_addresses)."""
+        if self.get_status() != 1:
+            return {}
+        sources = []
+        if self.is_agent_ready():
+            with contextlib.suppress(libvirtError):
+                sources.append(agent_interfaces(self.instance))
+        with contextlib.suppress(libvirtError):
+            sources.append(self.instance.interfaceAddresses(VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP))
+        found = {}
+        for interfaces in sources:
+            here = {}
+            for interface in interfaces.values():
+                if not interface["hwaddr"]:
+                    continue  # the loopback, a tunnel
+                ipv4, ipv6 = here.setdefault(interface["hwaddr"], ([], []))
+                for addr in interface["addrs"] or []:
                     if addr["type"] == 0:
                         ipv4.append(addr["addr"])
                     elif addr["type"] == 1 and not str(addr["addr"]).startswith("fe80"):
-                        ipv6.append(addr["addr"] + "/" + str(addr["prefix"]))
-            return ipv4, ipv6
+                        ipv6.append(f"{addr['addr']}/{addr['prefix']}")
+            for mac, (ipv4, ipv6) in here.items():
+                if (ipv4 or ipv6) and mac not in found:
+                    found[mac] = (ipv4, ipv6)
+        return found
 
-        def extract_lease(info):
-            ipv4 = []
-            ipv6 = []
-            if info["mac"] == iface_mac:
-                if info["type"] == 0:
-                    ipv4.append(info["ipaddr"])
-                elif info["type"] == 1:
-                    ipv6.append(info["ipaddr"])
-            return ipv4, ipv6
-
-        for ips in [qemuga] + leases + [arp]:
-            ipv4, ipv6 = extract_lease(ips) if "expirytime" in ips else extract_dom(ips)
-            if ipv4 or ipv6:
-                return ipv4, ipv6
-        return None, None
-
-    def _get_interface_addresses(self, source):
-        # ("Calling interfaceAddresses source=%s", source)
-        with contextlib.suppress(libvirtError):
-            return self.instance.interfaceAddresses(source)
-        return {}
-
-    def refresh_interface_addresses(self):
-        self._ip_cache = {"qemuga": {}, "arp": {}}
-
-        if self.get_status() != 1:
-            return
-
-        if self.is_agent_ready():
-            self._ip_cache["qemuga"] = self._get_interface_addresses(
-                VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT
-            )
-
-        arp_flag = 3  # libvirt."VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP"
-        self._ip_cache["arp"] = self._get_interface_addresses(arp_flag)
-
-    def get_net_devices(self):
+    def get_net_devices(self, config=False):
         def networks(ctx):
             result = []
-            inbound = outbound = []
             for net in ctx.xpath("/domain/devices/interface"):
+                inbound = outbound = []
                 interface_type = net.xpath("@type")[0]
                 mac_inst = net.xpath("mac/@address")[0]
-                nic_inst = net.xpath("source/@network|source/@bridge|source/@dev")[0]
+                source = net.xpath("source/@network|source/@bridge|source/@dev")
+                nic_inst = source[0] if source else ""
                 target_inst = net.xpath("target/@dev")[0] if net.xpath("target/@dev") else ""
                 link_state = net.xpath("link/@state")[0] if net.xpath("link") else "up"
                 filterref_inst = net.xpath("filterref/@filter")[0] if net.xpath("filterref/@filter") else ""
 
-                model_type = net.xpath("model/@type")[0]
+                model_type = net.xpath("model/@type")[0] if net.xpath("model/@type") else ""
                 if net.xpath("bandwidth/inbound"):
                     in_attr = net.xpath("bandwidth/inbound")[0]
                     in_av = in_attr.get("average")
@@ -424,10 +954,6 @@ class wvmInstance(wvmConnect):
                     out_burst = out_attr.get("burst")
                     outbound = {"average": out_av, "peak": out_peak, "burst": out_burst}
 
-                try:
-                    ipv4, ipv6 = self.get_interface_addresses(mac_inst)
-                except libvirtError:
-                    ipv4, ipv6 = None, None
                 result.append(
                     {
                         "type": interface_type,
@@ -436,18 +962,18 @@ class wvmInstance(wvmConnect):
                         "target": target_inst,
                         "state": link_state,
                         "model": model_type,
-                        "ipv4": ipv4,
-                        "ipv6": ipv6,
                         "filterref": filterref_inst,
                         "inbound": inbound,
                         "outbound": outbound,
+                        # the NIC as a form shows it: a form shown before another change is refused
+                        "seen": util.digest(etree.tostring(net, encoding="unicode", with_tail=False)),
                     }
                 )
             return result
 
-        return util.get_xml_path(self._XMLDesc(0), func=networks)
+        return util.get_xml_path(self._XMLDesc(PERSISTENT_XML if config else 0), func=networks)
 
-    def get_disk_devices(self):
+    def get_disk_devices(self, config=False):
         def disks(doc):
             result = []
 
@@ -499,18 +1025,18 @@ class wvmInstance(wvmConnect):
                             else None
                         )
 
-                        try:
-                            vol = self.get_volume_by_path(src_file)
-                            volume = vol.name()
-
-                            disk_size = vol.info()[1]
-                            used_size = vol.info()[2]
-                            stg = vol.storagePoolLookupByVolume()
-                            storage = stg.name()
-                        except libvirtError:
+                        details = self._volume_details(src_file)
+                        if details:
+                            volume, disk_size, used_size, storage = details
+                        else:
                             volume = src_file
+                            # a disk no pool holds: libvirt reads its size from the file or device,
+                            # named by its path: a target names the running VM's disk, which may
+                            # be another file than the one saved for its next start (that one: unknown)
+                            with contextlib.suppress(libvirtError):
+                                disk_size, used_size = self.instance.blockInfo(src_file)[:2]
                     except Exception as e:
-                        print(f"Exception: {e}")
+                        logger.warning("Disk %s of %s not fully read: %s", dev, self.instance.name(), e)
                     finally:
                         result.append(
                             {
@@ -534,54 +1060,57 @@ class wvmInstance(wvmConnect):
                         )
             return result
 
-        return util.get_xml_path(self._XMLDesc(0), func=disks)
+        flags = VIR_DOMAIN_XML_INACTIVE | VIR_DOMAIN_XML_SECURE if config else 0
+        return util.get_xml_path(self._XMLDesc(flags), func=disks)
 
-    def get_media_devices(self):
+    def _volume_details(self, path):
+        """(name, capacity, allocation, pool name) of the volume at path, or
+        None when no pool holds it."""
+
+        def read():
+            try:
+                vol = self.get_volume_by_path(path)
+                info = vol.info()
+                return vol.name(), info[1], info[2], vol.storagePoolLookupByVolume().name()
+            except libvirtError:
+                return None
+
+        return self._cached(("volume", path), read)
+
+    def get_media_devices(self, config=False):
         def disks(doc):
             result = []
-            dev = volume = storage = bus = None
-            src_file = None
-            for media in doc.xpath("/domain/devices/disk"):
-                device = media.xpath("@device")[0]
-                if device == "cdrom":
-                    try:
-                        dev = media.xpath("target/@dev")[0]
-                        bus = media.xpath("target/@bus")[0]
-                        src_file = None
-                        volume = src_file
-                        with contextlib.suppress(Exception):
-                            src_file = media.xpath("source/@file")[0]
-                            vol = self.get_volume_by_path(src_file)
-                            volume = vol.name()
-                            stg = vol.storagePoolLookupByVolume()
-                            storage = stg.name()
-                    except Exception:
-                        pass
-                    finally:
-                        result.append(
-                            {
-                                "dev": dev,
-                                "image": volume,
-                                "storage": storage,
-                                "path": src_file,
-                                "bus": bus,
-                            }
-                        )
+            for media in doc.xpath("/domain/devices/disk[@device='cdrom']"):
+                dev = media.xpath("target/@dev")
+                bus = media.xpath("target/@bus")
+                src_file = media.xpath("source/@file")
+                src_file = src_file[0] if src_file else None
+                details = self._volume_details(src_file) if src_file else None
+                volume, _, _, storage = details or (None, None, None, None)
+                result.append(
+                    {
+                        "dev": dev[0] if dev else None,
+                        "image": volume,
+                        "storage": storage,
+                        "path": src_file,
+                        "bus": bus[0] if bus else None,
+                    }
+                )
             return result
 
-        return util.get_xml_path(self._XMLDesc(0), func=disks)
+        return util.get_xml_path(self._XMLDesc(PERSISTENT_XML if config else 0), func=disks)
 
-    def get_bootmenu(self):
-        menu = util.get_xml_path(self._XMLDesc(0), "/domain/os/bootmenu/@enable")
+    def get_bootmenu(self, config=False):
+        menu = util.get_xml_path(self._XMLDesc(PERSISTENT_XML if config else 0), "/domain/os/bootmenu/@enable")
         return menu == "yes"
 
     def set_bootmenu(self, flag):
-        tree = ElementTree.fromstring(self._XMLDesc(0))
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
         os = tree.find("os")
         menu = os.find("bootmenu")
 
         if menu is None:
-            bootmenu = ElementTree.fromstring("<bootmenu enable='yes'/>")
+            bootmenu = etree.fromstring("<bootmenu enable='yes'/>")
             os.append(bootmenu)
             menu = os.find("bootmenu")
 
@@ -596,13 +1125,13 @@ class wvmInstance(wvmConnect):
                 "Unknown boot menu option, please choose one of 0:disable, 1:enable, -1:remove"
             )
 
-        xmldom = ElementTree.tostring(tree).decode()
+        xmldom = etree.tostring(tree).decode()
         self._defineXML(xmldom)
 
-    def get_bootorder(self):
+    def get_bootorder(self, config=False):
         boot_order = {}
         dev_type = target = None
-        tree = ElementTree.fromstring(self._XMLDesc(0))
+        tree = ElementTree.fromstring(self._XMLDesc(PERSISTENT_XML if config else 0))
         os = tree.find("os")
         boot = os.findall("boot")
 
@@ -631,13 +1160,12 @@ class wvmInstance(wvmConnect):
                 dev_type = dev.get("type")
                 dev_device = dev.get("device")
 
-                if dev_type == "file" or (dev_device == "disk" and dev_type == "network"):
+                if dev.tag == "disk":  # file, block, volume or network
                     dev_target = dev.find("target").get("dev")
 
-                elif dev_type == "network":
-                    dev_mac = dev.find("mac").get("address")
+                elif dev.tag == "interface":  # network, bridge or direct
                     dev_device = "network"
-                    dev_target = f"nic-{dev_mac[9:]}"
+                    dev_target = dev.find("mac").get("address")
                 # pass dev_type usb
                 boot_order[int(idx) - 1] = {
                     "type": dev_type,
@@ -651,92 +1179,79 @@ class wvmInstance(wvmConnect):
         if not devorder:
             return
 
-        def remove_bootorder():
-            tree = ElementTree.fromstring(self._XMLDesc(0))
-            os = tree.find("os")
-            boot = os.findall("boot")
-            # Remove old style boot order
-            for b in boot:
-                os.remove(b)
-            # Remove rest of them
-            for dev in tree.find("devices"):
-                boot_dev = dev.find("boot")
-                if boot_dev is not None:
-                    dev.remove(boot_dev)
-            return tree
-
-        tree = remove_bootorder()
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        # the order lists disks, CD-ROM drives and NICs: it does not drop another device's place
+        if tree.xpath("./devices/*[not(self::disk[@device='disk' or @device='cdrom'] or self::interface)]/boot"):
+            raise util.OperationError(gettext_noop("A device other than a disk or NIC is in the boot order: change it in the XML editor"))
+        # it replaces the order by device type and every device's place
+        for boot in tree.xpath("./os/boot | ./devices/*/boot"):
+            boot.getparent().remove(boot)
 
         for idx, dev in devorder.items():
-            order = ElementTree.fromstring("<boot order='{}'/>".format(idx + 1))
-            if dev["type"] == "disk":
-                devices = tree.findall("./devices/disk[@device='disk']")
-                for d in devices:
-                    device = d.find("./target[@dev='{}']".format(dev["dev"]))
-                    if device is not None:
-                        d.append(order)
-            elif dev["type"] == "cdrom":
-                devices = tree.findall("./devices/disk[@device='cdrom']")
-                for d in devices:
-                    device = d.find("./target[@dev='{}']".format(dev["dev"]))
-                    if device is not None:
-                        d.append(order)
-            elif dev["type"] == "network":
-                devices = tree.findall("./devices/interface[@type='network']")
-                for d in devices:
-                    device = d.find("mac[@address='{}']".format(dev["dev"]))
-                    if device is not None:
-                        d.append(order)
+            order = etree.fromstring("<boot order='{}'/>".format(idx + 1))
+            if dev["type"] in ("disk", "cdrom"):
+                devices = tree.xpath("./devices/disk[@device=$device][target/@dev=$dev]", device=dev["type"], dev=dev["dev"])
+            elif dev["type"] == "network":  # any NIC type: network, bridge, direct
+                devices = tree.xpath("./devices/interface[mac/@address=$mac]", mac=dev["dev"])
             else:
-                raise Exception("Invalid Device Type for boot order")
-        self._defineXML(ElementTree.tostring(tree).decode())
+                raise util.OperationError(gettext_noop("Invalid Device Type for boot order"))
+            # nothing is defined until every choice is found: the order above is cleared
+            if not devices:
+                raise util.OperationError(gettext_noop("Boot device %(dev)s is not in the definition"), dev=dev['dev'])
+            for d in devices:
+                d.append(order)
+        self._defineXML(etree.tostring(tree).decode())
+
+    def _set_cdrom_media(self, dev, path):
+        """Insert path into, or with None eject, CD-ROM dev.
+
+        The live and the persistent definition are updated separately from
+        their own device XML, so neither is rewritten from the other.
+        """
+        definitions = [
+            ("running" if affect == VIR_DOMAIN_AFFECT_LIVE else "persistent", xml_flags, affect)
+            for xml_flags, affect in self._definitions()
+        ]
+        devices = []
+        for label, xml_flags, _ in definitions:
+            tree = etree.fromstring(self._XMLDesc(xml_flags))
+            found = tree.xpath("./devices/disk[@device='cdrom'][target/@dev=$dev]", dev=dev)
+            if not found:
+                missing = (gettext_noop("CD-ROM %(dev)s is not in the running definition") if label == "running"
+                           else gettext_noop("CD-ROM %(dev)s is not in the persistent definition"))
+                raise util.OperationError(missing, dev=dev)
+            devices.append(found[0])
+        for (label, _, affect), disk in zip(definitions, devices):
+            for source in disk.findall("source"):
+                disk.remove(source)
+            if path:
+                disk.set("type", "file")  # a host drive (type block) reads source/@dev only
+                disk.insert(1, etree.Element("source", file=path))
+            try:
+                self.instance.updateDeviceFlags(etree.tostring(disk).decode(), affect)
+            except libvirtError as err:
+                if label == "persistent" and len(definitions) == 2:
+                    raise util.OperationError(gettext_noop("Media of %(dev)s changed in the running VM only: %(err)s"), dev=dev, err=err) from err
+                raise
+
+    def get_iso_path(self, image):
+        """The path of the ISO image of that name, in one of the active pools."""
+        paths = []
+        for storage in self.get_storages(only_actives=True):
+            stg = self.get_storage(storage)
+            if image in stg.listVolumes():
+                paths.append(stg.storageVolLookupByName(image).path())
+        if not paths:
+            raise util.OperationError(gettext_noop("ISO image %(image)s was not found"), image=image)
+        if len(paths) > 1:
+            raise util.OperationError(gettext_noop("ISO image %(image)s is in more than one storage pool"), image=image)
+        return paths[0]
 
     def mount_iso(self, dev, image):
-        def attach_iso(dev, disk, vol):
-            if disk.get("device") == "cdrom":
-                for elm in disk:
-                    if elm.tag == "target" and elm.get("dev") == dev:
-                        src_media = ElementTree.Element("source")
-                        src_media.set("file", vol.path())
-                        disk.insert(2, src_media)
-                        return True
+        self._set_cdrom_media(dev, self.get_iso_path(image))
 
-        vol = None
-        storages = self.get_storages(only_actives=True)
-        for storage in storages:
-            stg = self.get_storage(storage)
-            if stg.info()[0] != 0:
-                for img in stg.listVolumes():
-                    if image == img:
-                        vol = stg.storageVolLookupByName(image)
-        tree = ElementTree.fromstring(self._XMLDesc(0))
-        for disk in tree.findall("devices/disk"):
-            if attach_iso(dev, disk, vol):
-                break
-        if self.get_status() == 1:
-            xml = ElementTree.tostring(disk).decode()
-            self.instance.attachDevice(xml)
-            xmldom = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
-        if self.get_status() == 5:
-            xmldom = ElementTree.tostring(tree).decode()
-        self._defineXML(xmldom)
-
-    def umount_iso(self, dev, image):
-        tree = ElementTree.fromstring(self._XMLDesc(0))
-        for disk in tree.findall("devices/disk"):
-            if disk.get("device") == "cdrom":
-                for elm in disk:
-                    if elm.tag == "source" and elm.get("file") == image:
-                        src_media = elm
-                    if elm.tag == "target" and elm.get("dev") == dev:
-                        disk.remove(src_media)
-        if self.get_status() == 1:
-            xml_disk = ElementTree.tostring(disk).decode()
-            self.instance.attachDevice(xml_disk)
-            xmldom = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
-        if self.get_status() == 5:
-            xmldom = ElementTree.tostring(tree).decode()
-        self._defineXML(xmldom)
+    def umount_iso(self, dev, image=None):
+        self._set_cdrom_media(dev, None)
 
     def attach_disk(
         self,
@@ -757,6 +1272,15 @@ class wvmInstance(wvmConnect):
         discard_mode=None,
         detect_zeroes_mode=None,
     ):
+        # Every value below is interpolated into disk XML; escape them all so
+        # a quote in a path, serial or option cannot inject XML.
+        esc = util.xml_escape
+        target_dev, source, target_bus = esc(target_dev), esc(source), esc(target_bus)
+        disk_type, disk_device = esc(disk_type), esc(disk_device)
+        driver_name, format_type = esc(driver_name), esc(format_type)
+        serial = esc(serial)
+        cache_mode, io_mode = esc(cache_mode), esc(io_mode)
+        discard_mode, detect_zeroes_mode = esc(discard_mode), esc(detect_zeroes_mode)
 
         additionals = ""
         if (
@@ -772,7 +1296,10 @@ class wvmInstance(wvmConnect):
         if detect_zeroes_mode is not None and detect_zeroes_mode != "default":
             additionals += f"detect_zeroes='{detect_zeroes_mode}' "
 
-        xml_disk = f"<disk type='{disk_type}' device='{disk_device}'>"
+        # a USB CD-ROM is a CD drive on usb-bot only: usb-storage, which libvirt
+        # takes where QEMU has no usb-bot (RHEL 9), shows the guest a hard disk
+        usb_cd = " model='usb-bot'" if disk_device == "cdrom" and target_bus == "usb" else ""
+        xml_disk = f"<disk type='{disk_type}' device='{disk_device}'{usb_cd}>"
         if disk_device == "cdrom":
             xml_disk += f"<driver name='{driver_name}' type='{format_type}'/>"
         elif disk_device == "disk":
@@ -782,21 +1309,11 @@ class wvmInstance(wvmConnect):
 
         if disk_type == "file":
             xml_disk += f"<source file='{source}'/>"
+        elif disk_type == "block":  # a volume of an LVM, disk or iSCSI pool
+            xml_disk += f"<source dev='{source}'/>"
         elif disk_type == "network":
-            if pool_type == "rbd":
-                auth_type = source_info.get("auth_type")
-                auth_user = source_info.get("auth_user")
-                auth_uuid = source_info.get("auth_uuid")
-                xml_disk += f"""<auth username='{auth_user}'>
-                                <secret type='{auth_type}' uuid='{auth_uuid}'/>
-                            </auth>"""
-                xml_disk += f"""<source protocol='{pool_type}' name='{source}'>"""
-                for host in source_info.get("hosts"):
-                    if host.get("hostport"):
-                        xml_disk += f"""<host name="{host.get('hostname')}" port='{host.get('hostport')}'/>"""
-                    else:
-                        xml_disk += f"""<host name="{host.get('hostname')}"/>"""
-                xml_disk += """</source>"""
+            if pool_type == "rbd":  # source_info: rbd_source_children of the pool
+                xml_disk += f"<source protocol='rbd' name='{source}'>{source_info}</source>"
             else:
                 raise Exception("Not implemented disk type")
         else:
@@ -810,27 +1327,36 @@ class wvmInstance(wvmConnect):
         if serial is not None and serial != "None" and serial != "":
             xml_disk += f"""<serial>{serial}</serial>"""
         xml_disk += """</disk>"""
-        if self.get_status() == 1:
-            self.instance.attachDeviceFlags(xml_disk, VIR_DOMAIN_AFFECT_LIVE)
-            self.instance.attachDeviceFlags(xml_disk, VIR_DOMAIN_AFFECT_CONFIG)
-        if self.get_status() == 5:
-            self.instance.attachDeviceFlags(xml_disk, VIR_DOMAIN_AFFECT_CONFIG)
+        self._attach_device(xml_disk)
 
     def detach_disk(self, target_dev):
-        tree = etree.fromstring(self._XMLDesc(0))
+        """Detach target_dev from each definition that has it, as that definition describes it."""
+        found = False
+        for xml_flags, affect in self._definitions():
+            tree = etree.fromstring(self._XMLDesc(xml_flags))
+            disks = tree.xpath("./devices/disk[target/@dev=$dev]", dev=target_dev)
+            if disks:
+                found = True
+                self.instance.detachDeviceFlags(etree.tostring(disks[0]).decode(), affect)
+        if not found:
+            raise util.OperationError(gettext_noop("Disk %(target_dev)s is not in the VM's definition"), target_dev=target_dev)
 
-        disk_el = tree.xpath("./devices/disk/target[@dev='{}']".format(target_dev))[
-            0
-        ].getparent()
-        xml_disk = etree.tostring(disk_el).decode()
-        devices = tree.find("devices")
-        devices.remove(disk_el)
+    def has_disk(self, target_dev):
+        """True while the live or the persistent definition still has target_dev."""
+        for flags in (0, VIR_DOMAIN_XML_INACTIVE):
+            tree = etree.fromstring(self._XMLDesc(flags))
+            if tree.xpath("./devices/disk/target[@dev=$dev]", dev=target_dev):
+                return True
+        return False
 
-        if self.get_status() == 1:
-            self.instance.detachDeviceFlags(xml_disk, VIR_DOMAIN_AFFECT_LIVE)
-            self.instance.detachDeviceFlags(xml_disk, VIR_DOMAIN_AFFECT_CONFIG)
-        if self.get_status() == 5:
-            self.instance.detachDeviceFlags(xml_disk, VIR_DOMAIN_AFFECT_CONFIG)
+    def wait_disk_detached(self, target_dev, timeout=10):
+        """A live detach completes only when the guest releases the disk."""
+        deadline = time.monotonic() + timeout
+        while self.has_disk(target_dev):
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(0.5)
+        return True
 
     def edit_disk(
         self,
@@ -846,87 +1372,106 @@ class wvmInstance(wvmConnect):
         discard_mode,
         detect_zeroes_mode,
     ):
-        tree = etree.fromstring(self._XMLDesc(0))
-        disk_el = tree.xpath("./devices/disk/target[@dev='{}']".format(target_dev))[
-            0
-        ].getparent()
-        old_disk_type = disk_el.get("type")
-        old_disk_device = disk_el.get("device")
-        old_driver_name = disk_el.xpath("driver/@name")[0]
-        old_target_bus = disk_el.xpath("target/@bus")[0]
+        """Edit the persistent disk in place and commit its domain XML once."""
+        tree = etree.fromstring(
+            self._XMLDesc(VIR_DOMAIN_XML_INACTIVE | VIR_DOMAIN_XML_SECURE)
+        )
+        matches = tree.xpath("./devices/disk/target[@dev=$dev]", dev=target_dev)
+        if not matches:
+            raise ValueError(f"Disk {target_dev} is not in the persistent configuration")
+        target = matches[0]
+        disk = target.getparent()
 
-        additionals = ""
-        if cache_mode is not None and cache_mode != "default":
-            additionals += f"cache='{cache_mode}' "
-        if io_mode is not None and io_mode != "default":
-            additionals += f"io='{io_mode}' "
-        if discard_mode is not None and discard_mode != "default":
-            additionals += f"discard='{discard_mode}' "
-        if detect_zeroes_mode is not None and detect_zeroes_mode != "default":
-            additionals += f"detect_zeroes='{detect_zeroes_mode}' "
-
-        xml_disk = f"<disk type='{old_disk_type}' device='{old_disk_device}'>"
-        if old_disk_device == "cdrom":
-            xml_disk += f"<driver name='{old_driver_name}' type='{format}'/>"
-        elif old_disk_device == "disk":
-            xml_disk += (
-                f"<driver name='{old_driver_name}' type='{format}' {additionals}/>"
+        if target.get("bus") != target_bus:
+            prefix = util.vol_dev_type(target_bus) or "sd"
+            used = set(tree.xpath("./devices/disk/target/@dev")) - {target_dev}
+            new_dev = target_dev if target_dev.startswith(prefix) else next(
+                (prefix + letter for letter in string.ascii_lowercase if prefix + letter not in used),
+                None,
             )
+            if new_dev is None:
+                raise ValueError("No available device name for the requested disk bus")
+            target.set("dev", new_dev)
+            target.set("bus", target_bus)
+            for address in disk.findall("address"):
+                disk.remove(address)
 
-        xml_disk += f"""<source file='{source}'/>
-          <target dev='{target_dev}' bus='{target_bus}'/>"""
-        if readonly:
-            xml_disk += """<readonly/>"""
-        if shareable:
-            xml_disk += """<shareable/>"""
-        if serial is not None and serial != "None" and serial != "":
-            xml_disk += f"""<serial>{serial}</serial>"""
-        xml_disk += """</disk>"""
+        driver = disk.find("driver")
+        if driver is None:
+            driver = etree.Element("driver", name="qemu")
+            disk.insert(0, driver)
+        if target_bus != "virtio":
+            for key in ("queues", "queue_size", "iothread", "iommu", "ats", "packed", "page_per_vq"):
+                driver.attrib.pop(key, None)
+            for iothreads in driver.findall("iothreads"):
+                driver.remove(iothreads)
+            disk.attrib.pop("model", None)
+        for key, value in (
+            ("type", format), ("cache", cache_mode), ("io", io_mode),
+            ("discard", discard_mode), ("detect_zeroes", detect_zeroes_mode),
+        ):
+            if value and value != "default":
+                driver.set(key, value)
+            else:
+                driver.attrib.pop(key, None)
 
-        self.instance.updateDeviceFlags(xml_disk, VIR_DOMAIN_AFFECT_CONFIG)
+        if disk.get("type") == "file":
+            source_el = disk.find("source")
+            if source_el is None:
+                source_el = etree.SubElement(disk, "source")
+            source_el.set("file", source)
 
-    def cpu_usage(self):
-        cpu_usage = {}
-        if self.get_status() == 1:
-            nbcore = self.wvm.getInfo()[2]
-            cpu_use_ago = self.instance.info()[4]
-            time.sleep(1)
-            cpu_use_now = self.instance.info()[4]
-            diff_usage = cpu_use_now - cpu_use_ago
-            cpu_usage["cpu"] = 100 * diff_usage / (1 * nbcore * 10**9)
-        else:
-            cpu_usage["cpu"] = 0
-        return cpu_usage
+        for tag, enabled in (("readonly", readonly), ("shareable", shareable)):
+            element = disk.find(tag)
+            if enabled and element is None:
+                etree.SubElement(disk, tag)
+            elif not enabled and element is not None:
+                disk.remove(element)
+        serial_el = disk.find("serial")
+        if serial and serial != "None":
+            if serial_el is None:
+                serial_el = etree.SubElement(disk, "serial")
+            serial_el.text = serial
+        elif serial_el is not None:
+            disk.remove(serial_el)
+
+        self._defineXML(etree.tostring(tree).decode())
 
     def set_vcpu(self, cpu_id, enabled):
-        self.instance.setVcpu(str(cpu_id), enabled)
+        """Turns a hotpluggable vCPU of the active VM on or off, now and for its next start."""
+        self.instance.setVcpu(str(cpu_id), enabled, VIR_DOMAIN_AFFECT_LIVE | VIR_DOMAIN_AFFECT_CONFIG)
+
+    @staticmethod
+    def _hotplug_vcpus(enabled):
+        """<vcpus> with the first enabled vCPUs on at boot; libvirt adds the
+        rest up to the maximum as disabled hotpluggable vCPUs."""
+        vcpus = etree.Element("vcpus")
+        etree.SubElement(vcpus, "vcpu", id="0", enabled="yes", hotpluggable="no", order="1")
+        for i in range(1, enabled):
+            etree.SubElement(vcpus, "vcpu", id=str(i), enabled="yes", hotpluggable="yes", order=str(i + 1))
+        return vcpus
 
     def set_vcpu_hotplug(self, status, vcpus_hotplug=0):
-        """vcpus_hotplug = 0 make all vpus hotpluggable"""
-        vcpus_hotplug = int(self.get_vcpu()) if vcpus_hotplug == 0 else vcpus_hotplug
+        """vcpus_hotplug: the vCPUs enabled at boot, 0 keeps the current ones;
+        libvirt adds the rest up to the maximum as disabled hotpluggable vCPUs"""
+        vcpus_hotplug = self.get_cur_vcpu() if vcpus_hotplug == 0 else vcpus_hotplug
         if self.get_status() == 5:  # shutoff
             if status:
-                xml = """ <vcpus>"""
-                xml += """<vcpu id='0' enabled='yes' hotpluggable='no' order='1'/>"""
-                for i in range(1, vcpus_hotplug):
-                    xml += f"""<vcpu id='{i}' enabled='yes' hotpluggable='yes' order='{i+1}'/>"""
-                xml += """</vcpus>"""
-
-                tree = etree.fromstring(self._XMLDesc(0))
+                tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
                 vcpus = tree.xpath("/domain/vcpus")
                 if not vcpus:
-                    tree.append(etree.fromstring(xml))
+                    tree.append(self._hotplug_vcpus(vcpus_hotplug))
                     self._defineXML(etree.tostring(tree).decode())
             else:
-                tree = etree.fromstring(self._XMLDesc(0))
+                tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
                 vcpus = tree.xpath("/domain/vcpus")
                 for vcpu in vcpus:
                     parent = vcpu.getparent()
                     parent.remove(vcpu)
                     self._defineXML(etree.tostring(tree).decode())
         else:
-            raise libvirtError(
-                "Please shutdown the instance then try to enable vCPU hotplug"
+            raise util.OperationError(
+                gettext_noop("Please shutdown the instance then try to enable vCPU hotplug")
             )
 
     def mem_usage(self):
@@ -946,65 +1491,100 @@ class wvmInstance(wvmConnect):
             mem_usage["total"] = 0
         return mem_usage
 
-    def disk_usage(self):
-        devices = []
-        dev_usage = []
+    def usage(self, previous=None):
+        """
+        CPU (percent of the host), disk read/write bytes and network rx/tx
+        bits per second, for the stats view. With previous, the "sample" of an
+        earlier answer, they are averages since then and nothing waits; without
+        a usable one, over one second. A sample is usable for the same run of
+        the VM (domain ID) on a host with the same CPUs and devices, at most
+        USAGE_MAX_WINDOW seconds old. A value the host does not report (-1) or
+        whose counter went back is None.
+        """
         tree = ElementTree.fromstring(self._XMLDesc(0))
+        disks = []
         for disk in tree.findall("devices/disk"):
-            if disk.get("device") == "disk":
-                dev_file = None
-                dev_bus = None
-                network_disk = True
-                for elm in disk:
-                    if elm.tag == "source":
-                        if elm.get("protocol"):
-                            dev_file = elm.get("protocol")
-                            network_disk = True
-                        if elm.get("file"):
-                            dev_file = elm.get("file")
-                        if elm.get("dev"):
-                            dev_file = elm.get("dev")
-                    if elm.tag == "target":
-                        dev_bus = elm.get("dev")
-                if (dev_file and dev_bus) is not None:
-                    if network_disk:
-                        dev_file = dev_bus
-                    devices.append([dev_file, dev_bus])
-        for dev in devices:
-            if self.get_status() == 1:
-                rd_use_ago = self.instance.blockStats(dev[0])[1]
-                wr_use_ago = self.instance.blockStats(dev[0])[3]
-                time.sleep(1)
-                rd_use_now = self.instance.blockStats(dev[0])[1]
-                wr_use_now = self.instance.blockStats(dev[0])[3]
-                rd_diff_usage = rd_use_now - rd_use_ago
-                wr_diff_usage = wr_use_now - wr_use_ago
-            else:
-                rd_diff_usage = 0
-                wr_diff_usage = 0
-            dev_usage.append({"dev": dev[1], "rd": rd_diff_usage, "wr": wr_diff_usage})
-        return dev_usage
+            source, target = disk.find("source"), disk.find("target")
+            if (
+                disk.get("device") == "disk"
+                and source is not None
+                and any(source.get(name) for name in ("protocol", "file", "dev", "volume"))
+                and target is not None
+                and target.get("dev")
+            ):
+                disks.append(target.get("dev"))  # blockStats takes the target name
+        # all NICs, known by their MAC; one without a target is not measured
+        nics = []
+        for nic in tree.findall("devices/interface"):
+            mac, target = nic.find("mac"), nic.find("target")
+            nics.append([
+                "" if mac is None else mac.get("address", ""),
+                "" if target is None else target.get("dev", ""),
+            ])
 
-    def net_usage(self):
-        devices = []
-        dev_usage = []
-        if self.get_status() == 1:
-            tree = ElementTree.fromstring(self._XMLDesc(0))
-            for target in tree.findall("devices/interface/target"):
-                devices.append(target.get("dev"))
-            for i, dev in enumerate(devices):
-                rx_use_ago = self.instance.interfaceStats(dev)[0]
-                tx_use_ago = self.instance.interfaceStats(dev)[4]
-                time.sleep(1)
-                rx_use_now = self.instance.interfaceStats(dev)[0]
-                tx_use_now = self.instance.interfaceStats(dev)[4]
-                rx_diff_usage = (rx_use_now - rx_use_ago) * 8
-                tx_diff_usage = (tx_use_now - tx_use_ago) * 8
-                dev_usage.append({"dev": i, "rx": rx_diff_usage, "tx": tx_diff_usage})
-        else:
-            for i, dev in enumerate(self.get_net_devices()):
-                dev_usage.append({"dev": i, "rx": 0, "tx": 0})
-        return dev_usage
+        if self.get_status() != 1:
+            return {
+                "cpu": 0,
+                "disks": [{"dev": dev, "rd": 0, "wr": 0} for dev in disks],
+                "nics": [{"mac": mac, "rx": 0, "tx": 0} for mac, target in nics],
+            }
+
+        key = [self.instance.ID(), self.host_info[2], disks, nics]
+        unread = [-1, -1]
+
+        def read():
+            # one call for the CPU time and every disk's and NIC's counters
+            [(_dom, stats)] = self.wvm.domainListGetStats([self.instance], USAGE_STATS)
+
+            def counters(kind, names):
+                """{device name: [its counters]} of stats' kind (block, net); -1 for one not reported."""
+                return {stats.get(f"{kind}.{i}.name"): [stats.get(f"{kind}.{i}.{name}", -1) for name in names]
+                        for i in range(stats.get(f"{kind}.count", 0))}
+
+            blocks = counters("block", ("rd.bytes", "wr.bytes"))
+            links = counters("net", ("rx.bytes", "tx.bytes"))
+            return [
+                # a driver without these stats (libvirt's test driver) still has info()
+                stats["cpu.time"] if "cpu.time" in stats else self.instance.info()[4],
+                [blocks.get(dev, unread) for dev in disks],
+                [links.get(target, unread) if target else unread for _, target in nics],
+                time.monotonic(),
+            ]
+
+        def rates(before, after):
+            seconds = after[3] - before[3]
+            if before[0] > after[0] or not 0 < seconds <= USAGE_MAX_WINDOW:
+                return None
+            return {
+                "cpu": 100 * (after[0] - before[0]) / (seconds * key[1] * 10**9),
+                "disks": [
+                    {"dev": dev, "rd": _rate(old[0], new[0], seconds), "wr": _rate(old[1], new[1], seconds)}
+                    for dev, old, new in zip(disks, before[1], after[1])
+                ],
+                "nics": [
+                    {"mac": mac, "rx": _rate(old[0], new[0], seconds, 8), "tx": _rate(old[1], new[1], seconds, 8)}
+                    for (mac, target), old, new in zip(nics, before[2], after[2])
+                ],
+                "window": seconds,
+            }
+
+        counters = read()
+        usage = None
+        if previous is not None and previous.get("key") == key:
+            usage = rates(previous["counters"], counters)
+        if usage is None:
+            before = counters
+            time.sleep(1)
+            counters = read()
+            # None everywhere if the VM restarted meanwhile
+            usage = rates(before, counters) or {
+                "cpu": None,
+                "disks": [{"dev": dev, "rd": None, "wr": None} for dev in disks],
+                "nics": [{"mac": mac, "rx": None, "tx": None} for mac, target in nics],
+                "window": None,
+            }
+        usage["sample"] = {"key": key, "counters": counters}
+        return usage
 
     def get_telnet_port(self):
         telnet_port = None
@@ -1022,32 +1602,59 @@ class wvmInstance(wvmConnect):
                                 telnet_port = service_port
         return telnet_port
 
-    def get_console_listener_addr(self):
+    def get_console_listener_addr(self, config=False):
         listener_addr = util.get_xml_path(
-            self._XMLDesc(0), "/domain/devices/graphics/@listen"
+            self._XMLDesc(PERSISTENT_XML if config else 0), "/domain/devices/graphics[1]/@listen"
         )
         if listener_addr is None:
             listener_addr = util.get_xml_path(
-                self._XMLDesc(0), "/domain/devices/graphics/listen/@address"
+                self._XMLDesc(PERSISTENT_XML if config else 0), "/domain/devices/graphics[1]/listen/@address"
             )
             if listener_addr is None:
                 return "127.0.0.1"
         return listener_addr
 
-    def set_console_listener_addr(self, listener_addr):
-        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
-        root = ElementTree.fromstring(xml)
-        console_type = self.get_console_type()
+    def console_listens_locally(self):
+        """True if the persistent definition binds the console to loopback
+        addresses or a Unix socket only. Anything the XML does not pin down
+        counts as not local: listen type network, or no address at all (the
+        host's default in qemu.conf)."""
+        graphic = etree.fromstring(self._XMLDesc(PERSISTENT_XML)).find("devices/graphics")
+        if graphic is None:
+            return True  # no console
+        addresses = [graphic.get("listen")]
+        local_types = 0
+        for listen in graphic.findall("listen"):
+            if listen.get("type") == "address":
+                addresses.append(listen.get("address"))
+            elif listen.get("type") in ("socket", "none"):
+                local_types += 1
+            else:
+                return False
+        addresses = [a for a in addresses if a]
+        if not addresses:
+            return local_types > 0
         try:
-            graphic = root.find("devices/graphics[@type='%s']" % console_type)
-        except SyntaxError:
-            # Little fix for old version ElementTree
-            graphic = root.find("devices/graphics")
+            return all(ipaddress.ip_address(a).is_loopback for a in addresses)
+        except ValueError:  # a host name
+            return False
+
+    def get_console_listen_type(self, config=False):
+        """address, network, socket or none; None for a console without a listen element"""
+        return util.get_xml_path(self._XMLDesc(PERSISTENT_XML if config else 0), "/domain/devices/graphics[1]/listen/@type")
+
+    def set_console_listener_addr(self, listener_addr):
+        root = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        # The console is the first graphics device of the definition being
+        # edited; the running VM may still have another type.
+        graphic = root.find("devices/graphics")
         if graphic is None:
             return False
         listen = graphic.find("listen[@type='address']")
         if listen is None:
-            return False
+            raise util.OperationError(
+                gettext_noop("The console listens on no address (on a network, a socket or nowhere); "
+                             "change it in the XML editor"))
         if listener_addr:
             graphic.set("listen", listener_addr)
             listen.set("address", listener_addr)
@@ -1056,111 +1663,107 @@ class wvmInstance(wvmConnect):
                 graphic.attrib.pop("listen")
                 listen.attrib.pop("address")
 
-        newxml = ElementTree.tostring(root).decode()
+        newxml = etree.tostring(root).decode()
         return self._defineXML(newxml)
 
+    def set_console_type(self, console_type):
+        """VNC: a VNC graphics device on localhost; "pty": no graphics, so the
+        serial console opens (libvirt adds the serial port for the console)."""
+        root = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        devices = root.find("devices")
+        console = devices.find("console")
+        if console_type == "pty" and console is not None and console.get("type") != "pty":
+            raise util.OperationError(
+                gettext_noop("The serial console is a %(type)s one, the browser opens only a pty one; "
+                             "change it in the XML editor"), type=console.get("type"))
+        graphics = devices.findall("graphics")
+        for graphic in graphics:
+            devices.remove(graphic)
+        # libvirt refuses SPICE channels, USB redirection and smartcards
+        # without SPICE graphics; SPICE audio goes silent
+        for device in devices.xpath("channel[@type='spicevmc' or @type='spiceport'] | redirdev[@type='spicevmc']"
+                                    " | smartcard[@type='spicevmc']"):
+            devices.remove(device)
+        for audio in devices.findall("audio[@type='spice']"):
+            audio.set("type", "none")
+        if console_type == "vnc":
+            vnc = etree.SubElement(devices, "graphics", type="vnc", port="-1", autoport="yes", listen="127.0.0.1")
+            # a SPICE console's keymap and password stay, a password VNC cannot take is replaced
+            if graphics and graphics[0].get("keymap"):
+                vnc.set("keymap", graphics[0].get("keymap"))
+            passwd = graphics[0].get("passwd") if graphics else None
+            if passwd is not None:
+                fits = len(passwd) <= 8 and all(" " <= c <= "~" for c in passwd)
+                vnc.set("passwd", passwd if fits else util.randomPasswd(8))
+        elif console is None:
+            etree.SubElement(devices, "console", type="pty")
+        return self._defineXML(etree.tostring(root).decode())
+
     def get_console_socket(self):
-        socket = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics/@socket")
+        socket = util.get_xml_path(self._XMLDesc(0), "/domain/devices/graphics[1]/@socket")
         return socket
 
-    def get_console_type(self):
-        console_type = util.get_xml_path(
-            self._XMLDesc(0), "/domain/devices/graphics/@type"
-        )
+    def get_console_type(self, config=False):
+        xml = self._XMLDesc(PERSISTENT_XML if config else 0)
+        console_type = util.get_xml_path(xml, "/domain/devices/graphics[1]/@type")
         if console_type is None:
-            console_type = util.get_xml_path(
-                self._XMLDesc(0), "/domain/devices/console/@type"
-            )
+            console_type = util.get_xml_path(xml, "/domain/devices/console/@type")
         return console_type
-
-    def set_console_type(self, console_type):
-        current_type = self.get_console_type()
-        if current_type == console_type:
-            return True
-        if console_type == "":
-            return False
-        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
-        root = ElementTree.fromstring(xml)
-        try:
-            graphic = root.find(f"devices/graphics[@type='{current_type}']")
-        except SyntaxError:
-            # Little fix for old version ElementTree
-            graphic = root.find("devices/graphics")
-        graphic.set("type", console_type)
-        newxml = ElementTree.tostring(root).decode()
-        self._defineXML(newxml)
 
     def get_console_port(self, console_type=None):
         if console_type is None:
             console_type = self.get_console_type()
         port = util.get_xml_path(
             self._XMLDesc(0),
-            "/domain/devices/graphics[@type='%s']/@port" % console_type,
+            "/domain/devices/graphics[1][@type='%s']/@port" % console_type,
         )
         return port
 
-    def get_console_websocket_port(self):
-        console_type = self.get_console_type()
-        websocket_port = util.get_xml_path(
-            self._XMLDesc(0),
-            "/domain/devices/graphics[@type='%s']/@websocket" % console_type,
-        )
-        return websocket_port
-
-    def get_console_passwd(self):
+    def get_console_passwd(self, config=False):
         return util.get_xml_path(
-            self._XMLDesc(VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics/@passwd"
+            self._XMLDesc(PERSISTENT_XML if config else VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics[1]/@passwd"
         )
 
     def set_console_passwd(self, passwd):
-        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
-        root = ElementTree.fromstring(xml)
-        console_type = self.get_console_type()
-        try:
-            graphic = root.find(f"devices/graphics[@type='{console_type}']")
-        except SyntaxError:
-            # Little fix for old version ElementTree
-            graphic = root.find("devices/graphics")
+        root = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        graphic = root.find("devices/graphics")
         if graphic is None:
             return False
         if passwd:
             graphic.set("passwd", passwd)
         else:
-            with contextlib.suppress(Exception):
-                graphic.attrib.pop("passwd")
+            graphic.attrib.pop("passwd", None)
+        # an expiry set elsewhere would leave the new password unusable
+        graphic.attrib.pop("passwdValidTo", None)
 
-        newxml = ElementTree.tostring(root).decode()
+        newxml = etree.tostring(root).decode()
         return self._defineXML(newxml)
 
     def set_console_keymap(self, keymap):
-        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
-        root = ElementTree.fromstring(xml)
-        console_type = self.get_console_type()
-        try:
-            graphic = root.find("devices/graphics[@type='%s']" % console_type)
-        except SyntaxError:
-            # Little fix for old version ElementTree
-            graphic = root.find("devices/graphics")
+        root = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        graphic = root.find("devices/graphics")
+        if graphic is None:
+            return False
         if keymap != "auto":
             graphic.set("keymap", keymap)
         else:
             with contextlib.suppress(Exception):
                 graphic.attrib.pop("keymap")
 
-        newxml = ElementTree.tostring(root).decode()
+        newxml = etree.tostring(root).decode()
         self._defineXML(newxml)
 
-    def get_console_keymap(self):
+    def get_console_keymap(self, config=False):
         return (
             util.get_xml_path(
-                self._XMLDesc(VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics/@keymap"
+                self._XMLDesc(PERSISTENT_XML if config else VIR_DOMAIN_XML_SECURE), "/domain/devices/graphics[1]/@keymap"
             )
             or ""
         )
 
-    def get_video_model(self):
+    def get_video_model(self, config=False):
         """:return only primary video card"""
-        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        xml = self._XMLDesc(PERSISTENT_XML if config else VIR_DOMAIN_XML_SECURE)
         tree = etree.fromstring(xml)
         video_models = tree.xpath("/domain/devices/video/model")
         for model in video_models:
@@ -1168,38 +1771,42 @@ class wvmInstance(wvmConnect):
                 return model.get("type")
 
     def set_video_model(self, model):
-        """Changes only primary video card"""
-        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        """Changes only the primary video card, which stays the primary one;
+        the old model's memory and head settings go with it."""
+        xml = self._XMLDesc(PERSISTENT_XML)
         tree = etree.fromstring(xml)
         video_models = tree.xpath("/domain/devices/video/model")
-        video_xml = "<model type='{}'/>".format(model)
-        for model in video_models:
-            if model.get("primary") == "yes" or len(video_models) == 1:
-                parent = model.getparent()
-                parent.remove(model)
-                parent.append(etree.fromstring(video_xml))
+        for video_model in video_models:
+            if video_model.get("primary") == "yes" or len(video_models) == 1:
+                parent = video_model.getparent()
+                parent.remove(video_model)
+                new_model = etree.SubElement(parent, "model", type=model)
+                if video_model.get("primary"):
+                    new_model.set("primary", video_model.get("primary"))
                 self._defineXML(etree.tostring(tree).decode())
+                return
+        raise util.OperationError(gettext_noop("The VM has no video card"))
 
     def resize_cpu(self, cur_vcpu, vcpu):
-        """
-        Function change ram and cpu on instance.
-        """
-        is_vcpus_enabled = self.get_vcpus()
-        if is_vcpus_enabled:
-            self.set_vcpu_hotplug(False)
-
-        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
-        tree = etree.fromstring(xml)
-
+        """The current and maximum vCPUs of a shut-off VM. A CPU topology
+        fixes the maximum: libvirt refuses another one."""
+        topology = etree.fromstring(self._XMLDesc(PERSISTENT_XML)).find("cpu/topology")
+        if topology is not None:
+            count = math.prod(int(value) for key, value in topology.attrib.items()
+                              if key in ("sockets", "dies", "clusters", "cores", "threads"))
+            if count != int(vcpu):
+                raise util.OperationError(gettext_noop("The VM's CPU topology has %(count)s vCPUs: change it in the "
+                                                       "XML editor to set another maximum"), count=count)
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
         vcpu_elem = tree.find("vcpu")
         vcpu_elem.text = vcpu
         vcpu_elem.set("current", cur_vcpu)
-
-        new_xml = etree.tostring(tree).decode()
-        self._defineXML(new_xml)
-
-        if is_vcpus_enabled:
-            self.set_vcpu_hotplug(True, int(cur_vcpu))
+        # hotplug settings are of the old count: made again for the new one,
+        # in the same definition, so a refused one leaves them as they were
+        hotplug = tree.find("vcpus")
+        if hotplug is not None:
+            tree.replace(hotplug, self._hotplug_vcpus(int(cur_vcpu)))
+        self._defineXML(etree.tostring(tree).decode())
 
     def resize_mem(self, cur_memory, memory):
         """
@@ -1207,13 +1814,20 @@ class wvmInstance(wvmConnect):
         """
         memory = int(memory) * 1024
         cur_memory = int(cur_memory) * 1024
-        # if dom is running change only ram
-        if self.get_status() == VIR_DOMAIN_RUNNING:
+        # an active VM (running, paused, ...) changes only its current memory;
+        # a paused guest's balloon driver applies it once it is resumed
+        if self.instance.isActive():
+            # the next start's maximum may differ (set with virsh --config):
+            # checked before the running VM changes
+            pending = int(etree.fromstring(self._XMLDesc(PERSISTENT_XML)).findtext("memory"))
+            if cur_memory > pending:
+                raise util.OperationError(gettext_noop("The VM's next start has a maximum memory of %(max)s MiB"),
+                                          max=pending // 1024)
             self.set_memory(cur_memory, VIR_DOMAIN_AFFECT_LIVE)
             self.set_memory(cur_memory, VIR_DOMAIN_AFFECT_CONFIG)
             return
 
-        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        xml = self._XMLDesc(PERSISTENT_XML)
         tree = etree.fromstring(xml)
 
         mem_elem = tree.find("memory")
@@ -1225,178 +1839,609 @@ class wvmInstance(wvmConnect):
         self._defineXML(new_xml)
 
     def resize_disk(self, disks):
-        """
-        Function change disks on vds.
-        """
-        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
-        tree = etree.fromstring(xml)
-
+        """Grow disks. QEMU holds the lock of a running domain's image files and
+        grows them itself; other volumes are grown by the storage pool first,
+        then QEMU is told the new size. A pool that cannot resize volumes (LVM
+        for one) raises VIR_ERR_NO_SUPPORT before anything changes."""
+        active = self.instance.isActive()
         for disk in disks:
-            source_dev = disk["path"]
-            vol = self.get_volume_by_path(source_dev)
-            vol.resize(disk["size_new"])
+            vol = self.get_volume_by_path(disk["path"])
+            if not active or vol.info()[0] != VIR_STORAGE_VOL_FILE:
+                vol.resize(disk["size_new"])
+            if active:
+                self.instance.blockResize(disk["path"], disk["size_new"], VIR_DOMAIN_BLOCK_RESIZE_BYTES)
 
-        new_xml = etree.tostring(tree).decode()
-        self._defineXML(new_xml)
+    def refresh_iso_pools(self):
+        """Refresh the active pools, so that an image copied to one by hand
+        is listed by get_iso_media. A pool that fails does not stop the
+        others; returns the errors, by pool name."""
+        failed = {}
+        for pool in self.wvm.listAllStoragePools(VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE):
+            try:
+                pool.refresh(0)
+            except libvirtError as err:
+                failed[pool.name()] = err
+        return failed
 
     def get_iso_media(self):
+        """The .iso volumes libvirt knows in the active pools; one copied in
+        by hand is known after refresh_iso_pools."""
         iso = []
-        storages = self.get_storages(only_actives=True)
-        for storage in storages:
-            stg = self.get_storage(storage)
-            if stg.info()[0] != 0:
-                with contextlib.suppress(Exception):
-                    stg.refresh(0)
-
-                for img in stg.listVolumes():
-                    if img.lower().endswith(".iso"):
-                        iso.append(img)
+        for pool in self.wvm.listAllStoragePools(VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE):
+            try:
+                names = pool.listVolumes()
+            except libvirtError:  # stopped or removed meanwhile
+                continue
+            iso.extend(name for name in names if name.lower().endswith(".iso"))
         return iso
 
-    def delete_all_disks(self):
-        self.refresh_instance_pools()
-        disks = self.get_disk_devices()
-        for disk in disks:
-            vol = self.get_volume_by_path(disk.get("path"))
-            vol.delete(0)
+    def paths_used_by_other_domains(self, own=()):
+        """Paths another domain uses (see paths_in_use). The volumes in own
+        are this VM's: their backing files do not count."""
+        return self.paths_in_use(self.instance.UUIDString(), own)
 
-    def _snapshotCreateXML(self, xml, flag):
-        self.instance.snapshotCreateXML(xml, flag)
+    def split_disk_paths_by_use(self, elsewhere=None):
+        """This VM's disk paths, split into (only this VM, also used by another
+        domain). Its disks are those it runs with and those of its next start.
+        With external snapshots, the files below a disk that the snapshots
+        were taken on, and their memory files, are the VM's too, and so is its
+        cloud-init seed, in a CD-ROM drive or ejected. elsewhere(own): the
+        paths of these that other hosts use."""
+        self.refresh_instance_pools()
+        own = []
+        for disk in self.get_disk_devices() + self.get_disk_devices(config=True):
+            if disk["path"] and disk["path"] not in own:
+                own.append(disk["path"])
+        own += self._snapshot_chain_files(own)
+        seed = self._seed_path()
+        if seed:
+            own.append(seed)
+        used_elsewhere = self.paths_used_by_other_domains(own)
+        if elsewhere:
+            used_elsewhere |= elsewhere(own)
+        # a kept file keeps the files below it
+        for path in [path for path in own if path in used_elsewhere]:
+            while (path := self.backing_path(path)) and path not in used_elsewhere:
+                used_elsewhere.add(path)
+        def below(path):
+            """How many files the path grows from: an overlay is deleted before
+            the files it needs, so one that cannot be deleted keeps them."""
+            seen = set()
+            while (path := self.backing_path(path)) and path not in seen:
+                seen.add(path)
+            return len(seen)
+
+        return (
+            sorted((path for path in own if path not in used_elsewhere), key=below, reverse=True),
+            [path for path in own if path in used_elsewhere],
+        )
+
+    def _seed_path(self):
+        """The path of this VM's cloud-init seed (cidata-<uuid>.iso) in an active pool, or None."""
+        name = f"cidata-{self.get_uuid()}.iso"
+        for pool in self.wvm.listAllStoragePools(VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE):
+            vol = self._find_volume(pool, name)
+            if vol is not None:
+                return vol.path()
+        return None
+
+    def _snapshot_chain_files(self, tops):
+        """The files of this VM's external snapshots that these disk images
+        grow from or that grow from them: the backing files snapshots were
+        taken on, down the chain, the overlays of snapshots off the chain
+        (newer ones kept after a revert), and the snapshots' memory files. A
+        backing file the VM started from (a template) is no snapshot point
+        and ends the chain; an overlay that does not grow from the chain (a
+        disk detached since) stays."""
+        points, overlays, memory = set(), set(), []
+        for snap in self.instance.listAllSnapshots(VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL):
+            tree = etree.fromstring(snap.getXMLDesc(0))
+            memory += tree.xpath("memory/@file")
+            overlays.update(tree.xpath("disks/disk/source/@file"))
+            saved = self._saved_definition(tree)
+            if saved is not None:
+                points.update(self._disk_sources(saved).values())
+        files = list(tops)
+        for path in tops:
+            while (path := self.backing_path(path)) in points and path not in files:
+                files.append(path)
+        grew = True
+        while grew:
+            grew = False
+            for top in overlays.difference(files):
+                if top in files:  # reached by a branch in this pass
+                    continue
+                branch, path = [top], top
+                while (path := self.backing_path(path)) in points | overlays and path not in files:
+                    branch.append(path)
+                if path in files:
+                    files += branch
+                    grew = True
+        return files[len(tops):] + memory
 
     def create_snapshot(self, name, desc=None):
+        self._check_snapshot_state()
+        if self.instance.snapshotListNames(VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL):
+            raise util.OperationError(gettext_noop("The VM has external snapshots; internal snapshots cannot be mixed with them"))
         state = "shutoff" if self.get_status() == 5 else "running"
+        name_esc = util.xml_escape(name)
+        desc_esc = util.xml_escape(desc) if desc else ""
         xml = """<domainsnapshot>
                      <name>%s</name>
                      <description>%s</description>
                      <state>%s</state>
                      <creationTime>%d</creationTime>""" % (
-            name,
-            desc,
+            name_esc,
+            desc_esc,
             state,
             time.time(),
         )
-        self.change_snapshot_xml()
+        # libvirt decides whether this firmware/NVRAM supports internal
+        # snapshots; the domain definition is never rewritten for it.
         xml += self._XMLDesc(VIR_DOMAIN_XML_SECURE)
         xml += """<active>0</active>
                   </domainsnapshot>"""
-        self._snapshotCreateXML(xml, 0)
-        self.recover_snapshot_xml()
+        self.instance.snapshotCreateXML(xml, 0)
 
-    def change_snapshot_xml(self):
-        xml_temp = self._XMLDesc(VIR_DOMAIN_XML_SECURE).replace(
-            "<loader readonly='yes' type='pflash'>",
-            "<loader readonly='yes' type='rom'>",
+    def create_external_snapshot(self, name, desc="", memory=False, quiesce=False, free_percent=10, free_min_gib=1):
+        """A disk-only snapshot, or with memory too (running VMs only). Every
+        disk gets a libvirt-named overlay next to it; the memory file goes
+        next to the first disk. quiesce: the guest agent freezes the guest's
+        file systems for a disk-only snapshot of a running VM (libvirt
+        accepts it only without memory, which keeps the whole state anyway).
+        free_percent, free_min_gib: the free space each pool keeps (see
+        _check_snapshot_space)."""
+        check_snapshot_name(name)
+        if quiesce:
+            if memory:
+                raise util.OperationError(gettext_noop("A snapshot with memory is not quiesced; it keeps the whole guest state"))
+            if self.get_status() != 1:
+                raise util.OperationError(gettext_noop("Only a running VM's file systems can be frozen"))
+            if not self.is_agent_ready():
+                raise util.OperationError(gettext_noop("The QEMU guest agent is not connected; it freezes the file systems"))
+        self._check_snapshot_state()
+        if self.instance.snapshotListNames(VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL):
+            raise util.OperationError(gettext_noop("The VM has internal snapshots; external snapshots cannot be mixed with them"))
+        if name in self.instance.snapshotListNames(0):
+            raise util.OperationError(gettext_noop("A snapshot named %(name)s already exists"), name=name)
+        if self.instance.hasCurrentSnapshot(0):
+            if self.instance.snapshotCurrent(0).numChildren(0):
+                raise util.OperationError(gettext_noop("Newer snapshots exist after the last revert; delete them first"))
+        elif self.instance.snapshotListNames(0):
+            # only after changes outside WebVirtCloud; a create would start a second root
+            raise util.OperationError(gettext_noop("No snapshot is current; revert to a snapshot first"))
+        tree = etree.fromstring(self._XMLDesc(0))
+        for disk in tree.xpath("devices/disk"):
+            dev = disk.xpath("string(target/@dev)")
+            if disk.get("device") in ("cdrom", "floppy"):
+                if disk.xpath("source/@file|source/@dev|source/@name"):
+                    raise util.OperationError(gettext_noop("Eject the media from %(dev)s first"), dev=dev)
+            elif disk.get("type") != "file":
+                raise util.OperationError(gettext_noop("Disk %(dev)s is not a file; external snapshots need file disks"), dev=dev)
+        disks = list(self._disk_sources(tree).values())
+        # free space, and the top overlays, are known to the pools only after
+        # a refresh; nothing has changed yet when it fails
+        try:
+            self.refresh_instance_pools()
+        except libvirtError as err:
+            raise util.OperationError(
+                gettext_noop("The storage pools could not be refreshed, so their free space is unknown: %(err)s"), err=err
+            ) from None
+        memory_xml, memory_pool = self._snapshot_memory(name, disks) if memory else ("", None)
+        self._check_snapshot_space(disks, memory_pool, free_percent, free_min_gib)
+        xml = (
+            f"<domainsnapshot><name>{name}</name>"
+            f"<description>{util.xml_escape(desc)}</description>{memory_xml}</domainsnapshot>"
         )
-        self._defineXML(xml_temp)
+        flags = VIR_DOMAIN_SNAPSHOT_CREATE_ATOMIC
+        if not memory:
+            flags |= VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY
+        if quiesce:
+            self.ping_agent()
+            flags |= VIR_DOMAIN_SNAPSHOT_CREATE_QUIESCE
+        self.instance.snapshotCreateXML(xml, flags)
+        self._refresh_pools_after_snapshot()
 
-    def recover_snapshot_xml(self):
-        xml_temp = self._XMLDesc(VIR_DOMAIN_XML_SECURE).replace(
-            "<loader readonly='yes' type='rom'>",
-            "<loader readonly='yes' type='pflash'>",
-        )
-        self._defineXML(xml_temp)
+    def _snapshot_memory(self, name, disks):
+        """The <memory> element of a snapshot that saves memory, and the
+        storage pool its file goes into: the pool of the first disk."""
+        if self.get_status() != 1:
+            raise util.OperationError(gettext_noop("Memory is saved only from a running VM"))
+        if not disks:
+            raise util.OperationError(gettext_noop("The VM has no disk to keep its memory next to"))
+        try:
+            pool = self.get_volume_by_path(disks[0]).storagePoolLookupByVolume()
+        except libvirtError:
+            raise util.OperationError(gettext_noop("%(disk)s is not in a storage pool; memory is saved only into one"),
+                                      disk=disks[0]) from None
+        path = os.path.join(os.path.dirname(disks[0]), f"{self.get_uuid()}.{name}.mem")
+        return f"<memory snapshot='external' file='{util.xml_escape(path)}'/>", pool.name()
 
-    def create_external_snapshot(self, name, date=None, desc=None):
-        creation_time = time.time()
-        state = "shutoff" if self.get_status() == 5 else "running"
-        #<seclabel type='none' model='dac' relabel='no'/>
-        xml = """<domainsnapshot>
-                     <name>%s</name>
-                     <description>%s</description>
-                     <state>%s</state>
-                     <creationTime>%d</creationTime>
-                     """ % (
-            name,
-            desc,
-            state,
-            creation_time,
-        )
+    def _check_snapshot_space(self, disks, memory_pool, free_percent, free_min_gib):
+        """Each storage pool with a disk of the VM keeps free_percent of the
+        virtual size of those disks free, at least free_min_gib GiB, and the
+        pool of the memory file the VM's memory on top. The
+        overlays grow as the guest writes, and a delete merges them down.
+        This is checked before the snapshot only; nothing is reserved. A
+        disk in no pool is not checked."""
+        needed, pools = {}, {}
+        for path in disks:
+            try:
+                vol = self.get_volume_by_path(path)
+            except libvirtError as err:
+                if err.get_error_code() != VIR_ERR_NO_STORAGE_VOL:
+                    raise
+                continue
+            pool = vol.storagePoolLookupByVolume()
+            pools[pool.name()] = pool
+            needed[pool.name()] = needed.get(pool.name(), 0) + vol.info()[1] * free_percent / 100
+        for name in needed:
+            needed[name] = max(needed[name], free_min_gib * 1024**3)
+        if memory_pool:
+            needed[memory_pool] += self.get_cur_memory() * 1024 * 1024
+        for name, size in needed.items():
+            free = pools[name].info()[3]
+            if free < size:
+                raise util.OperationError(gettext_noop(
+                    "Storage pool %(pool)s has %(free).1f GiB free; the snapshot needs %(size).1f GiB (%(percent)g%% "
+                    "of the VM's disks in it, at least %(minimum)g GiB, and the memory if it is saved)"),
+                    pool=name, free=free / 1024**3, size=size / 1024**3, percent=free_percent, minimum=free_min_gib)
 
-        self.change_snapshot_xml()
-        xml += self._XMLDesc(VIR_DOMAIN_XML_SECURE)
-        xml += """<active>0</active>
-                  </domainsnapshot>"""
+    def check_external_revert(self, name):
+        """Refuses a revert that cannot work, before anything changes; returns
+        the snapshot."""
+        snap = self._snapshot(name, external=True)
+        self._check_snapshot_state()
+        tree = etree.fromstring(snap.getXMLDesc(0))
+        # Snapshots of UEFI VMs taken before WebVirtCloud used libvirt's
+        # snapshot API saved the loader switched to rom; a revert would
+        # restore that.
+        saved = self._saved_definition(tree)
+        saved_loader = saved.xpath("string(os/loader/@type)") if saved is not None else ""
+        current_loader = util.get_xml_path(self._XMLDesc(PERSISTENT_XML), "/domain/os/loader/@type")
+        if saved_loader == "rom" and current_loader == "pflash":
+            raise util.OperationError(
+                gettext_noop("This snapshot was taken by an older version on a UEFI VM and cannot be reverted; delete it instead")
+            )
+        return snap
 
-        self._snapshotCreateXML(xml, VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY)
-        self.refresh_instance_pools()
+    def revert_external_snapshot(self, name):
+        """libvirt returns the disks and the definition to the snapshot's. A
+        disk-only snapshot keeps the VM running, paused or shut off as it is;
+        a snapshot with memory resumes the VM as it was saved. Returns the
+        files libvirt left behind (see _left_behind)."""
+        snap = self.check_external_revert(name)
+        tree = etree.fromstring(snap.getXMLDesc(0))
+        if tree.find("memory[@snapshot='external']") is not None:
+            flags = 0
+        else:
+            flags = {1: VIR_DOMAIN_SNAPSHOT_REVERT_RUNNING, 3: VIR_DOMAIN_SNAPSHOT_REVERT_PAUSED}.get(
+                self.get_status(), 0
+            )
+        before = self._snapshot_files()
+        # libvirt names the new overlays after the second, so a revert within
+        # the second of the previous one finds them taken, after it has
+        # already stopped a running VM; one retry a second later finishes it.
+        try:
+            self.instance.revertToSnapshot(snap, flags)
+        except libvirtError as err:
+            if err.get_error_code() != VIR_ERR_CONFIG_UNSUPPORTED or "already exists" not in str(err):
+                raise
+            time.sleep(1)
+            try:
+                self.instance.revertToSnapshot(snap, flags)
+            except libvirtError as retry_err:
+                failed = (gettext_noop("The revert failed twice; try again in a moment (%(error)s). The VM is running.")
+                          if self.instance.isActive() else
+                          gettext_noop("The revert failed twice; try again in a moment (%(error)s). The VM is shut off."))
+                raise util.OperationError(failed, error=retry_err) from None
+        return self._left_behind(before)
 
-    def get_external_snapshots(self):
-        return self.get_snapshot(VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL)
-    
     def delete_external_snapshot(self, name):
-        disk_info = self.get_disk_devices()
-        for disk in disk_info:
-            target_dev = disk["dev"]
-            backing_file = disk["backing_file"]
-            snap_source_file = disk["path"]
-            self.instance.blockCommit(target_dev, backing_file, snap_source_file,
-                                                  flags=VIR_DOMAIN_BLOCK_COMMIT_DELETE|
-                                                  VIR_DOMAIN_BLOCK_COMMIT_ACTIVE)
-            while True:
-                info = self.instance.blockJobInfo(target_dev, 0)
-                if info.get('cur') == info.get('end'):
-                    self.instance.blockJobAbort(target_dev,flags=VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT)
-                    time.sleep(2)
-                    break
-            # Check again pool for snapshot delta volume; if it exist, remove it manually
-            with contextlib.suppress(libvirtError):
-                vol_snap = self.get_volume_by_path(snap_source_file)
-                pool = vol_snap.storagePoolLookupByVolume()
-                pool.refresh(0)
-                vol_snap.delete(0)
+        """libvirt merges the snapshot's overlays and removes its files.
+        Returns the files it left behind (see _left_behind)."""
+        snap = self._snapshot(name, external=True)
+        self._check_snapshot_state()
+        before = self._snapshot_files()
+        snap.delete(0)
+        return self._left_behind(before)
 
-        snap = self.instance.snapshotLookupByName(name, 0)
-        snap.delete(VIR_DOMAIN_SNAPSHOT_DELETE_METADATA_ONLY)
+    def _snapshot_files(self):
+        """(disks, snapshot files, snapshot points): the files each disk uses
+        by target, the external snapshots' own files (overlays, memory), and
+        the files snapshots were taken on, which libvirt's overlays sit on."""
+        disks = {
+            disk.xpath("string(target/@dev)"): set(disk.xpath(".//source/@file"))
+            for disk in etree.fromstring(self.instance.XMLDesc(0)).xpath("devices/disk[@device='disk']")
+        }
+        own, points = set(), set()
+        for snap in self.instance.listAllSnapshots(VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL):
+            tree = etree.fromstring(snap.getXMLDesc(0))
+            own.update(tree.xpath("disks/disk/source/@file|memory/@file"))
+            saved = self._saved_definition(tree)
+            if saved is not None:
+                points.update(self._disk_sources(saved).values())
+        return disks, own, points | own
 
-    
-    def revert_external_snapshot(self, name, date, desc):
-        snap = self.instance.snapshotLookupByName(name, 0)
-        snap_xml = snap.getXMLDesc(0)
-        snapXML = ElementTree.fromstring(snap_xml)
+    def snapshot_files_state(self):
+        """_snapshot_files as plain lists, recorded before a snapshot change."""
+        disks, own, points = self._snapshot_files()
+        return {"disks": {dev: sorted(files) for dev, files in disks.items()},
+                "own": sorted(own), "points": sorted(points)}
 
-        self.start(flags=VIR_DOMAIN_START_PAUSED) if self.get_status() == 5 else None
-        self.delete_all_disks()
-        
-        self.force_shutdown()
+    def left_behind_since(self, state):
+        """_left_behind from a state recorded by snapshot_files_state."""
+        before = ({dev: set(files) for dev, files in state["disks"].items()}, set(state["own"]), set(state["points"]))
+        return self._left_behind(before)
 
-        snap.delete(VIR_DOMAIN_SNAPSHOT_DELETE_METADATA_ONLY)
+    def _refresh_pools_after_snapshot(self):
+        """Refresh the pools once libvirt has changed the snapshot files. The
+        snapshot operation is done by then, so an error is only logged;
+        returns whether the pools are current."""
+        try:
+            self.refresh_instance_pools()
+        except libvirtError as err:
+            logger.warning("Storage pools of %s were not refreshed after a snapshot change: %s", self.instance.name(), err)
+            return False
+        return True
 
-        disks = snapXML.findall('inactiveDomain/devices/disk')
-        if not disks: disks = snapXML.findall('domain/devices/disk')
-        for disk in disks:
-            self.instance.updateDeviceFlags(ElementTree.tostring(disk).decode("UTF-8"))
-        name = name.replace("s1", "s2")
-        self.create_external_snapshot(name, date, desc)
+    def _left_behind(self, before):
+        """Files libvirt merged or discarded but could not remove: it only
+        logs a warning then (on NFS it removes them as the qemu user, who
+        needs write access to their directory). Only a snapshot's own file or
+        an overlay on a snapshot point counts; a disk a revert detached is
+        kept on purpose, and a file another VM on this host uses (or one
+        below it) is not reported. A file outside every storage pool is not
+        checked, nor is anything when the pools could not be refreshed (a
+        stale pool still lists the removed files) or another VM's files cannot
+        be read (paths_in_use)."""
+        disks, own, points = before
+        if not self._refresh_pools_after_snapshot():
+            return []
+        now_disks, now_own, _ = self._snapshot_files()
+        # only disks still attached: one a revert detached keeps its files,
+        # whatever they sit on
+        attached = set().union(*(files for dev, files in disks.items() if dev in now_disks))
+        left = []
+        for path in sorted((attached | own) - set().union(now_own, *now_disks.values())):
+            try:
+                vol = self.get_volume_by_path(path)
+                if path not in own and util.get_xml_path(vol.XMLDesc(0), "/volume/backingStore/path") not in points:
+                    continue
+            except libvirtError:  # not in a pool, or removed meanwhile
+                continue
+            left.append(path)
+        if left:
+            # another VM on this host may use one; their own backing files
+            # do not keep each other, but a file in use keeps the files below it
+            try:
+                in_use = self.paths_in_use(own=left)
+            except util.InUse:
+                return []
+            for path in [path for path in left if path in in_use]:
+                while (path := self.backing_path(path)) and path not in in_use:
+                    in_use.add(path)
+            left = [path for path in left if path not in in_use]
+        return left
 
-    def get_snapshot(self, flag=VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL|VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL):
+    @staticmethod
+    def _disk_sources(xml):
+        """Target dev -> source file of the disks (not CD-ROMs) in a domain definition."""
+        tree = etree.fromstring(xml) if isinstance(xml, str) else xml
+        return {
+            disk.xpath("string(target/@dev)"): disk.xpath("string(source/@file|source/@dev|source/@name)")
+            for disk in tree.xpath("devices/disk[@device='disk']")
+        }
+
+    @staticmethod
+    def _saved_definition(tree):
+        """The definition a revert to this snapshot restores as the persistent one."""
+        definition = tree.find("inactiveDomain")
+        return tree.find("domain") if definition is None else definition
+
+    def get_snapshot(self, flag):
+        """Snapshots of one kind (VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL or
+        _EXTERNAL), with whether each saved memory, is the current one, and
+        which disks a revert to it detaches: from the persistent definition,
+        and on a running VM from the live one too (a disk hot-plugged only)."""
+        persistent_disks = self._disk_sources(self._XMLDesc(PERSISTENT_XML))
+        live_disks = self._disk_sources(self._XMLDesc(0)) if self.instance.isActive() else {}
         snapshots = []
-        snapshot_list = self.instance.snapshotListNames(flag)
-        for snapshot in snapshot_list:
-            snap = self.instance.snapshotLookupByName(snapshot, 0)
-            snap_description = util.get_xml_path(
-                snap.getXMLDesc(0), "/domainsnapshot/description"
-            )
-            snap_time_create = util.get_xml_path(
-                snap.getXMLDesc(0), "/domainsnapshot/creationTime"
-            )
+        for snap in self.instance.listAllSnapshots(flag):
+            tree = etree.fromstring(snap.getXMLDesc(0))
+            definition = self._saved_definition(tree)
+            saved_disks = self._disk_sources(definition) if definition is not None else {}
+            # a revert of a running VM restores what ran when the snapshot was taken
+            ran = tree.find("domain")
+            saved_live_disks = self._disk_sources(ran) if ran is not None else saved_disks
+            detaches = {dev: path for dev, path in persistent_disks.items() if dev not in saved_disks}
+            for dev, path in live_disks.items():
+                if dev not in saved_live_disks:
+                    detaches.setdefault(dev, path)
             snapshots.append(
                 {
-                    "date": datetime.fromtimestamp(int(snap_time_create)),
-                    "name": snapshot,
-                    "description": snap_description,
+                    # aware: sorted in UTC, shown in the panel's time zone
+                    "date": datetime.fromtimestamp(int(tree.findtext("creationTime")), timezone.utc),
+                    "name": snap.getName(),
+                    "description": tree.findtext("description") or "",
+                    "memory": tree.find("memory[@snapshot='external']") is not None,
+                    "current": bool(snap.isCurrent(0)),
+                    "children": snap.numChildren(0),
+                    "detaches": [{"dev": dev, "path": path} for dev, path in detaches.items()],
                 }
             )
         return snapshots
 
+    def get_snapshot_jobs(self):
+        """Block jobs (snapshot merges) running on the VM's disks. libvirt
+        merges a shut-off VM's snapshot as an offline block job; a libvirt
+        without offline jobs refuses the query for an inactive VM, which
+        means no job."""
+        active = self.instance.isActive()
+        jobs = []
+        for dev in self._disk_sources(self._XMLDesc(0 if active else PERSISTENT_XML)):
+            try:
+                info = self.instance.blockJobInfo(dev, 0)
+            except libvirtError as err:
+                if active or err.get_error_code() != VIR_ERR_OPERATION_INVALID:
+                    raise
+                info = None
+            if info:
+                jobs.append({"dev": dev, "cur": info["cur"], "end": info["end"]})
+        return jobs
+
+    def disk_move_plan(self, dev, pool_name):
+        """Where the disk dev of the VM goes in the pool pool_name of this
+        host: {dev, path, dest, format, pool, volume, running}. Refused with
+        the reason unless the VM is persistent, running, paused or shut off,
+        without snapshots, a saved state or a block job; the disk a raw or
+        qcow2 file of a storage pool, without a backing file, not read-only,
+        shareable or encrypted, the same file in both definitions; the pool
+        one of disk files, another directory, without a file of that name."""
+        dom = self.instance
+        state = dom.info()[0]
+        if not dom.isPersistent() or state not in (VIR_DOMAIN_RUNNING, VIR_DOMAIN_PAUSED, VIR_DOMAIN_SHUTOFF):
+            raise util.OperationError(gettext_noop("A disk moves when its VM is defined and running, paused or shut off"))
+        if dom.snapshotNum(0) or dom.hasManagedSaveImage(0) or self.get_snapshot_jobs():
+            raise util.OperationError(gettext_noop("A disk of a VM with snapshots, a saved state or a running block job does not move"))
+        # the running definition (the persistent one of a shut-off VM) first
+        disks = [ElementTree.fromstring(xml).find(f"devices/disk/target[@dev='{dev}']/..")
+                 for xml in (self._XMLDesc(0), self._XMLDesc(PERSISTENT_XML))]
+        sources = [disk.find("source") if disk is not None else None for disk in disks]
+        disk, source = disks[0], sources[0]
+        if disk is None or disk.get("type") != "file" or disk.get("device") != "disk" or None in sources \
+                or len({s.get("file") for s in sources}) != 1:
+            raise util.OperationError(gettext_noop("%(dev)s is not a disk file of the VM, the same in its running and next start's definition"), dev=dev)
+        driver = disk.find("driver")
+        fmt = driver.get("type") if driver is not None else None
+        if fmt not in ("raw", "qcow2") or disk.find("readonly") is not None or disk.find("shareable") is not None \
+                or disk.find("encryption") is not None or source.find("encryption") is not None:
+            raise util.OperationError(gettext_noop("%(dev)s does not move: only writable raw and qcow2 disks do"), dev=dev)
+        path = source.get("file")
+        try:
+            volume = self.wvm.storageVolLookupByPath(path)
+        except libvirtError as err:
+            if err.get_error_code() != VIR_ERR_NO_STORAGE_VOL:
+                raise
+            raise util.OperationError(gettext_noop("%(dev)s does not move: no storage pool has %(path)s"), dev=dev, path=path) from err
+        if ElementTree.fromstring(volume.XMLDesc(0)).findtext("backingStore/path"):
+            raise util.OperationError(gettext_noop("%(dev)s does not move: it has a backing file"), dev=dev)
+        pools = self.file_pools()
+        if pool_name not in pools:
+            raise util.OperationError(gettext_noop("%(pool_name)s is not an active pool of disk files of this host"), pool_name=pool_name)
+        pool, directory = pools[pool_name]
+        if directory == os.path.dirname(path):
+            raise util.OperationError(gettext_noop("%(dev)s is in pool %(pool_name)s already"), dev=dev, pool_name=pool_name)
+        pool.refresh(0)
+        name = os.path.basename(path)
+        if self._find_volume(pool, name) is not None:
+            raise util.OperationError(gettext_noop("Pool %(pool_name)s already has a file %(name)s"), pool_name=pool_name, name=name)
+        return {"dev": dev, "path": path, "dest": f"{directory}/{name}", "format": fmt, "pool": pool,
+                "volume": volume, "running": state != VIR_DOMAIN_SHUTOFF}
+
+    def move_disk(self, move):
+        """Moves the disk as disk_move_plan planned it. A running or paused
+        VM's is copied by a block job (TRANSIENT_JOB: the VM is persistent)
+        into a file libvirt creates; at the pivot libvirt names the copy in
+        both definitions. A shut-off VM's volume is copied into the pool and
+        the copy named in the definition. The source file stays (see
+        MoveDisk). A failed move deletes the copy it made, unless a
+        definition names it; a file there before the copy began is never
+        ours."""
+        dom, dev, dest = self.instance, move["dev"], move["dest"]
+        made = False
+        try:
+            if move["running"]:
+                xml = (f"<disk type='file'><driver type='{move['format']}'/>"
+                       f"<source file='{util.xml_escape(dest)}'/></disk>")
+                dom.blockCopy(dev, xml, None, VIR_DOMAIN_BLOCK_COPY_TRANSIENT_JOB)
+                made = True
+                while True:  # mirrored once the copy caught up: cur == end
+                    info = dom.blockJobInfo(dev, 0)
+                    if not info:
+                        raise util.OperationError(gettext_noop("The copy of %(dev)s ended before it was complete"), dev=dev)
+                    if info["end"] and info["cur"] == info["end"]:
+                        break
+                    time.sleep(1)
+                dom.blockJobAbort(dev, VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT)
+                move["pool"].refresh(0)  # libvirt made the file past the pool: it lists it now
+            else:
+                move["pool"].createXMLFrom(
+                    f"<volume><name>{util.xml_escape(os.path.basename(dest))}</name>"
+                    f"<capacity>{move['volume'].info()[1]}</capacity>"
+                    f"<target><format type='{move['format']}'/></target></volume>", move["volume"], 0)
+                made = True
+                tree = ElementTree.fromstring(self._XMLDesc(PERSISTENT_XML))
+                tree.find(f"devices/disk/target[@dev='{dev}']/../source").set("file", dest)
+                self._defineXML(ElementTree.tostring(tree, encoding="unicode"))
+        except libvirtError as error:
+            if made:
+                self.remove_disk_copy(move, error)
+            raise
+
+    def disk_named(self, dev):
+        """The files the running (if active) and next start's definitions name for dev."""
+        flags = [0, PERSISTENT_XML] if self.instance.isActive() else [PERSISTENT_XML]
+        files = set()
+        for flag in flags:
+            disk = ElementTree.fromstring(self.instance.XMLDesc(flag)).find(f"devices/disk/target[@dev='{dev}']/..")
+            source = disk.find("source") if disk is not None else None
+            files.add(source.get("file") if source is not None else None)
+        return files
+
+    def remove_disk_copy(self, move, error):
+        """Deletes the copy of a failed move once nothing uses it: no block
+        job runs on the disk and no definition names it. Otherwise it stays,
+        and the error says so."""
+        dev, dest = move["dev"], move["dest"]
+        try:
+            if move["running"] and self.instance.blockJobInfo(dev, 0):
+                self.instance.blockJobAbort(dev, 0)
+            named = dest in self.disk_named(dev)
+            if not named:
+                move["pool"].refresh(0)
+                copy = self._find_volume(move["pool"], os.path.basename(dest))
+                if copy is not None:
+                    copy.delete(0)
+        except libvirtError as cleanup_error:
+            raise util.OperationError(gettext_noop("%(error)s; remove %(dest)s if it is there: %(cleanup_error)s"), error=error, dest=dest, cleanup_error=cleanup_error) from error
+        if named:
+            raise util.OperationError(gettext_noop("%(error)s; the VM may use %(dest)s now: check its disk %(dev)s"), error=error, dest=dest, dev=dev) from error
+
+    def _snapshot(self, name, external):
+        """The named snapshot; a snapshot of the other kind is refused."""
+        flag = VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL if external else VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL
+        if name not in self.instance.snapshotListNames(flag):
+            missing = (gettext_noop("The VM has no external snapshot named %(name)s") if external
+                       else gettext_noop("The VM has no internal snapshot named %(name)s"))
+            raise util.OperationError(missing, name=name)
+        return self.instance.snapshotLookupByName(name, 0)
+
+    def _check_snapshot_state(self):
+        """Refusals shared by snapshot create, revert and delete, internal and
+        external. The internal/external mix is checked only on create, so a
+        VM that is already mixed can still be cleaned up."""
+        if self.instance.hasManagedSaveImage(0):
+            raise util.OperationError(gettext_noop("The VM has a saved state; start it or remove the saved state first"))
+        if self.get_snapshot_jobs():
+            raise util.OperationError(gettext_noop("A snapshot job is still running on this VM; try again when it ends"))
+
     def snapshot_delete(self, snapshot):
-        snap = self.instance.snapshotLookupByName(snapshot, 0)
-        snap.delete(0)
+        self._check_snapshot_state()
+        self._snapshot(snapshot, external=False).delete(0)
+
+    def check_internal_revert(self):
+        """Refuses a revert to an internal snapshot, before anything changes,
+        unless the VM is shut off."""
+        if self.get_status() != 5:
+            raise util.OperationError(gettext_noop("Shut the VM down to revert to an internal snapshot"))
+        self._check_snapshot_state()
 
     def snapshot_revert(self, snapshot):
-        self.change_snapshot_xml()
-        snap = self.instance.snapshotLookupByName(snapshot, 0)
-        self.instance.revertToSnapshot(snap, 0)
-        self.recover_snapshot_xml()
+        """An internal snapshot is reverted to on a shut-off VM; one of a
+        running VM starts it again as it was then."""
+        self.check_internal_revert()
+        self.instance.revertToSnapshot(self._snapshot(snapshot, external=False), 0)
 
     def get_managed_save_image(self):
         return self.instance.hasManagedSaveImage(0)
@@ -1408,13 +2453,14 @@ class wvmInstance(wvmConnect):
         return wvmStorages(self.host, self.login, self.passwd, self.conn)
 
     def refresh_instance_pools(self):
-        disks = self.get_disk_devices()
-        target_paths = set()
-        for disk in disks:
-            disk_path = disk.get("path")
-            target_paths.add(os.path.dirname(disk_path))
+        """Refresh the pools whose target directory holds one of the VM's
+        disks; a disk outside every pool has none to refresh."""
+        target_paths = {os.path.dirname(disk["path"]) for disk in self.get_disk_devices() if disk.get("path")}
+        storages = self.get_wvmStorages()
         for target_path in target_paths:
-            self.get_wvmStorages().get_pool_by_target(target_path).refresh(0)
+            pool = storages.get_pool_by_target(target_path)
+            if pool is not None:
+                pool.refresh(0)
 
     def fix_mac(self, mac):
         if ":" in mac:
@@ -1424,149 +2470,374 @@ class wvmInstance(wvmConnect):
         mac_tuples = [mac[i : i + n] for i in range(0, len(mac), n)]
         return ":".join(mac_tuples)
 
-    def clone_instance(self, clone_data):
-        clone_dev_path = []
+    def _clone_definition(self, clone_data, uuid):
+        """The VM's persistent definition renamed to the clone, with its UUID,
+        title, description and MACs; returns it and the (source, dev) of each
+        disk to copy. Disks without a source are dropped. Raises before
+        anything is allocated."""
+        if clone_data["name"] in self.get_instances():
+            raise ValueError("An instance with the clone name already exists")
 
-        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
-        tree = etree.fromstring(xml)
-        name = tree.find("name")
-        name.text = clone_data["name"]
-        uuid = tree.find("uuid")
-        tree.remove(uuid)
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        # the cloud-init seed holds the VM's own instance-id and hostname: the clone's drive stays empty
+        seed = f"cidata-{tree.findtext('uuid')}.iso"
+        for source in tree.xpath("devices/disk[@device='cdrom']/source"):
+            if os.path.basename(source.get("file") or "") == seed:
+                source.getparent().remove(source)
+        tree.find("name").text = clone_data["name"]
+        uuid_el = tree.find("uuid")
+        if uuid_el is None:
+            uuid_el = etree.SubElement(tree, "uuid")
+        uuid_el.text = uuid
+        # libvirt refuses an SMBIOS UUID other than the domain's
+        for entry in tree.xpath("sysinfo/system/entry[@name='uuid']"):
+            entry.text = uuid
+        self._set_options(
+            tree,
+            {
+                "title": clone_data.get("clone-title", ""),
+                "description": clone_data.get("clone-description", ""),
+            },
+        )
 
-        options = {
-            "title": clone_data.get("clone-title", ""),
-            "description": clone_data.get("clone-description", ""),
-        }
-        self._set_options(tree, options)
+        disks = []
+        for disk in list(tree.findall("devices/disk")):
+            if disk.get("device") != "disk":
+                continue
+            source = disk.find("source")
+            if source is None or not any(source.get(key) for key in ("file", "dev", "name", "volume")):
+                disk.getparent().remove(disk)
+                continue
+            supported = source.get("file") or source.get("dev") or (
+                source.get("protocol") == "rbd" and source.get("name")
+            )
+            target = disk.find("target")
+            dev = target.get("dev") if target is not None else None
+            if not supported or not dev or not clone_data.get("disk-" + dev):
+                raise ValueError("Cannot clone a disk without a supported source and destination")
+            disks.append((source, dev))
 
-        src_nvram_path = self.get_nvram()
-        if src_nvram_path:
-            # Change XML for nvram
-            nvram = tree.find("os/nvram")
-            nvram.getparent().remove(nvram)
+        # the clone gets a new, empty TPM (the clone form says so): an emulated
+        # one without the VM's state path; a host's or another process's would be shared
+        for backend in tree.xpath("devices/tpm/backend"):
+            if backend.get("type") != "emulator":
+                raise util.OperationError(gettext_noop("A VM with a host's or an external TPM is not cloned; remove it first"))
+            for source in backend.findall("source"):
+                backend.remove(source)
 
-            # NVRAM CLONE: create pool if nvram is not in a pool. then clone it
-            src_nvram_name = os.path.basename(src_nvram_path)
-            nvram_dir = os.path.dirname(src_nvram_path)
-            nvram_pool_name = os.path.basename(nvram_dir)
-            try:
-                self.get_volume_by_path(src_nvram_path)
-            except libvirtError:
-                stg_conn = self.get_wvmStorages()
-                stg_conn.create_storage("dir", nvram_pool_name, None, nvram_dir)
-
-            new_nvram_name = f"{clone_data['name']}_VARS"
-            nvram_stg = self.get_wvmStorage(nvram_pool_name)
-            nvram_stg.clone_volume(src_nvram_name, new_nvram_name, file_suffix="fd")
-
+        # a host device is one VM's: the clone gets none (the clone form says so)
+        for hostdev in tree.findall("devices/hostdev"):
+            hostdev.getparent().remove(hostdev)
         for num, net in enumerate(tree.findall("devices/interface")):
-            elm = net.find("mac")
-            mac_address = self.fix_mac(clone_data["clone-net-mac-" + str(num)])
-            elm.set("address", mac_address)
+            if net.get("type") == "hostdev":  # numbered as the form numbers the VM's NICs
+                net.getparent().remove(net)
+                continue
+            mac = clone_data.get(f"clone-net-mac-{num}")
+            if not mac:
+                raise ValueError(f"No MAC address for network interface {num}")
+            net.find("mac").set("address", self.fix_mac(mac))
+            # a filter's parameters of the source's own addresses would block the clone's traffic:
+            # its MAC is the clone's, its IP the one it learns (clean-traffic's default), unless
+            # learning is off; libvirt learns no IPv6 address, so IPV6 stays for the admin to change
+            for parameter in net.xpath("filterref/parameter[@name='MAC']"):
+                parameter.set("value", self.fix_mac(mac))
+            if not net.xpath("filterref/parameter[@name='CTRL_IP_LEARNING'][@value='none']"):
+                for parameter in net.xpath("filterref/parameter[@name='IP']"):
+                    parameter.getparent().remove(parameter)
 
-        for disk in tree.findall("devices/disk"):
-            if disk.get("device") == "disk":
-                elm = disk.find("target")
-                device_name = elm.get("dev")
-                if device_name:
-                    target_file = clone_data["disk-" + device_name]
-                    meta_prealloc = False
-                    with contextlib.suppress(Exception):
-                        meta_prealloc = clone_data["meta-" + device_name]
+        # the clone's console gets a password of its own: one copied from the source would open both
+        for graphics in tree.findall("devices/graphics[@type='vnc']"):
+            graphics.set("passwd", util.randomPasswd(8))  # the length VNC allows
+            graphics.attrib.pop("passwdValidTo", None)  # an expired source's would leave it unusable
 
-                    elm.set("dev", device_name)
+        nvram = tree.find("os/nvram")
+        if nvram is not None and nvram.get("type", "file") != "file":
+            raise util.OperationError(gettext_noop("Cannot clone a VM whose NVRAM is not a file"))
+        return tree, disks
 
-                elm = disk.find("source")
-                source_file = elm.get("file")
-                if source_file:
-                    clone_dev_path.append(source_file)
-                    clone_path = os.path.join(os.path.dirname(source_file), target_file)
-                    elm.set("file", clone_path)
+    def _clone_volume_xml(self, name, capacity, vol_format, owner_uid, owner_gid):
+        return f"""<volume>
+                      <name>{util.xml_escape(name)}</name>
+                      <capacity>{capacity}</capacity>
+                      <allocation>0</allocation>
+                      <target>
+                        <format type='{vol_format}'/>
+                        <permissions>
+                          <owner>{owner_uid}</owner>
+                          <group>{owner_gid}</group>
+                          <mode>0644</mode>
+                          <label>virt_image_t</label>
+                        </permissions>
+                        <compat>1.1</compat>
+                        <features><lazy_refcounts/></features>
+                      </target>
+                    </volume>"""
 
-                    vol = self.get_volume_by_path(source_file)
-                    vol_format = util.get_xml_path(
-                        vol.XMLDesc(0), "/volume/target/format/@type"
-                    )
+    def define_clone(self, clone_data, uuid, paths, on_nvram=None):
+        """Defines the clone with each copied disk's source set from paths
+        ({dev: new path}) and its own copy of the VM's UEFI variables (NVRAM),
+        whose path on_nvram is given once made. The NVRAM copy is removed if
+        the definition fails. Returns the clone's UUID."""
+        tree, disks = self._clone_definition(clone_data, uuid)
+        for source, dev in disks:
+            source.set("file" if source.get("file") else "dev" if source.get("dev") else "name", paths[dev])
 
-                    if vol_format == "qcow2" and meta_prealloc:
-                        meta_prealloc = True
+        # the UEFI variables: a path as text, or a <source file=...> since libvirt 8.5
+        nvram = tree.find("os/nvram")
+        nvram_source = nvram.find("source") if nvram is not None else None
+        nvram_path = None
+        if nvram is not None:
+            nvram_path = nvram_source.get("file") if nvram_source is not None else (nvram.text or "").strip()
 
-                    vol_clone_xml = f"""
-                                    <volume>
-                                        <name>{target_file}</name>
-                                        <capacity>0</capacity>
-                                        <allocation>0</allocation>
-                                        <target>
-                                            <format type='{vol_format}'/>
-                                            <permissions>
-                                                <owner>{clone_data['disk_owner_uid']}</owner>
-                                                <group>{clone_data['disk_owner_gid']}</group>
-                                                <mode>0644</mode>
-                                                <label>virt_image_t</label>
-                                            </permissions>
-                                            <compat>1.1</compat>
-                                            <features>
-                                                <lazy_refcounts/>
-                                            </features>
-                                        </target>
-                                    </volume>"""
-
-                    stg = vol.storagePoolLookupByVolume()
-                    stg.createXMLFrom(vol_clone_xml, vol, meta_prealloc)
-
-                source_protocol = elm.get("protocol")
-                if source_protocol == "rbd":
-                    source_name = elm.get("name")
-                    clone_name = "%s/%s" % (os.path.dirname(source_name), target_file)
-                    elm.set("name", clone_name)
-
-                    vol = self.get_volume_by_path(source_name)
-                    vol_format = util.get_xml_path(
-                        vol.XMLDesc(0), "/volume/target/format/@type"
-                    )
-
-                    vol_clone_xml = f"""
-                                    <volume type='network'>
-                                        <name>{target_file}</name>
-                                        <capacity>0</capacity>
-                                        <allocation>0</allocation>
-                                        <target>
-                                            <format type='{vol_format}'/>
-                                        </target>
-                                    </volume>"""
-                    stg = vol.storagePoolLookupByVolume()
-                    stg.createXMLFrom(vol_clone_xml, vol, meta_prealloc)
-
-                source_dev = elm.get("dev")
-                if source_dev:
-                    clone_path = os.path.join(os.path.dirname(source_dev), target_file)
-                    elm.set("dev", clone_path)
-
-                    vol = self.get_volume_by_path(source_dev)
-                    stg = vol.storagePoolLookupByVolume()
-
-                    vol_name = util.get_xml_path(vol.XMLDesc(0), "/volume/name")
-                    pool_name = util.get_xml_path(stg.XMLDesc(0), "/pool/name")
-
-                    storage = self.get_wvmStorage(pool_name)
-                    storage.clone_volume(vol_name, target_file)
-
-        self._defineXML(ElementTree.tostring(tree).decode())
-
-        return self.get_instance(clone_data["name"]).UUIDString()
-
-    def get_bridge_name(self, source, source_type="net"):
-        if source_type == "iface":
-            iface = self.get_iface(source)
-            bridge_name = iface.name()
-        else:
-            net = self.get_network(source)
+        if not nvram_path:
+            return self._defineXML(etree.tostring(tree).decode()).UUIDString()
+        # the clone starts with the VM's UEFI variables: boot entries, enrolled keys
+        if os.path.dirname(nvram_path) == NVRAM_DIR:
+            pools = self._nvram_pool()
+        else:  # a volume of a pool; libvirtError when no pool holds it
+            pools = contextlib.nullcontext(self.get_volume_by_path(nvram_path).storagePoolLookupByVolume())
+        with pools as pool:
+            original = pool.storageVolLookupByName(os.path.basename(nvram_path))
+            # same format, owner and mode as the original: the domain names the format,
+            # and qemu may run without libvirt changing the file's owner
+            target = etree.fromstring(original.XMLDesc(0)).find("target")
+            volume = etree.Element("volume")
+            etree.SubElement(volume, "name").text = clone_data["name"] + "_VARS" + os.path.splitext(nvram_path)[1]
+            etree.SubElement(volume, "capacity").text = "0"
+            copy_target = etree.SubElement(volume, "target")
+            for tag in ("format", "permissions"):
+                if target.find(tag) is not None:
+                    copy_target.append(target.find(tag))
+            copy = pool.createXMLFrom(etree.tostring(volume).decode(), original, 0)
+            if on_nvram is not None:
+                on_nvram(copy.path())
+            if nvram_source is not None:
+                nvram_source.set("file", copy.path())
+            else:
+                nvram.text = copy.path()
             try:
-                bridge_name = net.bridgeName()
-            except libvirtError:
-                bridge_name = None
-        return bridge_name
+                return self._defineXML(etree.tostring(tree).decode()).UUIDString()
+            except Exception as err:
+                try:
+                    copy.delete(0)
+                except libvirtError:
+                    raise util.OperationError(
+                        gettext_noop("Clone failed (%(err)s); remove these copies by hand: %(path)s"), err=err, path=copy.path()
+                    ) from err
+                raise
+
+    def clone_instance(self, clone_data, uuid, on_nvram=None):
+        """Copy a shut-off VM, with its disks and UEFI variables (NVRAM; see
+        define_clone for on_nvram). Inputs are checked before anything is
+        allocated, and on failure only the volumes this call created are
+        removed. Returns the clone's UUID."""
+        if self.get_status() != 5:
+            # A running guest keeps writing while its disks are copied.
+            raise util.OperationError(gettext_noop("Shut the VM down before cloning it"))
+        _, disks = self._clone_definition(clone_data, uuid)
+
+        paths = {}  # dev: path of its copy
+        created = []  # paths of volumes this call created
+        try:
+            for source, dev in disks:
+                target_file = clone_data["disk-" + dev]
+                meta_prealloc = bool(clone_data.get("meta-" + dev))
+                if source.get("file"):
+                    vol = self.get_volume_by_path(source.get("file"))
+                    vol_format = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
+                    new_vol = vol.storagePoolLookupByVolume().createXMLFrom(
+                        self._clone_volume_xml(
+                            target_file, 0, vol_format, clone_data["disk_owner_uid"], clone_data["disk_owner_gid"]
+                        ),
+                        vol,
+                        meta_prealloc and vol_format == "qcow2",
+                    )
+                    created.append(new_vol.path())
+                    paths[dev] = new_vol.path()
+                elif source.get("protocol") == "rbd":
+                    vol = self.get_volume_by_path(source.get("name"))
+                    vol_format = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
+                    new_vol = vol.storagePoolLookupByVolume().createXMLFrom(
+                        f"""<volume type='network'>
+                              <name>{target_file}</name>
+                              <capacity>0</capacity>
+                              <allocation>0</allocation>
+                              <target><format type='{vol_format}'/></target>
+                            </volume>""",
+                        vol,
+                        meta_prealloc,
+                    )
+                    created.append(new_vol.path())
+                    paths[dev] = f"{os.path.dirname(source.get('name'))}/{target_file}"
+                else:
+                    vol = self.get_volume_by_path(source.get("dev"))
+                    pool_name = util.get_xml_path(vol.storagePoolLookupByVolume().XMLDesc(0), "/pool/name")
+                    storage = self.get_wvmStorage(pool_name)
+                    name = storage.clone_volume(vol.name(), target_file)
+                    new_path = storage.get_volume(name).path()
+                    created.append(new_path)
+                    paths[dev] = new_path
+
+            return self.define_clone(clone_data, uuid, paths, on_nvram)
+        except Exception as err:
+            leftovers = []
+            for path in reversed(created):
+                try:
+                    self.get_volume_by_path(path).delete(0)
+                except libvirtError:
+                    leftovers.append(path)
+            if leftovers:
+                raise util.OperationError(gettext_noop("Clone failed (%(err)s); remove these copies by hand: %(leftovers)s"), err=err, leftovers=', '.join(leftovers)) from err
+            raise
+
+    def live_clone_targets(self, clone_data, free_percent=10, free_min_gib=1):
+        """Refuses a live clone that cannot work, before anything is
+        allocated; returns the new volume of each copied disk, in disk order:
+        in the source volume's pool, at its virtual capacity and format. Each
+        pool keeps the copies plus free_percent of them, at least
+        free_min_gib GiB, free (the snapshots' rule); checked only, nothing
+        is reserved."""
+        if self.wvm.getLibVersion() < LIVE_CLONE_MIN_LIBVIRT:
+            raise util.OperationError(gettext_noop("Live clone needs libvirt 11.10 or later; shut the VM down to clone it"))
+        tree, disks = self._clone_definition(clone_data, "")
+        if tree.find("devices/tpm") is not None:
+            raise util.OperationError(gettext_noop("A VM with a TPM is cloned only shut down"))
+        for source, dev in disks:
+            if not source.get("file"):
+                raise util.OperationError(gettext_noop("Disk %(dev)s is not a local file; shut the VM down to clone it"), dev=dev)
+            if source.getparent().find("shareable") is not None:
+                raise util.OperationError(gettext_noop("Disk %(dev)s is shareable; shut the VM down to clone it"), dev=dev)
+        # the backup copies the running disks: one the next start changes would give the clone the wrong data
+        live = etree.fromstring(self._XMLDesc(0))
+        for source, dev in disks:
+            if live.xpath("devices/disk[target/@dev=$dev]/source/@file", dev=dev) != [source.get("file")]:
+                raise util.OperationError(gettext_noop("Disk %(dev)s changes at the next start; shut the VM down to clone it"), dev=dev)
+        if self.instance.jobInfo()[0] != VIR_DOMAIN_JOB_NONE:
+            raise util.OperationError(gettext_noop("Another job is running on the VM; clone it when that ends"))
+
+        targets, pools, copied = [], {}, {}
+        for source, dev in disks:
+            vol = self.get_volume_by_path(source.get("file"))
+            pool = vol.storagePoolLookupByVolume()
+            name = clone_data["disk-" + dev]
+            self._refuse_taken(pool, name)
+            capacity = vol.info()[1]
+            pools[pool.name()] = pool
+            copied[pool.name()] = copied.get(pool.name(), 0) + capacity
+            targets.append(
+                {
+                    "dev": dev,
+                    "pool": pool.name(),
+                    "name": name,
+                    "path": os.path.join(util.get_xml_path(pool.XMLDesc(0), "/pool/target/path"), name),
+                    "capacity": capacity,
+                    "format": util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type"),
+                }
+            )
+        for name, size in copied.items():
+            needed = size + max(size * free_percent / 100, free_min_gib * 1024**3)
+            free = pools[name].info()[3]
+            if free < needed:
+                raise util.OperationError(gettext_noop(
+                    "Storage pool %(pool)s has %(free).1f GiB free; the clone needs %(size).1f GiB (the copied disks, "
+                    "plus %(percent)g%% of them, at least %(minimum)g GiB)"),
+                    pool=name, free=free / 1024**3, size=needed / 1024**3, percent=free_percent, minimum=free_min_gib)
+        return targets
+
+    @staticmethod
+    def _refuse_taken(pool, name):
+        """A copy never takes a volume's name in its pool: libvirt would
+        refuse it only after the clone began. The pool is refreshed first,
+        so its free space is current too."""
+        pool.refresh(0)
+        try:
+            pool.storageVolLookupByName(name)
+        except libvirtError as err:
+            if err.get_error_code() != VIR_ERR_NO_STORAGE_VOL:
+                raise
+        else:
+            raise util.OperationError(gettext_noop("Volume %(name)s already exists in storage pool %(pool)s"),
+                                      name=name, pool=pool.name())
+
+    def check_clone_volumes(self, clone_data):
+        """Refuses a shut-off clone whose copy of a disk would take a name its
+        pool has already, before anything is allocated (see clone_instance)."""
+        _tree, disks = self._clone_definition(clone_data, "")
+        for source, dev in disks:
+            vol = self.get_volume_by_path(source.get("file") or source.get("dev") or source.get("name"))
+            self._refuse_taken(vol.storagePoolLookupByVolume(), clone_data["disk-" + dev])
+
+    def create_clone_target(self, target, owner_uid, owner_gid):
+        """An empty volume for a copied disk; libvirt refuses one that exists.
+        Returns its path."""
+        pool = self.wvm.storagePoolLookupByName(target["pool"])
+        xml = self._clone_volume_xml(target["name"], target["capacity"], target["format"], owner_uid, owner_gid)
+        return pool.createXML(xml, 0).path()
+
+    def begin_clone_backup(self, targets):
+        """Starts libvirt's push backup of the targets' disks into their
+        volumes. The VM keeps running when the guest shuts down meanwhile."""
+        disks = "".join(
+            f"<disk name='{util.xml_escape(t['dev'])}' backup='yes' type='file'>"
+            f"<target file='{util.xml_escape(t['path'])}'/><driver type='{util.xml_escape(t['format'])}'/></disk>"
+            for t in targets
+        )
+        self.instance.backupBegin(
+            f"<domainbackup mode='push'><disks>{disks}</disks></domainbackup>",
+            None,
+            VIR_DOMAIN_BACKUP_BEGIN_REUSE_EXTERNAL | VIR_DOMAIN_BACKUP_BEGIN_PRESERVE_SHUTDOWN_DOMAIN,
+        )
+
+    def backup_targets(self):
+        """The target paths of the running backup; None when none runs."""
+        try:
+            xml = self.instance.backupGetXMLDesc(0)
+        except libvirtError as err:
+            if err.get_error_code() == VIR_ERR_NO_DOMAIN_BACKUP:
+                return None
+            raise
+        return set(etree.fromstring(xml).xpath("disks/disk/target/@file"))
+
+    def backup_progress(self):
+        """(bytes copied, bytes to copy) of the running backup; None when
+        none runs."""
+        stats = self.instance.jobStats(0)
+        if (
+            stats.get("type", VIR_DOMAIN_JOB_NONE) == VIR_DOMAIN_JOB_NONE
+            or stats.get("operation") != VIR_DOMAIN_JOB_OPERATION_BACKUP
+        ):
+            return None
+        return stats.get("disk_processed", 0), stats.get("disk_total", 0)
+
+    def backup_result(self):
+        """(success, libvirt's error) of the completed backup, kept for later
+        reads; None when libvirt has no completed backup."""
+        stats = self.instance.jobStats(VIR_DOMAIN_JOB_STATS_COMPLETED | VIR_DOMAIN_JOB_STATS_KEEP_COMPLETED)
+        if stats.get("operation") != VIR_DOMAIN_JOB_OPERATION_BACKUP or "success" not in stats:
+            return None
+        return bool(stats["success"]), stats.get("errmsg") or ""
+
+    def discard_backup_result(self):
+        """Drops the result libvirt keeps of the VM's last completed job, so
+        a later backup_result() can only be of a backup started after this."""
+        self.instance.jobStats(VIR_DOMAIN_JOB_STATS_COMPLETED)
+
+    def abort_backup(self):
+        self.instance.abortJob()
+
+    def ping_agent(self):
+        """A frozen or dead agent fails here in AGENT_TIMEOUT seconds. The
+        freeze that follows is libvirt's, without a timeout: a timed freeze
+        could still end in the guest after its thaw failed, leaving the guest
+        frozen."""
+        agent_command(self.instance, "guest-ping")
+
+    def fs_freeze(self):
+        self.ping_agent()
+        self.instance.fsFreeze(None, 0)
+
+    def fs_thaw(self):
+        self.instance.fsThaw(None, 0)
 
     def add_network(
         self, mac_address, source, source_type="net", model="virtio", nwfilter=None
@@ -1579,141 +2850,312 @@ class wvmInstance(wvmConnect):
         else:
             interface_type = "direct"
 
-        # network modes not handled: default is bridge
-
-        xml_iface = f"""
-          <interface type='{interface_type}'>
-          <mac address='{mac_address}'/>"""
+        # Built with lxml so posted values are escaped, never parsed as XML.
+        iface = etree.Element("interface", type=interface_type)
+        if mac_address:  # otherwise libvirt generates one
+            etree.SubElement(iface, "mac", address=mac_address)
         if interface_type == "network":
-            xml_iface += f"""<source network='{source}'/>"""
+            etree.SubElement(iface, "source", network=source)
         elif interface_type == "direct":
-            xml_iface += f"""<source dev='{source}' mode='bridge'/>"""
-        elif interface_type == "bridge":
-            xml_iface += f"""<source bridge='{source}'/>"""
+            etree.SubElement(iface, "source", dev=source, mode="bridge")
         else:
-            raise libvirtError(f"'{interface_type}' is an unexpected interface type.")
-        xml_iface += f"""<model type='{model}'/>"""
+            etree.SubElement(iface, "source", bridge=source)
+        if model and model != "default":  # default: no model, libvirt chooses
+            etree.SubElement(iface, "model", type=model)
         if nwfilter:
-            xml_iface += f"""<filterref filter='{nwfilter}'/>"""
-        xml_iface += """</interface>"""
+            etree.SubElement(iface, "filterref", filter=nwfilter)
+        self.check_card(iface)
+        self._attach_device(etree.tostring(iface).decode())
 
-        if self.get_status() == 1:
-            self.instance.attachDeviceFlags(xml_iface, VIR_DOMAIN_AFFECT_LIVE)
-            self.instance.attachDeviceFlags(xml_iface, VIR_DOMAIN_AFFECT_CONFIG)
-        if self.get_status() == 5:
-            self.instance.attachDeviceFlags(xml_iface, VIR_DOMAIN_AFFECT_CONFIG)
+    def check_card(self, iface):
+        """Refuses a network card whose network or filter this host does not have."""
+        networks, filters = self.unknown_networks([iface])
+        if networks:
+            raise util.OperationError(gettext_noop("This host has no network %(name)s"), name=networks[0])
+        if filters:
+            raise util.OperationError(gettext_noop("This host has no network filter %(name)s"), name=filters[0])
+
+    def _attach_device(self, xml):
+        """Attach to the persistent definition and, when the VM is active, to
+        the running one, in one call. QEMU checks a copy of the persistent
+        definition before the hotplug, so a conflict there (a disk target or
+        an agent channel already pending) changes neither, and a NIC without
+        a MAC gets the same one in both. Still possible: a failure after a
+        successful hotplug leaves the device in the running VM only, and a
+        SCSI controller added for a disk that then fails to plug stays. An
+        error never proves that a new volume is unused."""
+        flags = VIR_DOMAIN_AFFECT_CONFIG
+        if self.instance.isActive():
+            flags |= VIR_DOMAIN_AFFECT_LIVE
+        self.instance.attachDeviceFlags(xml, flags)
+
+    def _definitions(self):
+        """(XMLDesc flags, affect flag) of the definitions a device edit applies to:
+        the running one when the VM is active (running or paused), and the
+        persistent one. Each is edited from its own XML."""
+        definitions = [(PERSISTENT_XML, VIR_DOMAIN_AFFECT_CONFIG)]
+        if self.instance.isActive():
+            definitions.insert(0, (VIR_DOMAIN_XML_SECURE, VIR_DOMAIN_AFFECT_LIVE))
+        return definitions
+
+    def _nic(self, xml_flags, mac_address):
+        found = etree.fromstring(self._XMLDesc(xml_flags)).xpath(
+            "./devices/interface[mac/@address=$mac]", mac=mac_address
+        )
+        return found[0] if found else None
 
     def delete_network(self, mac_address):
-        tree = ElementTree.fromstring(self._XMLDesc(0))
-        for interface in tree.findall("devices/interface"):
-            source = interface.find("mac")
-            if source.get("address", "") == mac_address:
-                new_xml = ElementTree.tostring(interface).decode()
+        """Detach the NIC; returns its persistent XML, or None if there is none."""
+        removed = None
+        for xml_flags, affect in self._definitions():
+            nic = self._nic(xml_flags, mac_address)
+            if nic is not None and nic.get("type") == "hostdev":
+                raise util.OperationError(gettext_noop("A network interface that is a host device is removed in the XML editor"))
+            if nic is not None:
+                removed = etree.tostring(nic).decode()
+                self.instance.detachDeviceFlags(removed, affect)
+        return removed
 
-                if self.get_status() == 1:
-                    self.instance.detachDeviceFlags(new_xml, VIR_DOMAIN_AFFECT_LIVE)
-                    self.instance.detachDeviceFlags(new_xml, VIR_DOMAIN_AFFECT_CONFIG)
-                if self.get_status() == 5:
-                    self.instance.detachDeviceFlags(new_xml, VIR_DOMAIN_AFFECT_CONFIG)
-                return new_xml
+    def change_network(self, old_mac, mac, source, source_type, model, nwfilter):
+        """Edit the NIC with old_mac in the persistent definition, in place.
+
+        Settings this form does not edit (QoS, link state, driver, PCI address)
+        stay, and so does the source when source is None. A running VM gets
+        the change at its next start.
+        """
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        found = tree.xpath("./devices/interface[mac/@address=$mac]", mac=old_mac)
+        if not found:
+            raise util.OperationError(gettext_noop("No network interface with MAC %(old_mac)s"), old_mac=old_mac)
+        iface = found[0]
+        if iface.get("type") == "hostdev":
+            raise util.OperationError(gettext_noop("A network interface that is a host device is changed in the XML editor"))
+
+        if source is not None:
+            iface_type = {"net": "network", "bridge": "bridge"}.get(source_type, "direct")
+            iface.set("type", iface_type)
+            for old_source in iface.findall("source"):
+                iface.remove(old_source)
+            source_attrs = {"network": {"network": source}, "bridge": {"bridge": source}}.get(
+                iface_type, {"dev": source, "mode": "bridge"}
+            )
+            iface.insert(1, etree.Element("source", **source_attrs))
+
+        iface.find("mac").set("address", mac)
+        for old_model in iface.findall("model"):
+            iface.remove(old_model)
+        if model and model != "default":  # default: no model, libvirt chooses
+            etree.SubElement(iface, "model", type=model)
+        # the same filter keeps its parameters (clean-traffic's IP, for one)
+        for old_filter in iface.findall("filterref"):
+            if old_filter.get("filter") != nwfilter:
+                iface.remove(old_filter)
+        if nwfilter and iface.find("filterref") is None:
+            etree.SubElement(iface, "filterref", filter=nwfilter)
+        self.check_card(iface)
+
+        self._defineXML(etree.tostring(tree).decode())
+
+    def _usb_hostdevs(self, xml_flags):
+        """(element, selector) of each USB host device of a definition. The
+        selector (usb_selector) is read from the migratable XML, the only one
+        that marks the addresses libvirt resolved for a running VM."""
+        elements = etree.fromstring(self._XMLDesc(xml_flags)).xpath(USB_HOSTDEVS)
+        marked = etree.fromstring(self._XMLDesc(xml_flags | VIR_DOMAIN_XML_MIGRATABLE)).xpath(USB_HOSTDEVS)
+        return [(element, usb_selector(mark.find("source"))) for element, mark in zip(elements, marked)]
+
+    def get_hostdevs(self):
+        """The VM's host devices, each once, with whether the running VM has
+        it ("now") and whether its next start has it ("next"): USB devices
+        by selector (vendor, product, address) and the device the running
+        VM holds; PCI devices by address, and whether libvirt manages them
+        (takes them from their host drivers); the others (SCSI, mediated, NICs
+        that are host devices) by type and address, which the panel does
+        not change."""
+        usb, pci, others = {}, {}, {}
+        for xml_flags, affect in self._definitions():
+            where = "now" if affect == VIR_DOMAIN_AFFECT_LIVE else "next"
+            for element, selector in self._usb_hostdevs(xml_flags):
+                row = usb.setdefault(selector, {"vendor": selector[0], "product": selector[1], "address": selector[2],
+                                                "now": None, "next": False})
+                if where == "now":
+                    held = element.find("source/address")
+                    row["now"] = (int(held.get("bus")), int(held.get("device"))) if held is not None else selector[2]
+                else:
+                    row["next"] = True
+            tree = etree.fromstring(self._XMLDesc(xml_flags))
+            for address in tree.xpath(PCI_HOSTDEVS + "/source/address"):
+                key = pci_address(address.get("domain", "0"), address.get("bus"), address.get("slot"), address.get("function"))
+                row = pci.setdefault(key, {"address": key, "now": False, "next": False, "managed": False})
+                row[where] = True
+                row["managed"] = row["managed"] or address.getparent().getparent().get("managed") == "yes"
+            for device in tree.xpath("devices/hostdev[not(@type='usb' or @type='pci')]"
+                                     " | devices/interface[@type='hostdev' or actual/@type='hostdev']"):
+                if device.tag == "interface" and device.get("type") != "hostdev":
+                    source = device.find("actual/source")  # a NIC of a network that gives host devices
+                else:
+                    source = device.find("source")
+                address = source.find("address") if source is not None else None
+                if address is not None and address.get("slot") is not None:
+                    label = pci_address(address.get("domain", "0"), address.get("bus"), address.get("slot"),
+                                        address.get("function"))
+                else:  # a mediated device's UUID; a SCSI device as its source
+                    label = address.get("uuid", "") if address is not None else ""
+                kind = "nic" if device.tag == "interface" else device.get("type", device.get("mode"))
+                source_text = " ".join(etree.tostring(source, encoding="unicode").split()) if source is not None else ""
+                row = others.setdefault((kind, label or source_text),
+                                        {"type": kind, "address": label, "now": False, "next": False})
+                row[where] = True
+        return list(usb.values()), list(pci.values()), list(others.values())
+
+    def _pci_hostdev(self, address, xml_flags=PERSISTENT_XML):
+        """A definition's <hostdev> of the PCI device at address, or None."""
+        tree = etree.fromstring(self._XMLDesc(xml_flags))
+        for found in tree.xpath(PCI_HOSTDEVS + "/source/address"):
+            if pci_address(found.get("domain", "0"), found.get("bus"), found.get("slot"), found.get("function")) == address:
+                return found.getparent().getparent()
         return None
 
-    def change_network(self, network_data):
-        net_mac = network_data.get("net-mac-0")
-        net_source = network_data.get("net-source-0")
-        net_source_type = network_data.get("net-source-0-type")
-        net_filter = network_data.get("net-nwfilter-0")
-        net_model = network_data.get("net-model-0")
+    def _pci_running(self):
+        """Whether a PCI change goes to the running VM too: True while it
+        runs, False while it is shut off. A paused VM, or one with a saved
+        state (managed save, which would start without the change), is
+        refused."""
+        status = self.instance.info()[0]
+        if self.instance.hasManagedSaveImage(0) or status not in (VIR_DOMAIN_RUNNING, VIR_DOMAIN_SHUTOFF):
+            raise util.OperationError(gettext_noop("A VM changes its PCI devices while it runs, or is shut off without a saved state"))
+        return status == VIR_DOMAIN_RUNNING
 
-        # Remove interface first, but keep network interface XML definition
-        # If there is an error happened while adding changed one, then add removed one to back.
-        status = self.delete_network(net_mac)
+    def _pci_outcome(self, address, err):
+        """_hostdev_outcome of the PCI device at address."""
+        return self._hostdev_outcome(pci_label(address), lambda flags: self._pci_hostdev(address, flags) is not None, err)
+
+    def _usb_outcome(self, selector, err):
+        """_hostdev_outcome of the USB device of selector (usb_selector)."""
+        return self._hostdev_outcome(usb_selector_label(selector),
+                                     lambda flags: any(own == selector for _e, own in self._usb_hostdevs(flags)), err)
+
+    def _hostdev_outcome(self, device, has, err):
+        """An OperationError with err and where the host device (its label)
+        is now, as has(XMLDesc flags) tells: in the running VM, in its next
+        start; the outcome is unknown when the VM cannot be read."""
         try:
-            self.add_network(
-                net_mac, net_source, net_source_type, net_model, net_filter
-            )
+            running = self.instance.isActive()
+            now = running and has(VIR_DOMAIN_XML_SECURE)
+            later = has(PERSISTENT_XML)
         except libvirtError:
-            if status is not None:
-                if self.get_status() == 1:
-                    self.instance.attachDeviceFlags(status, VIR_DOMAIN_AFFECT_LIVE)
-                    self.instance.attachDeviceFlags(status, VIR_DOMAIN_AFFECT_CONFIG)
-                if self.get_status() == 5:
-                    self.instance.attachDeviceFlags(status, VIR_DOMAIN_AFFECT_CONFIG)
+            return util.OperationError(gettext_noop("%(err)s; whether the VM has %(device)s now is not known"), err=err, device=device)
+        outcome = {
+            (False, True): gettext_noop("%(err)s; %(device)s: the VM is not running, its next start has it"),
+            (False, False): gettext_noop("%(err)s; %(device)s: the VM is not running, its next start does not have it"),
+            (True, True): gettext_noop("%(err)s; %(device)s: the running VM has it, its next start has it"),
+            (True, False): gettext_noop("%(err)s; %(device)s: the running VM has it, its next start does not have it"),
+            (None, True): gettext_noop("%(err)s; %(device)s: the running VM does not have it, its next start has it"),
+            (None, False): gettext_noop(
+                "%(err)s; %(device)s: the running VM does not have it, its next start does not have it"),
+        }[(now or None) if running else False, later]
+        return util.OperationError(outcome, err=err, device=device)
 
-    def change_network_oldway(self, network_data):
-        """
-        change network firsh version...
-        will be removed if new one works as expected for all scenarios
-        """
-        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
-        tree = ElementTree.fromstring(xml)
-        for num, interface in enumerate(tree.findall("devices/interface")):
-            net_mac = network_data.get("net-mac-" + str(num))
-            if net_mac is None:
-                continue
-            net_source = network_data.get("net-source-" + str(num))
-            net_source_type = network_data.get("net-source-" + str(num) + "-type")
-            net_filter = network_data.get("net-nwfilter-" + str(num))
-            net_model = network_data.get("net-model-" + str(num))
+    def add_pci_hostdev(self, address):
+        """Gives the VM the host's PCI device at address (0000:05:00.0), for
+        its next start and, while it runs, at once: libvirt binds it to
+        vfio-pci, and gives it back when the VM stops or lets it go. A hot
+        plug that fails says where the device is (the two are not changed
+        together)."""
+        running = self._pci_running()
+        domain, bus, slot_function = address.split(":")
+        slot, function = slot_function.split(".")
+        hostdev = etree.Element("hostdev", mode="subsystem", type="pci", managed="yes")
+        etree.SubElement(etree.SubElement(hostdev, "source"), "address", domain=f"0x{domain}", bus=f"0x{bus}",
+                         slot=f"0x{slot}", function=f"0x{function}")
+        flags = VIR_DOMAIN_AFFECT_CONFIG | (VIR_DOMAIN_AFFECT_LIVE if running else 0)
+        try:
+            self.instance.attachDeviceFlags(etree.tostring(hostdev, encoding="unicode"), flags)
+        except libvirtError as err:
+            if not running:
+                raise
+            raise self._pci_outcome(address, err) from None
 
-            source = interface.find("source")
-            if interface.get("type") == "bridge":
-                bridge_name = self.get_bridge_name(net_source, net_source_type)
-                source.set("bridge", bridge_name)
-            elif interface.get("type") in ["network", "direct"]:
-                if net_source_type == "net":
-                    source.set("network", net_source)
-                elif net_source_type == "iface":
-                    source.set("dev", net_source)
-                else:
-                    raise libvirtError(
-                        "Unknown network type: {}".format(net_source_type)
-                    )
-            else:
-                raise libvirtError(
-                    "Unknown network type: {}".format(interface.get("type"))
-                )
+    def delete_pci_hostdev(self, address):
+        """Takes the PCI device at address from the VM: from the running VM
+        (the guest has to let it go; libvirt waits a few seconds for it) and
+        from its next start, each as it has it. Returns True when the guest
+        has not let it go yet: it stays in the running VM until it does or
+        the VM stops. A failure on a running VM says where the device is."""
+        running = self._pci_running()
+        live = self._pci_hostdev(address, VIR_DOMAIN_XML_SECURE) if running else None
+        saved = self._pci_hostdev(address)
+        if live is None and saved is None:
+            raise util.OperationError(gettext_noop("The VM has no PCI device %(address)s"), address=address)
+        try:
+            if live is not None:  # a refusal stops here; a request the guest has not answered goes on
+                self.instance.detachDeviceFlags(etree.tostring(live, encoding="unicode"), VIR_DOMAIN_AFFECT_LIVE)
+            if saved is not None:
+                self.instance.detachDeviceFlags(etree.tostring(saved, encoding="unicode"), VIR_DOMAIN_AFFECT_CONFIG)
+            return live is not None and self._pci_hostdev(address, VIR_DOMAIN_XML_SECURE) is not None
+        except libvirtError as err:
+            if not running:
+                raise
+            raise self._pci_outcome(address, err) from None
 
-            source = interface.find("model")
-            if net_model != "default":
-                source.attrib["type"] = net_model
-            else:
-                interface.remove(source)
+    def add_usb_hostdev(self, vendor, product, address=None):
+        """Gives the VM the host's USB device of vendor and product, at
+        address (bus, device) when given: the host has more than one of the
+        model. Refused without a USB controller, and with a saved state (it
+        would start without the change). A hot plug that fails says where
+        the device is."""
+        self._refuse_saved_usb()
+        for xml_flags, _ in self._definitions():
+            if not etree.fromstring(self._XMLDesc(xml_flags)).xpath("devices/controller[@type='usb'][not(@model='none')]"):
+                raise util.OperationError(gettext_noop("The VM has no USB controller"))
+        hostdev = etree.Element("hostdev", mode="subsystem", type="usb", managed="yes")
+        source = etree.SubElement(hostdev, "source")
+        etree.SubElement(source, "vendor", id=vendor)
+        etree.SubElement(source, "product", id=product)
+        if address:
+            etree.SubElement(source, "address", bus=str(address[0]), device=str(address[1]))
+        try:
+            self._attach_device(etree.tostring(hostdev, encoding="unicode"))
+        except libvirtError as err:
+            if not self.instance.isActive():
+                raise  # one definition: unchanged
+            raise self._usb_outcome(usb_selector(source), err) from None
 
-            source = interface.find("mac")
-            source.set("address", net_mac)
-            source = interface.find("filterref")
-            if net_filter:
-                if source is not None:
-                    source.set("filter", net_filter)
-                else:
-                    element = ElementTree.Element("filterref")
-                    element.attrib["filter"] = net_filter
-                    interface.append(element)
-            else:
-                if source is not None:
-                    interface.remove(source)
+    def _refuse_saved_usb(self):
+        if self.instance.hasManagedSaveImage(0):
+            raise util.OperationError(gettext_noop(
+                "A VM with a saved state does not change its USB devices: start it, or start it without its saved state"))
 
-        new_xml = ElementTree.tostring(tree).decode()
-        self._defineXML(new_xml)
+    def delete_usb_hostdev(self, selector):
+        """Takes the USB host device of selector (usb_selector) from each
+        definition that has it, as that definition describes it; one that
+        fails says where the device is."""
+        self._refuse_saved_usb()
+        found = False
+        for xml_flags, affect in self._definitions():
+            for element, own in self._usb_hostdevs(xml_flags):
+                if own == selector:
+                    found = True
+                    try:
+                        self.instance.detachDeviceFlags(etree.tostring(element, encoding="unicode"), affect)
+                    except libvirtError as err:
+                        raise self._usb_outcome(selector, err) from None
+        if not found:
+            raise util.OperationError(gettext_noop("The VM has no such USB device"))
 
     def set_link_state(self, mac_address, state):
-        tree = etree.fromstring(self._XMLDesc(0))
-        for interface in tree.findall("devices/interface"):
-            source = interface.find("mac")
-            if source.get("address") == mac_address:
-                link = interface.find("link")
-                if link is not None:
-                    interface.remove(link)
-                link_el = etree.Element("link")
-                link_el.attrib["state"] = state
-                interface.append(link_el)
-                new_xml = etree.tostring(interface).decode()
-                if self.get_status() == 1:
-                    self.instance.updateDeviceFlags(new_xml, VIR_DOMAIN_AFFECT_LIVE)
-                    self.instance.updateDeviceFlags(new_xml, VIR_DOMAIN_AFFECT_CONFIG)
-                if self.get_status() == 5:
-                    self.instance.updateDeviceFlags(new_xml, VIR_DOMAIN_AFFECT_CONFIG)
+        found = False
+        for xml_flags, affect in self._definitions():
+            nic = self._nic(xml_flags, mac_address)
+            if nic is None:
+                continue
+            found = True
+            for link in nic.findall("link"):
+                nic.remove(link)
+            etree.SubElement(nic, "link", state=state)
+            self.instance.updateDeviceFlags(etree.tostring(nic).decode(), affect)
+        if not found:
+            raise util.OperationError(gettext_noop("The VM has no network interface %(mac)s"), mac=mac_address)
 
     def _set_options(self, tree, options):
         for o in ["title", "description"]:
@@ -1727,11 +3169,82 @@ class wvmInstance(wvmConnect):
                     option = etree.SubElement(tree, o)
                 option.text = option_value
 
+    def get_rng(self):
+        """The persistent definition's RNG device: "virtio" for the panel's
+        own (virtio, from the host's /dev/urandom), "custom" for another one,
+        None without one."""
+        rngs = etree.fromstring(self._XMLDesc(PERSISTENT_XML)).xpath("devices/rng")
+        if not rngs:
+            return None
+        # libvirt adds only its address and alias to the panel's device; a rate or driver makes it another one
+        own = "@model='virtio' and backend[@model='random']='/dev/urandom' and not(*[not(self::backend or self::address or self::alias)])"
+        if len(rngs) == 1 and rngs[0].xpath(own):
+            return "virtio"
+        return "custom"
+
+    def set_rng(self, enabled):
+        """Adds the panel's virtio RNG device to the persistent definition, or
+        removes it; another RNG device is left to the XML editor."""
+        if self.get_rng() == "custom":
+            raise util.OperationError(gettext_noop("The VM has its own RNG device: change it in the XML editor"))
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        for rng in tree.xpath("devices/rng"):
+            rng.getparent().remove(rng)
+        if enabled:
+            tree.find("devices").append(etree.fromstring(RNG_DEVICE))
+        self._defineXML(etree.tostring(tree).decode())
+
+    def get_tpm(self):
+        """The persistent definition's TPM: "emulator" for a plain emulated
+        TPM 2.0, the panel's own, "custom" for another one, None without one."""
+        tpms = etree.fromstring(self._XMLDesc(PERSISTENT_XML)).xpath("devices/tpm")
+        if not tpms:
+            return None
+        # libvirt adds only an alias; encryption, a state path or another
+        # backend setting is kept by the XML editor, not dropped by the switch
+        own = ("backend[@type='emulator' and (not(@version) or @version='2.0') and not(*)"
+               " and not(@*[name()!='type' and name()!='version'])] and not(*[not(self::backend or self::alias)])")
+        if len(tpms) == 1 and tpms[0].xpath(own):
+            return "emulator"
+        return "custom"
+
+    def set_tpm(self, enabled):
+        """Adds an emulated TPM 2.0 to the persistent definition, or removes it;
+        another TPM is left to the XML editor. Its state stays on the host until
+        the VM is undefined, so a TPM added again has it back."""
+        if self.get_tpm() == "custom":
+            raise util.OperationError(gettext_noop("The VM has its own TPM: change it in the XML editor"))
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        for tpm in tree.xpath("devices/tpm"):
+            tpm.getparent().remove(tpm)
+        if enabled:
+            model = self.get_tpm_model(self.get_arch(), self.get_machine_type())
+            if not model:
+                raise util.OperationError(gettext_noop("This host offers no TPM 2.0: install swtpm on it"))
+            tree.find("devices").append(
+                etree.fromstring(f"<tpm model='{model}'><backend type='emulator' version='2.0'/></tpm>"))
+        self._defineXML(etree.tostring(tree).decode())
+
+    def get_on_crash(self):
+        """What the next start does when the guest crashes; libvirt's default is destroy."""
+        return etree.fromstring(self._XMLDesc(PERSISTENT_XML)).findtext("on_crash") or "destroy"
+
+    def set_on_crash(self, action):
+        """restart or destroy (stop) the VM when the guest crashes, from the next start."""
+        if action not in ("restart", "destroy"):
+            raise util.OperationError(gettext_noop("Unknown crash action %(action)s"), action=action)
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        on_crash = tree.find("on_crash")
+        if on_crash is None:
+            on_crash = etree.SubElement(tree, "on_crash")
+        on_crash.text = action
+        self._defineXML(etree.tostring(tree).decode())
+
     def set_options(self, options):
         """
         Function change description, title
         """
-        xml = self._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        xml = self._XMLDesc(PERSISTENT_XML)
         tree = etree.fromstring(xml)
 
         self._set_options(tree, options)
@@ -1741,57 +3254,25 @@ class wvmInstance(wvmConnect):
     def set_memory(self, size, flags=0):
         self.instance.setMemoryFlags(size, flags)
 
-    def get_all_qos(self):
-        qos_values = dict()
-        tree = etree.fromstring(self._XMLDesc(0))
-        qos = tree.xpath("/domain/devices/interface")
-
-        for q in qos:
-            bound_list = list()
-            mac = q.xpath("mac/@address")
-            band = q.find("bandwidth")
-            if band is not None:
-                in_qos = band.find("inbound")
-                if in_qos is not None:
-                    in_av = in_qos.get("average")
-                    in_peak = in_qos.get("peak")
-                    in_burst = in_qos.get("burst")
-                    in_floor = in_qos.get("floor")
-                    bound_list.append(
-                        {
-                            "direction": "inbound",
-                            "average": in_av,
-                            "peak": in_peak,
-                            "floor": in_floor,
-                            "burst": in_burst,
-                        }
-                    )
-
-                out_qos = band.find("outbound")
-                if out_qos is not None:
-                    out_av = out_qos.get("average")
-                    out_peak = out_qos.get("peak")
-                    out_burst = out_qos.get("burst")
-                    bound_list.append(
-                        {
-                            "direction": "outbound",
-                            "average": out_av,
-                            "peak": out_peak,
-                            "burst": out_burst,
-                        }
-                    )
-                qos_values[mac[0]] = bound_list
-        return qos_values
+    @staticmethod
+    def _persistent_nic(tree, mac):
+        """Refuses a MAC no NIC of the persistent definition has: a form
+        loaded before the NIC changed."""
+        if not tree.xpath("/domain/devices/interface[mac/@address=$mac]", mac=mac):
+            raise util.OperationError(gettext_noop("Network interface %(mac)s is not in the definition"), mac=mac)
 
     def set_qos(self, mac, direction, average, peak, burst):
-        if direction == "inbound":
-            xml = f"<inbound average='{average}' peak='{peak}' burst='{burst}'/>"
-        elif direction == "outbound":
-            xml = f"<outbound average='{average}' peak='{peak}' burst='{burst}'/>"
-        else:
-            raise Exception("Direction must be inbound or outbound")
+        if direction not in ("inbound", "outbound"):
+            raise ValueError("Direction must be inbound or outbound")
 
-        tree = etree.fromstring(self._XMLDesc(0))
+        average = int(average)
+        peak = int(peak)
+        burst = int(burst)
+
+        xml = f"<{direction} average='{average}' peak='{peak}' burst='{burst}'/>"
+
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        self._persistent_nic(tree, mac)
 
         macs = tree.xpath("/domain/devices/interface/mac")
         for cur_mac in macs:
@@ -1805,16 +3286,16 @@ class wvmInstance(wvmConnect):
                 else:
                     direct = band.find(direction)
                     if direct is not None:
-                        parent = direct.getparent()
-                        parent.remove(direct)
-                        parent.append(etree.fromstring(xml))
+                        # keep what the form does not post (an inbound floor)
+                        direct.attrib.update(etree.fromstring(xml).attrib)
                     else:
                         band.append(etree.fromstring(xml))
         new_xml = etree.tostring(tree).decode()
-        self.wvm.defineXML(new_xml)
+        self._defineXML(new_xml)
 
     def unset_qos(self, mac, direction):
-        tree = etree.fromstring(self._XMLDesc(0))
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        self._persistent_nic(tree, mac)
         for direct in tree.xpath(
             "/domain/devices/interface/bandwidth/{}".format(direction)
         ):
@@ -1826,34 +3307,26 @@ class wvmInstance(wvmConnect):
             if parent_mac[0] == mac:
                 band_el.remove(direct)
 
-        self.wvm.defineXML(etree.tostring(tree).decode())
+        self._defineXML(etree.tostring(tree).decode())
 
     def add_guest_agent(self):
-        channel_xml = """
-                        <channel type='unix'>
-                            <target type='virtio' name='org.qemu.guest_agent.0'/>
-                        </channel>
-                      """
-        if self.get_status() == 1:
-            self.instance.attachDeviceFlags(channel_xml, VIR_DOMAIN_AFFECT_LIVE)
-            self.instance.attachDeviceFlags(channel_xml, VIR_DOMAIN_AFFECT_CONFIG)
-        if self.get_status() == 5:
-            self.instance.attachDeviceFlags(channel_xml, VIR_DOMAIN_AFFECT_CONFIG)
+        """Adds the agent channel to the definitions that do not have it."""
+        flags = 0
+        for xml_flags, affect in self._definitions():
+            if not etree.fromstring(self._XMLDesc(xml_flags)).xpath(GUEST_AGENT_CHANNEL):
+                flags |= affect
+        if flags:
+            channel_xml = "<channel type='unix'><target type='virtio' name='org.qemu.guest_agent.0'/></channel>"
+            self.instance.attachDeviceFlags(channel_xml, flags)
 
     def remove_guest_agent(self):
-        tree = etree.fromstring(self._XMLDesc(0))
-        for target in tree.xpath(
-            "/domain/devices/channel[@type='unix']/target[@name='org.qemu.guest_agent.0']"
-        ):
-            parent = target.getparent()
-            channel_xml = etree.tostring(parent).decode()
-            if self.get_status() == 1:
-                self.instance.detachDeviceFlags(channel_xml, VIR_DOMAIN_AFFECT_LIVE)
-                self.instance.detachDeviceFlags(channel_xml, VIR_DOMAIN_AFFECT_CONFIG)
-            if self.get_status() == 5:
-                self.instance.detachDeviceFlags(channel_xml, VIR_DOMAIN_AFFECT_CONFIG)
+        for xml_flags, affect in self._definitions():
+            tree = etree.fromstring(self._XMLDesc(xml_flags))
+            for target in tree.xpath(GUEST_AGENT_CHANNEL):
+                channel_xml = etree.tostring(target.getparent()).decode()
+                self.instance.detachDeviceFlags(channel_xml, affect)
 
-    def get_guest_agent(self):
+    def get_guest_agent(self, config=False):
         def _get_agent(doc):
             """
             Return agent channel object if it is defined.
@@ -1866,7 +3339,34 @@ class wvmInstance(wvmConnect):
                     return channel
             return None
 
-        return util.get_xml_path(self._XMLDesc(0), func=_get_agent)
+        return util.get_xml_path(self._XMLDesc(PERSISTENT_XML if config else 0), func=_get_agent)
+
+    def check_not_windows(self):
+        """Windows has no root account, and its agent takes no crypt(3) hash
+        and no SSH keys: refused in words, not with the agent's error."""
+        try:
+            osinfo = agent_command(self.instance, "guest-get-osinfo")
+        except libvirtError as err:
+            if err.get_error_code() == VIR_ERR_AGENT_COMMAND_FAILED:
+                return  # an agent without the command, or with it disabled: not known to be Windows
+            if err.get_error_code() == VIR_ERR_AGENT_COMMAND_TIMEOUT:  # not the change's timeout, which may still run
+                raise util.OperationError(gettext_noop("The guest agent did not answer in time; nothing was changed")) from err
+            raise
+        if osinfo.get("id") == "mswindows":
+            raise util.OperationError(gettext_noop("The VM runs Windows: its guest agent sets no root password or SSH key"))
+
+    def set_user_password(self, user, crypted):
+        """Set a user's password in the running guest through its agent;
+        crypted is a crypt(3) hash."""
+        self.check_not_windows()
+        password = base64.b64encode(crypted.encode()).decode()
+        agent_command(self.instance, "guest-set-user-password", {"username": user, "password": password, "crypted": True})
+
+    def add_authorized_key(self, user, key):
+        """Add an SSH public key to the user's authorized keys in the running
+        guest through its agent."""
+        self.check_not_windows()
+        agent_command(self.instance, "guest-ssh-add-authorized-keys", {"username": user, "keys": [key], "reset": False})
 
     def is_agent_ready(self):
         """

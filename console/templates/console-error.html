@@ -1,0 +1,7 @@
+{% extends "console-base.html" %}
+{# a console that cannot open: why, and no console client #}
+{% block navbar %}{% endblock %}
+
+{% block content %}
+<div class="alert alert-danger rounded-0 m-0" role="alert">{{ console_error }}</div>
+{% endblock %}

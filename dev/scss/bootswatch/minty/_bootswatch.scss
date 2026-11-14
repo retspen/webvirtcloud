@@ -1,4 +1,4 @@
-// Minty 5.2.2
+// Minty 5.3.8
 // Bootswatch
 
 
@@ -6,25 +6,13 @@
 
 $web-font-path: "https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" !default;
 @if $web-font-path {
-  @import url($web-font-path);
-}
-
-:root {
-  color-scheme: light;
+  @import url("#{$web-font-path}");
 }
 
 // Navbar
 
 .navbar {
   font-family: $headings-font-family;
-}
-
-.bg-dark {
-  background-color: $secondary !important;
-}
-
-.border-dark {
-  border-color: $secondary !important;
 }
 
 // Buttons
@@ -82,6 +70,12 @@ $web-font-path: "https://fonts.googleapis.com/css2?family=Montserrat:wght@400;50
   &-outline-light {
     color: $light;
   }
+}
+
+// Tables
+
+.table-light {
+  --#{$prefix}table-color: #{$body-color};
 }
 
 // Forms

@@ -1,0 +1,243 @@
+import re
+from unittest.mock import patch
+
+from django.contrib.auth import get_user_model
+from django.contrib.messages import get_messages
+from django.test import TestCase
+from django.urls import reverse
+
+from appsettings.models import AppSettings
+from appsettings.settings import app_settings, get_settings
+
+
+class AppSettingsTestCase(TestCase):
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser("tests-admin", "admin@example.com", "pw")
+        self.client.force_login(self.admin)
+
+    def test_get_settings_populates_singleton(self):
+        AppSettings.objects.update_or_create(
+            key="CUSTOM_TEST_SETTING",
+            defaults={"value": "test_value_123", "name": "Custom Test Setting"}
+        )
+        get_settings()
+        self.assertEqual(getattr(app_settings, "CUSTOM_TEST_SETTING", None), "test_value_123")
+
+    def test_appsettings_view_get(self):
+        response = self.client.get(reverse("appsettings"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_the_language_choice_offers_the_translated_languages(self):
+        page = self.client.get(reverse("appsettings")).content.decode()
+        choice = page[page.index('<select id="language"'):]
+        choice = choice[:choice.index("</select>")]
+        self.assertEqual(re.findall(r'<option value="([^"]+)"', choice), ["en", "tr", "zh-hans"])
+
+    def test_the_page_answers_in_the_users_language(self):
+        response = self.client.post(reverse("appsettings"), {}, HTTP_ACCEPT_LANGUAGE="tr", follow=True)
+        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)], ["Hiçbir şey değişmedi"])
+        # the groups' links stay the English slugs: the page translates only their titles
+        self.assertContains(response, 'href="#new-vm-defaults"')
+
+    def test_appsettings_update_setting(self):
+        setting = AppSettings.objects.get(key="SHOW_ACCESS_ROOT_PASSWORD")
+        original_value = setting.value
+        new_val = "False" if original_value == "True" else "True"
+
+        response = self.client.post(
+            reverse("appsettings"),
+            {
+                "SHOW_ACCESS_ROOT_PASSWORD": new_val
+            }
+        )
+        self.assertRedirects(response, reverse("appsettings"))
+
+        setting.refresh_from_db()
+        self.assertEqual(setting.value, new_val)
+
+    def test_appsettings_non_superuser_forbidden(self):
+        from django.contrib.auth.models import User
+        regular_user = User.objects.create_user(username="regular", password="pwd")
+        self.client.force_login(regular_user)
+        response = self.client.get(reverse("appsettings"))
+        self.assertEqual(response.status_code, 403)
+
+    def test_clones_are_not_migrated_automatically(self):
+        # a clone stays on the host of the VM it was made from; the setting
+        # that sent it to a random host is removed by migration 0015
+        self.assertFalse(AppSettings.objects.filter(key="CLONE_INSTANCE_AUTO_MIGRATE").exists())
+
+    def test_worker_settings_refuse_values_out_of_bounds(self):
+        response = self.client.post(reverse("appsettings"), {"WORKER_CONCURRENCY": "0"})
+        self.assertEqual(AppSettings.objects.get(key="WORKER_CONCURRENCY").value, "4")
+        self.assertTrue(any("between 1 and 16" in str(m) for m in get_messages(response.wsgi_request)))
+
+    def post(self, key, value):
+        response = self.client.post(reverse("appsettings"), {key: value})
+        # not followed: the messages would stay in the cookie for the next post
+        self.client.cookies.pop("messages", None)
+        return [str(m) for m in get_messages(response.wsgi_request)]
+
+    def test_a_listed_setting_takes_only_its_choices(self):
+        messages = self.post("INSTANCE_FIRMWARE_DEFAULT_TYPE", "Coreboot")
+        self.assertEqual(AppSettings.objects.get(key="INSTANCE_FIRMWARE_DEFAULT_TYPE").value, "BIOS")
+        self.assertTrue(any("BIOS, UEFI" in m for m in messages), messages)
+
+    def test_number_settings_take_whole_numbers_in_their_range(self):
+        # read with int() elsewhere: a letter would break the logs page or VM create
+        for key, bad, good in (("LOGS_PER_PAGE", "abc", "50"), ("LOGS_PER_PAGE", "0", "1000"),
+                               ("INSTANCE_VOLUME_DEFAULT_OWNER_UID", "-1", "107"),
+                               ("INSTANCE_VOLUME_DEFAULT_OWNER_GID", "x", "4294967294"),
+                               ("LOGIN_FAILURE_LIMIT", "0", "10"), ("SNAPSHOT_FREE_SPACE_PERCENT", "101", "0")):
+            with self.subTest(key=key, bad=bad):
+                before = AppSettings.objects.get(key=key).value
+                self.assertTrue(any("whole number" in m for m in self.post(key, bad)))
+                self.assertEqual(AppSettings.objects.get(key=key).value, before)
+                self.post(key, good)
+                self.assertEqual(AppSettings.objects.get(key=key).value, good)
+
+    def test_the_clone_name_prefix_is_text(self):
+        self.post("CLONE_INSTANCE_DEFAULT_PREFIX", "web-")
+        self.assertEqual(AppSettings.objects.get(key="CLONE_INSTANCE_DEFAULT_PREFIX").value, "web-")
+        page = self.client.get(reverse("appsettings")).content.decode()
+        self.assertIn('name="CLONE_INSTANCE_DEFAULT_PREFIX" value="web-"', page)
+
+    def test_the_clone_name_prefix_makes_clone_names(self):
+        # every name offered to a user who is not a superuser would be refused
+        for bad in ("bad prefix", "web_"):
+            with self.subTest(bad=bad):
+                self.assertTrue(any("letters, digits and '-' only" in m for m in self.post("CLONE_INSTANCE_DEFAULT_PREFIX", bad)))
+                self.assertEqual(AppSettings.objects.get(key="CLONE_INSTANCE_DEFAULT_PREFIX").value, "instance")
+
+    def test_native_disk_io_needs_a_cache_libvirt_takes_with_it(self):
+        # libvirt: "io='native' needs either no disk cache or directsync cache mode"
+        self.post("INSTANCE_VOLUME_DEFAULT_CACHE", "writeback")
+        self.assertTrue(any("needs disk cache none or directsync" in m
+                            for m in self.post("INSTANCE_VOLUME_DEFAULT_IO", "native")))
+        self.assertEqual(AppSettings.objects.get(key="INSTANCE_VOLUME_DEFAULT_IO").value, "default")
+        response = self.client.post(reverse("appsettings"), {"INSTANCE_VOLUME_DEFAULT_CACHE": "none",
+                                                             "INSTANCE_VOLUME_DEFAULT_IO": "native"})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(AppSettings.objects.get(key="INSTANCE_VOLUME_DEFAULT_IO").value, "native")
+        self.assertTrue(any("needs disk cache" in m for m in self.post("INSTANCE_VOLUME_DEFAULT_CACHE", "unsafe")))
+        self.assertEqual(AppSettings.objects.get(key="INSTANCE_VOLUME_DEFAULT_CACHE").value, "none")
+        # a pair saved before does not block another setting
+        AppSettings.objects.filter(key="INSTANCE_VOLUME_DEFAULT_CACHE").update(value="writeback")
+        self.post("LOGS_PER_PAGE", "50")
+        self.assertEqual(AppSettings.objects.get(key="LOGS_PER_PAGE").value, "50")
+
+    def test_the_pair_is_checked_again_as_saved_when_it_is_saved(self):
+        # another administrator saved the cache after this page read the settings: the first
+        # check saw the pair as it was, the second, under the rows' lock, sees it as it is
+        from appsettings import views
+
+        AppSettings.objects.filter(key="INSTANCE_VOLUME_DEFAULT_CACHE").update(value="writeback")
+        real = views.combined_refusal
+        calls = []
+
+        def stale_first(values):
+            calls.append(values)
+            return None if len(calls) == 1 else real(values)
+
+        with patch.object(views, "combined_refusal", side_effect=stale_first):
+            response = self.client.post(reverse("appsettings"), {"INSTANCE_VOLUME_DEFAULT_IO": "native"},
+                                        HTTP_ACCEPT_LANGUAGE="tr")
+        self.assertEqual(len(calls), 2)
+        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)],
+                         ["Disk G/Ç native, disk önbelleği none veya directsync olmasını gerektirir"])
+        self.assertEqual(AppSettings.objects.get(key="INSTANCE_VOLUME_DEFAULT_IO").value, "default")
+        # the log row keeps the reason in English, which each reader sees in their language
+        from logs.models import Logs
+
+        self.assertIn("Disk I/O native needs disk cache none or directsync", Logs.objects.latest("id").message)
+
+    def page(self):
+        from lxml import html
+
+        return html.fromstring(self.client.get(reverse("appsettings")).content)
+
+    def test_settings_are_grouped_with_their_descriptions_shown(self):
+        page = self.page()
+        titles = [h.text_content().strip() for h in page.xpath("//section/div[@class='card-header']/h2")]
+        self.assertEqual(titles[:4], ["Appearance", "New VM defaults", "Disks", "Clones"])
+        # the index jumps to each group
+        links = page.xpath("//nav[@aria-label='Settings groups']//a/@href")
+        self.assertEqual(links[:3], ["#appearance", "#new-vm-defaults", "#disks"])
+        self.assertEqual([page.get_element_by_id(link[1:]).tag for link in links], ["section"] * len(links))
+        # every setting is in one group, with a label tied to its field and its description shown
+        keys = page.xpath("//form//*[self::input or self::select][@name and @name!='csrfmiddlewaretoken' and not(starts-with(@name, 'was-'))]/@name")
+        names = set(AppSettings.objects.exclude(key="BOOTSTRAP_THEME").values_list("key", flat=True))
+        # a switch has its hidden False under the same name
+        self.assertEqual(sorted({k for k in keys if k not in ("BOOTSTRAP_THEME", "language")}), sorted(names))
+        (field,) = page.xpath("//*[@name='LOGS_PER_PAGE']")
+        self.assertEqual((field.get("type"), field.get("min"), field.get("max")), ("number", "1", "1000"))
+        self.assertEqual(page.xpath(f"//label[@for='{field.get('id')}']/text()"), ["Logs per Page"])
+        self.assertEqual(page.xpath(f"//*[@id='{field.get('aria-describedby')}']/text()"), ["Rows per page on the Logs page"])
+        # a group is saved with its button, not on every change
+        self.assertEqual(page.xpath("//*[@onchange]"), [])
+
+    def test_a_group_saves_its_changed_settings_only(self):
+        from logs.models import Logs
+
+        Logs.objects.all().delete()
+        response = self.client.post(reverse("appsettings"), {
+            "CONSOLE_SCALE": "True", "CONSOLE_VIEW_ONLY": "False",
+            "CONSOLE_RESIZE_SESSION": "False", "CONSOLE_CLIP_VIEWPORT": "True"})
+        self.assertRedirects(response, reverse("appsettings"))
+        values = dict(AppSettings.objects.filter(key__startswith="CONSOLE_").values_list("key", "value"))
+        self.assertEqual(values, {"CONSOLE_SCALE": "True", "CONSOLE_VIEW_ONLY": "False",
+                                  "CONSOLE_RESIZE_SESSION": "False", "CONSOLE_CLIP_VIEWPORT": "True"})
+        # one row for the group's save
+        self.assertEqual(list(Logs.objects.values_list("message", flat=True)),
+                         ["Settings: change Console Clip Viewport to True, Console Scale to True"])
+        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)],
+                         ["Saved: Console Clip Viewport, Console Scale"])
+
+    def test_a_true_or_false_setting_is_a_switch(self):
+        AppSettings.objects.filter(key="CONSOLE_SCALE").update(value="True")
+        page = self.page()
+        # in the form's order: the hidden False, the switch, the value the page showed
+        fields = page.xpath("//form//input[@name='CONSOLE_SCALE' or @name='was-CONSOLE_SCALE']")
+        self.assertEqual([(f.get("type"), f.get("value")) for f in fields],
+                         [("hidden", "False"), ("checkbox", "True"), ("hidden", "True")])
+        self.assertEqual((fields[1].get("role"), fields[1].checked), ("switch", True))
+        # the hidden False before it is what an unchecked switch posts; a checked one's True comes last and wins
+        AppSettings.objects.filter(key="CONSOLE_SCALE").update(value="False")
+        self.client.post(reverse("appsettings"), {"CONSOLE_SCALE": ["False", "True"], "was-CONSOLE_SCALE": "False"})
+        self.assertEqual(AppSettings.objects.get(key="CONSOLE_SCALE").value, "True")
+        self.client.post(reverse("appsettings"), {"CONSOLE_SCALE": "False", "was-CONSOLE_SCALE": "True"})
+        self.assertEqual(AppSettings.objects.get(key="CONSOLE_SCALE").value, "False")
+
+    def test_a_group_keeps_what_another_administrator_saved_meanwhile(self):
+        # both opened the page with 5 and 15; the first saved 10 for the limit
+        AppSettings.objects.filter(key="LOGIN_FAILURE_LIMIT").update(value="10")
+        self.client.post(reverse("appsettings"), {"LOGIN_FAILURE_LIMIT": "5", "was-LOGIN_FAILURE_LIMIT": "5",
+                                                  "LOGIN_LOCKOUT_MINUTES": "30", "was-LOGIN_LOCKOUT_MINUTES": "15"})
+        values = dict(AppSettings.objects.filter(key__startswith="LOGIN_").values_list("key", "value"))
+        self.assertEqual(values, {"LOGIN_FAILURE_LIMIT": "10", "LOGIN_LOCKOUT_MINUTES": "30"})
+
+    def test_a_failed_save_changes_none_of_its_group(self):
+        from unittest.mock import patch
+
+        from django.db import DatabaseError
+
+        saves = []
+
+        def save(setting, *args, **kwargs):
+            saves.append(setting.key)
+            if len(saves) == 2:
+                raise DatabaseError("disk full")
+            return original(setting, *args, **kwargs)
+
+        original = AppSettings.save
+        with patch.object(AppSettings, "save", save):
+            self.client.post(reverse("appsettings"), {"CONSOLE_SCALE": "True", "CONSOLE_CLIP_VIEWPORT": "True"})
+        values = dict(AppSettings.objects.filter(key__in=["CONSOLE_SCALE", "CONSOLE_CLIP_VIEWPORT"]).values_list("key", "value"))
+        self.assertEqual(values, {"CONSOLE_SCALE": "False", "CONSOLE_CLIP_VIEWPORT": "False"})
+
+    def test_one_bad_value_saves_nothing_of_its_group(self):
+        response = self.client.post(reverse("appsettings"), {"LOGIN_FAILURE_LIMIT": "10", "LOGIN_LOCKOUT_MINUTES": "x"})
+        self.assertEqual(AppSettings.objects.get(key="LOGIN_FAILURE_LIMIT").value, "5")
+        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)],
+                         ["Login Lockout Minutes must be a whole number between 1 and 10080"])
+

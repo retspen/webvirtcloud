@@ -8,13 +8,30 @@ venv2
 .webvirtcloud
 *.pyc
 db.sqlite3*
+test_db*.sqlite3*
 console/cert.pem*
 tags
 dhcpd.*
 webvirtcloud/settings.py
-*migrations/*
+/settings.py
 .coverage
 htmlcov
 *.log
 templates/webvirtcloud.code-workspace
 DEPENDENCY_UPGRADE_PLAN.md
+AGENTS.md
+ROADMAP.md
+.agents
+
+# Runtime data (secret key, etc.)
+data/
+
+# collectstatic output
+/staticfiles/
+
+# Local planning and agent workspace (superpowers)
+/docs/superpowers/
+/.superpowers/
+
+# Panel backups (manage.py backup)
+/backups/

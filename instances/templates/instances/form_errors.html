@@ -1,0 +1,9 @@
+{# Every error of a refused create form, at the top of the form: also those of fields it keeps behind a picker or hidden. #}
+{% if form.errors %}
+    <div class="alert alert-danger form-errors" role="alert">
+        <ul class="mb-0">
+            {% for field in form %}{% for error in field.errors %}<li>{{ field.label }}: {{ error }}</li>{% endfor %}{% endfor %}
+            {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+    </div>
+{% endif %}

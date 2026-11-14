@@ -1,116 +1,127 @@
 # pylint: disable=no-name-in-module,no-member
-import re
 
-from accounts.models import UserInstance
+import functools
+import json
+import logging
+from pathlib import Path
+
 from appsettings.settings import app_settings
-from django.http.response import HttpResponseServerError
-from django.shortcuts import render
+from console import tokens
+from django.conf import settings
+from django.shortcuts import redirect, render
 from django.utils.translation import gettext_lazy as _
 from instances.models import Instance
+from instances.utils import can_open_console
 from libvirt import libvirtError
+from operations.utils import safe_text
+from vrtManager.connection import CONN_TCP, CONN_TLS
 from vrtManager.instance import wvmInstance
-from webvirtcloud.settings import (
-    SOCKETIO_PUBLIC_HOST,
-    SOCKETIO_PUBLIC_PATH,
-    SOCKETIO_PUBLIC_PORT,
-    WS_PUBLIC_HOST,
-    WS_PUBLIC_PATH,
-    WS_PUBLIC_PORT,
-)
+from vrtManager.util import is_loopback
+from webvirtcloud.middleware import error_text
+
+logger = logging.getLogger(__name__)
+
+# one file a layout, written by dev/console_layout.py
+LAYOUTS_DIR = Path(__file__).resolve().parent / "layouts"
 
 
-def console(request):
-    """
-    :param request:
-    :return:
-    """
-    console_error = None
+@functools.cache
+def keyboard_layouts():
+    """The keyboard layouts the VNC console types text with, US first, then
+    by name: {id: {"name": ..., "keys": {DOM code: [plain, Shift, AltGr,
+    Shift+AltGr]}}}."""
+    layouts = {}
+    for path in LAYOUTS_DIR.glob("*.json"):
+        layout = json.loads(path.read_text())
+        layouts[path.stem] = {"name": layout["name"], "keys": layout["keys"]}
+    us = layouts.pop("us")
+    return {"us": us, **dict(sorted(layouts.items(), key=lambda item: item[1]["name"]))}
 
-    if request.method == "GET":
-        token = request.GET.get("token", "")
-        view_type = request.GET.get("view", "lite")
-        view_only = request.GET.get("view_only", app_settings.CONSOLE_VIEW_ONLY.lower())
-        scale = request.GET.get("scale", app_settings.CONSOLE_SCALE.lower())
-        resize_session = request.GET.get(
-            "resize_session", app_settings.CONSOLE_RESIZE_SESSION.lower()
-        )
-        clip_viewport = request.GET.get(
-            "clip_viewport", app_settings.CONSOLE_CLIP_VIEWPORT.lower()
-        )
+
+def console(request, compute_id, uuid):
+    """The console page of the VM with this UUID on this compute. A console
+    that cannot open gets a page that says why, and no console client."""
+    instance = Instance.objects.filter(compute_id=compute_id, uuid=uuid).first()
+    if instance is None:
+        # migrated since the page was opened: a reconnect finds the VM on its
+        # new compute, when it is the only one with that UUID the user may open
+        moved = [vm for vm in Instance.objects.filter(uuid=uuid) if can_open_console(request.user, vm)]
+        if len(moved) == 1:
+            return redirect("console", moved[0].compute_id, uuid)
+    # Same answer for "no such VM" and "not allowed", so the response
+    # does not reveal whether a VM exists.
+    if instance is None or not can_open_console(request.user, instance):
+        console_error = _("User does not have permission to access console or host/instance not exist")
+        return render(request, "console-error.html", {"console_error": console_error}, status=403)
 
     try:
-        temptoken = token.split("-", 1)
-        host = int(temptoken[0])
-        uuid = temptoken[1]
-
-        if not request.user.is_superuser and not request.user.has_perm(
-            "instances.view_instances"
-        ):
-            try:
-                userInstance = UserInstance.objects.get(
-                    instance__compute_id=host,
-                    instance__uuid=uuid,
-                    user__id=request.user.id,
-                )
-                instance = Instance.objects.get(compute_id=host, uuid=uuid)
-            except UserInstance.DoesNotExist:
-                instance = None
-                console_error = _(
-                    "User does not have permission to access console or host/instance not exist"
-                )
-                return HttpResponseServerError(console_error)
-        else:
-            instance = Instance.objects.get(compute_id=host, uuid=uuid)
-
         conn = wvmInstance(
             instance.compute.hostname,
             instance.compute.login,
             instance.compute.password,
             instance.compute.type,
             instance.name,
+            uuid=instance.uuid,
         )
         console_type = conn.get_console_type()
-        console_websocket_port = conn.get_console_websocket_port()
         console_passwd = conn.get_console_passwd()
-    except libvirtError:
+        running = conn.instance.isActive()
+        # novncd reaches a console that listens on its host's loopback only
+        # through SSH (or on this host); the running VM's listener, as novncd sees it
+        unreachable = instance.compute.type in (CONN_TCP, CONN_TLS) and bool(
+            conn.get_console_socket() or is_loopback(conn.get_console_listener_addr())
+        )
+    except libvirtError as err:
+        # the host or the VM could not be read: the page says that, not to check the console settings
+        logger.warning("Console of %s on %s: %s", instance.name, instance.compute.name, safe_text(err))
+        return render(request, "console-error.html", {"instance": instance, "console_error": error_text(request, err)})
+    except (ValueError, IndexError):
+        running = unreachable = False
         console_type = None
-        console_websocket_port = None
         console_passwd = None
 
-    ws_port = console_websocket_port if console_websocket_port else WS_PUBLIC_PORT
-    ws_host = WS_PUBLIC_HOST if WS_PUBLIC_HOST else request.get_host()
-    ws_path = WS_PUBLIC_PATH if WS_PUBLIC_PATH else "/"
-
-    if ":" in ws_host:
-        ws_host = re.sub(":[0-9]+", "", ws_host)
-
-    if ws_path:
-        ws_path = ws_path.strip("/") + "/" if ws_path.strip("/") else ""
-
-    if console_type == "vnc" or console_type == "spice":
-        console_page = "console-" + console_type + "-" + view_type + ".html"
-        response = render(request, console_page, locals())
-    elif console_type == "pty":
-        socketio_host = (
-            SOCKETIO_PUBLIC_HOST if SOCKETIO_PUBLIC_HOST else request.get_host()
+    if console_type is None:
+        console_error = _("Fail to get console. Please check the console configuration of your VM.")
+    elif not running:  # a shut-off VM has no console to connect to
+        console_error = _("The VM is not running: start it to open its console.")
+    elif console_type == "vnc" and unreachable:
+        console_error = _(
+            "This console listens only on its host, which the panel reaches over TCP or TLS. "
+            "Let the console listen on all interfaces in the VM's console settings, "
+            "or add the host as an SSH host."
         )
-        socketio_port = SOCKETIO_PUBLIC_PORT if SOCKETIO_PUBLIC_PORT else 6081
-        socketio_path = SOCKETIO_PUBLIC_PATH if SOCKETIO_PUBLIC_PATH else "/"
-
-        if ":" in socketio_host:
-            socketio_host = re.sub(":[0-9]+", "", socketio_host)
-
-        response = render(request, "console-xterm.html", locals())
+    elif console_type == "pty" and not settings.SERIAL_CONSOLE_ENABLED:
+        console_error = _(
+            "Serial console is disabled on this server. "
+            "Please switch VM graphics to VNC or ask an administrator."
+        )
+    elif console_type not in ("vnc", "pty"):
+        console_error = _(
+            "Console type '%(type)s' is not supported. Please switch the VM graphics to VNC."
+        ) % {"type": console_type}
     else:
-        if console_type is None:
-            console_error = _(
-                "Fail to get console. Please check the console configuration of your VM."
-            )
-        else:
-            console_error = _("Console type '%(type)s' has not support") % {
-                "type": console_type
-            }
-        response = render(request, "console-vnc-lite.html", locals())
+        console_error = None
+    if console_error:
+        return render(request, "console-error.html", {"instance": instance, "console_error": console_error})
 
-    response.set_cookie("token", token)
-    return response
+    # the console daemons' credential for this page
+    token = tokens.sign(compute_id, uuid, request.user.id, console_type)
+    if console_type == "pty":
+        return render(request, "console-xterm.html", {"instance": instance, "token": token})
+
+    # how the VNC page starts (Settings > Console); its View menu changes them
+    if app_settings.CONSOLE_RESIZE_SESSION == "True":
+        resize = "remote"
+    elif app_settings.CONSOLE_SCALE == "True":
+        resize = "scale"
+    else:
+        resize = "off"
+    vnc = {
+        "token": token,
+        # without the permission the VNC server asks the user for it
+        "password": console_passwd if request.user.has_perm("instances.passwordless_console") else None,
+        "resize": resize,
+        "clip": app_settings.CONSOLE_CLIP_VIEWPORT == "True",
+        "viewOnly": app_settings.CONSOLE_VIEW_ONLY == "True",
+    }
+    return render(request, "console-vnc.html", {"instance": instance, "vnc": vnc, "layouts": keyboard_layouts()})

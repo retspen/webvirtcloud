@@ -1,35 +1,37 @@
 #!/usr/bin/env python3
+# The VNC console proxy: nginx passes /novncd/ websockets to it; each one
+# carries a console token and is joined to that VM's VNC server, directly,
+# through an SSH tunnel or a local Unix socket.
 
-import os
-import sys
+import argparse
+import ipaddress
 import logging
+import os
+import socket
+import sys
+import threading
+from urllib.parse import parse_qs, urlparse
+
 import django
 
-import signal
-signal.signal(signal.SIGCHLD, signal.SIG_IGN)
-
-DIR_PATH = os.path.dirname(os.path.abspath(__file__))
-ROOT_PATH = os.path.abspath(os.path.join(DIR_PATH, "..", ""))
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "webvirtcloud.settings")
-CERT = DIR_PATH + "/cert.pem"
-
+ROOT_PATH = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 if ROOT_PATH not in sys.path:
     sys.path.append(ROOT_PATH)
-
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "webvirtcloud.settings")
 django.setup()
 
-import re
-import socket
+from websockify import ProxyRequestHandler, WebSocketProxy  # noqa: E402
 
-# from six.moves import http_cookies as Cookie
-from http import cookies as Cookie
-import argparse
-from console.sshtunnels import SSHTunnels
-from vrtManager.connection import CONN_SOCKET, CONN_SSH
-from webvirtcloud.settings import WS_CERT, WS_HOST, WS_PORT
+from console.sshtunnels import open_tunnel, tunnel_target  # noqa: E402
+from console.tokens import ACCESS_CHECK, authorize, may_still_open, session_user_id  # noqa: E402
+from logs.audit import write  # noqa: E402
+from operations.utils import safe_text, traceback_of  # noqa: E402
+from vrtManager.connection import CONN_SOCKET, CONN_SSH, CONNECT_TIMEOUT  # noqa: E402
+from vrtManager.util import is_loopback  # noqa: E402
+from webvirtcloud.settings import WS_HOST, WS_PORT  # noqa: E402
 
 
-def get_parser(default_host=WS_HOST, default_port=WS_PORT or 6080, default_cert=WS_CERT or CERT):
+def get_parser(default_host=WS_HOST, default_port=WS_PORT or 6080):
     parser = argparse.ArgumentParser(description="WebVirtCloud noVNC daemon")
     parser.add_argument(
         "-v",
@@ -54,290 +56,183 @@ def get_parser(default_host=WS_HOST, default_port=WS_PORT or 6080, default_cert=
         help="Listen port",
         default=default_port,
     )
-    parser.add_argument(
-        "-c",
-        "--cert",
-        dest="cert",
-        action="store",
-        help="Certificate file path",
-        default=default_cert,
-    )
     return parser
 
 
-options = get_parser().parse_args()
-
-FORMAT = "%(asctime)s - %(name)s - %(levelname)s : %(message)s"
-if options.debug:
-    logging.basicConfig(level=logging.DEBUG, format=FORMAT)
-    options.verbose = True
-elif options.verbose:
-    logging.basicConfig(level=logging.INFO, format=FORMAT)
-else:
-    logging.basicConfig(level=logging.WARNING, format=FORMAT)
-
-try:
-    from websockify import WebSocketProxy
-
-    try:
-        from websockify import ProxyRequestHandler
-    except ImportError:
-        USE_HANDLER = False
-    else:
-        USE_HANDLER = True
-except ImportError:
-    try:
-        from novnc.wsproxy import WebSocketProxy
-    except ImportError:
-        print("Unable to import a websockify implementation,\n please install one")
-        sys.exit(1)
-    else:
-        USE_HANDLER = False
-
-
-def get_connection_infos(token):
-    from instances.models import Instance
+def get_connection_infos(instance):
     from vrtManager.instance import wvmInstance
 
-    try:
-        temptoken = token.split("-", 1)
-        host = int(temptoken[0])
-        uuid = temptoken[1]
-        instance = Instance.objects.get(compute_id=host, uuid=uuid)
-        conn = wvmInstance(
-            instance.compute.hostname,
-            instance.compute.login,
-            instance.compute.password,
-            instance.compute.type,
-            instance.name,
-        )
-        if instance.compute.hostname.count(":"):
-            connhost = instance.compute.hostname.split(":")[0]
-            connport = instance.compute.hostname.split(":")[1]
-        else:
-            connhost = instance.compute.hostname
-            connport = 22
-        connuser = instance.compute.login
-        conntype = instance.compute.type
-        console_host = conn.get_console_listener_addr()
-        console_port = conn.get_console_port()
-        console_socket = conn.get_console_socket()
-    except Exception as e:
-        logging.error(
-            "Fail to retrieve console connection infos for token %s : %s" % (token, e)
-        )
-        raise
-    return (
-        connhost,
-        connport,
-        connuser,
-        conntype,
-        console_host,
-        console_port,
-        console_socket,
+    conn = wvmInstance(
+        instance.compute.hostname,
+        instance.compute.login,
+        instance.compute.password,
+        instance.compute.type,
+        instance.name,
+        uuid=instance.uuid,  # the VM access was checked for, whatever its name now
     )
+    console_host = conn.get_console_listener_addr()
+    console_port = conn.get_console_port()
+    console_socket = conn.get_console_socket()
+    compute = instance.compute
+    return compute.hostname, compute.login, compute.type, console_host, console_port, console_socket
 
 
-class CompatibilityMixIn(object):
-    def _new_client(self, daemon, socket_factory):
-        # NoVNC uses it's own convention that forward token
-        # from the request to a cookie header, we should check
-        # also for this behavior
-        token = None
-        hcookie = self.headers.get("cookie")
+WILDCARD = (None, "", "0.0.0.0", "::")
+# A host that drops off the network sends nothing to say so: TCP keepalive
+# notices it on a quiet console, TCP_USER_TIMEOUT on one with data unanswered,
+# and the session ends within about a minute (Linux has every option).
+KEEPALIVE = {"TCP_KEEPIDLE": 30, "TCP_KEEPINTVL": 10, "TCP_KEEPCNT": 3, "TCP_USER_TIMEOUT": 60000}
 
-        if hcookie:
-            cookie = Cookie.SimpleCookie()
-            for hcookie_part in hcookie.split(";"):
-                hcookie_part = hcookie_part.lstrip()
-                try:
-                    cookie.load(hcookie_part)
-                except Cookie.CookieError:
-                    # NOTE(stgleb): Do not print out cookie content
-                    # for security reasons.
-                    self.msg("Found malformed cookie")
-                else:
-                    if "token" in cookie:
-                        token = cookie["token"].value
 
-        # Fallback to query parameter if token not found in cookie
-        if not token and hasattr(self, "path"):
-            from urllib.parse import parse_qs, urlparse
+def bounded_connect(host, port, connect=True):
+    """A connection to a VNC server, in place of websockify's socket(), which
+    waits for one that does not answer as long as the OS does (some 2 minutes)."""
+    tsock = socket.create_connection((host, port), timeout=CONNECT_TIMEOUT)
+    tsock.settimeout(None)  # a console may stay quiet for long once connected
+    tsock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+    for name, value in KEEPALIVE.items():
+        if hasattr(socket, name):
+            tsock.setsockopt(socket.IPPROTO_TCP, getattr(socket, name), value)
+    return tsock
 
-            try:
-                parsed_url = urlparse(self.path)
-                query_params = parse_qs(parsed_url.query)
-                if "token" in query_params:
-                    token = query_params["token"][0]
-            except Exception:
-                pass
 
+def client_address(value):
+    """The client's address nginx sends in X-Real-IP, or None."""
+    try:
+        return str(ipaddress.ip_address(value))
+    except ValueError:
+        return None
+
+
+def end_when_refused(instance, user_id, tsock, ended):
+    """Close the session's VNC socket, which ends it, once its user may no
+    longer open the console (as the serial console does)."""
+    while not ended.wait(ACCESS_CHECK):
+        try:
+            if may_still_open(user_id, instance):
+                continue
+            logging.info("VNC console of VM %s closed: its user may no longer open it", instance.name)
+        except Exception as e:
+            # unchecked, the session would go on whoever loses the VM meanwhile
+            logging.warning("VNC console of VM %s closed: its user's access could not be checked: %s",
+                            instance.name, safe_text(e))
+        try:
+            tsock.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass  # the session ended meanwhile
+        return
+
+
+class ConsoleClient:
+    """What a console websocket is joined to; ConsoleProxyHandler is the
+    websockify handler that runs it."""
+
+    def _new_client(self, socket_factory):
+        # The page puts its own console's token on its websocket URL: a cookie
+        # is shared by the browser's tabs and would name the last console opened
+        token = parse_qs(urlparse(self.path).query).get("token", [None])[0]
         if not token:
-            self.msg("No console token provided in cookie or query parameters")
+            logging.warning("Console connection without a token in its websocket URL")
             return
 
-        (
-            connhost,
-            connport,
-            connuser,
-            conntype,
-            console_host,
-            console_port,
-            console_socket,
-        ) = get_connection_infos(token)
+        instance = user = None
+        try:
+            instance, user = authorize(token, "vnc")
+            # a token read from a log or a URL is no use without its user's session
+            if session_user_id(self.headers.get("Cookie")) != str(user.pk):
+                raise PermissionError("The console page was opened in another session")
+            connhost, connuser, conntype, console_host, console_port, console_socket = get_connection_infos(instance)
+        except PermissionError as e:
+            address = client_address(self.headers.get("X-Real-IP"))
+            logging.warning("Console connection from %s denied: %s", address, e)
+            write(user.username if user else "", "-", "", f"VNC console refused: {e}", False, address)
+            return
+        except Exception as e:
+            # the VM and its user, as the refusal above; a fault of the panel with its traceback, without secrets
+            logging.warning("Console connection to VM %s for %s failed: %s%s", instance.name if instance else "-",
+                            user.username if user else "-", safe_text(e), traceback_of(e))
+            return
+        logging.debug(
+            "Console of %s@%s (type %s): %s:%s, socket %s",
+            connuser, connhost, conntype, console_host, console_port, console_socket,
+        )
 
-        cnx_debug_msg = "Connection infos :\n"
-        cnx_debug_msg += "- connhost : '%s'\n" % connhost
-        cnx_debug_msg += "- connport : '%s'\n" % connport
-        cnx_debug_msg += "- connuser : '%s'\n" % connuser
-        cnx_debug_msg += "- conntype : '%s'\n" % conntype
-        cnx_debug_msg += "- console_host : '%s'\n" % console_host
-        cnx_debug_msg += "- console_port : '%s'\n" % console_port
-        cnx_debug_msg += "- console_socket : '%s'\n" % console_socket
-        logging.debug(cnx_debug_msg)
-
-        if console_socket and conntype == CONN_SOCKET:
+        tunnel = None
+        loopback = is_loopback(console_host)
+        if conntype == CONN_SSH:
+            # the console travels inside the SSH connection, encrypted,
+            # whatever address it listens on
+            target = tunnel_target(console_host, console_port, console_socket)
+            self.msg("Opening an SSH tunnel to %s@%s, console %s" % (connuser, connhost, target))
+            tsock, tunnel = open_tunnel(connhost, connuser, target)
+        elif console_socket and conntype == CONN_SOCKET:
             # Local socket on local host
             self.msg("Try to open local socket %s" % console_socket)
             tsock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             tsock.connect(console_socket)
-        elif console_socket or re.match(r"^127\.", console_host):
-            # Need tunnel to physical host
-            if conntype != CONN_SSH:
-                self.msg(
-                    "Need a tunnel to access console but can't mount "
-                    + "one because it's not a SSH host"
-                )
-                raise Exception(self.msg)
-            try:
-                # generate a string with all placeholders to avoid TypeErrors
-                # in sprintf
-                # https://github.com/retspen/webvirtmgr/pull/497
-                error_msg = "Try to open tunnel on %s@%s:%s on console %s:%s "
-                error_msg += "(or socket %s)"
-                self.msg(
-                    error_msg
-                    % (
-                        connuser,
-                        connhost,
-                        connport,
-                        console_host,
-                        console_port,
-                        console_socket,
-                    )
-                )
-                tunnel = SSHTunnels(
-                    connhost,
-                    connuser,
-                    connport,
-                    console_host,
-                    console_port,
-                    console_socket,
-                )
-                fd = tunnel.open_new()
-                tunnel.unlock()
-                tsock = socket.fromfd(fd, socket.AF_INET, socket.SOCK_STREAM)
-            except Exception as e:
-                self.msg("Fail to open tunnel : %s" % e)
-                raise
-            self.msg("Tunnel opened")
+        elif conntype == CONN_SOCKET and loopback:
+            # libvirt runs on this host: its loopback is ours
+            self.msg("connecting to: %s:%s" % (console_host, console_port))
+            tsock = socket_factory(console_host, console_port, connect=True)
+        elif console_socket or loopback:
+            message = "The console listens only on its compute; it is reached through SSH computes only"
+            self.msg(message)
+            raise Exception(message)
         else:
-            # Direct access
-            self.msg("connecting to: %s:%s" % (connhost, console_port))
-            tsock = socket_factory(connhost, console_port, connect=True)
-            tunnel = None
+            # the address the console listens on, or the compute's for a wildcard
+            address = connhost if console_host in WILDCARD else console_host
+            self.msg("connecting to: %s:%s" % (address, console_port))
+            tsock = socket_factory(address, console_port, connect=True)
 
-        if self.verbose and not daemon:
-            print(self.traffic_legend)
-
-        # Start proxying
+        ended = threading.Event()
+        threading.Thread(target=end_when_refused, args=(instance, user.pk, tsock, ended), daemon=True).start()
         try:
             self.msg("Start proxying")
             self.do_proxy(tsock)
-        except Exception:
+        finally:
+            ended.set()
+            tsock.close()
             if tunnel:
-                self.vmsg(
-                    "%s:%s (via %s@%s:%s) : Websocket client or Target closed"
-                    % (console_host, console_port, connuser, connhost, connport)
-                )
-                if tsock:
-                    tsock.shutdown(socket.SHUT_RDWR)
-                    tsock.close()
-                tunnel.close_all()
-            raise
+                error = tunnel.close()
+                if error:
+                    logging.warning("SSH tunnel to %s@%s failed: %s", connuser, connhost, error)
 
 
-if USE_HANDLER:
+class ConsoleProxyHandler(ProxyRequestHandler, ConsoleClient):
+    def msg(self, *args, **kwargs):
+        self.log_message(*args, **kwargs)
 
-    class NovaProxyRequestHandler(ProxyRequestHandler, CompatibilityMixIn):
-        def msg(self, *args, **kwargs):
-            self.log_message(*args, **kwargs)
-
-        def vmsg(self, *args, **kwargs):
-            if self.verbose:
-                self.msg(*args, **kwargs)
-
-        def new_websocket_client(self):
-            """
-            Called after a new WebSocket connection has been established.
-            """
-            # Setup variable for compatibility
-            daemon = self.server.daemon
-            socket_factory = self.server.socket
-
-            self._new_client(daemon, socket_factory)
-
-else:
-
-    class NovaWebSocketProxy(WebSocketProxy, CompatibilityMixIn):
-        def new_client(self):
-            """
-            Called after a new WebSocket connection has been established.
-            """
-            # Setup variable for compatibility
-            daemon = self.daemon
-            socket_factory = self.socket
-
-            self._new_client(daemon, socket_factory)
+    def new_websocket_client(self):
+        self._new_client(bounded_connect)
 
 
 if __name__ == "__main__":
-    if USE_HANDLER:
-        # Create the WebSocketProxy with NovaProxyRequestHandler handler
-        server = WebSocketProxy(
-            RequestHandlerClass=NovaProxyRequestHandler,
-            listen_host=options.host,
-            listen_port=options.port,
-            source_is_ipv6=False,
-            verbose=options.verbose,
-            cert=options.cert,
-            key=None,
-            ssl_only=False,
-            daemon=False,
-            record=False,
-            web=False,
-            traffic=False,
-            target_host="ignore",
-            target_port="ignore",
-            wrap_mode="exit",
-            wrap_cmd=None,
-        )
-    else:
-        # Create the NovaWebSockets proxy
-        server = NovaWebSocketProxy(
-            listen_host=options.host,
-            listen_port=options.port,
-            source_is_ipv6=False,
-            verbose=options.verbose,
-            cert=options.cert,
-            key=None,
-            ssl_only=False,
-            daemon=False,
-            record=False,
-            web=False,
-            target_host="ignore",
-            target_port="ignore",
-            wrap_mode="exit",
-            wrap_cmd=None,
-        )
-    server.start_server()
+    options = get_parser().parse_args()
+
+    # to stderr (the journal, docker logs), not the panel's own log file:
+    # each process rotating that file would lose lines. force: Django's
+    # settings already gave the root logger that file.
+    level = logging.DEBUG if options.debug else logging.INFO if options.verbose else logging.WARNING
+    logging.basicConfig(level=level, format="%(levelname)s %(name)s: %(message)s", force=True)
+    options.verbose = options.verbose or options.debug
+
+    # nginx ends TLS: novncd speaks plain websockets on the loopback
+    server = WebSocketProxy(
+        RequestHandlerClass=ConsoleProxyHandler,
+        listen_host=options.host,
+        listen_port=options.port,
+        verbose=options.verbose,
+        daemon=False,
+        web=False,
+        target_host="ignore",
+        target_port="ignore",
+        # a ping while the VM's screen stays the same: nginx, and a proxy on
+        # the way, end a websocket that sends nothing for 60 seconds
+        heartbeat=30,
+    )
+    try:
+        server.start_server()
+    except SystemExit as stop:
+        # websockify ends with status 0 when it cannot listen (the port is
+        # taken): systemd's Restart=on-failure would not start it again
+        raise SystemExit(stop.code or 1) from None

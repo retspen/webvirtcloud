@@ -1,0 +1,257 @@
+"""The Users pages: an administrator cannot lock their own account out, the
+user form says what its fields mean, and a password set by an administrator
+can be one the user must change."""
+
+from contextlib import contextmanager
+from unittest.mock import patch
+
+from accounts.models import ApiToken, UserAttributes
+from computes.utils import users_lock
+from django.contrib.auth import get_user_model
+from django.contrib.messages import get_messages
+from django.test import TestCase
+from django.urls import reverse
+from lxml import html
+from admin.tests.edits import user_seen
+
+
+class UserPagesTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.admin = User.objects.create_superuser("up-admin", "up@example.com", "pw")
+        self.alice = User.objects.create_user("up-alice", password="Alice-pw-123")
+        UserAttributes.objects.get_or_create(user=self.alice)
+        self.client.force_login(self.admin)
+
+    def messages(self, response):
+        return [str(m) for m in get_messages(response.wsgi_request)]
+
+    def form_data(self, user, **changes):
+        data = {"username": user.username, "is_active": "on", "role": "superuser" if user.is_superuser else "user",
+                "max_instances": "2", "max_cpus": "2", "max_memory": "2", "max_disk_size": "20", "seen": user_seen(user),
+                **changes}
+        return {key: value for key, value in data.items() if value != ""}
+
+    def test_an_administrator_cannot_block_delete_or_demote_themselves(self):
+        own = self.admin.pk
+        for response in (self.client.post(reverse("admin:user_block", args=[own])),
+                         self.client.post(reverse("admin:user_delete", args=[own]))):
+            self.assertIn("You cannot block, delete or demote your own account", self.messages(response))
+        for change in ({"role": "user"}, {"is_active": ""}):
+            response = self.client.post(reverse("admin:user_update", args=[own]), self.form_data(self.admin, **change))
+            self.assertContains(response, "You cannot block, delete or demote your own account")
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.is_active and self.admin.is_superuser)
+        # another user's account is theirs to change
+        self.client.post(reverse("admin:user_block", args=[self.alice.pk]))
+        self.alice.refresh_from_db()
+        self.assertFalse(self.alice.is_active)
+
+    def test_the_form_tells_the_password_state_and_links_its_page(self):
+        page = html.fromstring(self.client.get(reverse("admin:user_update", args=[self.alice.pk])).content)
+        text = " ".join(page.text_content().split())
+        self.assertIn("Password Set Change password", text)
+        self.assertNotIn("No password set", text)
+        self.assertEqual(page.xpath("//a[normalize-space()='Change password']/@href"),
+                         [reverse("admin:user_update_password", args=[self.alice.pk])])
+        self.assertEqual(page.xpath("//a[@href='../password/']"), [])
+
+    def test_roles_say_what_they_mean(self):
+        page = self.client.get(reverse("admin:user_update", args=[self.alice.pk])).content.decode()
+        self.assertIn("Template editor", page)
+        self.assertIn("May change and delete the template VMs given to them", page)
+        self.assertIn("Manages the panel: every permission, no quota.", page)
+        self.assertNotIn("log into this admin site", page)
+
+    def test_the_password_page_says_how_the_user_signs_in(self):
+        url = reverse("admin:user_update_password", args=[self.alice.pk])
+        page = self.client.get(url).content.decode()
+        self.assertIn("With a password", page)
+        self.assertIn("Signs in another way, such as LDAP. The current password is removed.", page)
+        self.assertIn(f'href="{reverse("admin:user_update", args=[self.alice.pk])}">Cancel', page)
+        # a mismatch is said at its field only
+        response = self.client.post(url, {"usable_password": "true", "password1": "Ab-123456x", "password2": "other"})
+        self.assertContains(response, "The two password fields didn’t match.")
+        self.assertNotIn("Wrong Data Provided", self.messages(response))
+
+    def test_a_refused_choice_is_said_beside_its_field(self):
+        url = reverse("admin:user_update", args=[self.alice.pk])
+        response = self.client.post(url, {"username": "up-alice", "is_active": "on", "groups": "99999", "user_permissions": "99999",
+                                          "role": "user", "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 1,
+                                          "seen": user_seen(self.alice)})
+        page = html.fromstring(response.content)
+        self.assertEqual(len(page.xpath("//fieldset//div[contains(@class, 'invalid-feedback')]")), 2)
+
+    def test_a_form_opened_before_another_change_is_refused(self):
+        # another administrator blocked alice meanwhile: the form's ticked Active would undo it
+        url = reverse("admin:user_update", args=[self.alice.pk])
+        stale = self.form_data(self.alice, email="alice@example.com")
+        type(self.alice).objects.filter(pk=self.alice.pk).update(is_active=False)
+        response = self.client.post(url, stale)
+        self.assertRedirects(response, url, fetch_redirect_response=False)
+        self.assertIn("up-alice was changed meanwhile", self.messages(response)[0])
+        self.alice.refresh_from_db()
+        self.assertFalse(self.alice.is_active)
+        self.assertEqual(self.alice.email, "")
+
+    def test_the_quota_shows_no_limit_and_memory_in_gib(self):
+        UserAttributes.objects.filter(user=self.alice).update(max_instances=-1, max_cpus=1, max_memory=1536, max_disk_size=-1)
+        page = html.fromstring(self.client.get(reverse("admin:user_update", args=[self.alice.pk])).content)
+        shown = {box.get("name"): (box.get("value"), box.get("disabled") is not None) for box in page.xpath("//input[@type='number']")}
+        self.assertEqual(shown, {"max_instances": ("", True), "max_cpus": ("1", False), "max_memory": ("1.5", False),
+                                 "max_disk_size": ("", True)})
+        self.assertEqual(page.xpath("//input[@checked][@data-no-limit]/@name"), ["max_instances_unlimited", "max_disk_size_unlimited"])
+
+    def test_a_new_user_starts_with_the_default_quota(self):
+        page = html.fromstring(self.client.get(reverse("admin:user_create")).content)
+        shown = {box.get("name"): box.get("value") for box in page.xpath("//input[@type='number']")}
+        self.assertEqual(shown, {"max_instances": "2", "max_cpus": "2", "max_memory": "2", "max_disk_size": "20"})
+        self.assertEqual(page.xpath("//input[@name='role'][@checked]/@value"), ["user"])
+
+    def test_no_limit_is_kept_as_minus_one_and_gib_as_mib(self):
+        response = self.client.post(reverse("admin:user_update", args=[self.alice.pk]),
+                                    self.form_data(self.alice, max_cpus_unlimited="on", max_memory="0.75"))
+        self.assertRedirects(response, reverse("admin:user_list"))
+        quota = UserAttributes.objects.get(user=self.alice)
+        self.assertEqual((quota.max_instances, quota.max_cpus, quota.max_memory, quota.max_disk_size), (2, -1, 768, 20))
+
+    def test_a_limit_needs_a_number_or_no_limit(self):
+        for value in ("", "-1"):
+            with self.subTest(value=value):
+                response = self.client.post(reverse("admin:user_update", args=[self.alice.pk]),
+                                            self.form_data(self.alice, max_cpus=value) | {"max_cpus": value})
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(len(html.fromstring(response.content).xpath("//input[@name='max_cpus'][contains(@class, 'is-invalid')]")), 1)
+
+    def test_a_role_sets_staff_and_superuser(self):
+        url = reverse("admin:user_update", args=[self.alice.pk])
+        for role, flags in (("template_editor", (True, False)), ("superuser", (True, True)), ("user", (False, False))):
+            with self.subTest(role=role):
+                self.assertRedirects(self.client.post(url, self.form_data(self.alice, role=role)), reverse("admin:user_list"))
+                self.alice.refresh_from_db()
+                self.assertEqual((self.alice.is_staff, self.alice.is_superuser), flags)
+
+    def test_a_missing_users_profile_is_not_found(self):
+        self.assertEqual(self.client.get(reverse("accounts:account", args=[99999])).status_code, 404)
+
+    def test_a_user_who_never_logged_in_says_never(self):
+        page = html.fromstring(self.client.get(reverse("admin:user_list")).content)
+        (row,) = page.xpath("//div[contains(@class, 'list-group-item')][.//a[normalize-space()='up-alice']]")
+        self.assertIn("Last login: never", " ".join(row.text_content().split()))
+
+    def test_the_search_finds_a_user_by_role_and_status(self):
+        self.alice.is_active = False
+        self.alice.save()
+        page = html.fromstring(self.client.get(reverse("admin:user_list")).content)
+        (row,) = page.xpath("//div[contains(@class, 'list-group-item')][.//a[normalize-space()='up-alice']]")
+        self.assertIn("User Blocked", row.get("data-search"))
+
+    def test_a_password_set_by_an_administrator_can_be_one_to_change(self):
+        url = reverse("admin:user_update_password", args=[self.alice.pk])
+        self.client.post(url, {"password1": "New-pw-4567x", "password2": "New-pw-4567x", "must_change_password": "on"})
+        self.assertTrue(UserAttributes.objects.get(user=self.alice).must_change_password)
+        # the user is sent to the change form until they choose their own
+        self.alice.refresh_from_db()  # the new password's hash, or the session is not hers
+        self.client.force_login(self.alice)
+        self.assertRedirects(self.client.get(reverse("instances:index")), reverse("accounts:change_password"),
+                             fetch_redirect_response=False)
+        self.client.force_login(self.admin)
+        self.client.post(url, {"password1": "New-pw-4567y", "password2": "New-pw-4567y"})
+        self.assertFalse(UserAttributes.objects.get(user=self.alice).must_change_password)
+
+    def test_a_password_set_by_an_administrator_ends_the_users_api_tokens(self):
+        # a reset closes a taken-over account: a stolen token must not outlive it
+        ApiToken.objects.create(self.alice, expiry=None, name="script")
+        ApiToken.objects.create(self.admin, expiry=None, name="mine")
+        url = reverse("admin:user_update_password", args=[self.alice.pk])
+        self.client.post(url, {"password1": "New-pw-4567x", "password2": "New-pw-4567x"})
+        self.assertFalse(ApiToken.objects.filter(user=self.alice).exists())
+        self.assertTrue(ApiToken.objects.filter(user=self.admin).exists())
+
+    def test_a_user_without_a_password_cannot_be_made_to_change_it(self):
+        # the change form asks for the old password: one they never had
+        url = reverse("admin:user_update_password", args=[self.alice.pk])
+        response = self.client.post(url, {"usable_password": "false", "must_change_password": "on"})
+        self.assertContains(response, "A user without a password cannot be made to change it")
+        self.alice.refresh_from_db()
+        self.assertTrue(self.alice.has_usable_password())
+
+    def test_an_administrator_keeps_their_own_password(self):
+        url = reverse("admin:user_update_password", args=[self.admin.pk])
+        response = self.client.post(url, {"usable_password": "false"})
+        self.assertContains(response, "You cannot block, delete or demote your own account")
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.has_usable_password())
+
+
+
+class SavedAsCheckedTests(TestCase):
+    """What a form checked before is checked again as it is saved, while no
+    other change of the users runs (users_lock): here another change ends
+    just before this one takes the lock."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.admin = User.objects.create_superuser("sc-admin", "sc@example.com", "pw")
+        self.other = User.objects.create_superuser("sc-other", "sc-other@example.com", "pw")
+        # these two are the superusers: not the default admin the migrations make
+        User.objects.exclude(pk__in=[self.admin.pk, self.other.pk]).update(is_active=False)
+        self.client.force_login(self.admin)
+
+    def meanwhile(self, change, lock_of="admin.views"):
+        @contextmanager
+        def lock():
+            change()
+            with users_lock():
+                yield
+
+        return patch(f"{lock_of}.users_lock", lock)
+
+    def test_two_administrators_blocking_each_other_leave_one(self):
+        # the other blocked this administrator meanwhile: blocking the other would leave none
+        with self.meanwhile(lambda: get_user_model().objects.filter(pk=self.admin.pk).update(is_active=False)):
+            response = self.client.post(reverse("admin:user_block", args=[self.other.pk]))
+        self.assertEqual([str(m) for m in get_messages(response.wsgi_request)], ["This would leave no active superuser"])
+        self.other.refresh_from_db()
+        self.assertTrue(self.other.is_active)
+
+    def test_an_email_address_taken_meanwhile_is_refused(self):
+        def take():
+            get_user_model().objects.create_user("sc-first", email="Bob@example.com")
+
+        with self.meanwhile(take):
+            response = self.client.post(reverse("admin:user_create"), {
+                "username": "sc-bob", "email": "bob@example.com", "password": "Wvc-bob-pass-9", "role": "user",
+                "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 1})
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(get_user_model().objects.filter(username="sc-bob").exists())
+
+    def test_a_form_checked_before_another_change_ends_is_refused_as_saved(self):
+        # the other change ends after this form's page was read, before its save takes the lock
+        alice = get_user_model().objects.create_user("sc-alice")
+        url = reverse("admin:user_update", args=[alice.pk])
+        data = {"username": "sc-alice", "is_active": "on", "role": "user", "max_instances": 1, "max_cpus": 1,
+                "max_memory": 1, "max_disk_size": 1, "seen": user_seen(alice)}
+        with self.meanwhile(lambda: get_user_model().objects.filter(pk=alice.pk).update(is_active=False)):
+            response = self.client.post(url, data)
+        self.assertRedirects(response, url, fetch_redirect_response=False)
+        alice.refresh_from_db()
+        self.assertFalse(alice.is_active)
+
+    def test_a_busy_create_is_said_on_the_form(self):
+        from operations import claims
+
+        with patch("admin.views.users_lock", side_effect=claims.Busy("users")):
+            response = self.client.post(reverse("admin:user_create"), {
+                "username": "sc-carl", "password": "Wvc-carl-pass-9", "role": "user",
+                "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 1})
+        self.assertContains(response, "short operation")
+        self.assertFalse(get_user_model().objects.filter(username="sc-carl").exists())
+
+    def test_a_profile_saved_while_an_administrator_blocks_the_account_keeps_the_block(self):
+        bob = get_user_model().objects.create_user("sc-bob2", password="pw")
+        self.client.force_login(bob)
+        with self.meanwhile(lambda: get_user_model().objects.filter(pk=bob.pk).update(is_active=False), "accounts.views"):
+            self.client.post(reverse("accounts:profile"), {"first_name": "Bob", "last_name": "", "email": ""})
+        bob.refresh_from_db()
+        self.assertEqual((bob.first_name, bob.is_active), ("Bob", False))

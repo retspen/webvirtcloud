@@ -1,0 +1,370 @@
+"""A migration runs as a job: the page queues it, the worker migrates."""
+
+from functools import partial
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
+
+from django.contrib.auth import get_user_model
+from django.core.exceptions import PermissionDenied
+from django.test import TransactionTestCase
+from django.urls import reverse
+
+from appsettings.settings import get_settings
+from computes.models import Compute
+from instances.jobs import MigrateInstance
+from instances.models import Instance
+from logs.models import Logs
+from libvirt import VIR_DOMAIN_XML_INACTIVE, VIR_ERR_NO_DOMAIN, VIR_ERR_SYSTEM_ERROR, VIR_FROM_RPC, libvirtError
+from operations.jobs import Context, get_kind
+from operations.models import Claim, Operation, acquire
+from operations.utils import public_error_text
+from vrtManager.instance import wvmInstances
+from vrtManager.util import OperationError
+
+UUID = "31313131-4242-5353-6464-757575757575"
+
+
+class MigrateJobTestCase(TransactionTestCase):
+    def setUp(self):
+        get_settings()
+        self.source = Compute.objects.create(name="mig-src", hostname="192.0.2.50", login="root", password="", type=1)
+        self.dest = Compute.objects.create(name="mig-dst", hostname="192.0.2.51", login="root", password="", type=1)
+        self.vm = Instance.objects.create(compute=self.source, name="mig-vm", uuid=UUID)
+        self.client.force_login(get_user_model().objects.create_superuser("mig_admin", "a@example.com", "pw"))
+        proxy = MagicMock()
+        proxy.get_autostart.return_value = False
+        proxy.get_nvram.return_value = None
+        patch.object(Compute, "status", True).start()
+        patch.object(Instance, "proxy", proxy).start()
+        # another host than the VM's
+        patch.object(Compute, "proxy", MagicMock(**{"host_uuid.return_value": "dddddddd-0000-0000-0000-000000000051"})).start()
+        self.dest_conn = patch("instances.utils.wvmInstances").start().return_value
+        self.dest_conn.moveto.return_value = ("live", [])
+        self.addCleanup(patch.stopall)
+
+    def queue(self, **form):
+        self.client.post(reverse("instances:migrate", args=[self.vm.pk]),
+                         {"compute_id": self.dest.pk, "submission_key": "key-mig00001", **form})
+        return Operation.objects.get()
+
+    def start(self, op):
+        """The job as the worker takes it."""
+        acquire("wvc-test:1:a", "wvc-test")
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker="wvc-test:1:a")
+        op.refresh_from_db()
+        return Context(op, SimpleNamespace(identity="wvc-test:1:a"))
+
+    def test_the_worker_migrates_and_moves_the_record(self):
+        op = self.queue(live_migrate="true")
+        self.assertEqual(set(Claim.objects.values_list("resource", "mode")), {
+            (f"instance:{UUID}", "exclusive"), ("name:mig-vm", "exclusive"),
+            (f"compute:{self.source.pk}", "shared"), (f"reconcile:{self.source.pk}", "exclusive"),
+            (f"compute:{self.dest.pk}", "shared"), (f"reconcile:{self.dest.pk}", "exclusive")})
+        self.dest_conn.moveto.assert_not_called()  # nothing ran in the request
+        ctx = self.start(op)
+        get_kind(op.kind).precheck(op, ctx)
+        get_kind(op.kind).run(op, ctx)
+        self.assertTrue(self.dest_conn.moveto.call_args.args[2])  # live
+        self.vm.refresh_from_db()
+        self.assertEqual(self.vm.compute, self.dest)
+
+    def test_the_worker_refuses_a_migration_whose_user_may_no_longer_migrate(self):
+        op = self.queue(live_migrate="true")
+        for change in ({"is_superuser": False}, {"is_active": False}):
+            with self.subTest(change=change):
+                get_user_model().objects.filter(pk=op.user_id).update(**{"is_superuser": True, "is_active": True, **change})
+                op.refresh_from_db()
+                with self.assertRaises(PermissionDenied):
+                    MigrateInstance().precheck(op, None)
+
+    def test_recovery_reads_where_the_vm_is(self):
+        op = Operation(params={"instance": self.vm.pk, "target": self.dest.pk},
+                       intent={"compute": self.source.pk, "uuid": UUID})
+        dom = MagicMock()
+        dom.isActive.return_value = False
+        with patch("instances.jobs._domain", side_effect=[dom, None]):  # source, destination
+            self.assertEqual(MigrateInstance().reconcile(op).state, Operation.FAILED)
+        op.cancel_requested = True  # recovery sent the cancel: libvirt aborted it
+        with patch("instances.jobs._domain", side_effect=[dom, None]):
+            self.assertEqual(MigrateInstance().reconcile(op).state, Operation.CANCELLED)
+        op.cancel_requested = False
+        dom.isActive.return_value = True
+        dom.jobInfo.return_value = [2] + [0] * 11  # VIR_DOMAIN_JOB_UNBOUNDED
+        with patch("instances.jobs._domain", side_effect=[dom, dom]):
+            self.assertEqual(MigrateInstance().reconcile(op).state, Operation.RUNNING)
+        with patch("instances.jobs._domain", side_effect=[None, dom]):
+            self.assertEqual(MigrateInstance().reconcile(op).state, Operation.SUCCEEDED)
+        self.vm.refresh_from_db()
+        self.assertEqual(self.vm.compute, self.dest)
+
+    def test_recovery_removes_the_copies_of_a_migration_that_stopped(self):
+        op = Operation(params={"instance": self.vm.pk, "target": self.dest.pk}, resource_label="mig-src/mig-vm",
+                       intent={"compute": self.source.pk, "uuid": UUID,
+                               "copies": [{"pool": "fast", "dest": "/srv/fast/mig-vm.qcow2"}]})
+        dom = MagicMock(**{"isActive.return_value": True, "jobInfo.return_value": [0] * 12})
+        with patch("instances.jobs.wvmInstances") as hosts:
+            dest = hosts.return_value
+            with patch("instances.jobs._domain", side_effect=[dom, None]):  # source, destination
+                self.assertEqual(MigrateInstance().reconcile(op).state, Operation.FAILED)
+            uuid, copies, _error = dest.remove_partial_copies.call_args.args
+            self.assertEqual((uuid, copies), (UUID, [{"pool": dest.wvm.storagePoolLookupByName.return_value,
+                                                       "dest": "/srv/fast/mig-vm.qcow2"}]))
+            dest.wvm.storagePoolLookupByName.assert_called_once_with("fast")
+            # a copy that cannot go is logged; the job ends as it would
+            pool = dest.wvm.storagePoolLookupByName.return_value
+            pool.storageVolLookupByName.return_value.delete.side_effect = libvirtError("busy")
+            dest.wvm.lookupByUUIDString.side_effect = libvirtError("Domain not found")
+            dest.wvm.lookupByUUIDString.side_effect.err = (VIR_ERR_NO_DOMAIN,)
+            dest._find_volume, dest.delete_nvram = wvmInstances._find_volume, lambda name: None
+            dest.remove_partial_copies = partial(wvmInstances.remove_partial_copies, dest)
+            with patch("instances.jobs._domain", side_effect=[dom, None]):
+                self.assertEqual(MigrateInstance().reconcile(op).state, Operation.FAILED)
+        self.assertEqual(Logs.objects.latest("id").message, "VM mig-vm: remove the partial disk copies on mig-dst: "
+                                                            "the migration stopped; remove the partial disk copies "
+                                                            "from the destination host: /srv/fast/mig-vm.qcow2")
+
+    def test_recovery_shuts_off_a_shut_off_vm_the_migration_left_started(self):
+        self.vm.proxy.get_status.return_value = 5
+        op = self.queue()
+        ctx = self.start(op)
+        self.dest_conn.moveto.side_effect = OSError("the worker stops here")
+        with self.assertRaises(OSError):
+            get_kind(op.kind).run(op, ctx)
+        self.assertTrue(op.intent["shut_off"])
+        dom = MagicMock()
+        dom.isActive.return_value = True
+        dom.jobInfo.return_value = [0] * 12  # VIR_DOMAIN_JOB_NONE
+        for found in ([dom, None], [None, dom]):  # stayed on the source, or moved
+            with self.subTest(found=found), patch("instances.jobs._domain", side_effect=found):
+                MigrateInstance().reconcile(op)
+            dom.destroy.assert_called_once_with()
+            dom.destroy.reset_mock()
+        op.intent["shut_off"] = False  # a running VM keeps running
+        with patch("instances.jobs._domain", side_effect=[dom, None]):
+            MigrateInstance().reconcile(op)
+        dom.destroy.assert_not_called()
+
+    def test_recovery_of_a_moved_vm_sets_its_autostart_and_removes_the_source_nvram(self):
+        self.vm.proxy.get_autostart.return_value = True
+        self.vm.proxy.get_nvram.return_value = "/var/lib/libvirt/qemu/nvram/mig-vm_VARS.fd"
+        op = self.queue()
+        ctx = self.start(op)
+        self.dest_conn.moveto.side_effect = OSError("the worker stops here")
+        with self.assertRaises(OSError):
+            get_kind(op.kind).run(op, ctx)
+        dom = MagicMock()
+        with patch("instances.jobs._domain", side_effect=[None, dom]), patch("instances.jobs._connect") as connect:
+            outcome = MigrateInstance().reconcile(op)
+        self.assertEqual((outcome.state, outcome.result), (Operation.SUCCEEDED, {}))
+        dom.setAutostart.assert_called_once_with(1)
+        connect.return_value.remove_nvram.assert_called_once_with(
+            "/var/lib/libvirt/qemu/nvram/mig-vm_VARS.fd", connect.return_value)
+        dom.setAutostart.side_effect = libvirtError("refused")
+        with patch("instances.jobs._domain", side_effect=[None, dom]), patch("instances.jobs._connect"):
+            outcome = MigrateInstance().reconcile(op)
+        self.assertEqual(outcome.state, Operation.SUCCEEDED)
+        self.assertIn("autostart could not be set", outcome.result["warning"][0]["text"])
+        self.assertTrue(Logs.objects.filter(instance_uuid=UUID, success=False,
+                                            message="VM mig-vm: restore autostart on mig-dst: refused").exists())
+
+    def test_a_copy_claims_its_volume_on_both_computes(self):
+        Instance.proxy.get_disk_devices.return_value = [
+            {"dev": "vda", "storage": "default", "image": "mig-vm.qcow2", "path": "/i/mig-vm.qcow2"},
+            {"dev": "vdb", "storage": None, "image": "/dev/sdb", "path": "/dev/sdb"}]
+        op = self.queue(live_migrate="true", delete_source="true", **{"pool-vda": "fast", "pool-vdb": ""})
+        self.assertTrue({(f"volume:{self.source.pk}:default/mig-vm.qcow2", "exclusive"),
+                         (f"volume:{self.dest.pk}:fast/mig-vm.qcow2", "exclusive")}
+                        <= set(Claim.objects.values_list("resource", "mode")))
+        self.assertEqual((op.params["disk_pools"], op.params["delete_source"]), ({"vda": "fast"}, True))
+        ctx = self.start(op)
+        get_kind(op.kind).run(op, ctx)
+        self.assertEqual(self.dest_conn.moveto.call_args.kwargs["pools"], {"vda": "fast"})
+
+    def test_the_migrate_tab_lists_each_disk_with_where_it_can_go(self):
+        Instance.proxy.instance.XMLDesc.return_value = "<domain/>"
+        Instance.proxy.get_status.return_value = 5
+        with patch("instances.views.wvmInstances") as instances:
+            dest = instances.return_value
+            fast, default = MagicMock(), MagicMock()
+            fast.info.return_value = default.info.return_value = [2, 0, 0, 8 << 30]
+            dest.file_pools.return_value = {"fast": (fast, "/srv/fast"), "default": (default, "/i")}
+            dest.migration_plan.return_value = ([
+                {"target": "vda", "path": "/i/mig-vm.qcow2", "capacity": 1 << 30, "shared": False, "refusal": None,
+                 "free_pools": ["default", "fast"], "default": "default"},
+                {"target": "vdb", "path": "/i/data.qcow2", "capacity": 1 << 30, "shared": False, "refusal": None,
+                 "free_pools": ["default"], "default": "default", "same_name": True},
+                {"target": "sda", "path": "/i/os.iso", "capacity": 1 << 20, "shared": False,
+                 "refusal": "an image is not copied; eject it first", "free_pools": [], "default": None}],
+                # the next start's disks the migration does not carry
+                [{"target": "vdc", "path": "/i/new.qcow2", "shared": False},
+                 {"target": "vdd", "path": "/nfs/new.qcow2", "shared": True}])
+            page = self.client.get(reverse("instances:migrate_plan", args=[self.vm.pk]),
+                                   {"compute_id": self.dest.pk}).content.decode()
+        # the definitions it plans with: the one it carries and the next start's
+        self.assertEqual(dest.migration_plan.call_args.args[1:], ("<domain/>", "<domain/>"))
+        self.assertEqual(Instance.proxy.instance.XMLDesc.call_args_list[-1].args, (VIR_DOMAIN_XML_INACTIVE,))
+        # the pool on the disk's directory is chosen; one that has a file of the name cannot be
+        self.assertIn('<option value="default" selected>Copy to default (8.0\xa0GB free)</option>', page)
+        self.assertIn('<option value="fast">Copy to fast (8.0\xa0GB free)</option>', page)
+        self.assertIn('<option value="fast" disabled>fast has a file of this name</option>', page)
+        self.assertIn("Cannot be copied: an image is not copied; eject it first", page)
+        self.assertEqual(page.count("Another disk of the VM has this file name: copy them to different pools."), 1)
+        self.assertIn("A shut-off VM is started paused for a copy", page)
+        self.assertIn("/nfs/new.qcow2</span>:\n            on storage both hosts share", page)
+        # a disk that cannot go keeps the form from being sent, as does a destination that does not answer
+        self.assertEqual(page.count("data-refused"), 2)
+        with patch("instances.views.wvmInstances", side_effect=libvirtError("no answer")):
+            page = self.client.get(reverse("instances:migrate_plan", args=[self.vm.pk]),
+                                   {"compute_id": self.dest.pk}).content.decode()
+        self.assertIn("data-refused", page)
+        self.assertEqual(self.client.get(reverse("instances:migrate_plan", args=[self.vm.pk])).status_code, 404)
+
+    def test_the_destinations_that_cannot_be_chosen(self):
+        down = Compute.objects.create(name="mig-down", hostname="192.0.2.52", login="root", password="", type=1)
+        alias = Compute.objects.create(name="mig-alias", hostname="192.0.2.53", login="root", password="", type=1)
+        Instance.proxy.host_uuid.return_value = "aaaaaaaa-0000-0000-0000-000000000050"
+        # the alias is the source host under another record: the same libvirt host UUID
+        uuids = {alias.pk: "aaaaaaaa-0000-0000-0000-000000000050"}
+        with patch.object(Compute, "status", property(lambda c: c.pk != down.pk)), patch.object(
+                Compute, "proxy", property(lambda c: MagicMock(**{"host_uuid.return_value": uuids.get(c.pk, str(c.pk))}))):
+            refused = self.client.get(reverse("instances:migrate_targets", args=[self.vm.pk])).json()
+            self.assertEqual(refused, {str(down.pk): "mig-down is not reachable",
+                                       str(alias.pk): "mig-alias is the VM's own host under another name"})
+            # a request that names it anyway is refused too
+            self.client.post(reverse("instances:migrate", args=[self.vm.pk]),
+                             {"compute_id": alias.pk, "submission_key": "key-mig00002"})
+        self.assertFalse(Operation.objects.exists())
+
+    def test_a_cancelled_migration_is_ended_by_where_recovery_finds_the_vm(self):
+        """libvirt may fail a migration it finished: a cancel alone does not tell."""
+        op = self.queue(live_migrate="true")
+        ctx = self.start(op)
+        self.dest_conn.moveto.side_effect = libvirtError("operation aborted: migration out: canceled by client")
+        Operation.objects.filter(pk=op.pk).update(cancel_requested=True)
+        with self.assertRaises(OperationError):
+            get_kind(op.kind).run(op, ctx)
+        op.refresh_from_db()
+        dom = MagicMock(**{"isActive.return_value": True, "jobInfo.return_value": [0] * 12})
+        with patch("instances.jobs._domain", side_effect=[dom, None]):  # source, destination
+            self.assertEqual(MigrateInstance().reconcile(op).state, Operation.CANCELLED)
+        with patch("instances.jobs._domain", side_effect=[None, dom]):
+            self.assertEqual(MigrateInstance().reconcile(op).state, Operation.SUCCEEDED)
+        self.vm.refresh_from_db()
+        self.assertEqual(self.vm.compute, self.dest)
+
+    def test_a_failed_migration_says_what_libvirt_said(self):
+        # libvirt reports the source host's failure to reach the destination's migration
+        # port as a connection error; only superusers migrate, so its text is shown
+        op = self.queue(live_migrate="true")
+        ctx = self.start(op)
+        err = libvirtError("Unable to resolve address 'kvm2.example.com' service '49152': Name or service not known")
+        err.err = (VIR_ERR_SYSTEM_ERROR, VIR_FROM_RPC, str(err), 2, None, None, None, 0, 0)
+        self.dest_conn.moveto.side_effect = err
+        with self.assertRaises(Exception) as raised:
+            get_kind(op.kind).run(op, ctx)
+        self.assertIn("Unable to resolve address 'kvm2.example.com'", public_error_text(raised.exception))
+
+    def test_each_way_goes_to_the_destination_s_migration_address_or_its_panel_address(self):
+        # one host with a migration address, the other without: no name resolution either way
+        self.dest.migration_address = ""
+        self.dest.save()
+        self.source.migration_address = "198.51.100.50"
+        self.source.save()
+        for target, uri, key in ((self.dest, "tcp://192.0.2.51", "key-mig00011"), (self.source, "tcp://198.51.100.50", "key-mig00012")):
+            with self.subTest(target=target.name):
+                self.vm.compute = self.source if target == self.dest else self.dest
+                self.vm.save()
+                self.client.post(reverse("instances:migrate", args=[self.vm.pk]),
+                                 {"compute_id": target.pk, "submission_key": key, "live_migrate": "true"})
+                op = Operation.objects.latest("created_at")
+                ctx = self.start(op)
+                get_kind(op.kind).precheck(op, ctx)
+                get_kind(op.kind).run(op, ctx)
+                self.assertEqual(self.dest_conn.moveto.call_args.kwargs["uri"], uri)
+                Operation.objects.all().delete()
+                Claim.objects.all().delete()
+
+    def test_cancel_and_progress_ask_the_source_vm(self):
+        op = self.queue(live_migrate="true")
+        with patch("instances.jobs.wvmInstance") as proxy:
+            proxy.return_value.instance.jobInfo.return_value = [2, 0, 0, 1000, 250] + [0] * 7
+            self.assertEqual(get_kind(op.kind).progress(op), (250, 1000))
+            get_kind(op.kind).cancel(op)
+        proxy.return_value.instance.abortJob.assert_called_once_with()
+
+    def test_a_cancel_before_libvirt_starts_the_migration_waits_for_it(self):
+        op = self.queue(live_migrate="true")
+        self.start(op)
+        with patch("instances.jobs.wvmInstance") as proxy, patch("instances.jobs.time.sleep") as sleep:
+            dom = proxy.return_value.instance
+            dom.isActive.return_value = True
+            dom.jobInfo.side_effect = [[0] * 12, [2] + [0] * 11]  # no job yet, then the migration
+            get_kind(op.kind).cancel(op)
+        sleep.assert_called_once()
+        dom.abortJob.assert_called_once_with()
+        Operation.objects.filter(pk=op.pk).update(state=Operation.SUCCEEDED)  # ended before libvirt began
+        with patch("instances.jobs.wvmInstance") as proxy:
+            proxy.return_value.instance.isActive.return_value = False
+            get_kind(op.kind).cancel(op)
+        proxy.return_value.instance.abortJob.assert_not_called()
+
+    def test_a_waiting_cancel_leaves_the_migration_of_a_later_job_alone(self):
+        # the job ends before libvirt began; another job's migration of the VM starts meanwhile
+        op = self.queue(live_migrate="true")
+        self.start(op)
+
+        def ended(_seconds):
+            Operation.objects.filter(pk=op.pk).update(state=Operation.FAILED)
+
+        with patch("instances.jobs.wvmInstance") as proxy, patch("instances.jobs.time.sleep", side_effect=ended):
+            dom = proxy.return_value.instance
+            dom.isActive.return_value = True
+            dom.jobInfo.side_effect = [[0] * 12] + [[2] + [0] * 11] * 3  # no job yet, then the later one's
+            get_kind(op.kind).cancel(op)
+        dom.abortJob.assert_not_called()
+
+    def test_each_end_of_a_migration_leaves_one_logs_row(self):
+        op = self.queue(live_migrate="true")
+        ctx = self.start(op)
+        get_kind(op.kind).run(op, ctx)  # migrate_instance writes its row
+        op.refresh_from_db()
+        self.assertIsNone(MigrateInstance().log_entry(op, Operation.SUCCEEDED))
+        self.assertEqual(Logs.objects.filter(instance_uuid=UUID).count(), 1)
+        # ended without migrate_instance: refused, cancelled while queued, or by recovery
+        queued = Operation(params={"instance": self.vm.pk, "target": self.dest.pk}, intent={"uuid": UUID},
+                           resource_label="mig-src/mig-vm")
+        self.assertEqual(MigrateInstance().log_entry(queued, Operation.CANCELLED),
+                         ("mig-src", "mig-vm", UUID, "VM mig-vm: migrate to mig-dst (cancelled)"))
+
+    def test_a_failed_migration_recovery_finds_moved_has_a_row_of_that_end(self):
+        op = self.queue(live_migrate="true")
+        ctx = self.start(op)
+        self.dest_conn.moveto.side_effect = libvirtError("connection reset while migrating")
+        with self.assertRaises(Exception):
+            get_kind(op.kind).run(op, ctx)  # migrate_instance writes the failed row
+        op.refresh_from_db()
+        self.assertIsNone(MigrateInstance().log_entry(op, Operation.FAILED))  # that row is the end
+        for state, message in ((Operation.SUCCEEDED, "VM mig-vm: migrate to mig-dst"),
+                               (Operation.UNCERTAIN, "VM mig-vm: migrate to mig-dst (uncertain)")):
+            with self.subTest(state):
+                self.assertEqual(MigrateInstance().log_entry(op, state)[3], message)
+
+    def test_a_migration_moved_then_failed_to_record_has_its_row_once(self):
+        op = self.queue(live_migrate="true")
+        ctx = self.start(op)
+        with patch("instances.utils.record_migration", side_effect=RuntimeError("database locked")), \
+                self.assertRaises(RuntimeError):
+            get_kind(op.kind).run(op, ctx)  # the migration's row, then the failed record's
+        op.refresh_from_db()
+        self.assertIsNone(MigrateInstance().log_entry(op, Operation.SUCCEEDED))  # recovery finds it moved
+        self.assertEqual(Logs.objects.filter(instance_uuid=UUID, message__startswith="VM mig-vm: migrate (").count(), 1)
+
+    def test_recording_a_migration_holds_the_ownership_lock(self):
+        # a sync of a third compute must not move the owners at the same time
+        from instances import utils
+
+        with patch.object(utils, "lock_ownership") as lock:
+            utils.record_migration(self.vm, self.dest)
+        lock.assert_called_once_with()
+        self.vm.refresh_from_db()
+        self.assertEqual(self.vm.compute, self.dest)

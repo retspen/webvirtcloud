@@ -1,0 +1,7 @@
+{# a choice as a card around its radio button (.source-option): name, value, title, help; chosen, the value that is checked #}
+<div class="col">
+    <label class="source-option border rounded p-2 h-100 d-flex gap-2">
+        <input class="form-check-input flex-shrink-0 mt-1" type="radio" name="{{ name }}" value="{{ value }}"{% if value == chosen %} checked{% endif %}>
+        <span><span class="d-block fw-semibold">{{ title }}</span><span class="d-block small text-body-secondary">{{ help }}</span></span>
+    </label>
+</div>

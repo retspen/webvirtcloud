@@ -1,220 +1,260 @@
 #!/usr/bin/env python3
-import os
-import sys
+# The serial console daemon. The page connects with its signed console token
+# (Socket.IO auth); each accepted connection gets its own console worker
+# (conf/daemon/consolecallback) in a pty, which opens the VM's console with the
+# compute's credentials. This process never opens libvirt. Connections are
+# refused while SERIAL_CONSOLE_ENABLED is off.
+import argparse
+import codecs
+import fcntl
 import logging
-import django
-
-import signal
-signal.signal(signal.SIGCHLD, signal.SIG_IGN)
-
-DIR_PATH = os.path.dirname(os.path.abspath(__file__))
-ROOT_PATH = os.path.abspath(os.path.join(DIR_PATH, "..", ""))
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "webvirtcloud.settings")
-CERT = DIR_PATH + "/cert.pem"
-
-if ROOT_PATH not in sys.path:
-    sys.path.append(ROOT_PATH)
-
-django.setup()
-
-import re
-import tempfile
-import io
-import socket
-import socketio
+import os
 import pty
 import select
-import subprocess
-import struct
-import fcntl
-import termios
 import signal
-import eventlet
-import atexit
-import tty
+import struct
+import sys
 import termios
-import libvirt
+import threading
+import tty
 
-# from six.moves import http_cookies as Cookie
-from http import cookies as Cookie
-from webvirtcloud.settings import SOCKETIO_PORT, SOCKETIO_HOST
-from vrtManager.connection import CONN_SSH, CONN_SOCKET
-import argparse
+import django
 
+ROOT_PATH = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+if ROOT_PATH not in sys.path:
+    sys.path.append(ROOT_PATH)
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "webvirtcloud.settings")
+django.setup()
 
-def get_parser(default_host=SOCKETIO_HOST, default_port=SOCKETIO_PORT or 6081):
-    parser = argparse.ArgumentParser(description="WebVirtCloud Socket.IO daemon")
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        dest="verbose",
-        action="store_true",
-        help="Verbose mode",
-        default=False,
-    )
-    parser.add_argument(
-        "-d", "--debug", dest="debug", action="store_true", help="Debug mode", default=False
-    )
-    parser.add_argument(
-        "-H",
-        "--host",
-        dest="host",
-        action="store",
-        help="Listen host",
-        default=default_host,
-    )
-    parser.add_argument(
-        "-p",
-        "--port",
-        dest="port",
-        action="store",
-        type=int,
-        help="Listen port",
-        default=default_port,
-    )
-    return parser
+import socketio  # noqa: E402
+from gunicorn.app.base import BaseApplication  # noqa: E402
+from django import db  # noqa: E402
+from django.conf import settings  # noqa: E402
+from django.http import HttpRequest  # noqa: E402
+from django.http.cookie import parse_cookie  # noqa: E402
+from django.utils import translation  # noqa: E402
+
+from console import refusals  # noqa: E402
+from console.tokens import authorize, session_user_id  # noqa: E402
+
+CONSOLECALLBACK = os.path.join(ROOT_PATH, "conf", "daemon", "consolecallback")
+LOG_FD = os.dup(2)  # this daemon's stderr: a worker logs there on its fd 3
+MAX_SESSIONS = 20
+
+logger = logging.getLogger("socketiod")
+sio = socketio.Server(async_mode="threading")  # the same origin only
+# Handlers run on their own threads. sessions (sid -> {"pid", "fd", "vm",
+# "lock", "open"}) changes only under sessions_lock; a session's fd is used
+# and closed only under its own lock, while it is open, so a closed fd's
+# number, reused by a new session, never reaches another console. The fd
+# is non-blocking: no one waits on it while holding the lock (a paste and
+# the guest's echo of it would wait on each other).
+sessions = {}
+sessions_lock = threading.Lock()
 
 
-options = get_parser().parse_args()
-
-FORMAT = "%(asctime)s - %(name)s - %(levelname)s : %(message)s"
-if options.debug:
-    logging.basicConfig(level=logging.DEBUG, format=FORMAT)
-    options.verbose = True
-elif options.verbose:
-    logging.basicConfig(level=logging.INFO, format=FORMAT)
-else:
-    logging.basicConfig(level=logging.WARNING, format=FORMAT)
-
-async_mode = "eventlet"
-sio = socketio.Server(async_mode=async_mode, cors_allowed_origins=[])
-
-fd = None
-child_pid = None
-
-
-def get_connection_infos(token):
-    from instances.models import Instance
-    from vrtManager.instance import wvmInstance
-
-    try:
-        temptoken = token.split("-", 1)
-        host = int(temptoken[0])
-        uuid = temptoken[1]
-        instance = Instance.objects.get(compute_id=host, uuid=uuid)
-        conn = wvmInstance(
-            instance.compute.hostname,
-            instance.compute.login,
-            instance.compute.password,
-            instance.compute.type,
-            instance.name,
-        )
-    except Exception as e:
-        logging.error(
-            "Fail to retrieve console connection infos for token %s : %s" % (token, e)
-        )
-        raise
-    return (instance, conn)
-
-
-def set_winsize(fd, row, col, xpix=0, ypix=0):
-    winsize = struct.pack("HHHH", row, col, xpix, ypix)
-    fcntl.ioctl(fd, termios.TIOCSWINSZ, winsize)
-
-
-def read_and_forward_pty_output():
-    global fd
-    max_read_bytes = 1024 * 20
-    while True:
-        sio.sleep(0.01)
-        if fd:
-            timeout_sec = 0
-            (data_ready, _, _) = select.select([fd], [], [], timeout_sec)
-            if data_ready:
-                output = os.read(fd, max_read_bytes).decode()
-                sio.emit("pty_output", {"output": output})
-        else:
-            return
+def refused(environ, reason):
+    """The refusal the page shows, in its language (LocaleMiddleware's choice:
+    the language cookie, else the browser's); it is logged too, in English."""
+    logger.info("serial console refused: %s", reason)
+    request = HttpRequest()
+    request.COOKIES, request.META = parse_cookie(environ.get("HTTP_COOKIE", "")), environ
+    with translation.override(translation.get_language_from_request(request)):
+        return socketio.exceptions.ConnectionRefusedError(translation.gettext(reason))
 
 
 @sio.event
-def resize(sid, message):
-    global fd
-    if fd:
-        set_winsize(fd, message["rows"], message["cols"])
+def connect(sid, environ, auth):
+    # the page shows the reason
+    if not settings.SERIAL_CONSOLE_ENABLED:
+        raise refused(environ, refusals.TURNED_OFF)
+    try:
+        instance, user = authorize((auth or {}).get("token"), "pty")
+        # a token read from a log or a URL is no use without its user's session (as in novncd)
+        if session_user_id(environ.get("HTTP_COOKIE")) != str(user.pk):
+            raise PermissionError("The console page was opened in another session")
+    except PermissionError:
+        raise refused(environ, refusals.NOT_ALLOWED)
+    finally:
+        db.close_old_connections()
+    taken = None
+    with sessions_lock:
+        open_sid = next((s for s, session in sessions.items() if session["vm"] == instance.pk), None)
+        if open_sid is not None and not user.is_superuser:
+            raise refused(environ, refusals.OPEN_ELSEWHERE)
+        if open_sid is None and len(sessions) >= MAX_SESSIONS:
+            raise refused(environ, refusals.TOO_MANY)
+        if open_sid is not None:  # a superuser takes over a console left open
+            taken = open_sid, sessions.pop(open_sid)
+            # the page tells its user who took the console; first, as its
+            # forward ends the connection as soon as the worker is gone
+            sio.emit("taken_over", {"by": user.username}, to=open_sid)
+            # gone before the new worker starts: libvirt gives a console to one at a time
+            end(taken[1], wait=True)
+        pid, fd = pty.fork()
+        if pid == 0:
+            try:
+                # pty.fork's master is inheritable: without this each worker would
+                # hold the other sessions' consoles open
+                os.dup2(LOG_FD, 3)
+                os.set_inheritable(3, True)  # LOG_FD may be 3 itself: dup2 then keeps it close-on-exec
+                os.closerange(4, os.sysconf("SC_OPEN_MAX"))
+                os.environ["CONSOLECALLBACK_LOG_FD"] = "3"
+                os.execv(sys.executable, [sys.executable, CONSOLECALLBACK, str(instance.pk), str(user.pk)])
+            finally:
+                os._exit(1)
+        os.set_blocking(fd, False)
+        # raw at once, not when the worker gets to it: until then the terminal
+        # keeps at most one 4 KiB line of a paste
+        tty.setraw(fd)
+        sessions[sid] = session = {"pid": pid, "fd": fd, "vm": instance.pk, "lock": threading.Lock(), "open": True}
+    logger.info("serial console of VM %s opened by %s%s", instance.name, user.username,
+                " (taken over)" if taken else "")
+    if taken:
+        sio.disconnect(taken[0])
+    sio.start_background_task(forward, sid, session)
+
+
+def forward(sid, session):
+    """The worker's output to its client, until the worker ends."""
+    decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")  # a character may be split
+    while session["open"]:
+        try:
+            # a fd closed meanwhile may wake this up: the session is closed then
+            ready = select.select([session["fd"]], [], [], 0.1)[0]
+        except (OSError, ValueError):
+            ready = True
+        if not ready:
+            continue
+        with session["lock"]:
+            if not session["open"]:
+                return
+            try:
+                output = os.read(session["fd"], 20480)
+            except BlockingIOError:  # nothing after all
+                continue
+            except OSError:  # EIO: the worker ended
+                output = b""
+        if not output:
+            sio.emit("pty_output", {"output": decoder.decode(b"", final=True) + "\r\n[console closed]\r\n"}, to=sid)
+            stop(sid)
+            sio.disconnect(sid)
+            return
+        sio.emit("pty_output", {"output": decoder.decode(output)}, to=sid)
+
+
+def stop(sid):
+    """End the sid's worker; once, whoever calls it first."""
+    with sessions_lock:
+        session = sessions.pop(sid, None)
+    if session is not None:
+        end(session)
+
+
+def end(session, wait=False):
+    """End a session taken out of sessions; with wait, once its worker is gone."""
+    try:
+        os.kill(session["pid"], signal.SIGKILL)  # first: a write blocked on its terminal ends
+    except ProcessLookupError:
+        pass
+    with session["lock"]:
+        session["open"] = False
+        try:
+            os.close(session["fd"])
+        except OSError:
+            pass
+    if wait:
+        try:
+            os.waitpid(session["pid"], 0)
+        except ChildProcessError:  # reaped already
+            pass
+    else:
+        sio.start_background_task(os.waitpid, session["pid"], 0)
 
 
 @sio.event
 def pty_input(sid, message):
-    global fd
-    if fd:
-        os.write(fd, message["input"].encode())
-
-
-@sio.event
-def disconnect_request(sid):
-    sio.disconnect(sid)
-
-
-@sio.event
-def connect(sid, environ):
-    global fd
-    global child_pid
-
-    hcookie = environ.get("HTTP_COOKIE")
-    if hcookie:
-        cookie = Cookie.SimpleCookie()
-        for hcookie_part in hcookie.split(";"):
-            hcookie_part = hcookie_part.lstrip()
+    session = sessions.get(sid)
+    if session and isinstance(message, dict) and isinstance(message.get("input"), str):
+        data = memoryview(message["input"].encode(errors="replace"))  # a lone surrogate from the browser
+        while data:
+            with session["lock"]:
+                if not session["open"]:
+                    return
+                try:
+                    data = data[os.write(session["fd"], data):]
+                    continue
+                except BlockingIOError:  # the worker has not read the rest yet
+                    pass
+                except OSError:
+                    return
             try:
-                cookie.load(hcookie_part)
-            except Cookie.CookieError:
-                logging.warn("Found malformed cookie")
-            else:
-                if "token" in cookie:
-                    token = cookie["token"].value
-
-    if child_pid:
-        # already started child process, don't start another
-        # write a new line so that when a client refresh the shell prompt is printed
-        os.write(fd, str.encode("\n"))
-        return
-
-    # create child process attached to a pty we can read from and write to
-    (child_pid, fd) = pty.fork()
-
-    if child_pid == 0:
-        (instance, conn) = get_connection_infos(token)
-        uuid = conn.get_uuid()
-        uri = conn.wvm.getURI()
-
-        subprocess.run(["conf/daemon/consolecallback", uri, uuid])
-    else:
-        # this is the parent process fork.
-        sio.start_background_task(target=read_and_forward_pty_output)
+                select.select([], [session["fd"]], [], 0.1)  # outside the lock: output goes on meanwhile
+            except (OSError, ValueError):  # closed meanwhile: the loop sees it
+                pass
 
 
 @sio.event
-def disconnect(sid):
-
-    global fd
-    global child_pid
-
-    # kill pty process
-    try:
-        os.kill(child_pid, signal.SIGKILL)
-        os.wait()
-    except ProcessLookupError:
-        pass
-    except ChildProcessError:
-        pass
-
-    # reset the variables
-    fd = None
-    child_pid = None
+def resize(sid, message):
+    session = sessions.get(sid)
+    if not (session and isinstance(message, dict)):
+        return
+    rows, cols = message.get("rows"), message.get("cols")
+    if all(isinstance(v, int) and 1 <= v <= 500 for v in (rows, cols)):
+        with session["lock"]:
+            if session["open"]:
+                try:
+                    fcntl.ioctl(session["fd"], termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
+                except OSError:  # the worker has just ended
+                    pass
 
 
-app = socketio.WSGIApp(sio)
-import eventlet
+@sio.event
+def disconnect(sid, reason=None):
+    stop(sid)
 
-eventlet.wsgi.server(eventlet.listen((options.host, int(options.port))), app)
+
+def signed_in_only(app):
+    """Engine.IO holds a connection, and one of the threads, from its first
+    request; Socket.IO's connect() checks the token only after that. A request
+    without a signed-in session is refused before it takes a thread: without
+    this, anyone could hold every thread and no console would open."""
+    def wsgi(environ, start_response):
+        try:
+            signed_in = session_user_id(environ.get("HTTP_COOKIE")) is not None
+        finally:
+            db.close_old_connections()
+        if not signed_in:
+            start_response("403 Forbidden", [("Content-Type", "text/plain")])
+            return [b"Sign in to open a serial console\n"]
+        return app(environ, start_response)
+    return wsgi
+
+
+class Server(BaseApplication):
+    """gunicorn with one worker (the sessions live in it); a thread per connection."""
+
+    def __init__(self, host, port):
+        self.bind = "%s:%d" % (host, port)
+        super().__init__()
+
+    def load_config(self):
+        self.cfg.set("bind", self.bind)
+        self.cfg.set("worker_class", "gthread")
+        self.cfg.set("threads", 2 * MAX_SESSIONS)
+        self.cfg.set("graceful_timeout", 1)  # open consoles never finish; their workers end with the pty
+        self.cfg.set("control_socket_disable", True)
+
+    def load(self):
+        return signed_in_only(socketio.WSGIApp(sio))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="WebVirtCloud serial console daemon")
+    parser.add_argument("-H", "--host", default=settings.SOCKETIO_HOST, help="Listen host")
+    parser.add_argument("-p", "--port", type=int, default=settings.SOCKETIO_PORT, help="Listen port")
+    options = parser.parse_args()
+    # to stderr (the journal, docker logs), not the panel's own log file:
+    # each process rotating that file would lose lines
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s", force=True)
+    Server(options.host, options.port).run()

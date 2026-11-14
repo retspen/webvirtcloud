@@ -4,15 +4,26 @@ Django settings for webvirtcloud project.
 """
 
 import os
-import subprocess
+import sys
 try:
     import ldap
     from django_auth_ldap.config import LDAPSearch, NestedActiveDirectoryGroupType
     HAS_LDAP = True
 except ImportError:
     HAS_LDAP = False
+from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 from pathlib import Path
+
+
+def env_flag(name, default="0"):
+    """An on/off environment variable: 1 or 0 (unset: the default; empty: 0, as
+    before). Another value stops the start, so that "true" does not quietly mean off."""
+    value = os.getenv(name, default) or "0"
+    if value not in ("0", "1"):
+        raise ImproperlyConfigured(f"{name} must be 1 or 0, not {value!r}")
+    return value == "1"
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,21 +34,41 @@ if not SECRET_KEY:
     if secret_file.exists():
         try:
             SECRET_KEY = secret_file.read_text().strip()
-        except Exception:
+        except OSError:
             pass
 
-DEBUG = False
+# WEBVIRTCLOUD_DEBUG=1 shows error details on the pages: for trying things out only
+DEBUG = env_flag("WEBVIRTCLOUD_DEBUG")
 
 MAC_OUI = '52:54:10'
 
-ALLOWED_HOSTS = ["*"]
+# Host names the panel answers to. The installer writes the server's; add more
+# (comma-separated, "*" for any) through the environment.
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]"]
+if extra_hosts := os.getenv("ALLOWED_HOSTS"):
+    ALLOWED_HOSTS.extend([host.strip() for host in extra_hosts.split(",") if host.strip()])
+# Django compares the request's host with each entry as a name: a network
+# (192.0.2.0/24) matches no request and would leave its addresses refused
+if networks := [host for host in ALLOWED_HOSTS if "/" in host]:
+    raise ImproperlyConfigured(f"ALLOWED_HOSTS takes host names and addresses, not networks: {', '.join(networks)}")
 
 CSRF_TRUSTED_ORIGINS = ["http://localhost", "http://127.0.0.1", "http://localhost:8000", "http://127.0.0.1:8000"]
 if extra_origins := os.getenv("CSRF_TRUSTED_ORIGINS"):
     CSRF_TRUSTED_ORIGINS.extend([origin.strip() for origin in extra_origins.split(",") if origin.strip()])
 
-# Honor X-Forwarded-Proto header for request.is_secure() when behind a reverse proxy (Nginx, Traefik, etc.)
+# Honor X-Forwarded-Proto for request.is_secure(). gunicorn listens on
+# 127.0.0.1 only, so the bundled nginx is the one client that sets it.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Production profile for a panel served over HTTPS: secure cookies, HTTP to
+# HTTPS redirect and HSTS. Off by default (plain HTTP).
+if env_flag("WEBVIRTCLOUD_HTTPS"):
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+    # VMs fetch cloud-init metadata over plain HTTP
+    SECURE_REDIRECT_EXEMPT = [r"^datasource/"]
+    SECURE_HSTS_SECONDS = 31536000
 
 # Application definition
 INSTALLED_APPS = [
@@ -47,7 +78,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_bootstrap5",
-    "django_bootstrap_icons",
     "django_otp",
     "django_otp.plugins.otp_totp",
     "drf_spectacular",
@@ -62,28 +92,35 @@ INSTALLED_APPS = [
     "instances",
     "interfaces",
     "nwfilters",
+    "nodedevs",
     "storages",
     "virtsecrets",
     "logs",
-    "qr_code",
+    "operations",
     "rest_framework",
+    "knox",
+    "axes",
 ]
 
 MIDDLEWARE = [
+    "webvirtcloud.middleware.RequestIdMiddleware",
+    "webvirtcloud.middleware.AccessDeniedMiddleware",
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django_otp.middleware.OTPMiddleware",
-    "login_required.middleware.LoginRequiredMiddleware",
-    "django.contrib.auth.middleware.RemoteUserMiddleware",
+    "django.contrib.auth.middleware.LoginRequiredMiddleware",
+    "accounts.middleware.ForcePasswordChangeMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "webvirtcloud.middleware.ContentSecurityPolicyMiddleware",
     "appsettings.middleware.AppSettingsMiddleware",
     "webvirtcloud.middleware.ExceptionMiddleware",
+    # last, as django-axes requires
+    "axes.middleware.AxesMiddleware",
 ]
 
 ROOT_URLCONF = "webvirtcloud.urls"
@@ -105,6 +142,7 @@ TEMPLATES = [
             ],
             "libraries": {
                 "common_tags": "webvirtcloud.common_tags",
+                "bootstrap_icons": "webvirtcloud.bootstrap_icons",
             },
         },
     },
@@ -116,40 +154,104 @@ WSGI_APPLICATION = "webvirtcloud.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": Path.joinpath(BASE_DIR, "db.sqlite3"),
+# sqlite by default; PostgreSQL when WEBVIRTCLOUD_DB_HOST is set (a host name,
+# an IP, or a unix socket directory).
+if db_host := os.getenv("WEBVIRTCLOUD_DB_HOST"):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "HOST": db_host,
+            "PORT": os.getenv("WEBVIRTCLOUD_DB_PORT", "5432"),
+            "NAME": os.getenv("WEBVIRTCLOUD_DB_NAME", "webvirtcloud"),
+            "USER": os.getenv("WEBVIRTCLOUD_DB_USER", "webvirtcloud"),
+            "PASSWORD": os.getenv("WEBVIRTCLOUD_DB_PASSWORD", ""),
+            # seconds to connect: libpq waits for the operating system's TCP timeout (minutes)
+            "OPTIONS": {"connect_timeout": 5},
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": Path.joinpath(BASE_DIR, "db.sqlite3"),
+            # IMMEDIATE takes the write lock when a transaction starts, so a
+            # check-then-write cannot interleave with another process; timeout
+            # is how long a writer waits for that lock (seconds). WAL lets the
+            # worker and gunicorn read while one of them writes.
+            "OPTIONS": {"transaction_mode": "IMMEDIATE", "timeout": 20, "init_command": "PRAGMA journal_mode=WAL"},
+            # A file, not shared-cache memory: test threads and worker processes
+            # open the same database, and shared-cache locks ignore the timeout.
+            "TEST": {"NAME": os.getenv("WEBVIRTCLOUD_TEST_DB") or Path.joinpath(BASE_DIR, "test_db.sqlite3")},
+        }
+    }
 
 AUTHENTICATION_BACKENDS = [
+    # first: refuses logins that are locked out
+    "axes.backends.AxesStandaloneBackend",
     "django.contrib.auth.backends.ModelBackend",
     #"django_auth_ldap.backend.LDAPBackend",
 ]
 
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
 LOGIN_URL = "/accounts/login/"
+
+# Tests create users by the thousand: a fast hash for them (manage.py test only)
+if sys.argv[1:2] == ["test"]:
+    PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
+# manage.py test --parallel on SQLite (WAL)
+TEST_RUNNER = "webvirtcloud.test_runner.TestRunner"
+
+# Failed logins (django-axes): a user is locked for the address the logins
+# come from. The limit and the lock time are on the Settings page
+# (LOGIN_FAILURE_LIMIT, LOGIN_LOCKOUT_MINUTES); unlock with
+# "manage.py axes_reset_username <username>".
+AXES_FAILURE_LIMIT = "accounts.lockout.failure_limit"
+AXES_COOLOFF_TIME = "accounts.lockout.cooloff_time"
+AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
+AXES_RESET_ON_SUCCESS = True
+# successful logins are on the Logs page; django-axes' own record of them would only grow
+AXES_DISABLE_ACCESS_LOG = True
+AXES_CLIENT_IP_CALLABLE = "accounts.lockout.client_ip"
+# Reverse proxies other than a local one whose X-Real-IP header gives the
+# client address, e.g. ["10.0.0.5", "172.18.0.0/16"]
+LOGIN_TRUSTED_PROXIES = []
 
 LOGOUT_REDIRECT_URL = "/accounts/login/"
 
 LOGIN_REDIRECT_URL="/instances/"
 
 LANGUAGE_CODE = "en-us"
+# the languages the panel is translated into, each with a full catalog in locale/
+LANGUAGES = [
+    ("en", "English"),
+    ("tr", "Türkçe"),
+    ("zh-hans", "简体中文"),
+]
 
-TIME_ZONE = "UTC"
+# the installer writes the server's zone; Docker takes TZ (Django sets the process's TZ from this)
+TIME_ZONE = os.getenv("TZ") or "UTC"
+if TIME_ZONE.startswith(":"):  # ":/etc/localtime", a libc form naming a file, is no zone name for Django
+    TIME_ZONE = "UTC"
 
 USE_I18N = True
 
-USE_L10N = True
 
 USE_TZ = True
 
 STATIC_URL = "/static/"
 
-STATIC_ROOT = Path.joinpath(BASE_DIR, "static")
+# Source assets live in static/; collectstatic gathers them with the apps'
+# assets into staticfiles/ (gitignored), which nginx serves.
+STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
-
-BS_ICONS_CACHE = Path.joinpath(BASE_DIR, 'static/icon_cache')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
@@ -158,16 +260,27 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 LOCALE_PATHS = [
-    "locale/",
+    BASE_DIR / "locale",
 ]
+
+# Resolve the application log path (a relative one from the panel's directory)
+# and make sure its directory exists, so a clean checkout, CI, or a Docker
+# build (none of which create data/) does not fail when logging is configured.
+WEBVIRTCLOUD_LOG_FILE = str(BASE_DIR / (os.getenv("WEBVIRTCLOUD_LOG_FILE") or "data/webvirtcloud.log"))
+os.makedirs(os.path.dirname(WEBVIRTCLOUD_LOG_FILE), exist_ok=True)
 
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'standard': {
-            'format': '[%(asctime)s] %(levelname)s: %(message)s'
+            'format': '[%(asctime)s] %(levelname)s %(name)s [%(process)d %(threadName)s] '
+                      '%(request_id)s %(user)s %(ip)s: %(message)s'
         },
+    },
+    'filters': {
+        'request': {'()': 'webvirtcloud.log_context.RequestFilter'},
+        'not_found': {'()': 'webvirtcloud.log_context.NotFoundFilter'},
     },
     'handlers': {
         'mail_admins': {
@@ -175,10 +288,14 @@ LOGGING = {
             'class': 'django.utils.log.AdminEmailHandler'
             },
         'default': {
-            'level':'INFO',
-            'class':'logging.handlers.RotatingFileHandler',
-            'filename': 'webvirtcloud.log',
-            'formatter':'standard',
+            'level': 'INFO',
+            # every web worker writes the file: one rotates it at a time, under a lock
+            'class': 'concurrent_log_handler.ConcurrentRotatingFileHandler',
+            'filename': WEBVIRTCLOUD_LOG_FILE,
+            'maxBytes': 10 * 1024 * 1024,
+            'backupCount': 5,
+            'formatter': 'standard',
+            'filters': ['request'],
         },
     },
     'loggers': {
@@ -187,10 +304,14 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True
         },
+        # django-axes writes several lines a login; logins and failed logins
+        # are on the Logs page, a lock is a warning
+        'axes': {'level': 'WARNING'},
         'django.request': {
             "handlers": ["mail_admins"],
             "level": "ERROR",
             "propagate": True,
+            "filters": ["not_found"],
         }
     },
 }
@@ -200,35 +321,20 @@ LOGGING = {
 # WebVirtCloud settings
 #
 
-# Websock port
+# The VNC console proxy (novncd). Browsers reach it through nginx's /novncd/
+# on the panel's own address, so it listens on the loopback only.
 WS_PORT = 6080
+WS_HOST = "127.0.0.1"
 
-# Websock host
-WS_HOST = "0.0.0.0"
-
-# Websock public port - 80 or 443 if reverse-proxy, else 6080
-WS_PUBLIC_PORT = 6080
-
-# Websock public host
-WS_PUBLIC_HOST = None
-
-# Websock public path
-WS_PUBLIC_PATH = "novncd/"
-
-# Websock Certificate for SSL
-WS_CERT = None
+# Serial console (xterm.js over socketiod) for VMs without graphics. socketiod
+# accepts only the console page's signed token (as noVNC does); while this is
+# False it refuses every connection. Restart socketiod after changing it.
+SERIAL_CONSOLE_ENABLED = env_flag("WEBVIRTCLOUD_SERIAL_CONSOLE")
 
 SOCKETIO_PORT = 6081
-SOCKETIO_HOST = "0.0.0.0"
-
-# Socketio public host
-SOCKETIO_PUBLIC_HOST = None
-
-# Socketio public port - 80 or 443 if reverse-proxy, else 6081
-SOCKETIO_PUBLIC_PORT = 6081
-
-# Socketio public path
-SOCKETIO_PUBLIC_PATH = "socket.io/"
+# Listen on localhost only; the console page reaches socketiod through the
+# nginx /socket.io/ location.
+SOCKETIO_HOST = "127.0.0.1"
 
 # List of console listen addresses
 QEMU_CONSOLE_LISTENER_ADDRESSES = (
@@ -236,7 +342,7 @@ QEMU_CONSOLE_LISTENER_ADDRESSES = (
     ("0.0.0.0", _("All interfaces")),
 )
 
-# List taken from http://qemu.weilnetz.de/qemu-doc.html#sec_005finvocation
+# the keymaps of QEMU's -k option
 QEMU_KEYMAPS = [
     "ar",
     "da",
@@ -277,40 +383,64 @@ QEMU_KEYMAPS = [
 LIBVIRT_KEEPALIVE_INTERVAL = 5
 LIBVIRT_KEEPALIVE_COUNT = 5
 
-ALLOW_EMPTY_PASSWORD = False
 NEW_USER_DEFAULT_INSTANCES = []
-SHOW_PROFILE_EDIT_PASSWORD = True
+# Days the owners of a VM that vanished from its compute are kept, in case it comes back
+INSTANCE_OWNERSHIP_RETENTION_DAYS = 30
 
 
 # OTP Config
 OTP_ENABLED = False
 
-LOGIN_REQUIRED_IGNORE_VIEW_NAMES = ["accounts:login", "accounts:email_otp"]
 
 # REST Framework & OpenAPI (drf-spectacular)
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # An API token, or a session: a password alone (HTTP Basic) must not reach
+    # the API, as it would skip the OTP second factor the login form enforces;
+    # tokens are made in a session. The token class comes first, so a refused
+    # request gets 401 with its challenge, not 403.
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "accounts.auth.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    # A view that forgets its own permission_classes is not public.
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
 }
+
+# API tokens (django-rest-knox): kept as SHA-512 digests, sent as
+# "Authorization: Token wvc_..."; made and deleted on the profile page
+KNOX_TOKEN_MODEL = "accounts.ApiToken"
+REST_KNOX = {"TOKEN_PREFIX": "wvc_"}
+# knox stays installed for its token code, but its migrations would create a
+# knox_authtoken table that accounts.ApiToken replaces
+MIGRATION_MODULES = {"knox": None}
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Webvirtcloud REST-API",
     "DESCRIPTION": "Webvirtcloud REST API",
     "VERSION": "v1",
     "SERVE_INCLUDE_SCHEMA": False,
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
     "REDOC_DIST": "SIDECAR",
 }
 
-# EMAIL Config
+# EMAIL Config (SMTP; override through the environment)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_USE_TLS = True
-EMAIL_PORT = 587
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_USE_TLS = env_flag("EMAIL_USE_TLS", "1")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 ## sender's email-id
-EMAIL_HOST_USER = ''
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 ## password associated with above email-id
-EMAIL_HOST_PASSWORD = ''
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+# the mails' From: relays take mail only from their account (Django's own default is webmaster@localhost)
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL") or EMAIL_HOST_USER or "webmaster@localhost"
+# seconds an SMTP server may take to answer; without it a server that stops answering holds the request for good
+EMAIL_TIMEOUT = 10
 
 # LDAP Config
 #
@@ -319,6 +449,8 @@ if HAS_LDAP:
     AUTH_LDAP_SERVER_URI = "ldap://example.com"
     AUTH_LDAP_BIND_DN = "username@example.com"
     AUTH_LDAP_BIND_PASSWORD = "password"
+    # seconds to connect and for each answer: python-ldap waits for a server without end
+    AUTH_LDAP_CONNECTION_OPTIONS = {ldap.OPT_NETWORK_TIMEOUT: 5, ldap.OPT_TIMEOUT: 10}
     AUTH_LDAP_USER_SEARCH = LDAPSearch(
         "CN=Users,DC=example,DC=com", ldap.SCOPE_SUBTREE, "(sAMAccountName=%(user)s)"
     )

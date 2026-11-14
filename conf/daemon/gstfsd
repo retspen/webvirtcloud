@@ -1,59 +1,373 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # gstfsd - WebVirtCloud daemon for managing VM's filesystem
 #
+# The server reads one JSON request per connection and sends exactly one JSON
+# reply. Each change runs in a worker process ("gstfsd --worker") that is
+# killed, with its guestfs appliance, when the request is not done DEADLINE
+# seconds after the connection was accepted.
+#
+# Only the panel may ask: it knows this host's key (GSTFSD_KEY, 64 hex
+# characters, the gstfsd key of the host in the panel). Each connection gets
+# a new challenge; the request and the reply carry an HMAC-SHA256 of it:
+#
+#   gstfsd -> panel   {"challenge": C}\n
+#   panel -> gstfsd   {"nonce": N, "request": R, "mac": mac("request", C, N, R)}
+#   gstfsd -> panel   {"reply": A, "mac": mac("reply", C, N, A)}
+#
+# R and A are the request and the reply as JSON text. A request recorded on
+# one connection is refused on any other, and only the panel's own
+# connection can get a reply it accepts. The traffic is not encrypted.
+#
 
-import socketserver
+import hashlib
+import hmac
+import ipaddress
 import json
-import guestfs
+import os
 import re
+import secrets
+import select
+import signal
+import socket
+import socketserver
+import subprocess
+import sys
+import threading
+import time
 
-PORT = 16510
-ADDRESS = "0.0.0.0"
+HEX64 = re.compile(r"[0-9a-f]{64}")
+KEY = os.environ.get("GSTFSD_KEY", "").strip()
+# the panel always connects to 16510 (instances.views.GSTFSD_PORT); GSTFSD_PORT
+# is for the tests, which run gstfsd on a free port
+PORT = int(os.environ.get("GSTFSD_PORT", 16510))
+ADDRESS = os.environ.get("GSTFSD_BIND_HOST", "127.0.0.1")
+MAX_REQUEST = 64 * 1024
+# connections at a time, each a thread that may run a guestfs appliance; one
+# more is told gstfsd is busy before it gets a thread
+MAX_CLIENTS = 4
+# A request, from accepting the connection to closing the appliance, must
+# finish within this many seconds, or it is stopped: the panel gives up 120 s
+# after connecting and releases the VM, which may then be started.
+DEADLINE = float(os.environ.get("GSTFSD_DEADLINE", 100))
+MAX_DEADLINE = 100
+# Time to send the reply after the deadline.
+REPLY_TIMEOUT = 5
+# Time for a killed worker and its appliance to be gone.
+STOP_TIMEOUT = 5
 
 
-class MyTCPServer(socketserver.ThreadingTCPServer):
-    allow_reuse_address = True
+def is_loopback(host):
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return host == "localhost"
 
 
-class MyTCPServerHandler(socketserver.BaseRequestHandler):
-    def handle(self):
-        # recive data
-        d = self.request.recv(1024).strip()
-        data = json.loads(d)
+# --- worker: one change to one guest ----------------------------------------
 
-        # GuestFS
-        gfs = guestfs.GuestFS(python_return_dict=True)
+
+def set_root_password(gfs, passwd):
+    shadow = gfs.cat('/etc/shadow')
+    new_shadow, found = re.subn('^root:[^:]*:', lambda m: "root:" + passwd + ":", shadow, flags=re.MULTILINE)
+    if found != 1:
+        raise RuntimeError("/etc/shadow has %d root entries, need exactly one" % found)
+    gfs.write('/etc/shadow', new_shadow)
+    gfs.chmod(0o640, '/etc/shadow')
+
+
+def add_root_key(gfs, key):
+    if not gfs.is_dir('/root/.ssh'):
+        gfs.mkdir('/root/.ssh')
+        gfs.chmod(0o700, "/root/.ssh")
+    # Add the key; keep the ones already there.
+    keys_path = '/root/.ssh/authorized_keys'
+    keys = gfs.cat(keys_path) if gfs.is_file(keys_path) else ''
+    new_key = key.strip()
+    if new_key not in keys.splitlines():
+        if keys and not keys.endswith('\n'):
+            keys += '\n'
+        gfs.write(keys_path, keys + new_key + '\n')
+    gfs.chmod(0o600, keys_path)
+
+
+# action: (function, the files it changes, where it may create files)
+ACTIONS = {
+    'password': (lambda gfs, data: set_root_password(gfs, data['passwd']), ['/etc/shadow'], None),
+    'publickey': (lambda gfs, data: add_root_key(gfs, data['key']), ['/root/.ssh/authorized_keys'], '/root/.ssh'),
+}
+
+
+def selinux_specfile(gfs):
+    """The guest's SELinux file contexts, or None without an SELinux policy or
+    with SELinux disabled (enabling it again relabels the whole guest)."""
+    if not gfs.is_file('/etc/selinux/config'):
+        return None
+    config = gfs.cat('/etc/selinux/config')
+    if re.search(r"^\s*SELINUX\s*=\s*[\"']?disabled\b", config, re.MULTILINE):
+        return None
+    found = re.search(r"^\s*SELINUXTYPE\s*=\s*[\"']?([\w.-]+)", config, re.MULTILINE)
+    specfile = '/etc/selinux/%s/contexts/files/file_contexts' % (found.group(1) if found else 'targeted')
+    return specfile if gfs.is_file(specfile) else None
+
+
+def holds(mountpoint, path):
+    return mountpoint == '/' or path == mountpoint or path.startswith(mountpoint.rstrip('/') + '/')
+
+
+def mount_guest(gfs, paths):
+    """Mount the guest's one operating system the way it mounts itself (LVM
+    included), parents first. A filesystem on the way to one of paths must
+    mount; another one that fails (a broken /data) is left out."""
+    roots = gfs.inspect_os()
+    if len(roots) != 1:
+        raise RuntimeError("found %d operating systems on the disks, need exactly one" % len(roots))
+    mountpoints = gfs.inspect_get_mountpoints(roots[0])
+    for mountpoint in sorted(mountpoints, key=len):
         try:
-            gfs.add_domain(data['vname'])
-            gfs.launch()
-            parts = gfs.list_partitions()
-            for part in parts:
-                try:
-                    gfs.mount(part, '/')
-                    if gfs.is_file('/etc/shadow'):
-                        if data['action'] == 'password':
-                            file_shadow = gfs.cat('/etc/shadow')
-                            new_root_hash = "root:" + data['passwd'] + ":"
-                            file_shadow_new = re.sub('^root:.*?:', new_root_hash, file_shadow)
-                            gfs.write('/etc/shadow', file_shadow_new)
-                            gfs.chmod(640, '/etc/shadow')
-                            self.request.sendall(json.dumps({'return': 'success'}))
-                        if data['action'] == 'publickey':
-                            if not gfs.is_dir('/root/.ssh'):
-                                gfs.mkdir('/root/.ssh')
-                                gfs.chmod(700, "/root/.ssh")
-                            gfs.write('/root/.ssh/authorized_keys', data['key'])
-                            gfs.chmod(600, '/root/.ssh/authorized_keys')
-                            self.request.sendall(json.dumps({'return': 'success'}))
-                    gfs.umount(part)
-                except RuntimeError:
-                    pass
-            gfs.shutdown()
-            gfs.close()
+            gfs.mount(mountpoints[mountpoint], mountpoint)
+        except RuntimeError:
+            if any(holds(mountpoint, path) for path in paths):
+                raise
+
+
+def change_guest(data):
+    import guestfs
+
+    action, paths, creates = ACTIONS[data['action']]
+    gfs = guestfs.GuestFS(python_return_dict=True)
+    launched = False
+    try:
+        gfs.add_domain(data['vname'])
+        gfs.launch()
+        launched = True
+        mount_guest(gfs, paths)
+        if '/etc/shadow' in paths and not gfs.is_file('/etc/shadow'):
+            raise RuntimeError("the guest has no /etc/shadow")
+        # A file libguestfs creates has no SELinux label, and an enforcing
+        # guest's sshd does not read an unlabeled authorized_keys.
+        specfile = creates and selinux_specfile(gfs)
+        if specfile and not gfs.feature_available(['selinuxrelabel']):
+            raise RuntimeError("the guest uses SELinux, but libguestfs on this host cannot set SELinux labels")
+        action(gfs, data)
+        if specfile:
+            gfs.selinux_relabel(specfile, creates, force=True)
+    except Exception:
+        # the first error is the one to report; cleanup still runs
+        if launched:
+            try:
+                gfs.umount_all()
+                gfs.shutdown()
+            except Exception:
+                pass
+        gfs.close()
+        raise
+    try:
+        # writes reach the disk at umount and shutdown: their errors count
+        gfs.umount_all()
+        gfs.shutdown()
+    finally:
+        gfs.close()
+
+
+def worker():
+    """Read one request on stdin, change the guest, write the reply on stdout."""
+    try:
+        change_guest(json.loads(sys.stdin.buffer.read()))
+        reply = {'return': 'success'}
+    except Exception as err:
+        reply = {'return': 'error', 'message': str(err)}
+    sys.stdout.write(json.dumps(reply))
+    return 0
+
+
+# --- server -----------------------------------------------------------------
+
+
+def read_request(sock, end):
+    """The client sends one JSON object and waits for the reply: read until
+    it parses (a long SSH key spans several reads), before end (a
+    time.monotonic() value) and within MAX_REQUEST bytes."""
+    data = b""
+    while True:
+        remaining = end - time.monotonic()
+        if remaining <= 0:
+            raise ValueError("the request was not complete within %d seconds" % DEADLINE)
+        sock.settimeout(remaining)
+        try:
+            chunk = sock.recv(min(4096, MAX_REQUEST + 1 - len(data)))
+        except socket.timeout:
+            raise ValueError("the request was not complete within %d seconds" % DEADLINE)
+        if not chunk:
+            return json.loads(data)
+        data += chunk
+        if len(data) > MAX_REQUEST:
+            raise ValueError("the request is longer than %d bytes" % MAX_REQUEST)
+        try:
+            return json.loads(data)
+        except ValueError:
+            continue
+
+
+def mac(kind, challenge, nonce, payload):
+    message = "\n".join(("gstfsd-v1", kind, challenge, nonce, payload)).encode()
+    return hmac.new(bytes.fromhex(KEY), message, hashlib.sha256).hexdigest()
+
+
+def signed_request(sock, end, challenge):
+    """The client's nonce and request, if the panel signed it for this
+    connection's challenge; PermissionError otherwise, before any change."""
+    frame = read_request(sock, end)
+    nonce, request, given = (frame.get(key) if isinstance(frame, dict) else None for key in ("nonce", "request", "mac"))
+    if not (isinstance(nonce, str) and HEX64.fullmatch(nonce) and isinstance(request, str)
+            and isinstance(given, str) and hmac.compare_digest(given, mac("request", challenge, nonce, request))):
+        raise PermissionError("the request is not signed with this host's gstfsd key")
+    return nonce, json.loads(request)
+
+
+def group_running(pgid):
+    """Whether a process of the group still runs. A killed appliance whose
+    parent is gone may stay a zombie until init reaps it; it holds no disk."""
+    for pid in os.listdir('/proc'):
+        try:
+            with open('/proc/%s/stat' % pid) as f:
+                fields = f.read().rsplit(')', 1)[1].split()
+        except (OSError, IndexError):
+            continue  # not a process, or gone meanwhile
+        if fields[0] != 'Z' and int(fields[2]) == pgid:
+            return True
+    return False
+
+
+def stop_worker(proc):
+    """Kill the worker with its appliance and wait until they are gone."""
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    # a process in uninterruptible disk I/O dies only when the I/O ends
+    end = time.monotonic() + STOP_TIMEOUT
+    try:
+        proc.wait(timeout=STOP_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        pass
+    while time.monotonic() < end:
+        if proc.returncode is not None and not group_running(proc.pid):
+            return
+        time.sleep(0.05)
+    raise RuntimeError("the change was stopped, but its appliance is still running")
+
+
+def watch_client(sock, proc, done):
+    """Kill the worker when the client leaves: the panel then no longer keeps
+    the VM from being started. The client sends nothing more until the reply."""
+    while not done.is_set():
+        try:
+            if select.select([sock], [], [], 0.2)[0] and not sock.recv(4096):
+                break
+        except OSError:
+            break
+    else:
+        return
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+
+
+def run_worker(data, end, sock):
+    if data.get('action') not in ACTIONS:
+        raise ValueError("unknown action %r" % data.get('action'))
+    # Its own session, and the appliance started directly by it (not by
+    # libvirtd): killing the worker's process group also kills the appliance.
+    proc = subprocess.Popen(
+        [sys.executable, os.path.abspath(__file__), '--worker'],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        start_new_session=True,
+        env=dict(os.environ, LIBGUESTFS_BACKEND='direct'),
+    )
+    done = threading.Event()
+    watcher = threading.Thread(target=watch_client, args=(sock, proc, done), daemon=True)
+    watcher.start()
+    try:
+        out, err = proc.communicate(json.dumps(data).encode(), timeout=max(0, end - time.monotonic()))
+    except subprocess.TimeoutExpired:
+        stop_worker(proc)
+        raise RuntimeError("the change took longer than %d seconds and was stopped" % DEADLINE)
+    finally:
+        done.set()
+        watcher.join()
+    if proc.returncode != 0:
+        stop_worker(proc)  # a crashed or killed worker may leave its appliance
+        lines = err.decode(errors='replace').strip().splitlines()
+        raise RuntimeError("the change failed (exit %d): %s" % (proc.returncode, lines[-1] if lines else "no output"))
+    return json.loads(out)
+
+
+class MyTCPServerHandler(socketserver.StreamRequestHandler):
+    def handle(self):
+        # Exactly one reply per request, success or error; signed only for a
+        # signed request.
+        end = time.monotonic() + DEADLINE
+        challenge, nonce = secrets.token_hex(32), None
+        try:
+            self.request.settimeout(REPLY_TIMEOUT)
+            self.request.sendall((json.dumps({"challenge": challenge}) + "\n").encode())
+            nonce, data = signed_request(self.request, end, challenge)
+            reply = run_worker(data, end, self.request)
         except Exception as err:
-            self.request.sendall(bytes(json.dumps({'return': 'error', 'message': str(err)}).encode()))
+            reply = {'return': 'error', 'message': str(err)}
+        answer = json.dumps(reply)
+        frame = {"reply": answer, "mac": mac("reply", challenge, nonce, answer) if nonce else ""}
+        try:
+            self.request.settimeout(REPLY_TIMEOUT)
+            self.request.sendall(json.dumps(frame).encode())
+        except OSError:
+            pass  # the client is gone
 
 
-server = MyTCPServer((ADDRESS, PORT), MyTCPServerHandler)
-server.serve_forever()
+def serve():
+    # gstfsd is a root service that rewrites any VM's /etc/shadow and
+    # authorized_keys; its traffic is not encrypted, so it only listens on
+    # loopback unless explicitly allowed.
+    if not HEX64.fullmatch(KEY):
+        sys.stderr.write("gstfsd: GSTFSD_KEY must be 64 hexadecimal characters (lowercase); "
+                         "set it in /etc/default/webvirt-gstfsd\n")
+        return 1
+    if not 0 < DEADLINE <= MAX_DEADLINE:
+        sys.stderr.write("gstfsd: GSTFSD_DEADLINE must be above 0 and at most %d seconds\n" % MAX_DEADLINE)
+        return 1
+    if not is_loopback(ADDRESS) and os.environ.get("GSTFSD_ALLOW_REMOTE") != "1":
+        sys.stderr.write(
+            "gstfsd: refusing to listen on %s (a root service whose traffic is not encrypted). "
+            "Set GSTFSD_ALLOW_REMOTE=1 to allow it on a trusted network.\n" % ADDRESS
+        )
+        return 1
+
+    class MyTCPServer(socketserver.ThreadingTCPServer):
+        allow_reuse_address = True
+        address_family = socket.AF_INET6 if ":" in ADDRESS else socket.AF_INET
+        clients = threading.BoundedSemaphore(MAX_CLIENTS)
+
+        def process_request(self, request, client_address):
+            if not self.clients.acquire(blocking=False):
+                try:
+                    request.sendall(b'{"error": "gstfsd is busy with other changes: try again in a moment"}\n')
+                except OSError:
+                    pass
+                self.shutdown_request(request)
+                return
+            super().process_request(request, client_address)
+
+        def process_request_thread(self, request, client_address):
+            try:
+                super().process_request_thread(request, client_address)
+            finally:
+                self.clients.release()
+
+    MyTCPServer((ADDRESS, PORT), MyTCPServerHandler).serve_forever()
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(worker() if sys.argv[1:] == ['--worker'] else serve())

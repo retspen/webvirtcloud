@@ -1,0 +1,176 @@
+"""Snapshot create and revert run as jobs: the page queues them, the worker calls libvirt."""
+
+from types import SimpleNamespace
+from unittest.mock import PropertyMock, patch
+
+from libvirt import libvirtError
+from vrtManager.util import OperationError
+from django.contrib.auth import get_user_model
+from django.test import TransactionTestCase
+from django.urls import reverse
+
+from accounts.models import UserAttributes, UserInstance
+from appsettings.settings import get_settings
+from django.contrib.auth.models import Permission
+from django.contrib.messages import get_messages
+from computes.models import Compute
+from instances.jobs import CreateSnapshot, RevertSnapshot
+from instances.models import Instance
+from operations.jobs import Context, get_kind
+from operations.models import Claim, Operation, acquire
+
+
+class SnapshotJobsTestCase(TransactionTestCase):
+    def setUp(self):
+        get_settings()
+        compute = Compute.objects.create(name="snap-c", hostname="192.0.2.40", login="root", password="", type=1)
+        self.instance = Instance.objects.create(compute=compute, name="snap-vm",
+                                                uuid="21212121-3434-5656-7878-909090909090")
+        self.client.force_login(get_user_model().objects.create_superuser("snap_admin", "a@example.com", "pw"))
+        patcher = patch("instances.jobs.wvmInstance")
+        self.proxy = patcher.start().return_value
+        self.addCleanup(patcher.stop)
+        self.proxy.instance.snapshotListNames.return_value = []
+        self.proxy._snapshot.return_value.getXMLDesc.return_value = "<domainsnapshot><domain/></domainsnapshot>"
+        self.proxy.instance.isActive.return_value = False
+        self.proxy.instance.hasCurrentSnapshot.return_value = 0
+        # the quota's reads of the user's VMs
+        reads = patch("instances.utils.wvmInstance")
+        self.vm_reads = reads.start().return_value
+        self.addCleanup(reads.stop)
+
+    def queue_and_run(self, view, data):
+        """Post the form; nothing runs in the request; then run the job as the worker does."""
+        self.client.post(reverse(f"instances:{view}", args=[self.instance.pk]),
+                         {**data, "submission_key": "key-snap0001"})
+        op = Operation.objects.get()
+        self.assertIn((f"instance:{self.instance.uuid}", "exclusive"),
+                      set(Claim.objects.values_list("resource", "mode")))
+        self.assertFalse(self.proxy.create_snapshot.called or self.proxy.create_external_snapshot.called
+                         or self.proxy.snapshot_revert.called or self.proxy.revert_external_snapshot.called)
+        acquire("wvc-test:1:a", "wvc-test")
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker="wvc-test:1:a")
+        op.refresh_from_db()
+        ctx = Context(op, SimpleNamespace(identity="wvc-test:1:a"))
+        kind = get_kind(op.kind)
+        kind.precheck(op, ctx)
+        return op, kind.run(op, ctx)
+
+    def test_an_external_snapshot_is_taken_by_the_worker(self):
+        op, _ = self.queue_and_run("create_external_snapshot", {"name": "a", "description": "d", "memory": "on"})
+        self.assertEqual(op.kind, "snapshot.create")
+        self.assertEqual(self.proxy.create_external_snapshot.call_args.args, ("a", "d", True, False))
+
+    def test_an_internal_snapshot_is_taken_by_the_worker(self):
+        self.queue_and_run("snapshot", {"name": "b"})
+        self.proxy.create_snapshot.assert_called_once_with("b", "")
+
+    def test_a_taken_name_is_refused_on_the_page(self):
+        self.proxy.instance.snapshotListNames.return_value = ["a"]
+        self.client.post(reverse("instances:snapshot", args=[self.instance.pk]),
+                         {"name": "a", "submission_key": "key-snap0001"})
+        self.assertFalse(Operation.objects.exists())
+
+    def test_a_name_that_is_empty_or_not_a_snapshot_name_is_refused_on_the_page(self):
+        for name in ("", ".hidden", "a b"):
+            # the VM page it goes back to, of a host that is not there
+            with patch.object(Compute, "connection", new_callable=PropertyMock, return_value=libvirtError("unreachable")):
+                response = self.client.post(reverse("instances:snapshot", args=[self.instance.pk]),
+                                            {"name": name, "submission_key": "key-snap0001"}, follow=True)
+            self.assertContains(response, "Snapshot names are 1-64 letters")
+        self.assertFalse(Operation.objects.exists())
+
+    def test_a_name_taken_outside_the_panel_meanwhile_is_refused_before_effects(self):
+        self.client.post(reverse("instances:snapshot", args=[self.instance.pk]),
+                         {"name": "b", "submission_key": "key-snap0001"})
+        op = Operation.objects.get()
+        self.proxy.instance.snapshotListNames.return_value = ["b"]  # virsh snapshot-create-as
+        with self.assertRaisesMessage(OperationError, "A snapshot named b already exists"):
+            CreateSnapshot().precheck(op, None)
+        self.proxy.create_snapshot.assert_not_called()
+
+    def test_create_recovery(self):
+        op = Operation(params={"instance": self.instance.pk, "name": "a", "external": True},
+                       intent={"compute": self.instance.compute_id})
+        self.assertEqual(CreateSnapshot().reconcile(op).state, Operation.FAILED)
+        self.proxy.instance.snapshotListNames.return_value = ["a"]
+        self.assertEqual(CreateSnapshot().reconcile(op).state, Operation.SUCCEEDED)
+        self.proxy.instance.isActive.return_value = True
+        self.proxy.instance.jobInfo.return_value = [2] + [0] * 11  # VIR_DOMAIN_JOB_UNBOUNDED
+        self.assertEqual(CreateSnapshot().reconcile(op).state, Operation.RUNNING)
+
+    def test_an_external_revert_is_made_by_the_worker(self):
+        self.proxy.revert_external_snapshot.return_value = ["/pool/a.one"]
+        op, result = self.queue_and_run("revert_external_snapshot", {"name": "a"})
+        self.assertEqual((op.kind, result), ("snapshot.revert", {"left_behind": ["/pool/a.one"]}))
+        self.proxy.revert_external_snapshot.assert_called_once_with("a")
+
+    def test_a_revert_that_would_exceed_the_owner_s_quota_is_refused(self):
+        # snapshot at 4 vCPUs, shrunk to 2, the 2 given to another VM: reverting gives 6 of 4
+        owner = get_user_model().objects.create_user("snap_owner", password="pw")
+        owner.user_permissions.add(Permission.objects.get(codename="snapshot_instances"))
+        UserAttributes.objects.update_or_create(user=owner, defaults={"max_cpus": 4, "max_memory": 2048,
+                                                                      "max_instances": -1, "max_disk_size": -1})
+        UserInstance.objects.create(user=owner, instance=self.instance, is_change=True)
+        for proxy in (self.proxy, self.vm_reads):  # the VM now: 2 vCPUs, 1 GiB, running and at its next start
+            proxy.get_vcpu.return_value, proxy.get_memory.return_value = 2, 1024
+            proxy.get_disk_devices.return_value = []
+        other = Instance.objects.create(compute=self.instance.compute, name="snap-other", uuid="21212121-3434-5656-7878-909090909091")
+        UserInstance.objects.create(user=owner, instance=other, is_change=True)
+        patch.object(Compute, "status", new_callable=PropertyMock, return_value=True).start()
+        self.addCleanup(patch.stopall)
+        for vcpu, memory, admitted in ((4, 1024, False), (2, 2048, False), (2, 1024, True)):
+            with self.subTest(vcpu=vcpu, memory=memory):
+                self.client.force_login(owner)  # a new session: no messages of the last one
+                self.proxy._snapshot.return_value.getXMLDesc.return_value = (
+                    f"<domainsnapshot><domain><vcpu>{vcpu}</vcpu><memory>{memory * 1024}</memory></domain></domainsnapshot>")
+                response = self.client.post(reverse("instances:revert_snapshot", args=[self.instance.pk]),
+                                            {"name": "a", "submission_key": f"key-snap{vcpu}{memory}"})
+                self.assertEqual(Operation.objects.exists(), admitted)
+                shown = " ".join(str(m) for m in get_messages(response.wsgi_request))
+                self.assertEqual("cannot revert to snapshot a" in shown, not admitted, shown)
+                self.client.logout()
+        # the admitted revert holds the owner's quota until it ends: no resize or other revert
+        # passes the check meanwhile (its own check in the worker and its revert are one step)
+        op = Operation.objects.get()
+        self.assertIn((f"quota:user:{owner.pk}", "exclusive"), set(Claim.objects.filter(operation=op).values_list("resource", "mode")))
+        # the worker checks again: the VM may have been shrunk while it was queued (2 -> 1 vCPU, used elsewhere)
+        self.proxy.get_vcpu.return_value = 1
+        with self.assertRaisesMessage(OperationError, "cannot revert to snapshot a"):
+            RevertSnapshot().precheck(op, None)
+        # an old snapshot may record only the VM's UUID: refused, not a server error
+        Operation.objects.all().delete()
+        Claim.objects.all().delete()
+        self.proxy._snapshot.return_value.getXMLDesc.return_value = "<domainsnapshot><domain><uuid>x</uuid></domain></domainsnapshot>"
+        self.client.force_login(owner)
+        response = self.client.post(reverse("instances:revert_snapshot", args=[self.instance.pk]),
+                                    {"name": "a", "submission_key": "key-snapold1"})
+        self.assertFalse(Operation.objects.exists())
+        self.assertIn("does not record the VM's vCPUs and memory", " ".join(str(m) for m in get_messages(response.wsgi_request)))
+
+    def test_a_revert_libvirt_cannot_do_is_refused_before_effects(self):
+        self.proxy.check_external_revert.side_effect = OperationError("taken by an older version")
+        with self.assertRaises(OperationError):
+            self.queue_and_run("revert_external_snapshot", {"name": "a"})
+        self.assertFalse(Operation.objects.get().effects_started)
+
+    def test_an_internal_revert_of_a_running_vm_is_refused_before_effects(self):
+        # the page disables the button, but it may be older than the VM's start
+        self.proxy.check_internal_revert.side_effect = OperationError("Shut the VM down to revert to an internal snapshot")
+        with self.assertRaises(OperationError):
+            self.queue_and_run("revert_snapshot", {"name": "b"})
+        self.assertFalse(Operation.objects.get().effects_started)
+        self.proxy.snapshot_revert.assert_not_called()
+
+    def test_an_internal_revert_is_made_by_the_worker(self):
+        self.queue_and_run("revert_snapshot", {"name": "b"})
+        self.proxy.snapshot_revert.assert_called_once_with("b")
+
+    def test_revert_recovery(self):
+        op = Operation(params={"instance": self.instance.pk, "name": "a", "external": False},
+                       intent={"compute": self.instance.compute_id, "was_current": "z"})
+        self.proxy.instance.hasCurrentSnapshot.return_value = 1
+        self.proxy.instance.snapshotCurrent.return_value.getName.return_value = "a"
+        self.assertEqual(RevertSnapshot().reconcile(op).state, Operation.SUCCEEDED)
+        op.intent["was_current"] = "a"  # it was current before: nothing tells
+        self.assertEqual(RevertSnapshot().reconcile(op).state, Operation.UNCERTAIN)

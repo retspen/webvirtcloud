@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load django_bootstrap5 %}
+{% load bootstrap_icons %}
+{% load operations %}
+
+{% block title %}{% trans "Jobs" %}{% endblock %}
+
+{% block page_heading %}{% trans "Jobs" %}{% endblock page_heading %}
+
+{% block content %}
+{% if worker_unavailable %}
+    <div class="alert alert-warning shadow-sm">
+        {% bs_icon 'exclamation-triangle' %} {% trans "Worker unavailable, last seen" %}
+        {% if worker_last_seen %}{{ worker_last_seen|date:"Y-m-d H:i:s T" }}{% else %}{% trans "never" %}{% endif %}
+    </div>
+{% endif %}
+<div class="card mb-3">
+    <div class="card-header d-flex flex-wrap align-items-center gap-2">
+        <span class="me-auto">{% trans "Jobs" %} <span class="badge text-bg-light border">{{ page.paginator.count }}</span></span>
+        {% if request.user.is_superuser %}
+            <form method="get" class="row g-2 col-12 col-xl-10" role="search" aria-label="{% trans 'Filter jobs' %}">
+                <div class="col-6 col-lg">
+                    <input class="form-control form-control-sm" name="compute" placeholder="{% trans 'Host' %}" aria-label="{% trans 'Host' %}" value="{{ filters.compute }}">
+                </div>
+                <div class="col-6 col-lg">
+                    <input class="form-control form-control-sm" name="username" placeholder="{% trans 'User' %}" aria-label="{% trans 'User' %}" value="{{ filters.username }}">
+                </div>
+                <div class="col-6 col-lg">
+                    <select class="form-select form-select-sm" name="kind" aria-label="{% trans 'Kind' %}">
+                        <option value="">{% trans "All kinds" %}</option>
+                        {% for name, label in kinds %}
+                            <option value="{{ name }}"{% if filters.kind == name %} selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-lg">
+                    <select class="form-select form-select-sm" name="state" aria-label="{% trans 'State' %}">
+                        <option value="">{% trans "All states" %}</option>
+                        {% for state in states %}
+                            <option value="{{ state }}"{% if filters.state == state %} selected{% endif %}>{{ state|state_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-lg-auto d-flex gap-2 justify-content-end">
+                    <button class="btn btn-sm btn-primary" type="submit">{% trans "Filter" %}</button>
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'operations:jobs' %}">{% trans "Reset" %}</a>
+                </div>
+            </form>
+        {% endif %}
+    </div>
+    {% if not rows %}
+        <div class="card-body text-center text-body-secondary">{% trans "No jobs" %}</div>
+    {% else %}
+        <div class="table-responsive position-relative">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col">{% trans "Job" %}</th>
+                        <th scope="col" class="d-none d-md-table-cell">{% trans "Resource" %}</th>
+                        {% if request.user.is_superuser %}<th scope="col" class="d-none d-md-table-cell">{% trans "User" %}</th>{% endif %}
+                        <th scope="col" class="text-end">{% trans "State" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for op, row in rows %}
+                        <tr>
+                            <td style="min-width: 12rem;">
+                                <a href="{% url 'operations:job' row.id %}">{{ row.label }}</a>
+                                {% if op.state in active_states %}
+                                    {% if row.phase or op.progress_total %}
+                                        <div class="small text-body-secondary">
+                                            {{ row.phase }}
+                                            {% if op.progress_total %}
+                                                {% if row.phase %}&middot;{% endif %}
+                                                {% if op.kind in bytes_kinds %}{{ op.progress_done|default:0|filesizeformat }} / {{ op.progress_total|filesizeformat }}{% else %}{{ op.progress_done|default:0 }} / {{ op.progress_total }}{% endif %}
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                    {% if op.progress_total %}
+                                        {% widthratio op.progress_done|default:0 op.progress_total 100 as percent %}
+                                        <div class="progress my-1" style="height: .25rem;" role="progressbar" aria-label="{% trans 'Progress' %}" aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100">
+                                            <div class="progress-bar" style="width: {{ percent }}%"></div>
+                                        </div>
+                                    {% endif %}
+                                {% elif op.state == "failed" or op.state == "uncertain" %}
+                                    <div class="small text-body-secondary" title="{{ row.error }}">{{ row.error|truncatechars:80 }}</div>
+                                {% endif %}
+                                <div class="small text-body-secondary">{{ op.created_at|date:"Y-m-d H:i:s T" }}{% if request.user.is_superuser %}<span class="d-md-none"> &middot; {{ row.username }}</span>{% endif %}</div>
+                                {# below md the hidden columns show here #}
+                                <div class="d-md-none small">{{ row.resource_label|wrap_at_slash }}</div>
+                            </td>
+                            <td class="d-none d-md-table-cell">{{ row.resource_label|wrap_at_slash }}</td>
+                            {% if request.user.is_superuser %}<td class="text-nowrap d-none d-md-table-cell">{{ row.username }}</td>{% endif %}
+                            <td class="text-end">{% include "operations/state_badge.html" with state=op.state %}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+{% if page.has_other_pages %}
+    {% bootstrap_pagination page extra=page_query pages_to_show=5 extra_classes="flex-wrap" %}
+{% endif %}
+{% endblock %}
+{% block script %}
+    {% if follow %}{% include "operations/follow_active.html" %}{% endif %}
+{% endblock script %}

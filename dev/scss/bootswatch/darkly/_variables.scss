@@ -1,4 +1,4 @@
-// Darkly 5.2.2
+// Darkly 5.3.8
 // Bootswatch
 
 $theme: "darkly" !default;
@@ -61,9 +61,11 @@ $text-muted:                  $gray-600 !default;
 
 // Tables
 
+$table-color:                 initial !default;
+
 $table-border-color:          $gray-700 !default;
 
-$table-bg-scale:              0 !default;
+$table-bg-scale:              0% !default;
 
 // Forms
 
@@ -72,11 +74,16 @@ $input-color:                       $gray-800 !default;
 $input-border-color:                $body-bg !default;
 $input-group-addon-color:           $gray-500 !default;
 $input-group-addon-bg:              $gray-700 !default;
+$input-placeholder-color:           $gray-600 !default;
 
 $form-check-input-bg:                     $white !default;
 $form-check-input-border:                 none !default;
 
-$form-file-button-color:          $white !default;
+$form-select-disabled-color:        $gray-600 !default;
+
+$form-file-button-color:          $input-group-addon-color !default;
+$form-file-button-bg:             $input-group-addon-bg !default;
+$form-file-button-hover-bg:       darken($form-file-button-bg, 5%) !default;
 
 // Dropdowns
 
@@ -90,11 +97,15 @@ $dropdown-link-hover-bg:            $primary !default;
 // Navs
 
 $nav-link-padding-x:                2rem !default;
-$nav-link-disabled-color:           $gray-500 !default;
+$nav-link-color:                    $white !default;
+$nav-link-hover-color:              $white !default;
+$nav-link-disabled-color:           $gray-600 !default;
 $nav-tabs-border-color:             $gray-700 !default;
 $nav-tabs-link-hover-border-color:  $nav-tabs-border-color $nav-tabs-border-color transparent !default;
 $nav-tabs-link-active-color:        $white !default;
 $nav-tabs-link-active-border-color: $nav-tabs-border-color $nav-tabs-border-color transparent !default;
+
+$nav-underline-link-active-color:   $white !default;
 
 // Navbar
 

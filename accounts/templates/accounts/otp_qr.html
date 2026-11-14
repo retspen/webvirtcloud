@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "OTP QR Code" %}{% endblock %}
+
+{% block page_heading %}{% trans "OTP QR Code" %}{% endblock page_heading %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        {% if qr_svg %}
+        <p>{% blocktrans %}Scan this QR code to get OTP for account '{{ user }}'{% endblocktrans %}</p>
+        {{ qr_svg }}
+        {% else %}
+        <form method="post" id="otp-qr-form">{% csrf_token %}<input type="hidden" name="token"></form>
+        <p class="mb-0">{% trans "Open the link from the mail to see the OTP QR code." %}</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock content %}
+
+{% block script %}
+{% if not qr_svg %}<script src="{% static 'js/otp_qr.js' %}"></script>{% endif %}
+{% endblock script %}

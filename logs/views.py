@@ -1,45 +1,30 @@
-import json
-import logging
-
-from django.http import HttpResponse
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from admin.decorators import superuser_only
 from instances.models import Instance
 from logs.models import Logs
 
-
-def addlogmsg(user, host, instance, message):
-    """
-    :param user:
-    :param host:
-    :param instance:
-    :param message:
-    :return:
-    """
-    add_log_msg = Logs(user=user, host=host, instance=instance, message=str(message))
-    add_log_msg.save()
-    logger = logging.getLogger("")
-    logger.info(f"{user} {host} {instance} {message}")
+# the rows of a VM on its Stats tab; the Logs page has them all
+VM_LOG_ROWS = 50
 
 
 @superuser_only
-def vm_logs(request, vname):
-    """
-    :param request:
-    :param vname:
-    :return:
-    """
-
-    vm = Instance.objects.get(name=vname)
-    logs_ = Logs.objects.filter(instance=vm.name, date__gte=vm.created).order_by("-date")
+def vm_logs(request, pk):
+    """The rows of a VM, found by its UUID: a rename keeps them, and a VM on two computes is one VM."""
+    vm = get_object_or_404(Instance, pk=pk)
+    results = {None: _("Unknown"), True: _("Done"), False: _("Failed")}
     logs = []
-    for l in logs_:
-        log = dict()
-        log["user"] = l.user
-        log["host"] = l.host
-        log["instance"] = l.instance
-        log["message"] = l.message
-        log["date"] = l.date.strftime("%x %X")
-        logs.append(log)
-
-    return HttpResponse(json.dumps(logs))
+    for log in Logs.objects.filter(instance_uuid=vm.uuid).order_by("-date", "-id")[:VM_LOG_ROWS]:
+        logs.append({
+            "user": log.user,
+            "host": log.host,
+            "instance": log.instance,
+            "message": log.message,
+            "result": results[log.success],
+            # as the Logs page shows it: in the panel's time zone, which the tab's heading names
+            "date": timezone.localtime(log.date).strftime("%Y-%m-%d %H:%M:%S"),
+        })
+    return JsonResponse(logs, safe=False)

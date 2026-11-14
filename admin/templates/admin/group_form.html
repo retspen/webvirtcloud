@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% load django_bootstrap5 %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_heading %}{{ title }}{% endblock page_heading %}
+
+{% block content %}
+<form id="create-update" method="post">
+    {% csrf_token %}
+    {% if seen %}<input type="hidden" name="seen" value="{{ seen }}">{% endif %}
+    {% bootstrap_form_errors form type="non_fields" %}
+
+    <section class="form-section">
+        <div class="row g-3">
+            <div class="col-lg-3">
+                <h2 class="h6 fw-semibold mb-1">{% trans "Group" %}</h2>
+                <p class="small text-body-secondary mb-0">{% trans "Users who share a set of permissions." %}</p>
+            </div>
+            <div class="col-lg-9 form-section-fields">
+                <div class="row"><div class="col-sm-6">{% bootstrap_field form.name %}</div></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="form-section">
+        <div class="row g-3">
+            <div class="col-lg-3">
+                <h2 class="h6 fw-semibold mb-1">{% trans "Permissions" %}</h2>
+                <p class="small text-body-secondary mb-0">{% trans "Each member has these permissions besides their own." %}</p>
+            </div>
+            <div class="col-lg-9 form-section-fields">
+                <div class="border-top">
+                    {% for box, name, help in form.permission_rows %}
+                        <div class="form-check form-switch border-bottom py-2 ps-5">
+                            <input id="{{ box.id_for_label }}" class="form-check-input" type="checkbox" role="switch" name="permissions"
+                                   value="{{ box.data.value }}"{% if box.data.selected %} checked{% endif %}>
+                            <label class="form-check-label" for="{{ box.id_for_label }}">
+                                <span class="d-block">{{ name }}</span>
+                                <span class="small text-body-secondary">{{ help }}</span>
+                            </label>
+                        </div>
+                    {% endfor %}
+                    {% for error in form.permissions.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="form-section">
+        <div class="row g-3">
+            <div class="col-lg-3">
+                <h2 class="h6 fw-semibold mb-1">{% trans "Members" %}</h2>
+                <p class="small text-body-secondary mb-0">{% trans "Who gets these permissions." %}</p>
+            </div>
+            <fieldset class="col-lg-9 form-section-fields">
+                <legend class="visually-hidden">{% trans "Members" %}</legend>
+                <input id="filter" class="form-control form-control-sm mb-2" style="max-width: 20rem" type="search" placeholder="{% trans "Search" %}" aria-label="{% trans "Search users" %}" data-forget>
+                {# the members first, then everyone else; each by username #}
+                <div class="d-flex flex-wrap gap-2 searchable">
+                    {% for box in form.users %}{% if box.data.selected %}{% include "admin/group_member.html" %}{% endif %}{% endfor %}
+                    {% for box in form.users %}{% if not box.data.selected %}{% include "admin/group_member.html" %}{% endif %}{% endfor %}
+                </div>
+                <p id="no-match" class="small text-body-secondary mt-2 mb-0" hidden>{% trans "No user matches the search." %}</p>
+                {% for error in form.users.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </fieldset>
+        </div>
+    </section>
+
+    <div class="form-section d-flex justify-content-end gap-2">
+        <a class="btn btn-outline-secondary" href="{% url 'admin:group_list' %}">{% trans "Cancel" %}</a>
+        <button type="submit" class="btn btn-primary">{% if group %}{% trans "Save changes" %}{% else %}{% trans "Create group" %}{% endif %}</button>
+    </div>
+</form>
+{% endblock content %}
+
+{% block script %}
+<script src="{% static 'js/table_filter.js' %}"></script>
+{% endblock script %}

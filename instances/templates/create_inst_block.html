@@ -1,65 +1,58 @@
 {% load i18n %}
 {% load bootstrap_icons %}
-<a href="#AddInstance" type="button" class="btn btn-success btn-header float-end" data-bs-toggle="modal">
-    <span aria-hidden="true">{% bs_icon 'plus-circle-fill'%} </span>
-</a>
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#AddInstance">
+    <span aria-hidden="true">{% bs_icon 'plus-lg' %}</span> {% trans "New VM" %}
+</button>
 
-<!-- Modal pool -->
-<div class="modal fade" id="AddInstance" tabindex="-1" role="dialog" aria-labelledby="AddInstanceModal" aria-hidden="true">
+<div class="modal fade" id="AddInstance" tabindex="-1" aria-labelledby="AddInstanceTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">{% trans "Choose a compute for new instance" %}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h2 class="modal-title h5" id="AddInstanceTitle">{% trans "New instance" %}</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
             </div>
             <div class="modal-body">
-                <form method="post" aria-label="Select compute for instance create form">{% csrf_token %}
-                    <div class="row">
-                        <table class="table">
-                            <thead>
-                                <tr style="cursor:default;pointer-events:none">
-                                    <th>{% trans "Name" %}</th>
-                                    <th>{% trans "VCPU" %}
-                                    <th>{% trans "CPU Usage" %}</th>
-                                    <th>{% trans "Memory" %}</th>
-                                    <th>{% trans "Mem Usage" %}</th>
-                                    <th>{% trans "Action" %}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for compute in computes %}
-                                    {% if compute.status is True %}
-                                        <tr style="text-decoration: none">
-                                            <td>{{ compute.name }}</td>
-                                            <td>{{ compute.cpu_count }}</td>
-                                            <td>
-                                                <div class="progress">
-                                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ compute.cpu_usage }}%"
-                                                        aria-valuenow="{{ compute.cpu_usage }}" aria-valuemin="0" aria-valuemax="100">{{ compute.cpu_usage }}%
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>{{ compute.ram_size|filesizeformat }}</td>
-                                            <td>
-                                                <div class="progress">
-                                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ compute.ram_usage }}%"
-                                                        aria-valuenow="{{ compute.ram_usage }}" aria-valuemin="0" aria-valuemax="100">{{ compute.ram_usage }}%
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="col-1">
-                                                <button class="btn btn-success btn-sm" type="button" onclick="goto_compute('{{ compute.id }}');">
-                                                    {% trans "Choose" %}
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    {% endif %}
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </form> 
+                {% include "create_steps.html" with step=1 %}
+                <div class="text-body-secondary mb-3">{% trans "Choose the host the VM runs on." %}</div>
+                <div class="list-group">
+                    {% for compute in reachable_computes %}
+                    <a class="list-group-item list-group-item-action py-3" href="{% url 'instances:create_instance_select_type' compute.id %}">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-12 col-md-3 fw-semibold">{{ compute.name }}</div>
+                            <div class="col-6 col-md-4">
+                                <div class="small text-body-secondary">{% trans "CPU" %} · {{ compute.cpu_count }} vCPU</div>
+                                <div class="cpu-usage d-flex align-items-center gap-2" data-url="{% url 'compute_graph' compute.id %}">
+                                    <div class="progress flex-grow-1" role="progressbar" aria-label="{% blocktrans with name=compute.name %}CPU usage of {{ name }}{% endblocktrans %}"
+                                         aria-valuemin="0" aria-valuemax="100">
+                                        <div class="progress-bar" style="width: 0%"></div>
+                                    </div>
+                                    <small class="cpu-usage-value"></small>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <div class="small text-body-secondary">{% trans "Memory" %} · {{ compute.ram_size|filesizeformat }}</div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-grow-1" role="progressbar" aria-label="{% blocktrans with name=compute.name %}Memory usage of {{ name }}{% endblocktrans %}"
+                                         aria-valuenow="{{ compute.ram_usage }}" aria-valuemin="0" aria-valuemax="100">
+                                        <div class="progress-bar" style="width: {{ compute.ram_usage }}%"></div>
+                                    </div>
+                                    <small>{{ compute.ram_usage }}%</small>
+                                </div>
+                            </div>
+                            <div class="col-md-1 d-none d-md-block text-end" aria-hidden="true">{% bs_icon 'chevron-right' %}</div>
+                            <div class="col-12 col-md-8 offset-md-3 small text-body-secondary compute-capacity" data-url="{% url 'compute_capacity' compute.id %}"></div>
+                        </div>
+                    </a>
+                    {% empty %}
+                    {% url 'computes' as computes_url %}
+                    {% if computes %}
+                    <p>{% blocktrans %}No compute is reachable: see the <a href="{{ computes_url }}">Computes</a> page.{% endblocktrans %}</p>
+                    {% else %}
+                    <p>{% blocktrans %}There is no compute yet: add the first host on the <a href="{{ computes_url }}">Computes</a> page.{% endblocktrans %}</p>
+                    {% endif %}
+                    {% endfor %}
+                </div>
             </div>
-        </div> <!-- /.modal-content -->
-    </div> <!-- /.modal-dialog -->
-</div> <!-- /.modal -->
+        </div>
+    </div>
+</div>

@@ -1,0 +1,135 @@
+"""manage.py backup: a directory of what a new panel needs to take over,
+readable only by the panel's user, the newest --keep of them kept."""
+
+import fcntl
+from datetime import datetime
+import os
+import shutil
+import sqlite3
+import tempfile
+from contextlib import closing
+from io import StringIO
+from pathlib import Path
+from unittest import skipUnless
+from unittest.mock import patch
+
+from django.core.management import call_command
+from django.core.management.base import CommandError
+from django.db import connection
+from django.test import SimpleTestCase, override_settings
+
+from appsettings.management.commands.backup import Command
+
+
+SQLITE_ONLY = skipUnless(connection.vendor == "sqlite", "the backup copies only a sqlite database")
+
+
+class BackupTests(SimpleTestCase):
+    def setUp(self):
+        self.base = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.base)
+        self.addCleanup(os.umask, os.umask(0o022))  # the command sets its own
+        for path, text in (("data/secret_key", "key"), ("data/node_id", "a1b2c3"),
+                           ("webvirtcloud/settings.py", "DEBUG = False"), ("home/.ssh/id_ed25519", "private")):
+            (self.base / path).parent.mkdir(parents=True, exist_ok=True)
+            (self.base / path).write_text(text)
+        (self.base / "home/.ssh/agent").symlink_to(self.base / "data/secret_key")
+        overridden = override_settings(BASE_DIR=self.base, SECRET_KEY="key in use")
+        overridden.enable()
+        self.addCleanup(overridden.disable)
+        home = patch.object(Path, "home", return_value=self.base / "home")
+        home.start()
+        self.addCleanup(home.stop)
+        self.backups = self.base / "backups"
+        # the panel's database, its last change still only in the WAL file
+        db = sqlite3.connect(self.base / "db.sqlite3")
+        self.addCleanup(db.close)
+        db.execute("PRAGMA journal_mode=WAL")
+        db.execute("PRAGMA wal_autocheckpoint=0")
+        db.execute("CREATE TABLE computes_compute (name)")
+        db.execute("INSERT INTO computes_compute VALUES ('kept')")
+        db.commit()
+        name = patch.dict(connection.settings_dict, NAME=str(self.base / "db.sqlite3"))
+        name.start()
+        self.addCleanup(name.stop)
+
+    def backup(self, *args):
+        out = StringIO()
+        call_command("backup", *args, stdout=out)
+        return Path(out.getvalue().strip())
+
+    def kept(self):
+        return sorted(p.name for p in self.backups.iterdir() if p.name != ".lock")
+
+    @SQLITE_ONLY
+    def test_a_backup_holds_the_database_keys_and_settings_for_the_panel_user_only(self):
+        backup = self.backup()
+        with closing(sqlite3.connect(backup / "db.sqlite3")) as db:
+            self.assertEqual(db.execute("SELECT name FROM computes_compute").fetchall(), [("kept",)])
+        self.assertEqual(sorted(p.name for p in backup.iterdir()), ["db.sqlite3", "node_id", "secret_key", "settings.py", "ssh"])
+        # the key in use, also when it came from the environment and not data/secret_key
+        self.assertEqual((backup / "secret_key").read_text(), "key in use\n")
+        self.assertEqual(oct((backup / "secret_key").stat().st_mode & 0o777), "0o600")
+        self.assertEqual([p.name for p in (backup / "ssh").iterdir()], ["id_ed25519"])  # not what a link points to
+        self.assertEqual(oct(self.backups.stat().st_mode & 0o777), "0o700")
+        self.assertEqual(oct(backup.stat().st_mode & 0o777), "0o700")
+        self.assertEqual(oct((backup / "db.sqlite3").stat().st_mode & 0o777), "0o600")
+        self.assertEqual(oct((backup / "ssh/id_ed25519").stat().st_mode & 0o777), "0o600")
+
+    def test_a_backup_holds_the_tls_certificates_of_the_panel_user(self):
+        key = self.base / "home/.pki/libvirt/clientkey.pem"
+        key.parent.mkdir(parents=True)
+        key.write_text("tls key")
+        key.chmod(0o600)
+        copy = self.backup() / "pki/libvirt/clientkey.pem"
+        self.assertEqual(copy.read_text(), "tls key")
+        self.assertEqual(oct(copy.stat().st_mode & 0o777), "0o600")
+
+    def test_only_the_newest_backups_and_no_partial_one_are_kept(self):
+        for made, name in ((1, "webvirtcloud-backup-20260101-000000"), (2, "webvirtcloud-backup-20260102-000000"),
+                           (3, ".webvirtcloud-backup-20260103-000000")):
+            (self.backups / name).mkdir(parents=True)
+            os.utime(self.backups / name, (made, made))
+        backup = self.backup("--keep", "2")
+        self.assertEqual(self.kept(), ["webvirtcloud-backup-20260102-000000", backup.name])
+
+    def test_the_newest_are_kept_by_when_they_were_made_not_by_name(self):
+        # 02:50 CEST, then 02:10 CET forty minutes later as the clock went back; or an
+        # older backup named in another time zone
+        older = self.backups / "webvirtcloud-backup-20261025-025000"
+        older.mkdir(parents=True)
+        os.utime(older, (1, 1))
+        with patch("appsettings.management.commands.backup.datetime") as clock:
+            clock.now.return_value = datetime(2026, 10, 25, 2, 10)
+            newest = self.backup("--keep", "1")
+        self.assertEqual(self.kept(), [newest.name])
+
+    def test_a_failed_backup_leaves_nothing_and_deletes_no_older_one(self):
+        (self.backups / "webvirtcloud-backup-20260101-000000").mkdir(parents=True)
+        with patch.object(Command, "copy", side_effect=OSError("No space left on device")), self.assertRaises(OSError):
+            self.backup("--keep", "1")
+        self.assertEqual(self.kept(), ["webvirtcloud-backup-20260101-000000"])
+
+    @SQLITE_ONLY
+    def test_a_damaged_copy_fails(self):
+        with patch("appsettings.management.commands.backup.sqlite3") as sqlite, \
+                self.assertRaisesRegex(CommandError, "damaged: row 3 missing from index"):
+            sqlite.connect.return_value.execute.return_value.fetchone.return_value = ("row 3 missing from index",)
+            self.backup()
+        self.assertEqual(self.kept(), [])
+
+    def test_a_backup_fails_while_another_runs(self):
+        self.backups.mkdir()
+        with open(self.backups / ".lock", "w") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            with self.assertRaisesRegex(CommandError, "Another backup is running"):
+                self.backup()
+        self.assertEqual(self.kept(), [])
+
+    def test_a_database_other_than_sqlite_is_left_out(self):
+        errors = StringIO()
+        with patch.dict(connection.settings_dict, ENGINE="django.db.backends.postgresql"):
+            call_command("backup", stdout=StringIO(), stderr=errors)
+        backup = self.backups / self.kept()[0]
+        self.assertNotIn("db.sqlite3", [p.name for p in backup.iterdir()])
+        self.assertIn("back it up with its own tools", errors.getvalue())

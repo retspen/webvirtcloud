@@ -1,119 +1,87 @@
 {% load i18n %}
-{% load bootstrap_icons %}
-<div class="tab-pane" id="graphics" role="tabpanel" >
-    <!-- Nav tabs -->
-    <ul class="nav nav-tabs" role="tablist" aria-label="Instance graphs and logs menu">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#graphs" type="button" role="tab" aria-controls="graphs" aria-selected="true">
-                {% trans "Real Time" %}
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#logs" type="button" role="tab" aria-controls="logs" aria-selected="false" onclick="update_logs_table(vname);">
-                {% trans "Logs" %}
-            </button>
-        </li>
-    </ul>
-    <!-- Tab panes -->
-    <div class="tab-content">
-        <div role="tabpanel" class="tab-pane tab-pane-bordered active" id="graphs">
-            <div class="mb-1 card border-success">
-                <div class="card-header">
-                    <h5 class="card-title">{% bs_icon 'arrow-right' %} 
-                        {% trans "CPU Usage" %}
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="flot-chart">
-                        <div class="flot-chart-content" id="flot-moving-line-chart">
-                            <canvas id="cpuChart" width="735" height="160"></canvas>
-                        </div>
-                    </div>
-                </div>
+{% load tz %}
+<div class="tab-pane" id="graphics" role="tabpanel" data-url="{% url 'instances:stats' instance.id %}"
+     data-average-over="{% trans "average over" %}" data-in="{% trans "In" %}" data-out="{% trans "Out" %}"
+     data-read="{% trans "Read" %}" data-write="{% trans "Write" %}"
+     data-usage="{% trans "Usage" context "chart" %}" data-usage-rss="{% trans "Usage (RSS)" context "chart" %}">
+    <div class="card">
+    <div class="card-body">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <p class="small text-body-secondary mb-0 me-auto">
+                {% if instance.status == 1 %}
+                    {% trans "Updates every 5 seconds." %}
+                {% else %}
+                    {% trans "The VM is not running: nothing is measured." %}
+                {% endif %}
+            </p>
+            {% if request.user.is_superuser %}
+            <div class="btn-group btn-group-sm" role="tablist" aria-label="{% trans "Stats view" %}">
+                <button class="btn btn-outline-secondary active" type="button" data-bs-toggle="tab" data-bs-target="#graphs" role="tab" aria-controls="graphs" aria-selected="true">{% trans "Graphs" %}</button>
+                <button class="btn btn-outline-secondary" id="logs-tab" type="button" data-bs-toggle="tab" data-bs-target="#logs" role="tab" aria-controls="logs" aria-selected="false">{% trans "Logs" %}</button>
             </div>
-            <div class="mb-1 card border-danger">
-                <div class="card-header">
-                    <h5 class="card-title">{% bs_icon 'arrow-right' %} 
-                        {% trans "Memory Usage" %}
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="flot-chart">
-                        <div class="flot-chart-content" id="flot-moving-line-chart">
-                            <canvas id="memChart" width="735" height="160"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% for net in instance.networks %}
-            <div class="mb-1 card border-info">
-                <div class="card-header">
-                    <h5 class="card-title">{% bs_icon 'arrow-right' %} 
-                        {% trans "Bandwidth Device" %}: eth{{ forloop.counter0 }}
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="flot-chart">
-                        <div class="flot-chart-content" id="flot-moving-line-chart">
-                            <canvas id="netEth{{ forloop.counter0 }}Chart" width="735" height="160"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-            {% for disk in instance.disks %}
-            <div class="mb-1 card border-warning">
-                <div class="card-header">
-                    <h5 class="card-title">{% bs_icon 'arrow-right' %} 
-                        {% trans "Disk I/O device" %}: {{ disk.dev }}
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="flot-chart">
-                        <div class="flot-chart-content" id="flot-moving-line-chart">
-                            <canvas id="blk{{ disk.dev }}Chart" width="735" height="160"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-            <div class="clearfix"></div>
+            {% endif %}
         </div>
-        <div role="tabpanel" class="tab-pane tab-pane-bordered" id="logs">
-            <div class="table-responsive">
-                <table class="table table-striped sortable-theme-bootstrap" id="logs_table" data-sortable>
-                    <thead>
-                        <tr>
-                            <th scope="col">{% trans "Date" %}</th>
-                            <th scope="col">{% trans "User" %}</th>
-                            <th scope="col">{% trans "Message" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="searchable">
-                        <tr>
-                            <td colspan="3"><i>{% trans 'None' %}...</i></td>
-                        </tr>
-                    </tbody>
-                </table>
+        <div class="tab-content">
+            <div class="tab-pane active" id="graphs" role="tabpanel">
+                <div class="row g-3">
+                    <section class="col-12 col-md-6">
+                        <div class="d-flex flex-wrap align-items-baseline gap-2 mb-2">
+                            <h2 class="h6 mb-0">{% trans "CPU" %}</h2>
+                            <span><span id="cpuNow"></span> <span class="small text-body-secondary">{% trans "of the host" %}</span></span>
+                        </div>
+                        <div class="chart position-relative"><canvas id="cpuChart" role="img" aria-label="{% trans "CPU use, recent readings" %}"></canvas></div>
+                    </section>
+                    <section class="col-12 col-md-6">
+                        <div class="d-flex flex-wrap align-items-baseline gap-2 mb-2">
+                            <h2 class="h6 mb-0">{% trans "Memory" %}</h2>
+                            <span id="memNow"></span>
+                        </div>
+                        <div class="chart position-relative"><canvas id="memChart" role="img" aria-label="{% trans "Memory use, recent readings" %}"></canvas></div>
+                    </section>
+                </div>
+                <div class="border-top mt-3 pt-3">
+                <div class="row g-3">
+                    {% for net in instance.networks %}
+                    <section class="col-12 col-md-6 col-lg-4">
+                        <h2 class="h6 mb-1">{% trans "Network" %} · {{ net.mac }}</h2>
+                        <p class="small text-body-secondary mb-2" id="net{{ net.mac }}Now">&nbsp;</p>
+                        <div class="chart position-relative"><canvas id="net{{ net.mac }}Chart" data-mac="{{ net.mac }}" role="img" aria-label="{% blocktrans with mac=net.mac %}Network {{ mac }}, recent readings{% endblocktrans %}"></canvas></div>
+                    </section>
+                    {% endfor %}
+                    {% for disk in instance.disks %}
+                    <section class="col-12 col-md-6 col-lg-4">
+                        <h2 class="h6 mb-1">{% trans "Disk" %} · {{ disk.dev }}</h2>
+                        <p class="small text-body-secondary mb-2" id="blk{{ disk.dev }}Now">&nbsp;</p>
+                        <div class="chart position-relative"><canvas id="blk{{ disk.dev }}Chart" data-disk="{{ disk.dev }}" role="img" aria-label="{% blocktrans with dev=disk.dev %}Disk {{ dev }}, recent readings{% endblocktrans %}"></canvas></div>
+                    </section>
+                    {% endfor %}
+                </div>
+                </div>
             </div>
-            <div class="clearfix"></div>
+            {% if request.user.is_superuser %}
+            <div class="tab-pane" id="logs" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0" id="logs_table" data-url="{% url 'vm_logs' instance.id %}"
+                       data-empty="{% trans "None" %}" data-failed="{% trans "The logs could not be loaded." %}">
+                        <thead>
+                            <tr>
+                                {% get_current_timezone as time_zone %}
+                                <th scope="col">{% blocktrans %}Date ({{ time_zone }}){% endblocktrans %}</th>
+                                <th scope="col">{% trans "User" %}</th>
+                                <th scope="col">{% trans "Message" %}</th>
+                                <th scope="col">{% trans "Result" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <p class="small text-body-secondary mt-2 mb-0">
+                    {% trans "The latest rows, newest first." %}
+                    <a href="{% url 'admin:logs' %}?q={{ instance.uuid|urlencode }}">{% trans "All of this VM's logs" %}</a>
+                </p>
+            </div>
+            {% endif %}
         </div>
     </div>
+    </div>
 </div>
-<script>
-    function update_logs_table(vname) {
-        // TODO
-        logurl = "{% url 'vm_logs' 1 %}".replace(1, vname);
-        $.getJSON(logurl, function(data) {
-            var logs = "";
-            $.each(data, function(id) {
-                row = data[id];
-                // console.log(row);
-                logs += '<tr><td style="width:150px">'+row['date']+'</td>';
-                logs += '<td>'+row['user']+'</td>';
-                logs += '<td>'+row['message']+'</td></tr>';
-            });
-            $("#logs_table > tbody").html(logs);
-        });
-    }
-</script>

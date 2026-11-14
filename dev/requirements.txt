@@ -1,9 +1,13 @@
 -r ../conf/requirements.txt
-coverage==7.9.1
-django-debug-toolbar==5.2.0
-django-debug-toolbar-template-profiler
-pycodestyle==2.14.0
-pyflakes==3.4.0
-pylint==3.3.7
-yapf==0.43.0
-black==25.1.0
+-r ../conf/requirements-ldap.txt
+coverage==7.16.2
+# compiles the themes (manage.py build_themes)
+libsass==0.23.0
+django-debug-toolbar==8.0.0
+django-debug-toolbar-template-profiler==2.1.0
+pip-audit==2.10.1
+# the tests read cloud-init's YAML
+PyYAML==6.0.3
+ruff==0.17.4
+# tracebacks of failures in manage.py test --parallel
+tblib==3.2.2

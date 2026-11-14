@@ -1,14 +1,33 @@
+import ipaddress
+
 from admin.decorators import superuser_only
 from computes.models import Compute
+from instances.models import Instance
 from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
+from logs.audit import audit, failed
 from vrtManager.network import network_size, wvmNetwork, wvmNetworks
+from vrtManager.util import OperationError, digest
 
 from networks.forms import AddNetPool
+
+
+# a network's mode (vrtManager.network.network_mode): its name, and what it does
+MODES = {
+    "isolated": (_("Isolated"), _("VMs reach each other and the host only.")),
+    "nat": (_("NAT"), _("VMs reach out through the host's address; IPv6, when set, is routed.")),
+    "route": (_("Routed"), _("The host routes the subnet; the upstream router needs a route back to it.")),
+    "open": (_("Open"), _("The host routes the subnet and adds no firewall rules for it.")),
+    "bridge": (_("Bridge"), _("VMs join a bridge of the host and take their addresses from its network.")),
+    "macvtap": (_("Macvtap"), _("VMs share an interface of the host; the host cannot reach them through it.")),
+    "hostdev": (_("SR-IOV"), _("VMs get a virtual function of the host's network card.")),
+}
+# the modes libvirt gives no addresses of its own: the outside network does
+EXTERNAL = ("bridge", "macvtap", "hostdev")
 
 
 @superuser_only
@@ -20,7 +39,10 @@ def networks(request, compute_id):
     """
 
     compute = get_object_or_404(Compute, pk=compute_id)
-    errors = False
+    form = AddNetPool()
+    # the new network dialog's mode: the one sent back after a refusal
+    net_mode = request.POST.get("forward", "nat")
+    networks = None  # not read: the page shows no list
 
     try:
         conn = wvmNetworks(
@@ -30,64 +52,36 @@ def networks(request, compute_id):
             compute.type,
         )
         networks = conn.get_networks_info()
-        dhcp4 = netmask4 = gateway4 = ""
-        dhcp6 = prefix6 = gateway6 = ""
-        ipv4 = ipv6 = False
+        for net in networks:
+            net["mode_label"] = MODES.get(net["mode"], (net["mode"], ""))[0]
+            net["external"] = net["mode"] in EXTERNAL
+        # suggestions for a bridge or macvtap network: not the bridges libvirt made for its own networks
+        taken = {net["device"] for net in networks if not net["external"]}
+        host_ifaces = [iface for iface in conn.get_host_interfaces() if iface["name"] not in taken]
 
-        if request.method == "POST":
-            if "create" in request.POST:
-                form = AddNetPool(request.POST)
-                if form.is_valid():
-                    data = form.cleaned_data
-                    if data["name"] in networks:
-                        msg = _("Network pool name already in use")
-                        messages.error(request, msg)
-                        errors = True
-                    if (
-                        data["forward"] in ["bridge", "macvtap"]
-                        and data["bridge_name"] == ""
-                    ):
-                        messages.error(request, _("Please enter bridge/dev name"))
-                        errors = True
-                    if data["subnet"]:
-                        ipv4 = True
-                        gateway4, netmask4, dhcp4 = network_size(
-                            data["subnet"], data["dhcp4"]
-                        )
-                    if data["subnet6"]:
-                        ipv6 = True
-                        gateway6, prefix6, dhcp6 = network_size(
-                            data["subnet6"], data["dhcp6"]
-                        )
-                        if prefix6 != "64":
-                            messages.error(
-                                request,
-                                _("For libvirt, the IPv6 network prefix must be /64"),
-                            )
-                            errors = True
-                    if not errors:
+        if request.method == "POST" and "create" in request.POST:
+            form = AddNetPool(request.POST, networks=networks)
+            if form.is_valid():
+                data = form.cleaned_data
+                gateway4 = netmask4 = dhcp4 = gateway6 = prefix6 = dhcp6 = ""
+                if data["subnet"]:
+                    gateway4, netmask4, dhcp4 = network_size(data["subnet"], data["dhcp4"])
+                if data["subnet6"]:
+                    gateway6, prefix6, dhcp6 = network_size(data["subnet6"], data["dhcp6"])
+                try:
+                    with audit(request, compute, f"Network {data['name']}", "add"):
                         conn.create_network(
-                            data["name"],
-                            data["forward"],
-                            ipv4,
-                            gateway4,
-                            netmask4,
-                            dhcp4,
-                            ipv6,
-                            gateway6,
-                            prefix6,
-                            dhcp6,
-                            data["bridge_name"],
-                            data["openvswitch"],
-                            data["fixed"],
+                            data["name"], data["forward"],
+                            bool(data["subnet"]), gateway4, netmask4, dhcp4,
+                            bool(data["subnet6"]), gateway6, prefix6, dhcp6,
+                            data["bridge_name"], data["openvswitch"],
                         )
-                        return HttpResponseRedirect(
-                            reverse("network", args=[compute_id, data["name"]])
-                        )
+                except libvirtError as err:  # shown in the dialog, which opens again
+                    form.add_error(None, str(err))
                 else:
-                    for msg_err in form.errors.values():
-                        messages.error(request, msg_err.as_text())
-        conn.close()
+                    return HttpResponseRedirect(reverse("network", args=[compute_id, data["name"]]))
+            elif form.has_error("name", "taken"):
+                failed(request, compute, f"Network {form.data['name'].strip()}", "add", "name already in use")
     except libvirtError as lib_err:
         messages.error(request, lib_err)
 
@@ -113,125 +107,106 @@ def network(request, compute_id, pool):
             compute.type,
             pool,
         )
-        networks = conn.get_networks()
-        state = conn.is_active()
-        device = conn.get_bridge_device()
-        autostart = conn.get_autostart()
-        net_mac = conn.get_network_mac()
-        net_forward = conn.get_network_forward()
-        qos = conn.get_qos()
-        dhcp_range_start = ipv4_dhcp_range_end = dict()
-
-        ip_networks = conn.get_ip_networks()
-        for family, ip_network in ip_networks.items():
-            if family == "ipv4":
-                ipv4_dhcp_range_start = conn.get_dhcp_range_start(family)
-                ipv4_dhcp_range_end = conn.get_dhcp_range_end(family)
-                ipv4_network = ip_network
-                ipv4_fixed_address = conn.get_dhcp_host_addr(family)
-            elif family == "ipv6":
-                ipv6_dhcp_range_start = conn.get_dhcp_range_start(family)
-                ipv6_dhcp_range_end = conn.get_dhcp_range_end(family)
-                ipv6_network = ip_network
-                ipv6_fixed_address = conn.get_dhcp_host_addr(family)
-            else:
-                raise Exception(_("Unknown Network Family"))
-
-        xml = conn._XMLDesc(0)
     except libvirtError as lib_err:
         messages.error(request, lib_err)
         return HttpResponseRedirect(reverse("networks", args=[compute_id]))
 
     if request.method == "POST":
+        subject = f"Network {pool}"
+        here = reverse("network", args=[compute_id, pool])
         if "start" in request.POST:
             try:
-                conn.start()
-                return HttpResponseRedirect(request.get_full_path())
+                with audit(request, compute, subject, "start"):
+                    conn.start()
+                return HttpResponseRedirect(here)
             except libvirtError as lib_err:
                 messages.error(request, lib_err)
         if "stop" in request.POST:
             try:
-                conn.stop()
-                return HttpResponseRedirect(request.get_full_path())
+                with audit(request, compute, subject, "stop"):
+                    conn.stop()
+                return HttpResponseRedirect(here)
             except libvirtError as lib_err:
                 messages.error(request, lib_err)
         if "delete" in request.POST:
             try:
-                conn.delete()
+                with audit(request, compute, subject, "delete"):
+                    conn.delete()
                 return HttpResponseRedirect(reverse("networks", args=[compute_id]))
             except libvirtError as lib_err:
                 messages.error(request, lib_err)
         if "set_autostart" in request.POST:
             try:
-                conn.set_autostart(1)
-                return HttpResponseRedirect(request.get_full_path())
+                with audit(request, compute, subject, "autostart on"):
+                    conn.set_autostart(1)
+                return HttpResponseRedirect(here)
             except libvirtError as lib_err:
                 messages.error(request, lib_err)
         if "unset_autostart" in request.POST:
             try:
-                conn.set_autostart(0)
-                return HttpResponseRedirect(request.get_full_path())
+                with audit(request, compute, subject, "autostart off"):
+                    conn.set_autostart(0)
+                return HttpResponseRedirect(here)
             except libvirtError as lib_err:
                 messages.error(request, lib_err)
+        # an address of the network by its index (ip_networks), an entry by the address it had
+        try:
+            ip_index = int(request.POST.get("ip_index", ""))
+        except ValueError:
+            ip_index = -1
         if "modify_fixed_address" in request.POST:
-            name = request.POST.get("name", "")
             address = request.POST.get("address", "")
-            family = request.POST.get("family", "ipv4")
-
-            if family == "ipv4":
-                mac_duid = request.POST.get("mac", "")
-            if family == "ipv6":
-                mac_duid = request.POST.get("id", "")
-
+            mac_duid = request.POST.get("mac") or request.POST.get("id", "")
             try:
-                ret_val = conn.modify_fixed_address(name, address, mac_duid, family)
-                messages.success(
-                    request,
-                    _("Fixed address operation completed for %(family)s")
-                    % {"family": family.upper()},
-                )
-                return HttpResponseRedirect(request.get_full_path())
-            except libvirtError as lib_err:
-                messages.error(request, lib_err)
-            except ValueError as val_err:
-                messages.error(request, val_err)
+                with audit(request, compute, subject, f"set fixed address {address}") as entry:
+                    seen = (request.POST.get("original_id", "").lower(), request.POST.get("original_name", ""))
+                    changed = conn.modify_fixed_address(ip_index, request.POST.get("original", ""),
+                                                        request.POST.get("name", ""), address, mac_duid, seen)
+                    entry.skip = changed is False  # nothing was done
+                if changed is False:
+                    messages.info(request, _("The fixed address is unchanged"))
+                else:
+                    messages.success(request, _("The fixed address %(address)s is set") % {"address": address})
+            except (libvirtError, OperationError) as err:
+                messages.error(request, err)
+            return HttpResponseRedirect(here)
         if "delete_fixed_address" in request.POST:
-            ip = request.POST.get("address", "")
-            family = request.POST.get("family", "ipv4")
-            conn.delete_fixed_address(ip, family)
-            messages.success(
-                request,
-                _("%(family)s Fixed Address is Deleted.") % {"family": family.upper()},
-            )
-            return HttpResponseRedirect(request.get_full_path())
-        if "modify_dhcp_range" in request.POST:
-            range_start = request.POST.get("range_start", "")
-            range_end = request.POST.get("range_end", "")
-            family = request.POST.get("family", "ipv4")
+            address = request.POST.get("original", "")
             try:
-                conn.modify_dhcp_range(range_start, range_end, family)
-                messages.success(
-                    request,
-                    _("%(family)s DHCP Range is Changed.") % {"family": family.upper()},
-                )
-                return HttpResponseRedirect(request.get_full_path())
-            except libvirtError as lib_err:
-                messages.error(request, lib_err)
+                with audit(request, compute, subject, f"delete fixed address {address}"):
+                    conn.delete_fixed_address(ip_index, address)
+                messages.success(request, _("The fixed address %(address)s is deleted") % {"address": address})
+            except (libvirtError, OperationError) as err:
+                messages.error(request, err)
+            return HttpResponseRedirect(here)
+        if "modify_dhcp_range" in request.POST:
+            try:
+                with audit(request, compute, subject, "set DHCP range"):
+                    conn.modify_dhcp_range(ip_index, request.POST.get("range_start", ""), request.POST.get("range_end", ""))
+                messages.success(request, _("The DHCP range is changed"))
+            except (libvirtError, OperationError) as err:
+                messages.error(request, err)
+            return HttpResponseRedirect(here)
         if "edit_network" in request.POST:
             edit_xml = request.POST.get("edit_xml", "")
             if edit_xml:
-                conn.edit_network(edit_xml)
+                try:
+                    with audit(request, compute, subject, "change XML"):
+                        conn.edit_network(edit_xml, request.POST.get("seen", ""))
+                except (libvirtError, OperationError) as err:
+                    messages.error(request, err)
+                    return HttpResponseRedirect(here)
                 if conn.is_active():
                     messages.success(
                         request,
                         _(
-                            "Network XML is changed. \\"
+                            "Network XML is changed. "
                             "Stop and start network to activate new config."
                         ),
                     )
                 else:
                     messages.success(request, _("Network XML is changed."))
-                return HttpResponseRedirect(request.get_full_path())
+                return HttpResponseRedirect(here)
         if "set_qos" in request.POST:
             qos_dir = request.POST.get("qos_direction", "")
             average = request.POST.get("qos_average") or 0
@@ -239,42 +214,92 @@ def network(request, compute_id, pool):
             burst = request.POST.get("qos_burst") or 0
 
             try:
-                conn.set_qos(qos_dir, average, peak, burst)
+                with audit(request, compute, subject, f"set QoS {qos_dir}"):
+                    conn.set_qos(qos_dir, average, peak, burst)
                 if conn.is_active():
                     messages.success(
                         request,
                         _(
                             "%(qos_dir)s QoS is updated. Network XML is changed. Stop and start network to activate new config"
                         )
-                        % {"qos_dir": qos_dir.capitalize()},
+                        % {"qos_dir": _(qos_dir.capitalize())},
                     )
                 else:
                     messages.success(
                         request,
-                        _("%(qos_dir)s QoS is set") % {"qos_dir": qos_dir.capitalize()},
+                        _("%(qos_dir)s QoS is set") % {"qos_dir": _(qos_dir.capitalize())},
                     )
-            except libvirtError as lib_err:
-                messages.error(request, lib_err)
-            return HttpResponseRedirect(request.get_full_path())
+            except (libvirtError, ValueError) as err:
+                messages.error(request, err)
+            return HttpResponseRedirect(here)
         if "unset_qos" in request.POST:
             qos_dir = request.POST.get("qos_direction", "")
-            conn.unset_qos(qos_dir)
+            try:
+                with audit(request, compute, subject, f"unset QoS {qos_dir}"):
+                    conn.unset_qos(qos_dir)
+            except (libvirtError, ValueError) as err:
+                messages.error(request, err)
+                return HttpResponseRedirect(here)
 
             if conn.is_active():
                 messages.success(
                     request,
                     _(
-                        "%(qos_dir)s QoS is deleted. Network XML is changed. \
-                        Stop and start network to activate new config"
+                        "%(qos_dir)s QoS is deleted. Network XML is changed. "
+                        "Stop and start network to activate new config"
                     )
-                    % {"qos_dir": qos_dir.capitalize()},
+                    % {"qos_dir": _(qos_dir.capitalize())},
                 )
             else:
                 messages.success(
                     request,
-                    _("%(qos_dir)s QoS is deleted") % {"qos_dir": qos_dir.capitalize()},
+                    _("%(qos_dir)s QoS is deleted") % {"qos_dir": _(qos_dir.capitalize())},
                 )
-            return HttpResponseRedirect(request.get_full_path())
-    conn.close()
+            return HttpResponseRedirect(here)
+    # read only for the page: every action above redirects
+    try:
+        state = conn.is_active()
+        device = conn.get_bridge_device()
+        autostart = conn.get_autostart()
+        net_mac = conn.get_network_mac()
+        qos = conn.get_qos()
+        ip_networks = conn.get_ip_networks()
+        mode = conn.get_mode()
+        mode_label, mode_help = MODES.get(mode, (mode, ""))
+        external = mode in EXTERNAL
+        # libvirt limits the bandwidth of routed, isolated and host bridge networks, not of macvtap or SR-IOV ones
+        qos_supported = mode in ("isolated", "nat", "route", "open", "bridge")
+        families = {ip["family"] for ip in ip_networks}
+        # every fixed address, with the address of the network it belongs to
+        fixed_addresses = [{**host, "ip_index": ip["index"], "subnet": ip["subnet"]}
+                           for ip in ip_networks for host in ip["hosts"]]
+        dhcp_networks = [ip for ip in ip_networks if ip["dhcp"]]
+        vms = conn.get_vms()
+        vm_ids = dict(Instance.objects.filter(compute=compute, name__in=[vm["name"] for vm in vms]).values_list("name", "id"))
+        for vm in vms:
+            vm["id"] = vm_ids.get(vm["name"])
+        xml = conn.saved_xml
+        seen = digest(xml)
+    except libvirtError as lib_err:
+        messages.error(request, lib_err)
+        return HttpResponseRedirect(reverse("networks", args=[compute_id]))
+
+    # leases that cannot be read leave the rest of the page
+    leases, leases_error = [], None
+    if dhcp_networks:
+        try:
+            leases = conn.get_leases()
+        except libvirtError as lib_err:
+            leases_error = lib_err
+    vm_by_mac = {mac: vm for vm in vms for mac in vm["macs"]}
+    fixed_ips = {ipaddress.ip_address(host["ip"]) for host in fixed_addresses if host["ip"]}
+    for lease in leases:
+        lease["vm"] = vm_by_mac.get(lease["mac"])
+        lease["name"] = lease["hostname"] or (lease["vm"]["name"] if lease["vm"] else "")  # for a fixed address
+        lease["fixed"] = lease["ip"] in fixed_ips
+        # what a fixed address for it is known by: its MAC, or an IPv6 client's DUID
+        lease["key"] = lease["mac"] if lease["ip"].version == 4 else lease["client_id"]
+        lease["ip_index"] = next((ip["index"] for ip in dhcp_networks
+                                  if ip["subnet"] and lease["ip"] in ip["subnet"]), None)
 
     return render(request, "network.html", locals())

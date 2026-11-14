@@ -2,9 +2,14 @@ from computes.models import Compute
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from libvirt import VIR_DOMAIN_XML_SECURE
-from vrtManager.instance import wvmInstance
-from webvirtcloud.settings import QEMU_CONSOLE_LISTENER_ADDRESSES
+from libvirt import (
+    VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL,
+    VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL,
+    libvirtError,
+)
+from operations import claims
+from operations.models import Claim
+from vrtManager.instance import PERSISTENT_XML, wvmInstance
 
 
 class Flavor(models.Model):
@@ -24,13 +29,19 @@ class InstanceManager(models.Manager):
 
 class Instance(models.Model):
     compute = models.ForeignKey(Compute, on_delete=models.CASCADE)
-    name = models.CharField(_("name"), max_length=120, db_index=True)
+    # libvirt takes any name its <name>.xml file can have: up to 251 bytes
+    name = models.CharField(_("name"), max_length=255, db_index=True)
     uuid = models.CharField(_("uuid"), max_length=36, db_index=True)
     is_template = models.BooleanField(_("is template"), default=False)
     created = models.DateTimeField(_("created"), auto_now_add=True)
     drbd = models.CharField(_("drbd"), max_length=24, default="None")
 
     objects = InstanceManager()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["compute", "uuid"], name="unique_compute_uuid")
+        ]
 
     def __str__(self):
         return f"{self.compute}/{self.name}"
@@ -43,59 +54,74 @@ class Instance(models.Model):
             self.compute.password,
             self.compute.type,
             self.name,
+            uuid=self.uuid,
         )
 
     @cached_property
-    def media(self):
+    def media(self) -> list[dict]:
         return self.proxy.get_media_devices()
 
     @cached_property
-    def media_iso(self):
+    def media_iso(self) -> list[str]:
         return sorted(self.proxy.get_iso_media())
 
     @cached_property
-    def disks(self):
+    def disks(self) -> list[dict]:
         return self.proxy.get_disk_devices()
 
     @cached_property
-    def status(self):
+    def info(self) -> list | None:
+        """virDomainGetInfo, read once: state, max memory KiB, memory KiB, vCPUs, CPU time.
+        None if the VM cannot be read (host down, VM gone): lists show it as unknown."""
+        try:
+            return self.proxy.instance.info()
+        except libvirtError:
+            return None
+
+    @cached_property
+    def status(self) -> int:
         return self.proxy.get_status()
 
     @cached_property
-    def autostart(self):
+    def autostart(self) -> int:
         return self.proxy.get_autostart()
 
     @cached_property
-    def bootmenu(self):
+    def persistent(self) -> bool:
+        return self.proxy.instance.isPersistent()
+
+    @cached_property
+    def bootmenu(self) -> bool:
         return self.proxy.get_bootmenu()
 
     @cached_property
-    def boot_order(self):
+    def boot_order(self) -> dict:
         return self.proxy.get_bootorder()
 
     @cached_property
-    def arch(self):
+    def arch(self) -> str:
         return self.proxy.get_arch()
 
     @cached_property
-    def machine(self):
+    def machine(self) -> str:
         return self.proxy.get_machine_type()
 
     @cached_property
-    def firmware(self):
+    def firmware(self) -> dict:
         return self.proxy.get_loader()
 
     @cached_property
-    def nvram(self):
+    def nvram(self) -> str | None:
         return self.proxy.get_nvram()
 
     @cached_property
-    def vcpu(self):
+    def vcpu(self) -> int:
         return self.proxy.get_vcpu()
 
     @cached_property
     def vcpu_range(self):
-        return self.proxy.get_max_cpus()
+        """The vCPU counts the Resize tab offers, the VM's own maximum among them."""
+        return self.proxy.get_max_cpus(at_least=self.config_vcpu)
 
     @cached_property
     def cur_vcpu(self):
@@ -106,11 +132,21 @@ class Instance(models.Model):
         return self.proxy.get_vcpus()
 
     @cached_property
+    def vcpu_cells(self) -> list[dict]:
+        """One cell per vCPU up to the maximum, as the Resize tab draws them:
+        its id, whether it is on, and whether it can be turned off and on
+        (a VM with hot-pluggable vCPUs lists them; vCPU 0 never is)."""
+        if self.vcpus:
+            return [{"id": id, "on": v["enabled"] == "yes", "fixed": v["hotpluggable"] != "yes"}
+                    for id, v in self.vcpus.items()]
+        return [{"id": str(i), "on": i < self.cur_vcpu, "fixed": True} for i in range(self.vcpu)]
+
+    @cached_property
     def get_uuid(self):
         return self.proxy.get_uuid()
 
     @cached_property
-    def memory(self):
+    def memory(self) -> int:
         return self.proxy.get_memory()
 
     @cached_property
@@ -118,39 +154,148 @@ class Instance(models.Model):
         return self.proxy.get_cur_memory()
 
     @cached_property
-    def title(self):
+    def title(self) -> str:
         return self.proxy.get_title()
 
     @cached_property
-    def description(self):
+    def description(self) -> str:
         return self.proxy.get_description()
 
     @cached_property
-    def networks(self):
+    def networks(self) -> list[dict]:
         return self.proxy.get_net_devices()
 
     @cached_property
-    def qos(self):
-        return self.proxy.get_all_qos()
+    def config_networks(self) -> list[dict]:
+        """NICs of the persistent definition, which the edit and clone forms
+        change; target is the running VM's device name, if any."""
+        live_targets = {net["mac"]: net.get("target", "") for net in self.networks}
+        networks = self.proxy.get_net_devices(config=True)
+        for net in networks:
+            net["target"] = live_targets.get(net["mac"], "")
+        return networks
+
+    @cached_property
+    def pcie_slots(self) -> tuple[int, int] | None:
+        """(PCIe slots, free ones) the VM has now; None: not a PCIe machine."""
+        return self.proxy.get_pcie_slots()
+
+    @cached_property
+    def config_pcie_slots(self) -> tuple[int, int] | None:
+        """The same at its next start, which added slots wait for while it runs."""
+        return self.proxy.get_pcie_slots(config=True)
+
+    @cached_property
+    def config_disks(self) -> list[dict]:
+        """Disks of the persistent definition, which the disk list, its edit
+        form and a clone use: on a running VM a pending change shows, and an
+        edit does not post the live value back over it."""
+        return self.proxy.get_disk_devices(config=True)
+
+    @cached_property
+    def config_vcpu(self) -> int:
+        """vCPUs of the persistent definition, which the CPU form changes."""
+        return self.proxy.get_vcpu(config=True)
+
+    @cached_property
+    def config_cur_vcpu(self) -> int:
+        return self.proxy.get_cur_vcpu(config=True)
+
+    @cached_property
+    def config_memory(self) -> int:
+        """Memory (MiB) of the persistent definition, which a clone starts from."""
+        return self.proxy.get_memory(config=True)
+
+    @cached_property
+    def config_title(self) -> str:
+        """Title and description of the persistent definition, which the
+        options form changes."""
+        return self.proxy.get_title(config=True)
+
+    @cached_property
+    def config_description(self) -> str:
+        return self.proxy.get_description(config=True)
+
+    @cached_property
+    def config_media(self) -> list[dict]:
+        """CD-ROMs, boot menu and boot order of the persistent definition,
+        which the boot order editor changes."""
+        return self.proxy.get_media_devices(config=True)
+
+    @cached_property
+    def config_bootmenu(self) -> bool:
+        return self.proxy.get_bootmenu(config=True)
+
+    @cached_property
+    def config_boot_order(self) -> dict:
+        return self.proxy.get_bootorder(config=True)
+
+    @cached_property
+    def config_boot_devices(self) -> list[dict]:
+        """The disks, CD-ROM drives and NICs the boot order editor lists, those
+        in the boot order first in their position; value is as posted, as in
+        "disk:vda"."""
+        order = [f"{d['dev']}:{d['target']}" for position, d in sorted(self.config_boot_order.items())]
+        devices = (
+            [{"value": f"disk:{d['dev']}", "name": d["dev"], "kind": _("Disk"), "source": d["image"], "icon": "device-hdd"}
+             for d in self.config_disks]
+            + [{"value": f"cdrom:{d['dev']}", "name": d["dev"], "kind": _("CD-ROM"), "source": d["image"], "icon": "disc"}
+               for d in self.config_media]
+            + [{"value": f"network:{n['mac']}", "name": n["mac"], "kind": _("NIC"), "source": n["nic"], "icon": "ethernet"}
+               for n in self.config_networks]
+        )
+        for device in devices:
+            device["checked"] = device["value"] in order
+        return sorted(devices, key=lambda d: order.index(d["value"]) if d["checked"] else len(order))
+
+    @cached_property
+    def config_boot_types(self) -> str:
+        """The device types the VM boots by, in turn ("disk, cdrom"), when its
+        order names types rather than devices; "" otherwise."""
+        if any(d["checked"] for d in self.config_boot_devices):
+            return ""
+        return ", ".join(b["target"] for position, b in sorted(self.config_boot_order.items()))
+
+    @cached_property
+    def config_video_model(self) -> str | None:
+        """Video model and console settings of the persistent definition,
+        which their forms change."""
+        return self.proxy.get_video_model(config=True)
+
+    @cached_property
+    def config_console_type(self) -> str | None:
+        return self.proxy.get_console_type(config=True)
+
+    @cached_property
+    def config_console_listener_address(self) -> str:
+        return self.proxy.get_console_listener_addr(config=True)
+
+    @cached_property
+    def config_console_passwd(self):
+        return self.proxy.get_console_passwd(config=True)
+
+    @cached_property
+    def config_console_keymap(self) -> str:
+        return self.proxy.get_console_keymap(config=True)
 
     @cached_property
     def telnet_port(self):
         return self.proxy.get_telnet_port()
 
     @cached_property
-    def console_type(self):
+    def console_type(self) -> str | None:
         return self.proxy.get_console_type()
 
     @cached_property
-    def console_port(self):
+    def console_port(self) -> str | None:
         return self.proxy.get_console_port()
 
     @cached_property
-    def console_keymap(self):
+    def console_keymap(self) -> str:
         return self.proxy.get_console_keymap()
 
     @cached_property
-    def console_listener_address(self):
+    def console_listener_address(self) -> str:
         return self.proxy.get_console_listener_addr()
 
     @cached_property
@@ -158,28 +303,79 @@ class Instance(models.Model):
         return False if self.proxy.get_guest_agent() is None else True
 
     @cached_property
-    def guest_agent_ready(self):
+    def config_guest_agent(self) -> bool:
+        """Whether the next start has the agent channel; the agent form shows it."""
+        return self.proxy.get_guest_agent(config=True) is not None
+
+    @cached_property
+    def config_vcpu_hotplug(self) -> bool:
+        """Whether the next start has hotpluggable vCPUs; the hot plug form shows it."""
+        return any(vcpu["hotpluggable"] == "yes" for vcpu in self.proxy.get_vcpus(config=True).values())
+
+    @cached_property
+    def config_rng(self) -> str | None:
+        return self.proxy.get_rng()
+
+    @cached_property
+    def config_tpm(self) -> str | None:
+        return self.proxy.get_tpm()
+
+    @cached_property
+    def config_on_crash(self) -> str:
+        return self.proxy.get_on_crash()
+
+    @cached_property
+    def guest_agent_ready(self) -> bool:
         return self.proxy.is_agent_ready()
 
     @cached_property
-    def video_model(self):
+    def video_model(self) -> str | None:
         return self.proxy.get_video_model()
 
     @cached_property
     def video_models(self):
         return self.proxy.get_video_models(self.arch, self.machine)
 
-    @cached_property
-    def snapshots(self):
-        return sorted(self.proxy.get_snapshot(), reverse=True, key=lambda k: k["date"])
+    def _snapshots(self, flag):
+        external = flag == VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL
+        return sorted(({**snap, "external": external} for snap in self.proxy.get_snapshot(flag)),
+                      reverse=True, key=lambda k: k["date"])
 
     @cached_property
-    def external_snapshots(self):
-        return sorted(self.proxy.get_external_snapshots(), reverse=True, key=lambda k: k["date"])
+    def snapshots(self) -> list[dict]:
+        """Both kinds, the newest first; "external" tells them apart."""
+        return sorted(self.internal_snapshots + self.external_snapshots, reverse=True, key=lambda k: k["date"])
+
+    @cached_property
+    def newer_than_current_snapshot(self) -> bool:
+        """Snapshots newer than the one reverted to: an external snapshot waits until they are deleted."""
+        return any(snap["current"] and snap["children"] for snap in self.external_snapshots)
+
+    @cached_property
+    def internal_snapshots(self) -> list[dict]:
+        return self._snapshots(VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL)
+
+    @cached_property
+    def external_snapshots(self) -> list[dict]:
+        return self._snapshots(VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL)
+
+    @cached_property
+    def snapshot_jobs(self) -> list[dict]:
+        # only for the page; create, revert and delete query the jobs again and refuse if that fails
+        try:
+            return self.proxy.get_snapshot_jobs()
+        except libvirtError:
+            return []
+
+    @cached_property
+    def held_by_job(self) -> bool:
+        # a queued job has no libvirt block job yet; a job's claim still holds the VM
+        return Claim.objects.filter(resource=claims.instance_key(self.uuid), operation__isnull=False).exists()
 
     @cached_property
     def inst_xml(self):
-        return self.proxy._XMLDesc(VIR_DOMAIN_XML_SECURE)
+        # the definition for the next start, which is the current one while the VM is off
+        return self.proxy._XMLDesc(PERSISTENT_XML)
 
     @cached_property
     def has_managed_save_image(self):
@@ -210,75 +406,22 @@ class Instance(models.Model):
         return self.proxy.get_image_formats()
 
 
-class MigrateInstance(models.Model):
-    instance = models.ForeignKey(
-        Instance, related_name="source_host", on_delete=models.DO_NOTHING
-    )
-    target_compute = models.ForeignKey(
-        Compute, related_name="target_host", on_delete=models.DO_NOTHING
-    )
+class InstanceTombstone(models.Model):
+    """Ownership of a VM that disappeared from its compute.
 
-    live = models.BooleanField(_("Live"))
-    xml_del = models.BooleanField(_("Undefine XML"), default=True)
-    offline = models.BooleanField(_("Offline"))
-    autoconverge = models.BooleanField(_("Auto Converge"), default=True)
-    compress = models.BooleanField(_("Compress"), default=False)
-    postcopy = models.BooleanField(_("Post Copy"), default=False)
-    unsafe = models.BooleanField(_("Unsafe"), default=False)
+    Kept for INSTANCE_OWNERSHIP_RETENTION_DAYS so that the owners come back
+    when the same UUID shows up again, on this or another compute.
+    """
 
-    class Meta:
-        managed = False
+    uuid = models.CharField(max_length=36, db_index=True)
+    name = models.CharField(max_length=255)
+    host = models.CharField(max_length=64, blank=True)  # the compute's name: the compute may be deleted
+    is_template = models.BooleanField(default=False)
+    owners = models.JSONField(default=list)  # [{"user": id, "is_change": .., "is_delete": .., "is_vnc": ..}]
+    removed = models.DateTimeField(auto_now_add=True)
 
-
-class CreateInstance(models.Model):
-    compute = models.ForeignKey(
-        Compute, related_name="host", on_delete=models.DO_NOTHING
-    )
-    name = models.CharField(
-        max_length=64,
-        error_messages={"required": _("No Virtual Machine name has been entered")},
-    )
-    firmware = models.CharField(max_length=64)
-    vcpu = models.IntegerField(
-        error_messages={"required": _("No VCPU has been entered")}
-    )
-    vcpu_mode = models.CharField(max_length=20, blank=True)
-    disk = models.IntegerField(blank=True)
-    memory = models.IntegerField(
-        error_messages={"required": _("No RAM size has been entered")}
-    )
-    networks = models.CharField(
-        max_length=256,
-        error_messages={"required": _("No Network pool has been choosen")},
-    )
-    nwfilter = models.CharField(max_length=256, blank=True)
-    net_model = models.CharField(max_length=256, blank=True)
-    storage = models.CharField(max_length=256, blank=True)
-    template = models.CharField(max_length=256, blank=True)
-    images = models.CharField(max_length=256, blank=True)
-    cache_mode = models.CharField(
-        max_length=16, error_messages={"required": _("Please select HDD cache mode")}
-    )
-    hdd_size = models.IntegerField(blank=True)
-    meta_prealloc = models.BooleanField(default=False, blank=True)
-    virtio = models.BooleanField(default=True)
-    qemu_ga = models.BooleanField(default=False)
-    mac = models.CharField(max_length=17, blank=True)
-    console_pass = models.CharField(max_length=64, blank=True)
-    add_cdrom = models.CharField(max_length=16)
-    add_input = models.CharField(max_length=16)
-    graphics = models.CharField(
-        max_length=16, error_messages={"required": _("Please select a graphics type")}
-    )
-    video = models.CharField(
-        max_length=16, error_messages={"required": _("Please select a video driver")}
-    )
-    listener_addr = models.CharField(
-        max_length=20, choices=QEMU_CONSOLE_LISTENER_ADDRESSES
-    )
-
-    class Meta:
-        managed = False
+    def __str__(self):
+        return "%s (%s)" % (self.name, self.uuid)
 
 
 class PermissionSet(models.Model):

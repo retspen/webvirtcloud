@@ -1,0 +1,382 @@
+"""A wvmConnect reads the host's info and capabilities once, and its domain
+capabilities once per emulator, arch, machine and domain type: the create
+page's getters parse the capabilities some 60 times, the overview reads the
+info four times. An object lives for one request. The interfaces page lists
+only the host's network devices, not all of them, and knows whether the host
+can change interfaces at all."""
+
+import unittest
+from unittest.mock import MagicMock
+
+from libvirt import (
+    VIR_CONNECT_LIST_NODE_DEVICES_CAP_NET,
+    VIR_DOMAIN_PAUSED,
+    VIR_DOMAIN_RUNNING,
+    VIR_DOMAIN_SHUTOFF,
+    VIR_ERR_NO_STORAGE_VOL,
+    VIR_ERR_NO_SUPPORT,
+    VIR_ERR_OPERATION_DENIED,
+    VIR_ERR_SYSTEM_ERROR,
+    VIR_ERR_XML_ERROR,
+    libvirtError,
+)
+from vrtManager import util
+from vrtManager.connection import wvmConnect
+from vrtManager.hostdetails import wvmHostDetails
+from vrtManager.storage import wvmStorage, wvmStorages
+from unittest import TestCase as UnitTestCase
+from unittest.mock import patch
+from vrtManager.hostdetails import cpu_percent
+
+CAPABILITIES = """<capabilities><host><cpu><arch>x86_64</arch></cpu></host>
+<guest><os_type>hvm</os_type><arch name='x86_64'><emulator>/usr/bin/qemu-kvm</emulator>
+<machine>pc-q35-9.0</machine><machine canonical='pc-q35-9.0'>q35</machine><machine canonical='pc-i440fx-9.0'>pc</machine>
+<domain type='qemu'/><domain type='kvm'/></arch></guest></capabilities>"""
+
+
+class FakeConn:
+    def __init__(self):
+        self.reads = []
+
+    def getCapabilities(self):
+        self.reads.append("capabilities")
+        return CAPABILITIES
+
+    def getInfo(self):
+        self.reads.append("info")
+        return ["x86_64", 2048, 4, 0, 1, 2, 2, 1]
+
+    def getMemoryStats(self, cell, flags):
+        self.reads.append("memory")
+        return {"buffers": 0, "free": 1048576, "cached": 0}
+
+    def getHostname(self):
+        return "host"
+
+    def getSysinfo(self, flags):
+        return "<sysinfo/>"
+
+    def getURI(self):
+        return "qemu:///system"
+
+    def getDomainCapabilities(self, emulator, arch, machine, virttype):
+        self.reads.append((emulator, arch, machine, virttype))
+        return "<domainCapabilities/>"
+
+
+def connection(cls=wvmConnect):
+    conn = cls.__new__(cls)  # no libvirt connection: only these calls
+    conn.wvm = FakeConn()
+    return conn
+
+
+class CapabilitiesOnceTestCase(unittest.TestCase):
+    def test_the_capabilities_are_read_once_for_all_getters(self):
+        conn = connection()
+        for _ in range(2):
+            conn.get_emulator("x86_64")
+            conn.get_machine_types("x86_64")
+            conn.get_hypervisors_domain_types()
+            conn.get_cap_xml()
+        self.assertEqual(conn.wvm.reads, ["capabilities"])
+
+    def test_domain_capabilities_are_read_once_per_machine(self):
+        conn = connection()
+        for _ in range(2):
+            conn.get_dom_cap_xml("x86_64", "q35")
+            conn.get_dom_cap_xml("x86_64", "pc")
+            conn.get_dom_cap_xml("x86_64", "unknown")  # falls back to pc
+        self.assertEqual(
+            conn.wvm.reads,
+            ["capabilities", ("/usr/bin/qemu-kvm", "x86_64", "q35", "kvm"), ("/usr/bin/qemu-kvm", "x86_64", "pc", "kvm")],
+        )
+
+    def test_the_domain_capabilities_are_read_from_their_xml(self):
+        conn = connection()
+        conn.wvm.getDomainCapabilities = lambda *key: (
+            "<domainCapabilities><path>/usr/bin/qemu-kvm</path><domain>kvm</domain><machine>pc-q35-9.0</machine>"
+            "<vcpu max='4096'/><iothreads supported='yes'/><os supported='yes'><loader supported='no'/></os>"
+            "<devices><disk supported='no'/><video supported='no'/><hostdev supported='no'/></devices>"
+            "<features><gic supported='no'/><sev supported='no'/></features></domainCapabilities>")
+        caps = conn.get_dom_capabilities("x86_64", "q35")
+        self.assertEqual((caps["path"], caps["domain"], caps["machine"], caps["vcpu_max"]),
+                         ("/usr/bin/qemu-kvm", "kvm", "pc-q35-9.0", "4096"))
+        self.assertEqual((caps["iothreads_support"], caps["loader_support"], caps["features_genid_support"]),
+                         ("yes", "no", None))
+
+    def test_an_architecture_the_host_does_not_run_is_refused_with_its_name(self):
+        # the create page and the API take it from the URL: it was a KeyError, a 500
+        with self.assertRaisesRegex(util.OperationError, "This host has no architecture noarch"):
+            connection().get_dom_cap_xml("noarch", "q35")
+
+    def test_the_overview_reads_the_info_once_and_the_free_memory_each_time(self):
+        conn = connection(wvmHostDetails)
+        conn.get_node_info()
+        conn.get_memory_usage()
+        self.assertEqual(conn.get_memory_usage()["total"], 2048 * 1048576)
+        self.assertEqual(conn.wvm.reads, ["info", "memory", "memory"])
+
+    def test_two_objects_do_not_share_their_reads(self):
+        a, b = connection(), connection()
+        a.get_cap_xml()
+        b.get_cap_xml()
+        self.assertEqual((a.wvm.reads, b.wvm.reads), (["capabilities"], ["capabilities"]))
+
+    def test_a_failed_read_is_not_kept(self):
+        conn = connection()
+        conn.wvm.getCapabilities = lambda: (_ for _ in ()).throw(RuntimeError("libvirt error"))
+        with self.assertRaises(RuntimeError):
+            conn.get_cap_xml()
+        conn.wvm = FakeConn()
+        conn.get_cap_xml()
+        self.assertEqual(conn.wvm.reads, ["capabilities"])
+
+
+class NetDevicesTestCase(unittest.TestCase):
+    def test_only_the_network_devices_are_listed_and_read(self):
+        conn = connection()
+        devices = {
+            VIR_CONNECT_LIST_NODE_DEVICES_CAP_NET: [
+                MagicMock(**{"XMLDesc.return_value": f"<device><capability type='net'><interface>{name}</interface>"
+                                                     "<capability type='80203'/></capability></device>"})
+                for name in ("eth0", "br0")
+            ]
+        }
+        conn.wvm.listAllDevices = lambda flags: devices.get(flags, [])
+        self.assertEqual(conn.get_net_devices(), ["eth0", "br0"])
+
+
+class ChangeInterfacesTestCase(unittest.TestCase):
+    def error(self, code):
+        err = libvirtError("refused")
+        err.get_error_code = lambda: code
+        return err
+
+    def test_a_backend_without_define_cannot_change_interfaces(self):
+        conn = connection()
+        for code, changeable in ((VIR_ERR_NO_SUPPORT, False), (VIR_ERR_OPERATION_DENIED, False), (VIR_ERR_XML_ERROR, True)):
+            with self.subTest(code=code):
+                conn.wvm.interfaceDefineXML = MagicMock(side_effect=self.error(code))
+                self.assertIs(conn.can_change_interfaces(), changeable)
+                # an invalid definition: nothing can be defined by asking
+                conn.wvm.interfaceDefineXML.assert_called_once_with("<interface/>", 0)
+        # any other refusal (the connection, the login) is no answer
+        conn.wvm.interfaceDefineXML = MagicMock(side_effect=self.error(VIR_ERR_SYSTEM_ERROR))
+        with self.assertRaises(libvirtError):
+            conn.can_change_interfaces()
+
+
+class CapacityTestCase(unittest.TestCase):
+    def test_a_host_gives_its_vms_cpus_and_memory(self):
+        conn = connection(wvmHostDetails)
+        gib = 1024 ** 3
+        kib = gib // 1024
+        busy = MagicMock(**{"XMLDesc.return_value": f"<domain><currentMemory>{kib}</currentMemory>"
+                                                      "<vcpu current='1'>4</vcpu></domain>"})
+        idle = MagicMock()
+        # one call for every VM; a VM busy with a job has only its state: its XML gives the rest
+        conn.wvm.getAllDomainStats = MagicMock(return_value=[
+            (idle, {"state.state": VIR_DOMAIN_RUNNING, "balloon.current": 4 * kib, "vcpu.current": 4}),
+            (idle, {"state.state": VIR_DOMAIN_PAUSED, "balloon.current": 2 * kib, "vcpu.current": 2}),
+            (idle, {"state.state": VIR_DOMAIN_SHUTOFF, "balloon.current": 8 * kib, "vcpu.current": 8}),
+            (busy, {"state.state": VIR_DOMAIN_RUNNING}),
+        ])
+        self.assertEqual(conn.get_capacity(), {
+            "cpus": 4, "memory": 2 * gib,
+            "vcpus": {"all": 15, "running": 7},
+            "assigned": {"all": 15 * gib, "running": 7 * gib},
+            "vms": {"running": 2, "paused": 1, "shutoff": 1, "other": 0},
+        })
+        self.assertEqual(conn.wvm.getAllDomainStats.call_count, 1)
+        idle.XMLDesc.assert_not_called()
+
+    def test_a_vm_that_cannot_be_read_leaves_the_capacity_unknown(self):
+        # a VM gone meanwhile is left out; one whose XML is refused would be missing from the sums
+        from libvirt import VIR_ERR_NO_DOMAIN, VIR_ERR_SYSTEM_ERROR, libvirtError
+
+        def unread(code):
+            err = libvirtError("refused")
+            err.get_error_code = lambda: code
+            return MagicMock(**{"XMLDesc.side_effect": err})
+
+        conn = connection(wvmHostDetails)
+        conn.wvm.getAllDomainStats = MagicMock(return_value=[(unread(VIR_ERR_NO_DOMAIN), {"state.state": VIR_DOMAIN_RUNNING})])
+        self.assertEqual(conn.get_capacity()["vms"]["running"], 0)
+        conn.wvm.getAllDomainStats = MagicMock(return_value=[(unread(VIR_ERR_SYSTEM_ERROR), {"state.state": VIR_DOMAIN_RUNNING})])
+        with self.assertRaises(libvirtError):
+            conn.get_capacity()
+
+
+class CpuTopologyTestCase(unittest.TestCase):
+    """The topology comes from the capabilities' NUMA cells: getInfo makes
+    one up (one node, one socket, every CPU a core) for hosts it cannot
+    describe."""
+
+    def topology(self, cells):
+        conn = connection(wvmHostDetails)
+        conn.__dict__["host_info"] = ["x86_64", 65536, 16, 2400, 1, 1, 16, 1]  # getInfo's made-up one
+        conn.get_cap_xml = lambda: f"<capabilities><host><topology><cells num='2'>{cells}</cells></topology></host></capabilities>"
+        return conn.get_cpu_topology()
+
+    def test_sockets_and_cores_are_counted_from_the_cpus_of_the_numa_cells(self):
+        # two nodes, two sockets, four cores of two threads each
+        cells = "".join(
+            f"<cell id='{node}'><cpus num='4'>"
+            + "".join(f"<cpu id='{node * 4 + i}' socket_id='{node}' die_id='0' core_id='{i // 2}' siblings=''/>" for i in range(4))
+            + "</cpus></cell>" for node in range(2))
+        self.assertEqual(self.topology(cells), {"nodes": 2, "sockets": 2, "cores": 4, "cpus": 16, "mhz": 2400})
+
+    def test_a_host_that_does_not_say_has_no_sockets_or_cores(self):
+        cells = "<cell id='0'><cpus num='2'><cpu id='0'/><cpu id='1'/></cpus></cell>"
+        self.assertEqual(self.topology(cells), {"nodes": 1, "sockets": None, "cores": None, "cpus": 16, "mhz": 2400})
+
+
+class StoragesInfoTestCase(unittest.TestCase):
+    def test_each_pool_tells_its_free_space(self):
+        conn = connection(wvmStorages)
+        pool = MagicMock(**{"isActive.return_value": 1, "XMLDesc.return_value": "<pool type='dir'/>",
+                            "listVolumes.return_value": ["a.qcow2"], "info.return_value": [2, 500, 380, 120]})
+        conn.get_storages = lambda: ["default"]
+        conn.get_storage = lambda name: pool
+        (info,) = conn.get_storages_info()
+        self.assertEqual((info["name"], info["size"], info["free"], info["used_percent"]), ("default", 500, 120, 76))
+        # measured now: libvirt keeps a pool's space as of its last refresh
+        self.assertEqual([c[0] for c in pool.mock_calls[:2]], ["isActive", "refresh"])
+
+    def test_a_pool_that_refuses_a_refresh_tells_its_last_space(self):
+        conn = connection(wvmStorages)
+        pool = MagicMock(**{"isActive.return_value": 1, "XMLDesc.return_value": "<pool type='dir'/>",
+                            "listVolumes.return_value": [], "info.return_value": [2, 500, 380, 120],
+                            "refresh.side_effect": libvirtError("pool is busy: a volume is cloned")})
+        conn.get_storages = lambda: ["default"]
+        conn.get_storage = lambda name: pool
+        (info,) = conn.get_storages_info()
+        self.assertEqual(info["free"], 120)
+
+    def test_an_inactive_pool_is_not_refreshed(self):
+        conn = connection(wvmStorages)
+        pool = MagicMock(**{"isActive.return_value": 0, "XMLDesc.return_value": "<pool type='dir'/>",
+                            "info.return_value": [0, 0, 0, 0]})
+        conn.get_storages = lambda: ["off"]
+        conn.get_storage = lambda name: pool
+        conn.get_storages_info()
+        pool.refresh.assert_not_called()
+
+
+def volume(name, capacity, allocation, fmt=None, error=None):
+    target = f"<target><format type='{fmt}'/></target>" if fmt else "<target/>"
+    xml = (f"<volume type='file'><name>{name}</name><capacity unit='bytes'>{capacity}</capacity>"
+           f"<allocation unit='bytes'>{allocation}</allocation>{target}</volume>")
+    return MagicMock(**{"XMLDesc.side_effect": error} if error else {"XMLDesc.return_value": xml})
+
+
+def gone(code):
+    err = libvirtError("no storage vol")
+    err.get_error_code = lambda: code
+    return err
+
+
+class VolumesTestCase(unittest.TestCase):
+    """A pool's volumes are read with one call each, their XML, after one listing."""
+
+    def storage(self, volumes):
+        stg = wvmStorage.__new__(wvmStorage)  # no libvirt connection: only the pool's calls
+        stg.pool = MagicMock(**{"listAllVolumes.return_value": volumes})
+        return stg
+
+    def test_each_volume_is_one_call(self):
+        vols = [volume("b.qcow2", 2048, 512, "qcow2"), volume("a-lv", 1024, 1024)]
+        stg = self.storage(vols)
+        self.assertEqual(stg.update_volumes(), [
+            {"name": "a-lv", "size": 1024, "allocation": 1024, "type": None},  # a logical volume has no format
+            {"name": "b.qcow2", "size": 2048, "allocation": 512, "type": "qcow2"},
+        ])
+        self.assertEqual([c[0] for c in stg.pool.mock_calls], ["refresh", "listAllVolumes"])
+        for vol in vols:
+            self.assertEqual([c[0] for c in vol.mock_calls], ["XMLDesc"])
+
+    def test_a_volume_deleted_meanwhile_is_left_out(self):
+        stg = self.storage([volume("a.img", 1, 1, "raw"), volume("b.img", 1, 1, error=gone(VIR_ERR_NO_STORAGE_VOL))])
+        self.assertEqual([v["name"] for v in stg.update_volumes()], ["a.img"])
+        # any other failure is not hidden
+        stg = self.storage([volume("c.img", 1, 1, error=gone(VIR_ERR_OPERATION_DENIED))])
+        with self.assertRaises(libvirtError):
+            stg.update_volumes()
+
+    def test_a_refused_refresh_still_lists(self):
+        # libvirt refuses to refresh a pool while a volume is cloned in it
+        stg = self.storage([volume("a.img", 1, 1, "raw")])
+        stg.pool.refresh.side_effect = libvirtError("pool has asynchronous jobs running")
+        self.assertEqual(len(stg.update_volumes()), 1)
+
+    def test_one_volume(self):
+        stg = self.storage([])
+        stg.pool.storageVolLookupByName.return_value = volume("a.img", 4096, 0, "raw")
+        self.assertEqual(stg.get_volume_details("a.img"), {"name": "a.img", "size": 4096, "allocation": 0, "type": "raw"})
+
+    def test_the_pool_size_is_one_info_call(self):
+        stg = self.storage([])
+        stg.pool.info.return_value = [2, 500, 380, 120]
+        self.assertEqual(stg.get_size(), [500, 120])
+        stg.pool.info.assert_called_once_with()
+
+
+def host(*readings):
+    """A wvmHostDetails whose getCPUStats returns readings, (idle, busy) each."""
+    h = wvmHostDetails.__new__(wvmHostDetails)
+    h.wvm = MagicMock()
+    h.wvm.getCPUStats.side_effect = [
+        {"kernel": busy // 2, "user": busy - busy // 2, "idle": idle, "iowait": 0, "guest": busy // 3, "utilization": 99}
+        for idle, busy in readings
+    ]
+    return h
+
+
+class CpuPercentTestCase(UnitTestCase):
+    def test_busy_share_between_two_samples(self):
+        self.assertEqual(cpu_percent((100, 200), (130, 300)), 70.0)
+        self.assertEqual(cpu_percent((0, 0), (1, 3)), 66.7)
+
+    def test_samples_that_do_not_follow_on(self):
+        for before, after in (((100, 200), (100, 200)), ((100, 200), (50, 100)), ((100, 200), (200, 250))):
+            with self.subTest(before=before, after=after):
+                self.assertIsNone(cpu_percent(before, after))
+
+
+@patch("vrtManager.hostdetails.time")
+class CpuUsageTestCase(UnitTestCase):
+    def test_since_a_previous_sample_without_waiting(self, clock):
+        clock.monotonic.return_value = 105.0
+        h = host((130, 70))
+        usage = h.get_cpu_usage(previous=(100, 100, 100.0))
+        clock.sleep.assert_not_called()
+        # total = kernel + user + idle + iowait; guest (inside user) and utilization are left out
+        self.assertEqual(usage, {"usage": 70.0, "sample": (130, 200, 105.0), "window": 5.0})
+
+    def test_time_waiting_for_disks_is_not_cpu_in_use(self, clock):
+        # a host that only waits for its disks: no CPU runs
+        clock.monotonic.return_value = 105.0
+        h = wvmHostDetails.__new__(wvmHostDetails)
+        h.wvm = MagicMock()
+        h.wvm.getCPUStats.return_value = {"kernel": 0, "user": 0, "idle": 100, "iowait": 100}
+        self.assertEqual(h.get_cpu_usage(previous=(100, 100, 100.0))["usage"], 0.0)
+
+    def test_over_one_second_without_a_sample(self, clock):
+        clock.monotonic.side_effect = [10.0, 11.0]
+        h = host((100, 100), (110, 190))
+        self.assertEqual(h.get_cpu_usage(), {"usage": 90.0, "sample": (110, 300, 11.0), "window": 1.0})
+        clock.sleep.assert_called_once_with(1)
+
+    def test_over_one_second_with_a_sample_from_before_the_panel_restarted(self, clock):
+        clock.monotonic.side_effect = [10.0, 11.0]  # the clock restarted with the server
+        h = host((100, 100), (110, 190))
+        usage = h.get_cpu_usage(previous=(50, 50, 500.0))
+        clock.sleep.assert_called_once_with(1)
+        self.assertEqual((usage["usage"], usage["window"]), (90.0, 1.0))
+
+    def test_over_one_second_after_the_host_restarted(self, clock):
+        clock.monotonic.side_effect = [10.0, 11.0]
+        h = host((5, 5), (6, 9))
+        usage = h.get_cpu_usage(previous=(1000, 5000, 5.0))
+        clock.sleep.assert_called_once_with(1)
+        self.assertEqual((usage["usage"], usage["window"]), (80.0, 1.0))

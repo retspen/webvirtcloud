@@ -1,12 +1,8 @@
-// Pulse 5.2.2
+// Pulse 5.3.8
 // Bootswatch
 
 
 // Variables
-
-:root {
-  color-scheme: light;
-}
 
 // Buttons
 
@@ -74,6 +70,16 @@
 .table .thead-dark th {
   background-color: $secondary;
   border-color: $table-border-color;
+}
+
+.table-primary,
+.table-secondary,
+.table-success,
+.table-warning,
+.table-danger,
+.table-info,
+.table-light {
+  --#{$prefix}table-color: #{$body-color};
 }
 
 // Forms

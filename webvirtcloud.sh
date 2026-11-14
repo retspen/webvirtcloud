@@ -1,4 +1,6 @@
 #!/bin/bash
+# a failing step fails the pipeline that logs it
+set -o pipefail
 #/ Usage: webvirtcloud.sh [-vh]
 #/
 #/ Install Webvirtcloud virtualization web interface.
@@ -64,9 +66,11 @@ if [ "$(id -u)" != "0" ]; then
     fi
 fi
 
-clear
+if [ -f /etc/supervisor/conf.d/webvirtcloud.conf ] || [ -f /etc/supervisord.d/webvirtcloud.ini ]; then
+  echo "WebVirtCloud runs under supervisor here: move it to systemd first (README: Updating, Moving from supervisor to systemd)." >&2
+  exit 1
+fi
 
-readonly APP_USER="wvcuser"
 readonly APP_REPO_URL="${APP_REPO_URL:-https://github.com/retspen/webvirtcloud.git}"
 readonly APP_NAME="webvirtcloud"
 readonly APP_PATH="/srv/$APP_NAME"
@@ -118,7 +122,7 @@ install_packages () {
           echo "  * $p already installed"
         else
           echo "  * Installing $p"
-          log "DEBIAN_FRONTEND=noninteractive apt-get install -y $p"
+          log "DEBIAN_FRONTEND=noninteractive apt-get install -y $p" || { echo "Installing $p failed." >&2; exit 1; }
         fi
       done;
       ;;
@@ -128,7 +132,7 @@ install_packages () {
           echo "  * $p already installed"
         else
           echo "  * Installing $p"
-          log "yum -y install $p"
+          log "yum -y install $p" || { echo "Installing $p failed." >&2; exit 1; }
         fi
       done;
       ;;
@@ -138,27 +142,9 @@ install_packages () {
           echo "  * $p already installed"
         else
           echo "  * Installing $p"
-          log "dnf -y install $p"
+          log "dnf -y install $p" || { echo "Installing $p failed." >&2; exit 1; }
         fi
       done;
-      ;;
-    uos)
-      if test "${codename}" == "eagle"; then
-        check_package_cmd=("dpkg" "-s")
-        install_package_cmd="apt-get install -y"
-      else
-        check_package_cmd=("dnf" "list" "installed")
-        install_package_cmd="dnf -y install"
-      fi
-      for p in $PACKAGES; do
-        # shellcheck disable=SC2048
-        if ${check_package_cmd[*]} "$p" >/dev/null 2>&1; then
-          echo "  * $p already installed"
-        else
-          echo "  * Installing $p"
-          log "${install_package_cmd} $p"
-        fi
-      done
       ;;
     suse)
       for p in $PACKAGES; do
@@ -166,7 +152,7 @@ install_packages () {
           echo "  * $p already installed"
         else
           echo "  * Installing $p"
-          log "zypper --non-interactive install -y $p"
+          log "zypper --non-interactive install -y $p" || { echo "Installing $p failed." >&2; exit 1; }
         fi
       done
       ;;
@@ -174,22 +160,23 @@ install_packages () {
 }
 
 configure_nginx () {
-  # Remove default configuration 
-  rm /etc/nginx/nginx.conf
+  # shellcheck source=conf/install-lib.sh
+  . "$APP_PATH/conf/install-lib.sh"
+
   if [ -f /etc/nginx/sites-enabled/default ]; then
     rm /etc/nginx/sites-enabled/default
   fi
 
   chown -R "$nginx_group":"$nginx_group" /var/lib/nginx
-  # Copy new configuration and webvirtcloud.conf
-  echo "  * Copying Nginx configuration"
+  # Install the main nginx config on first run only (keeping a backup), always
+  # refresh the app snippet; a re-run never clobbers an edited main config.
+  echo "  * Installing Nginx configuration"
   local nginx_template_conf
-  nginx_template_conf="${APP_PATH}/conf/nginx/${distro}_${codename}_nginx.conf"
+  nginx_template_conf="${APP_PATH}/conf/nginx/${nginx_conf}_${codename}_nginx.conf"
   if ! test -f "${nginx_template_conf}"; then
-    nginx_template_conf="${APP_PATH}/conf/nginx/${distro}_nginx.conf"
+    nginx_template_conf="${APP_PATH}/conf/nginx/${nginx_conf}_nginx.conf"
   fi
-  cp "${nginx_template_conf}" /etc/nginx/nginx.conf
-  cp "$APP_PATH"/conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
+  wvc_install_nginx "${nginx_template_conf}" "$APP_PATH/conf/nginx/webvirtcloud.conf" /etc/nginx
 
   if [ -n "$fqdn" ]; then
      fqdn_escape="$(echo -n "$fqdn"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
@@ -201,40 +188,22 @@ configure_nginx () {
 
 }
 
-configure_supervisor () {
-  # Copy template supervisor service for gunicorn and novnc
-  echo "  * Copying supervisor configuration"
-  mkdir -p "$supervisor_conf_path" > /dev/null 2>&1
-  cp "$APP_PATH"/conf/supervisor/webvirtcloud.conf "$supervisor_conf_path"/"$supervisor_file_name"
-  nginx_group_escape="$(echo -n "$nginx_group"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
-  sed -i "s|^\\(user=\\).*|\\1$nginx_group_escape|" "$supervisor_conf_path/$supervisor_file_name"
+configure_systemd () {
+  # The panel's services run as the web server's user; a re-run restarts them.
+  units="webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker"
+  for unit in $units webvirt-backup; do
+    sed "s/^\\(User\\|Group\\)=.*/\\1=$nginx_group/" "$APP_PATH/conf/systemd/$unit.service" > "/etc/systemd/system/$unit.service" || exit 1
+  done
+  cp "$APP_PATH/conf/systemd/webvirt-backup.timer" /etc/systemd/system/ || exit 1
+  # shellcheck disable=SC2086
+  systemctl daemon-reload && systemctl enable $units && systemctl restart $units &&
+    systemctl enable --now webvirt-backup.timer || exit 1
 }
 
-create_user () {
-  echo "* Creating webvirtcloud user."
-
-  if [ "$distro" == "ubuntu" ] || [ "$distro" == "debian" ] ||
-    [[ "$distro" == "uos" && "$codename" == "eagle" ]]; then
-    adduser --quiet --disabled-password --gecos '""' "$APP_USER"
-  elif [ "$distro" == "suse" ]; then
-    useradd -m -s /bin/bash "$APP_USER" 2>/dev/null || adduser "$APP_USER"
-  else
-    useradd -m -s /bin/bash "$APP_USER" 2>/dev/null || adduser "$APP_USER"
-  fi
-
-  usermod -a -G "$nginx_group" "$APP_USER" 2>/dev/null || true
+add_service_groups () {
+  # the panel's services reach a local libvirt and KVM as the web server's user
   usermod -a -G libvirt "$nginx_group" 2>/dev/null || true
   usermod -a -G kvm "$nginx_group" 2>/dev/null || true
-  usermod -a -G libvirt "$APP_USER" 2>/dev/null || true
-  usermod -a -G kvm "$APP_USER" 2>/dev/null || true
-}
-
-run_as_app_user () {
-  if ! hash sudo 2>/dev/null; then
-      su -c "$@" "$APP_USER"
-  else
-      sudo -i -u "$APP_USER" "$@"
-  fi
 }
 
 check_python () {
@@ -277,89 +246,110 @@ activate_python_environment () {
     source venv/bin/activate
 }
 
-generate_secret_key() {
-  "$PYTHON" -c 'import secrets; print(secrets.token_urlsafe(50))'
-}
-
 
 install_webvirtcloud () {
-  create_user
- 
+  add_service_groups
+
   if [ ! -d "$APP_PATH/.git" ]; then
     echo "* Cloning $APP_NAME from github to the web directory."
-    log "git clone $APP_REPO_URL $APP_PATH"
+    log "git clone $APP_REPO_URL $APP_PATH" || { echo "Cloning $APP_REPO_URL failed." >&2; exit 1; }
   else
     echo "* $APP_NAME already present in $APP_PATH."
   fi
 
-  echo "* Configuring settings.py file."
-  cp "$APP_PATH/webvirtcloud/settings.py.template" "$APP_PATH/webvirtcloud/settings.py"
-  
-  secret_key=$(generate_secret_key)
-  echo "* Secret for Django generated: $secret_key"
-  tzone_escape="$(echo -n "$tzone"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
-  secret_key_escape="$(echo -n "$secret_key"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
-  novncd_port_escape="$(echo -n "$novncd_port"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
-  novncd_public_port_escape="$(echo -n "$novncd_public_port"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
-  novncd_host_escape="$(echo -n "$novncd_host"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
-
-  #TODO escape SED delimiter in variables
-  sed -i "s|^\\(TIME_ZONE = \\).*|\\1$tzone_escape|" "$APP_PATH/webvirtcloud/settings.py"
-  sed -i "s|^\\(SECRET_KEY = \\).*|\\1\'$secret_key_escape\'|" "$APP_PATH/webvirtcloud/settings.py"
-  sed -i "s|^\\(WS_PORT = \\).*|\\1$novncd_port_escape|" "$APP_PATH/webvirtcloud/settings.py"
-  sed -i "s|^\\(WS_PUBLIC_PORT = \\).*|\\1$novncd_public_port_escape|" "$APP_PATH/webvirtcloud/settings.py"
-  sed -i "s|^\\(WS_HOST = \\).*|\\1\'$novncd_host_escape\'|" "$APP_PATH/webvirtcloud/settings.py"
-
-  # set CSRF TRUSTED ORIGINS
-  host_ip="'http://127.0.0.1', "
-  if command -v hostname >/dev/null 2>&1; then
-    for i in $(hostname -I 2>/dev/null); do
-      host_ip+="'http://$i', " 
-    done
-  fi
-  sed -i "s|^\\(CSRF_TRUSTED_ORIGINS = \\).*|\\1\[ \'http://$fqdn\', $host_ip ]|" "$APP_PATH/webvirtcloud/settings.py"
+  # shellcheck source=conf/install-lib.sh
+  . "$APP_PATH/conf/install-lib.sh"
 
   echo "* Checking up Python3 version."
   check_python
+
+  echo "* Ensuring Django secret key (data/secret_key, kept across re-runs)."
+  wvc_ensure_secret_key "$APP_PATH/data" "$PYTHON" || { echo "The secret key could not be written." >&2; exit 1; }
+
+  echo "* Configuring settings.py file."
+  if wvc_ensure_settings "$APP_PATH/webvirtcloud/settings.py.template" "$APP_PATH/webvirtcloud/settings.py" >/dev/null; then
+    # first install only: apply instance values. SECRET_KEY is NOT written here;
+    # settings.py reads data/secret_key, so the key persists across re-runs.
+    tzone_escape="$(echo -n "$tzone"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
+    novncd_port_escape="$(echo -n "$novncd_port"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
+
+    #TODO escape SED delimiter in variables
+    sed -i "s|^\\(TIME_ZONE = \\).*|\\1$tzone_escape|" "$APP_PATH/webvirtcloud/settings.py"
+    sed -i "s|^\\(WS_PORT = \\).*|\\1$novncd_port_escape|" "$APP_PATH/webvirtcloud/settings.py"
+
+    # set CSRF TRUSTED ORIGINS
+    host_ip="'http://127.0.0.1', "
+    if command -v hostname >/dev/null 2>&1; then
+      for i in $(hostname -I 2>/dev/null); do
+        host_ip+="'http://$i', "
+      done
+    fi
+    sed -i "s|^\\(CSRF_TRUSTED_ORIGINS = \\).*|\\1\[ \'http://$fqdn\', $host_ip ]|" "$APP_PATH/webvirtcloud/settings.py"
+    # shellcheck disable=SC2046
+    allowed_hosts="$(wvc_allowed_hosts "$fqdn" $(hostname -I 2>/dev/null))"
+    sed -i "s|^ALLOWED_HOSTS = .*|ALLOWED_HOSTS = $allowed_hosts|" "$APP_PATH/webvirtcloud/settings.py"
+  else
+    echo "* Keeping existing settings.py (not overwritten)."
+  fi
+
+  # Restrict modes before the long-running pip/migrate steps, so settings and the
+  # key are not left world-readable during installation. The db is hardened again
+  # after migrate creates it.
+  wvc_harden_modes "$APP_PATH/webvirtcloud/settings.py" "" "$APP_PATH/data"
 
   echo "* Activate virtual environment."
   activate_python_environment
 
   echo "* Install App's Python requirements."
-  pip3 install -U pip
-  pip3 install -r conf/requirements.txt -q
+  pip3 install -U pip || exit 1
+  pip3 install -r conf/requirements.txt -q || { echo "Installing the Python requirements failed." >&2; exit 1; }
 
   chown -R "$nginx_group":"$nginx_group" "$APP_PATH"
 
+  # the services' environment (PostgreSQL, SECRET_KEY): migrate must reach their database
+  if [ -f /etc/default/webvirtcloud ]; then
+    # -v traces every command: the file's passwords stay out of that trace
+    case $- in *x*) trace=true; set +x ;; *) trace=false ;; esac
+    # shellcheck source=/dev/null
+    set -a; . /etc/default/webvirtcloud; set +a
+    if $trace; then set -x; fi
+  fi
+
   echo "* Django Migrate."
-  log "$PYTHON $APP_PATH/manage.py migrate"
+  log "$PYTHON $APP_PATH/manage.py migrate" || { echo "manage.py migrate failed: see /var/log/webvirtcloud-install.log." >&2; exit 1; }
 
   echo "* Django Collect Static"
-  log "$PYTHON $APP_PATH/manage.py collectstatic --noinput"
+  log "$PYTHON $APP_PATH/manage.py collectstatic --noinput" || { echo "manage.py collectstatic failed: see /var/log/webvirtcloud-install.log." >&2; exit 1; }
+
+  echo "* Restricting file modes on secret, settings and database."
+  wvc_harden_modes "$APP_PATH/webvirtcloud/settings.py" "$APP_PATH/db.sqlite3" "$APP_PATH/data"
 
   chown -R "$nginx_group":"$nginx_group" "$APP_PATH"
 }
 
 set_firewall () {
   if test -n "$(command -v firewall-cmd)" && test "$(firewall-cmd --state)" == "running"; then
-    echo "* Configuring firewall to allow HTTP & novnc traffic."
+    echo "* Configuring firewall to allow HTTP traffic."
     log "firewall-cmd --zone=public --add-port=http/tcp --permanent"
-    log "firewall-cmd --zone=public --add-port=$novncd_port/tcp --permanent"
-    #firewall-cmd --zone=public --add-port=$novncd_port/tcp --permanent
-    log "firewall-cmd --zone=public --add-port=$novncd_public_port/tcp --permanent"
-    #firewall-cmd --zone=public --add-port=$novncd_public_port/tcp --permanent
     log "firewall-cmd --reload"
     #firewall-cmd --reload
   fi
 }
 
+# A file context rule (type, path pattern): added, or changed on a re-run
+selinux_label () {
+  semanage fcontext -a -t "$1" "$2" 2>/dev/null || semanage fcontext -m -t "$1" "$2"
+}
+
 set_selinux () {
-  #Check if SELinux is enforcing
-  if [ "$(getenforce)" == "Enforcing" ]; then
+  if selinuxenabled 2>/dev/null; then
     echo "* Configuring SELinux."
-    #Sets SELinux context type so that scripts running in the web server process are allowed read/write access
-    chcon -R -h -t httpd_sys_rw_content_t "$APP_PATH/"
-    setsebool -P httpd_can_network_connect 1
+    # nginx reads the static files and systemd runs the venv's programs; rules
+    # rather than chcon, so that a relabel keeps the labels
+    selinux_label httpd_sys_content_t "$APP_PATH(/.*)?" &&
+      selinux_label bin_t "$APP_PATH/venv/bin(/.*)?" &&
+      restorecon -R "$APP_PATH" &&
+      setsebool -P httpd_can_network_connect 1 || exit 1
   fi
 }
 
@@ -372,20 +362,10 @@ set_hosts () {
   fi
 }
 
-restart_supervisor () {
-  echo "* Setting Supervisor to start on boot and restart."
-  log "systemctl enable $supervisor_service"
-  #systemctl enable $supervisor_service
-  log "systemctl restart $supervisor_service"
-  #systemctl restart $supervisor_service
-}
-
 restart_nginx () {
   echo "* Setting Nginx to start on boot and starting Nginx."
-  log "systemctl enable nginx.service"
-  #systemctl enable nginx.service
-  log "systemctl restart nginx.service"
-  #systemctl restart nginx.service
+  # nginx is not enabled on RHEL and openSUSE, and Debian's runs the default site until a reload
+  nginx -t && systemctl enable nginx.service && systemctl restart nginx.service || exit 1
 }
 
 
@@ -435,66 +415,31 @@ case $distro in
     distro=ubuntu
     nginx_group=www-data
     nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
-    supervisor_service=supervisor
-    supervisor_conf_path=/etc/supervisor/conf.d
-    supervisor_file_name=webvirtcloud.conf
     ;;
   *debian*)
     echo "  The installer has detected $distro version $version codename $codename."
     distro=debian
     nginx_group=www-data
     nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
-    supervisor_service=supervisor
-    supervisor_conf_path=/etc/supervisor/conf.d
-    supervisor_file_name=webvirtcloud.conf
+    ;;
+  *openEuler*)
+    echo "  The installer has detected $distro version $version."
+    distro=openEuler
+    nginx_group=nginx
+    nginx_conf=centos
+    nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
     ;;
   *centos*|*redhat*|*ol*|*rhel*|*rocky*|*Rocky*|*alma*)
     echo "  The installer has detected $distro version $version."
     distro=centos
     nginx_group=nginx
     nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
-    supervisor_service=supervisord
-    supervisor_conf_path=/etc/supervisord.d
-    supervisor_file_name=webvirtcloud.ini
     ;;
   *opensuse*|*sles*|*sled*|*suse*)
     echo "  The installer has detected $distro version $version."
     distro=suse
     nginx_group=nginx
     nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
-    supervisor_service=supervisord
-    supervisor_conf_path=/etc/supervisord.d
-    supervisor_file_name=webvirtcloud.ini
-    ;;
-  *Uos*|*uos*)
-    # codename may be fuyu, kongzi, eagle or empty string.
-    output_expand=""
-    if test -n "${codename}"; then
-      output_expand=" codename ${codename}"
-    fi
-    echo "  The installer has detected $distro version $version${output_expand}."
-    distro=uos
-    nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
-    if test "${codename}" == "eagle"; then
-      nginx_group=www-data
-      supervisor_service=supervisor
-      supervisor_conf_path=/etc/supervisor/conf.d
-      supervisor_file_name=webvirtcloud.conf
-    else
-      nginx_group=nginx
-      supervisor_service=supervisord
-      supervisor_conf_path=/etc/supervisord.d
-      supervisor_file_name=webvirtcloud.ini
-    fi
-    ;;
-  *OpenEuler*|*openEuler*)
-    echo "  The installer has detected $distro version $version."
-    distro=openEuler
-    nginx_group=nginx
-    nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
-    supervisor_service=supervisord
-    supervisor_conf_path=/etc/supervisord.d
-    supervisor_file_name=webvirtcloud.ini
     ;;
   *)
     if [[ "$id_like" =~ suse ]]; then
@@ -502,15 +447,15 @@ case $distro in
       distro=suse
       nginx_group=nginx
       nginxfile=/etc/nginx/conf.d/$APP_NAME.conf
-      supervisor_service=supervisord
-      supervisor_conf_path=/etc/supervisord.d
-      supervisor_file_name=webvirtcloud.ini
     else
       echo "  The installer was unable to determine your OS. Exiting for safety."
       exit 1
     fi
     ;;
 esac
+
+# the main nginx config of the distro family
+nginx_conf="${nginx_conf:-$distro}"
 
 fqdn="localhost"
 setupfqdn=default
@@ -548,38 +493,23 @@ fi
 echo "     Setting novnc service port $novncd_port"
 echo ""
 
-echo -n "  Q. NOVNC public port number for reverse proxy(e.g: 80 or 443)?(Default: 6080) "
-read -r novncd_public_port
-if [ -z "$novncd_public_port" ]; then
-  readonly novncd_public_port=6080
-fi
-echo "     Setting novnc public port $novncd_public_port"
-echo ""
-
-echo -n "  Q. NOVNC host listen ip?(Default: 0.0.0.0) "
-read -r novncd_host
-if [ -z "$novncd_host" ]; then
-  readonly novncd_host="0.0.0.0"
-fi
-echo "     Setting novnc host ip $novncd_host"
-echo ""
-
 echo "========="
 echo "distro: ${distro}"
 echo "========="
 case $distro in
   debian)
   debian_major="${version%%.*}"
-  if [[ -n "$debian_major" && "$debian_major" -ge 9 ]]; then
-    # Install for Debian 9.x / 10.x / 11.x / 12.x
+  if [[ -n "$debian_major" && "$debian_major" -ge 12 ]]; then
+    # Install for Debian 12 and later
     tzone=\'$(get_timezone)\'
 
     echo -n "* Updating installed packages."
-    log "apt-get update && apt-get -y upgrade" & pid=$!
+    log "apt-get update" & pid=$!
     progress
+    wait "$pid" || { echo "Updating the package lists failed." >&2; exit 1; }
 
     echo "*  Installing OS requirements."
-    PACKAGES="git python3-venv python3-virtualenv python3-pip python3-dev python3-lxml libvirt-dev zlib1g-dev libxslt1-dev libsasl2-dev libldap2-dev nginx supervisor smbios-utils libsasl2-modules gcc pkg-config python3-guestfs uuid"
+    PACKAGES="git python3-venv python3-virtualenv python3-pip python3-dev python3-lxml python3-libvirt libvirt-dev zlib1g-dev libxslt1-dev nginx libsasl2-modules gcc pkg-config python3-guestfs"
     
     install_packages
     
@@ -590,10 +520,9 @@ case $distro in
     echo "* Configuring Nginx."
     configure_nginx
 
-    echo "* Configuring Supervisor."
-    configure_supervisor
+    echo "* Configuring systemd."
+    configure_systemd
 
-    restart_supervisor
     restart_nginx
   else
     echo "Unsupported Debian version. Version found: $version"
@@ -601,16 +530,17 @@ case $distro in
   fi
   ;;
   ubuntu)
-  if [[ "$version" =~ ^(18|20|22|24) ]]; then
-    # Install for Ubuntu 18 / 20 / 22 / 24
+  if [[ "$version" =~ ^(22|24|26)\. ]]; then
+    # Install for Ubuntu 22.04 / 24.04 / 26.04
     tzone=\'$(get_timezone)\'
 
     echo -n "* Updating installed packages."
-    log "apt-get update && apt-get -y upgrade" & pid=$!
+    log "apt-get update" & pid=$!
     progress
+    wait "$pid" || { echo "Updating the package lists failed." >&2; exit 1; }
 
     echo "*  Installing OS requirements."
-    PACKAGES="git python3-venv python3-virtualenv python3-pip python3-dev python3-lxml libvirt-dev zlib1g-dev libxslt1-dev libsasl2-dev libldap2-dev nginx supervisor libsasl2-modules gcc pkg-config python3-guestfs"
+    PACKAGES="git python3-venv python3-virtualenv python3-pip python3-dev python3-lxml python3-libvirt libvirt-dev zlib1g-dev libxslt1-dev nginx libsasl2-modules gcc pkg-config python3-guestfs"
     install_packages
 
     set_hosts
@@ -620,10 +550,9 @@ case $distro in
     echo "* Configuring Nginx."
     configure_nginx
 
-    echo "* Configuring Supervisor."
-    configure_supervisor
+    echo "* Configuring systemd."
+    configure_systemd
 
-    restart_supervisor
     restart_nginx
   else
     echo "Unsupported Ubuntu version. Version found: $version"
@@ -633,7 +562,7 @@ case $distro in
   centos)
   if [[ "$version" =~ ^10  ]]; then
     # Install for CentOS/Redhat 10
-    tzone=\'$(timedatectl|grep "Time zone"| awk '{print $3}')\'
+    tzone=\'$(get_timezone)\'
 
     if command -v "crb" >/dev/null 2>&1; then
       echo "* CRB Repo is found, enabling it."
@@ -643,77 +572,40 @@ case $distro in
       log "dnf config-manager --set-enabled crb"
     fi
 
-    echo "* Adding wget & epel-release & supervisor repository."
-    log "yum -y install wget epel-release supervisor"
+    echo "* Adding wget & epel-release repository."
+    log "yum -y install wget epel-release"
 
     echo "* Installing OS requirements."
-    PACKAGES="git python3-virtualenv python3-devel libvirt-devel python3-libvirt python3-ldap glibc gcc nginx python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5 openldap-devel cyrus-sasl-devel openssl-devel"
+    PACKAGES="git hostname python3-devel libvirt-devel python3-libvirt glibc gcc nginx python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5 openssl-devel policycoreutils-python-utils"
     install_packages
 
     set_hosts
 
-    echo "* Configuring virtualenv."
-    log "pip3 install virtualenv"
     install_webvirtcloud
 
     echo "* Configuring Nginx."
     configure_nginx
 
-    echo "* Configuring Supervisor."
-    log "pip3 install supervisor "
-    configure_supervisor
-    
-    set_firewall 
-    
+    set_firewall
+
     set_selinux
 
-    restart_supervisor
+    echo "* Configuring systemd."
+    configure_systemd
+
     restart_nginx
-    
   else
     echo "Unsupported RHEL Based OS($distro) version. Version found: $version"
     exit 1
   fi
   ;;
-  uos)
-  if [[ "$version" == "20" ]]; then
-    # Install for uos 20
-    tzone=\'$(timedatectl|grep "Time zone"| awk '{print $3}')\'
-
-    echo "* Installing OS requirements."
-    if test "${codename}" == "eagle"; then
-      PACKAGES="git virtualenv python3-virtualenv python3-dev python3-lxml libvirt-dev zlib1g-dev libxslt1-dev nginx libsasl2-modules gcc pkg-config python3-guestfs uuid"
-    else
-      PACKAGES="git python3-virtualenv python3-devel python3-pip libvirt-devel glibc gcc nginx python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5"
-    fi
-    install_packages
-
-    set_hosts
-
-    install_webvirtcloud
-
-    echo "* Configuring Nginx."
-    configure_nginx
-
-    echo "* Configuring Supervisor."
-    log "pip install supervisor "
-    configure_supervisor
-
-    set_firewall
-
-    set_selinux
-
-    restart_supervisor
-    restart_nginx
-  fi
-  ;;
   openEuler)
-  if [[ "$version" == "20.03" ]]; then
-    # Install for openEuler 20.03
-    tzone=\'$(timedatectl|grep "Time zone"| awk '{print $3}')\'
+  if [[ "$version" =~ ^24\. ]]; then
+    # Install for openEuler 24.03 LTS
+    tzone=\'$(get_timezone)\'
 
     echo "* Installing OS requirements."
-    PACKAGES="git python3-virtualenv python3-devel python3-pip libvirt-devel glibc gcc nginx python3-lxml python3-libguestfs iproute-tc cyrus-sasl-md5"
+    PACKAGES="git hostname python3-devel libvirt-devel python3-libvirt glibc gcc nginx python3-lxml python3-libguestfs iproute cyrus-sasl openssl-devel policycoreutils-python-utils"
     install_packages
 
     set_hosts
@@ -723,16 +615,17 @@ case $distro in
     echo "* Configuring Nginx."
     configure_nginx
 
-    echo "* Configuring Supervisor."
-    log "pip install supervisor "
-    configure_supervisor
-
     set_firewall
 
     set_selinux
 
-    restart_supervisor
+    echo "* Configuring systemd."
+    configure_systemd
+
     restart_nginx
+  else
+    echo "Unsupported openEuler version (24.03 LTS is supported). Version found: $version"
+    exit 1
   fi
   ;;
   suse)
@@ -742,76 +635,29 @@ case $distro in
     echo -n "* Updating installed packages."
     log "zypper --non-interactive refresh" & pid=$!
     progress
+    wait "$pid" || { echo "Updating the package lists failed." >&2; exit 1; }
 
     echo "* Installing OS requirements."
-    # On SUSE, install Python 3.11 stack to satisfy Python >= 3.10 requirement along with native libvirt and ldap bindings
+    # On SUSE, install Python 3.11 stack to satisfy Python >= 3.10 requirement along with the native libvirt bindings
     if zypper se -s python311-devel >/dev/null 2>&1; then
-      PACKAGES="git hostname python311 python311-base python311-devel python311-pip python311-libvirt-python python311-lxml python311-ldap libvirt-devel cyrus-sasl-devel libopenssl-devel gcc pkg-config nginx"
+      PACKAGES="git hostname python311 python311-base python311-devel python311-pip python311-libvirt-python python311-lxml libvirt-devel libopenssl-devel gcc pkg-config nginx"
     else
-      PACKAGES="git hostname python3-devel python3-pip python3-virtualenv libvirt-devel python3-libvirt python3-lxml openldap2-devel cyrus-sasl-devel libopenssl-devel gcc pkg-config nginx"
+      PACKAGES="git hostname python3-devel python3-pip python3-virtualenv libvirt-devel python3-libvirt python3-lxml libopenssl-devel gcc pkg-config nginx"
     fi
     install_packages
 
     set_hosts
-
-    # Supervisor on SUSE (available as python3-supervisor, supervisor, or via pip)
-    if ! command -v supervisord >/dev/null 2>&1; then
-      if zypper --non-interactive install -y python3-supervisor >/dev/null 2>&1; then
-        echo "  * python3-supervisor installed via zypper"
-      elif zypper --non-interactive install -y supervisor >/dev/null 2>&1; then
-        echo "  * supervisor installed via zypper"
-      else
-        echo "  * Installing supervisor via pip3"
-        log "pip3 install supervisor"
-      fi
-    fi
-
-    # Ensure /etc/supervisord.d directory exists and is included in supervisord.conf
-    mkdir -p /etc/supervisord.d
-    if [ ! -f /etc/supervisord.conf ] && [ ! -f /etc/supervisor/supervisord.conf ]; then
-      if command -v echo_supervisord_conf >/dev/null 2>&1; then
-        echo_supervisord_conf > /etc/supervisord.conf
-        echo -e "\n[include]\nfiles = /etc/supervisord.d/*.ini\n" >> /etc/supervisord.conf
-      fi
-    elif [ -f /etc/supervisord.conf ] && ! grep -q "/etc/supervisord.d" /etc/supervisord.conf; then
-      echo -e "\n[include]\nfiles = /etc/supervisord.d/*.ini\n" >> /etc/supervisord.conf
-    fi
-
-    # Ensure systemd service for supervisord exists if installed via pip
-    if [ ! -f /usr/lib/systemd/system/supervisord.service ] && [ ! -f /etc/systemd/system/supervisord.service ]; then
-      supervisord_bin="$(command -v supervisord 2>/dev/null || echo "/usr/local/bin/supervisord")"
-      supervisorctl_bin="$(command -v supervisorctl 2>/dev/null || echo "/usr/local/bin/supervisorctl")"
-      cat > /etc/systemd/system/supervisord.service <<SVCEOF
-[Unit]
-Description=Process Monitoring and Control Daemon
-After=network.target
-
-[Service]
-Type=forking
-ExecStart=${supervisord_bin} -c /etc/supervisord.conf
-ExecStop=${supervisorctl_bin} shutdown
-ExecReload=${supervisorctl_bin} reload
-KillMode=process
-Restart=on-failure
-RestartSec=42s
-
-[Install]
-WantedBy=multi-user.target
-SVCEOF
-      systemctl daemon-reload >/dev/null 2>&1 || true
-    fi
 
     install_webvirtcloud
 
     echo "* Configuring Nginx."
     configure_nginx
 
-    echo "* Configuring Supervisor."
-    configure_supervisor
-
     set_firewall
 
-    restart_supervisor
+    echo "* Configuring systemd."
+    configure_systemd
+
     restart_nginx
     ;;
 esac
@@ -819,6 +665,7 @@ esac
 
 echo ""
 echo "  ***Open http://$fqdn to login to webvirtcloud.***"
+echo "  The admin password: cat $APP_PATH/data/admin_password"
 echo ""
 echo ""
 echo "* Cleaning up..."

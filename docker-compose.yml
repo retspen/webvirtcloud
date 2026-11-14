@@ -1,28 +1,48 @@
 services:
   webvirtcloud:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     image: webvirtcloud:latest
     container_name: webvirtcloud
     restart: unless-stopped
+    # above supervisord's 80 s for the worker, which drains its jobs for 60 s
+    stop_grace_period: 95s
+    # every request is a line of gunicorn's access log: kept to 5 files of 10 MB, as the panel's own log
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
     ports:
       - "80:80"
-      - "6080:6080"
     environment:
       # Optional: custom Django secret key. If unset, automatically generated at first launch.
       # - SECRET_KEY=your-custom-secret-key-here
       # Optional: comma-separated trusted CSRF origins (e.g. http://wvc.example.com,https://wvc.example.com)
       # - CSRF_TRUSTED_ORIGINS=http://localhost,http://127.0.0.1
+      # Optional: PostgreSQL instead of the bundled sqlite (also WEBVIRTCLOUD_DB_PORT/_NAME/_USER)
+      # - WEBVIRTCLOUD_DB_HOST=db.example.com
+      # - WEBVIRTCLOUD_DB_PASSWORD=change-me
+      # Optional: SMTP for e-mail OTP (also EMAIL_PORT, EMAIL_USE_TLS=0/1)
+      # - EMAIL_HOST=smtp.example.com
+      # - EMAIL_HOST_USER=webvirtcloud@example.com
+      # - EMAIL_HOST_PASSWORD=change-me
+      # Host names/IPs the panel is reached by (comma-separated; "*" accepts any).
+      # Without it only localhost works. Set it in docker-compose.override.yml.
+      - ALLOWED_HOSTS=localhost
+      # Time zone of the panel's dates and the daily backup (e.g. Europe/Istanbul)
       - TZ=UTC
     volumes:
       # Persistent SQLite database and runtime data
       - webvirtcloud-data:/srv/webvirtcloud/data
       # Persistent SSH keys for compute node authentication
       - webvirtcloud-ssh:/var/www/.ssh
+      # Persistent TLS client certificates for TLS computes (.pki/libvirt)
+      - webvirtcloud-pki:/var/www/.pki
+      # Daily backups of the database, keys and certificates (manage.py backup)
+      - webvirtcloud-backups:/srv/webvirtcloud/backups
 
 volumes:
   webvirtcloud-data:
-    driver: local
   webvirtcloud-ssh:
-    driver: local
+  webvirtcloud-pki:
+  webvirtcloud-backups:
