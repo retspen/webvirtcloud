@@ -69,6 +69,12 @@ class BulkMigrate(Kind):
         started, refused = {}, []  # VM: its migrate job; the VMs whose job was refused, and why
         ctx.record_intent()
         ctx.set_phase(gettext_noop("Migrating the VMs"))
+
+        def stop(text, **values):
+            """End the job failed; recovery, which the worker hands such a job, adds nothing."""
+            ctx.record_intent(stopped=True)
+            raise util.OperationError(text, **values)
+
         while True:
             running = list(Operation.objects.filter(pk__in=started.values(), state__in=Operation.ACTIVE)
                            .values_list("pk", flat=True))
@@ -81,11 +87,9 @@ class BulkMigrate(Kind):
             # the worker's slots may have been lowered: this job waits in one, its migrations need others;
             # once it ends, the migrations it queued run
             if parallel_limit() < 1:
-                raise util.OperationError(gettext_noop(
-                    "The worker now runs one job at a time: the VMs not yet started stay on the host"))
+                stop(gettext_noop("The worker now runs one job at a time: the VMs not yet started stay on the host"))
             if waiting and _where(p) != op.intent["where"]:
-                raise util.OperationError(gettext_noop(
-                    "A host was changed or deleted: the VMs not yet started stay on the host"))
+                stop(gettext_noop("A host was changed or deleted: the VMs not yet started stay on the host"))
             for pk in list(waiting):
                 if len(running) >= min(p["parallel"], parallel_limit()):
                     break
@@ -114,7 +118,7 @@ class BulkMigrate(Kind):
                        .values_list("pk", flat=True))
         failed = refused + [names[vm] for vm, job in started.items() if job not in migrated]
         if failed:
-            raise util.OperationError(gettext_noop("These VMs did not migrate: %(vms)s"), vms=", ".join(failed))
+            stop(gettext_noop("These VMs did not migrate: %(vms)s"), vms=", ".join(failed))
         return {}
 
     def progress(self, op):
@@ -125,6 +129,8 @@ class BulkMigrate(Kind):
         """run sees the cancel and cancels the migrations that run."""
 
     def reconcile(self, op):
+        if op.intent.get("stopped"):
+            return Outcome(Operation.FAILED)  # its own error says why
         return Outcome(Operation.FAILED, error=utils.say(gettext_noop(
             "The bulk migration stopped: the migrations it started go on as their own jobs; the other VMs stay")))
 

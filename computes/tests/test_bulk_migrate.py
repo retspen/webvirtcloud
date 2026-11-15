@@ -138,6 +138,7 @@ class BulkMigrateJobTests(TestCase):
                 job.state = ends(job)
                 job.save()
 
+        self.op = op
         with patch("computes.jobs.time.sleep", side_effect=round_ends):
             try:
                 return BulkMigrate().run(op, Ctx(op)), max(most)
@@ -154,6 +155,13 @@ class BulkMigrateJobTests(TestCase):
         with self.assertRaisesRegex(util.OperationError, "did not migrate"):
             self.run_job(1, lambda job: Operation.FAILED if job.params["instance"] == fail else Operation.SUCCEEDED)
         self.assertEqual(self.migrations.count(), 3)
+        # the worker hands a failed job that made changes to recovery: it adds no "stopped" message
+        outcome = BulkMigrate().reconcile(self.op)
+        self.assertEqual((outcome.state, outcome.error), (Operation.FAILED, []))
+
+    def test_a_bulk_migration_the_worker_left_says_it_stopped(self):
+        op = Operation(kind="host.bulk_migrate", intent={"migrations": {}})
+        self.assertIn("stopped", BulkMigrate().reconcile(op).error[0]["text"])
 
     def test_a_create_waits_for_the_migrations(self):
         Operation.objects.all().delete()
