@@ -41,6 +41,12 @@ def reconcile_key(compute_id):
     return f"reconcile:{compute_id}"
 
 
+def evacuate_key():
+    """The evacuations: one at a time. One waits in a worker slot for its
+    migrations; several could take every slot and leave none for them."""
+    return "evacuate"
+
+
 def instance_key(uuid):
     return f"instance:{uuid}"
 

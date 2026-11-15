@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 21:31+0000\n"
+"POT-Creation-Date: 2026-11-15 14:47+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -61,7 +61,8 @@ msgstr "公钥已存在"
 msgid "Invalid key"
 msgstr "无效的密钥"
 
-#: accounts/forms.py:95 computes/templates/computes/instances.html:45
+#: accounts/forms.py:95 computes/templates/computes/evacuate.html:43
+#: computes/templates/computes/instances.html:46
 #: instances/templates/add_instance_volume.html:39
 #: instances/templates/allinstances_index_grouped.html:11
 #: instances/templates/allinstances_index_nongrouped.html:6
@@ -703,7 +704,7 @@ msgstr "在列表中查看所有虚拟机和主机（只读）"
 #: admin/forms.py:89 admin/templates/admin/logs.html:39
 #: admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:34
-#: computes/templates/computes/instances.html:46
+#: computes/templates/computes/instances.html:47
 #: instances/templates/add_instance_owner_block.html:17
 #: instances/templates/instances/stats_tab.html:70
 #: operations/templates/operations/job.html:21
@@ -744,7 +745,8 @@ msgstr "NEW_USER_DEFAULT_INSTANCES：%(name)s 已有所有者，且只允许一�
 msgid "vCPUs"
 msgstr "vCPU"
 
-#: admin/forms.py:209 computes/templates/computes/instances.html:49
+#: admin/forms.py:209 computes/templates/computes/evacuate.html:46
+#: computes/templates/computes/instances.html:50
 #: computes/templates/computes/list.html:59 computes/templates/overview.html:66
 #: computes/templates/overview.html:150
 #: instances/templates/allinstances_index_grouped.html:17
@@ -1823,7 +1825,7 @@ msgstr "其他"
 msgid "Stored, leave empty to keep"
 msgstr "已保存，留空则保持不变"
 
-#: computes/forms.py:31 computes/templates/computes/instances.html:45
+#: computes/forms.py:31 computes/templates/computes/instances.html:46
 #: instances/templates/instances/settings_tab.html:872
 #: instances/templates/instances/settings_tab.html:904
 #: instances/templates/instances/snapshots_tab.html:27
@@ -1870,6 +1872,44 @@ msgstr "本地"
 #: computes/forms.py:81 computes/templates/create_comp_block.html:22
 msgid "the libvirt of the host the panel runs on, by its socket"
 msgstr "面板所在主机的 libvirt，通过其套接字连接"
+
+#: computes/jobs.py:39
+msgid "Evacuate host"
+msgstr "疏散主机"
+
+#: computes/jobs.py:50
+msgid "Choose the VMs to migrate"
+msgstr "请选择要迁移的虚拟机"
+
+#: computes/jobs.py:52
+#, python-format
+msgid "At most %(limit)s migrations can run at once"
+msgstr "最多可同时运行 %(limit)s 个迁移"
+
+#: computes/jobs.py:71
+msgid "Migrating the VMs"
+msgstr "正在迁移虚拟机"
+
+#: computes/jobs.py:84
+msgid ""
+"The worker now runs one job at a time: the VMs not yet started stay on the "
+"host"
+msgstr "任务执行器现在一次只运行一个任务：尚未开始的虚拟机留在主机上"
+
+#: computes/jobs.py:87
+msgid "A host was changed or deleted: the VMs not yet started stay on the host"
+msgstr "有主机被修改或删除：尚未开始的虚拟机留在主机上"
+
+#: computes/jobs.py:111
+#, python-format
+msgid "These VMs did not migrate: %(vms)s"
+msgstr "以下虚拟机未能迁移：%(vms)s"
+
+#: computes/jobs.py:119
+msgid ""
+"The evacuation stopped: the migrations it started go on as their own jobs; "
+"the other VMs stay"
+msgstr "疏散已停止：已启动的迁移作为各自的任务继续进行；其他虚拟机保持不动"
 
 #: computes/models.py:21
 msgid "hostname"
@@ -2025,6 +2065,73 @@ msgstr "已关机虚拟机的 vCPU"
 msgid "%(stopped)s of the host's %(cpus)s CPUs"
 msgstr "占主机 %(cpus)s 个 CPU 中的 %(stopped)s"
 
+#: computes/templates/computes/evacuate.html:5
+#: computes/templates/computes/evacuate.html:6
+#: computes/templates/computes/instances.html:15
+msgid "Evacuate"
+msgstr "疏散"
+
+#: computes/templates/computes/evacuate.html:15 instances/views.py:379
+msgid "There is no other host to migrate to."
+msgstr "没有其他可迁移到的主机。"
+
+#: computes/templates/computes/evacuate.html:17
+msgid ""
+"Each chosen VM migrates in a job of its own: a running VM live, a shut-off "
+"one offline. A VM that fails stays on this host."
+msgstr "每台选中的虚拟机在各自的任务中迁移：运行中的虚拟机在线迁移，已关机的离线迁移。迁移失败的虚拟机留在此主机上。"
+
+#: computes/templates/computes/evacuate.html:20
+msgid "Destination"
+msgstr "目标主机"
+
+#: computes/templates/computes/evacuate.html:25
+msgid "Check"
+msgstr "检查"
+
+#: computes/templates/computes/evacuate.html:28
+msgid ""
+"The worker runs one job at a time: set Worker Concurrency to 2 or more on the"
+" Settings page."
+msgstr "任务执行器一次只运行一个任务：请在设置页面将工作进程并发数设为 2 或更大。"
+
+#: computes/templates/computes/evacuate.html:30
+msgid "The host has no VMs."
+msgstr "此主机没有虚拟机。"
+
+#: computes/templates/computes/evacuate.html:36
+msgid "Also migrate the shut-off VMs"
+msgstr "同时迁移已关机的虚拟机"
+
+#: computes/templates/computes/evacuate.html:42
+#: computes/templates/computes/evacuate.html:74
+#: instances/templates/instances/settings_tab.html:60
+#: instances/templates/instances/settings_tab.html:617
+#: instances/templates/instances/settings_tab.html:620
+msgid "Migrate"
+msgstr "迁移"
+
+#: computes/templates/computes/evacuate.html:44
+#: computes/templates/computes/instances.html:48
+#: instances/templates/allinstances_index_grouped.html:12
+#: instances/templates/allinstances_index_nongrouped.html:10
+msgid "Status"
+msgstr "状态"
+
+#: computes/templates/computes/evacuate.html:45
+#: computes/templates/computes/instances.html:49
+msgid "VCPU"
+msgstr "VCPU"
+
+#: computes/templates/computes/evacuate.html:68
+msgid "Migrations at once"
+msgstr "同时迁移数"
+
+#: computes/templates/computes/evacuate.html:73
+#, python-format
+msgid "Migrate the chosen VMs from %(source)s to %(dest)s?"
+msgstr "将选中的虚拟机从 %(source)s 迁移到 %(dest)s？"
+
 #: computes/templates/computes/form.html:5
 msgid "Edit host"
 msgstr "编辑主机"
@@ -2154,31 +2261,21 @@ msgstr "设备"
 msgid "New Instance"
 msgstr "新建虚拟机"
 
-#: computes/templates/computes/instances.html:30
+#: computes/templates/computes/instances.html:31
 #, python-format
 msgid "Problem occurred with host %(name)s: %(error)s"
 msgstr "主机 %(name)s 出现问题：%(error)s"
 
-#: computes/templates/computes/instances.html:36
+#: computes/templates/computes/instances.html:37
 #: computes/templates/computes/list.html:16
 msgid "Warning"
 msgstr "警告"
 
-#: computes/templates/computes/instances.html:37
+#: computes/templates/computes/instances.html:38
 msgid "Hypervisor doesn't have any Instances"
 msgstr "虚拟机管理程序中没有任何虚拟机"
 
-#: computes/templates/computes/instances.html:47
-#: instances/templates/allinstances_index_grouped.html:12
-#: instances/templates/allinstances_index_nongrouped.html:10
-msgid "Status"
-msgstr "状态"
-
-#: computes/templates/computes/instances.html:48
-msgid "VCPU"
-msgstr "VCPU"
-
-#: computes/templates/computes/instances.html:50
+#: computes/templates/computes/instances.html:51
 #: computes/templates/computes/list.html:60
 #: instances/templates/allinstances_index_grouped.html:18
 #: instances/templates/allinstances_index_nongrouped.html:16
@@ -2414,17 +2511,22 @@ msgid ""
 "/etc/default/webvirt-gstfsd"
 msgstr "请输入主机 /etc/default/webvirt-gstfsd 中 GSTFSD_KEY 的 64 个十六进制字符"
 
-#: computes/views.py:148
+#: computes/views.py:151
 #, python-format
 msgid "The host did not answer within %(seconds)s seconds"
 msgstr "主机未在 %(seconds)s 秒内响应"
 
-#: computes/views.py:236
+#: computes/views.py:274
+msgid ""
+"A disk file is not on storage both hosts share: migrate it from its page"
+msgstr "有磁盘文件不在两台主机共享的存储上：请在该虚拟机的页面上迁移它"
+
+#: computes/views.py:289
 #, python-format
 msgid "The host was saved, but the panel cannot connect to it: %(error)s"
 msgstr "主机已保存，但面板无法连接到它：%(error)s"
 
-#: computes/views.py:292
+#: computes/views.py:345
 #, python-format
 msgid ""
 "Its VMs keep running on the host and leave the panel; their owners are kept "
@@ -3140,74 +3242,74 @@ msgstr "虚拟机已迁移，但其 NVRAM 文件仍留在源主机上：%(error)
 msgid "Migrate VM"
 msgstr "迁移虚拟机"
 
-#: instances/jobs.py:1209
+#: instances/jobs.py:1212
 msgid "Migrating the VM"
 msgstr "正在迁移虚拟机"
 
-#: instances/jobs.py:1258
+#: instances/jobs.py:1261
 msgid "libvirt is still migrating the VM"
 msgstr "libvirt 仍在迁移虚拟机"
 
-#: instances/jobs.py:1270
+#: instances/jobs.py:1273
 msgid "The VM stayed on the source host"
 msgstr "虚拟机留在了源主机上"
 
-#: instances/jobs.py:1272
+#: instances/jobs.py:1275
 msgid ""
 "The VM is on both computes or on neither; check them, then resolve this job."
 msgstr "虚拟机同时位于两个计算节点上，或都不在；请检查后处理此任务。"
 
-#: instances/jobs.py:1291
+#: instances/jobs.py:1294
 msgid "Move disk"
 msgstr "移动磁盘"
 
-#: instances/jobs.py:1298
+#: instances/jobs.py:1301
 msgid "Choose a disk of the VM"
 msgstr "请选择虚拟机的一个磁盘"
 
-#: instances/jobs.py:1322
+#: instances/jobs.py:1325
 msgid "Copying the disk"
 msgstr "正在复制磁盘"
 
-#: instances/jobs.py:1364
+#: instances/jobs.py:1367
 #, python-format
 msgid "Another block job runs on %(dev)s; check the VM"
 msgstr "%(dev)s 上正在运行另一个块任务；请检查虚拟机"
 
-#: instances/jobs.py:1370
+#: instances/jobs.py:1373
 #, python-format
 msgid "The disk stayed in %(path)s; remove %(dest)s if it is there"
 msgstr "磁盘仍在 %(path)s；如果 %(dest)s 存在，请将其删除"
 
-#: instances/jobs.py:1372
+#: instances/jobs.py:1375
 #, python-format
 msgid "The definitions of %(dev)s name %(paths)s; check the VM"
 msgstr "%(dev)s 的定义指向 %(paths)s；请检查虚拟机"
 
-#: instances/jobs.py:1379
+#: instances/jobs.py:1382
 #, python-format
 msgid "Disk %(path)s was kept: a disk file that stays needs it"
 msgstr "磁盘 %(path)s 已保留：某个保留的磁盘文件依赖它"
 
-#: instances/jobs.py:1380
+#: instances/jobs.py:1383
 #, python-format
 msgid "The VM is removed, but disk %(path)s was not deleted: %(err)s"
 msgstr "虚拟机已删除，但磁盘 %(path)s 未被删除：%(err)s"
 
-#: instances/jobs.py:1381
+#: instances/jobs.py:1384
 #, python-format
 msgid "Disk %(path)s is used by another VM and was kept"
 msgstr "磁盘 %(path)s 正被另一台虚拟机使用，已保留"
 
-#: instances/jobs.py:1435
+#: instances/jobs.py:1438
 msgid "Delete VM"
 msgstr "删除虚拟机"
 
-#: instances/jobs.py:1465
+#: instances/jobs.py:1468
 msgid "Deleting the VM"
 msgstr "正在删除虚拟机"
 
-#: instances/jobs.py:1477
+#: instances/jobs.py:1480
 msgid "The VM was not deleted; it may have been shut off"
 msgstr "虚拟机未被删除；它可能已被关闭"
 
@@ -4775,12 +4877,6 @@ msgstr "网络"
 msgid "Host devices"
 msgstr "主机设备"
 
-#: instances/templates/instances/settings_tab.html:60
-#: instances/templates/instances/settings_tab.html:617
-#: instances/templates/instances/settings_tab.html:620
-msgid "Migrate"
-msgstr "迁移"
-
 #: instances/templates/instances/settings_tab.html:65
 msgid "XML"
 msgstr "XML"
@@ -5974,10 +6070,6 @@ msgstr " 其上的任务可在菜单的“任务”中跟踪。"
 #, python-format
 msgid "'%(name)s' is no longer on its host."
 msgstr "“%(name)s”已不在其主机上。"
-
-#: instances/views.py:379
-msgid "There is no other host to migrate to."
-msgstr "没有其他可迁移到的主机。"
 
 #: instances/views.py:381
 msgid "A VM migrates when it is running, paused or shut off."

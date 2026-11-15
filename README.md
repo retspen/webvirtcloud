@@ -32,7 +32,7 @@ WebVirtCloud and `virt-manager`/`virsh` can manage the same libvirt host **concu
 ## Features
 
 * QEMU/KVM hypervisor management (multiple compute nodes), with each host's capacity and what its VMs were given
-* Virtual machine lifecycle: create, delete, power management, clone (also of a running VM, with libvirt 11.10 or later), migrate (with or without shared storage), disk moves between pools
+* Virtual machine lifecycle: create, delete, power management, clone (also of a running VM, with libvirt 11.10 or later), migrate (with or without shared storage), evacuate a host (its chosen VMs migrate to another, the chosen number at once), disk moves between pools
 * Long operations (create, clone, delete, snapshots, migration, disk moves, ISO upload) run as jobs that the page follows; a queued job can be cancelled, and a running clone, migration, disk move or ISO upload too
 * External snapshots (memory optional; without memory, guest file systems can be frozen through the agent)
 * **External change detection:** VMs created, deleted or renamed via `virt-manager` or `virsh` are reconciled into the database automatically

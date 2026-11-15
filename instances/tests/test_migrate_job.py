@@ -58,8 +58,8 @@ class MigrateJobTestCase(TransactionTestCase):
         op = self.queue(live_migrate="true")
         self.assertEqual(set(Claim.objects.values_list("resource", "mode")), {
             (f"instance:{UUID}", "exclusive"), ("name:mig-vm", "exclusive"),
-            (f"compute:{self.source.pk}", "shared"), (f"reconcile:{self.source.pk}", "exclusive"),
-            (f"compute:{self.dest.pk}", "shared"), (f"reconcile:{self.dest.pk}", "exclusive")})
+            (f"compute:{self.source.pk}", "shared"), (f"reconcile:{self.source.pk}", "shared"),
+            (f"compute:{self.dest.pk}", "shared"), (f"reconcile:{self.dest.pk}", "shared")})
         self.dest_conn.moveto.assert_not_called()  # nothing ran in the request
         ctx = self.start(op)
         get_kind(op.kind).precheck(op, ctx)

@@ -194,6 +194,11 @@ UNREAD_DISKS = etree.XPath("devices/disk[@device='disk'][not(driver/@type='raw')
                            "devices/disk[@device='disk'][not(driver/@type='raw')]/source/@dev")
 
 
+# One use of NVRAM_DIR's pool at a time (_nvram_pool), on every host: a copy
+# holds two hosts' pools, and locks per host taken by migrations both ways
+# could deadlock. Reentrant, as that copy takes it twice.
+NVRAM_LOCK = threading.RLock()
+
 class wvmConnection(object):
     """
     class representing a single connection stored in the Connection Manager
@@ -1041,7 +1046,13 @@ class wvmConnect(object):
     @contextlib.contextmanager
     def _nvram_pool(self):
         """An active, refreshed pool on NVRAM_DIR: libvirt reads and deletes
-        files only as volumes of a pool. A transient one when none exists."""
+        files only as volumes of a pool. A transient one when none exists,
+        destroyed after: one use at a time (NVRAM_LOCK), as another would
+        take that pool for the host's and lose it midway."""
+        with NVRAM_LOCK:
+            yield from self._nvram_pool_unlocked()
+
+    def _nvram_pool_unlocked(self):
         pool = self.pool_at(NVRAM_DIR)
         if pool is not None:
             pool.refresh(0)

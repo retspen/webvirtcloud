@@ -16,13 +16,16 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.debug import sensitive_post_parameters
+from webvirtcloud.middleware import error_text
 from instances.models import Instance
 from instances.utils import read_list_rows, vm_states
-from libvirt import libvirtError
+from libvirt import VIR_DOMAIN_XML_INACTIVE, libvirtError
 from logs.audit import audit, changed_fields, snapshot
-from operations import claims
+from operations import claims, jobs
+from operations.utils import busy_message
 from vrtManager.connection import CONN_SOCKET, CONN_SSH, CONN_TCP, CONN_TLS
 from vrtManager.hostdetails import wvmHostDetails
+from vrtManager.instance import wvmInstances
 from vrtManager.storage import wvmStorages
 
 from computes.forms import (
@@ -224,6 +227,56 @@ def instances(request, compute_id):
         {"compute": compute, "instances": instances, "job_resource": claims.compute_key(compute.id),
          "states_url": reverse("instances:states") + f"?compute={compute.id}", "vm_states": states},
     )
+
+
+@superuser_only
+def evacuate(request, compute_id):
+    """Migrates the chosen VMs of the host to another in one job, for the
+    host's maintenance: a migrate job each, the chosen number at once; a
+    running VM live, a shut-off one offline. A VM with a disk file the two
+    hosts do not share is not offered: it takes a copy, chosen on its own
+    Migrate tab."""
+    from computes.jobs import parallel_limit
+    from instances.jobs import migration_target
+
+    compute = get_object_or_404(Compute, pk=compute_id)
+    targets = list(Compute.objects.exclude(pk=compute.pk).order_by("name"))
+    if request.method == "POST":
+        # the destination the form showed, not another one taken in its place
+        target = get_object_or_404(Compute.objects.exclude(pk=compute.pk), pk=request.POST.get("target", "") or None)
+        raw = {"compute": compute.pk, "target": target.pk, "parallel": request.POST.get("parallel", ""),
+               "instances": [pk for pk in request.POST.getlist("instance") if pk.isdigit()]}
+        try:
+            op = jobs.submit("host.evacuate", request.user, raw, request.POST.get("submission_key", ""))
+        except claims.Busy as busy:
+            messages.error(request, busy_message(busy, request.user))
+        except (ValueError, jobs.SubmissionConflict, libvirtError) as err:
+            messages.error(request, error_text(request, err))
+        else:
+            jobs.remember_job(request, op)
+            return redirect("instances", compute.pk)
+        return redirect(reverse("evacuate", args=[compute.pk]) + f"?target={target.pk}")
+
+    chosen = request.GET.get("target")
+    target = next((t for t in targets if str(t.pk) == chosen), targets[0] if targets else None)
+    utils.refresh_instance_database(compute)
+    instances = list(Instance.objects.filter(compute=compute).order_by("name"))
+    read_list_rows(instances, [compute])
+    dest = None
+    for instance in instances if target else ():
+        instance.refusal = None
+        try:
+            migration_target(instance, target.pk)
+            dest = dest or wvmInstances(target.hostname, target.login, target.password, target.type)
+            domain = instance.proxy.instance
+            for xml in (domain.XMLDesc(0), domain.XMLDesc(VIR_DOMAIN_XML_INACTIVE)):
+                if not all(disk["shared"] for disk in dest.disk_plan(instance.proxy, xml)):
+                    instance.refusal = _("A disk file is not on storage both hosts share: migrate it from its page")
+        except libvirtError as err:
+            instance.refusal = error_text(request, err)
+    return render(request, "computes/evacuate.html",
+                  {"compute": compute, "targets": targets, "target": target, "instances": instances,
+                   "parallel": range(1, parallel_limit() + 1)})
 
 
 # the form of each kind of compute, by Compute.type

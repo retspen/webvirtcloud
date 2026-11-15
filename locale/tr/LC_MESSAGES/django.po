@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 21:31+0000\n"
+"POT-Creation-Date: 2026-11-15 14:47+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -64,7 +64,8 @@ msgstr "Açık anahtar zaten mevcut"
 msgid "Invalid key"
 msgstr "Geçersiz anahtar"
 
-#: accounts/forms.py:95 computes/templates/computes/instances.html:45
+#: accounts/forms.py:95 computes/templates/computes/evacuate.html:43
+#: computes/templates/computes/instances.html:46
 #: instances/templates/add_instance_volume.html:39
 #: instances/templates/allinstances_index_grouped.html:11
 #: instances/templates/allinstances_index_nongrouped.html:6
@@ -723,7 +724,7 @@ msgstr "Listelerde tüm sanal makineleri ve sunucuları salt okunur görme"
 #: admin/forms.py:89 admin/templates/admin/logs.html:39
 #: admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:34
-#: computes/templates/computes/instances.html:46
+#: computes/templates/computes/instances.html:47
 #: instances/templates/add_instance_owner_block.html:17
 #: instances/templates/instances/stats_tab.html:70
 #: operations/templates/operations/job.html:21
@@ -767,7 +768,8 @@ msgstr ""
 msgid "vCPUs"
 msgstr "vCPU"
 
-#: admin/forms.py:209 computes/templates/computes/instances.html:49
+#: admin/forms.py:209 computes/templates/computes/evacuate.html:46
+#: computes/templates/computes/instances.html:50
 #: computes/templates/computes/list.html:59 computes/templates/overview.html:66
 #: computes/templates/overview.html:150
 #: instances/templates/allinstances_index_grouped.html:17
@@ -1886,7 +1888,7 @@ msgstr "Diğer"
 msgid "Stored, leave empty to keep"
 msgstr "Kayıtlı, korumak için boş bırakın"
 
-#: computes/forms.py:31 computes/templates/computes/instances.html:45
+#: computes/forms.py:31 computes/templates/computes/instances.html:46
 #: instances/templates/instances/settings_tab.html:872
 #: instances/templates/instances/settings_tab.html:904
 #: instances/templates/instances/snapshots_tab.html:27
@@ -1933,6 +1935,50 @@ msgstr "Yerel"
 #: computes/forms.py:81 computes/templates/create_comp_block.html:22
 msgid "the libvirt of the host the panel runs on, by its socket"
 msgstr "panelin çalıştığı sunucunun libvirt'i, soketi üzerinden"
+
+#: computes/jobs.py:39
+msgid "Evacuate host"
+msgstr "Sunucuyu boşalt"
+
+#: computes/jobs.py:50
+msgid "Choose the VMs to migrate"
+msgstr "Taşınacak sanal makineleri seçin"
+
+#: computes/jobs.py:52
+#, python-format
+msgid "At most %(limit)s migrations can run at once"
+msgstr "Aynı anda en fazla %(limit)s taşıma çalışabilir"
+
+#: computes/jobs.py:71
+msgid "Migrating the VMs"
+msgstr "Sanal makineler taşınıyor"
+
+#: computes/jobs.py:84
+msgid ""
+"The worker now runs one job at a time: the VMs not yet started stay on the "
+"host"
+msgstr ""
+"İş yürütücü artık aynı anda tek iş çalıştırıyor: henüz başlatılmamış sanal "
+"makineler sunucuda kalıyor"
+
+#: computes/jobs.py:87
+msgid "A host was changed or deleted: the VMs not yet started stay on the host"
+msgstr ""
+"Bir sunucu değiştirildi ya da silindi: henüz başlatılmamış sanal makineler "
+"sunucuda kalıyor"
+
+#: computes/jobs.py:111
+#, python-format
+msgid "These VMs did not migrate: %(vms)s"
+msgstr "Bu sanal makineler taşınamadı: %(vms)s"
+
+#: computes/jobs.py:119
+msgid ""
+"The evacuation stopped: the migrations it started go on as their own jobs; "
+"the other VMs stay"
+msgstr ""
+"Boşaltma durdu: başlattığı taşımalar kendi işleri olarak sürüyor; diğer sanal"
+" makineler yerinde kalıyor"
 
 #: computes/models.py:21
 msgid "hostname"
@@ -2109,6 +2155,79 @@ msgstr "Kapalı sanal makinelerin vCPU'ları"
 msgid "%(stopped)s of the host's %(cpus)s CPUs"
 msgstr "Sunucunun %(cpus)s CPU'sundan %(stopped)s"
 
+#: computes/templates/computes/evacuate.html:5
+#: computes/templates/computes/evacuate.html:6
+#: computes/templates/computes/instances.html:15
+msgid "Evacuate"
+msgstr "Boşalt"
+
+#: computes/templates/computes/evacuate.html:15 instances/views.py:379
+msgid "There is no other host to migrate to."
+msgstr "Taşınacak başka bir sunucu yok."
+
+#: computes/templates/computes/evacuate.html:17
+msgid ""
+"Each chosen VM migrates in a job of its own: a running VM live, a shut-off "
+"one offline. A VM that fails stays on this host."
+msgstr ""
+"Seçilen her sanal makine kendi işinde taşınır: çalışan sanal makine canlı, "
+"kapalı olan çevrimdışı. Taşınamayan sanal makine bu sunucuda kalır."
+
+#: computes/templates/computes/evacuate.html:20
+msgid "Destination"
+msgstr "Hedef"
+
+#: computes/templates/computes/evacuate.html:25
+msgid "Check"
+msgstr "Denetle"
+
+#: computes/templates/computes/evacuate.html:28
+msgid ""
+"The worker runs one job at a time: set Worker Concurrency to 2 or more on the"
+" Settings page."
+msgstr ""
+"İş yürütücü aynı anda tek iş çalıştırıyor: Ayarlar sayfasında Eş zamanlı iş "
+"sayısı değerini 2 veya daha fazla yapın."
+
+#: computes/templates/computes/evacuate.html:30
+msgid "The host has no VMs."
+msgstr "Bu sunucuda sanal makine yok."
+
+#: computes/templates/computes/evacuate.html:36
+msgid "Also migrate the shut-off VMs"
+msgstr "Kapalı sanal makineleri de taşı"
+
+#: computes/templates/computes/evacuate.html:42
+#: computes/templates/computes/evacuate.html:74
+#: instances/templates/instances/settings_tab.html:60
+#: instances/templates/instances/settings_tab.html:617
+#: instances/templates/instances/settings_tab.html:620
+msgid "Migrate"
+msgstr "Taşı"
+
+#: computes/templates/computes/evacuate.html:44
+#: computes/templates/computes/instances.html:48
+#: instances/templates/allinstances_index_grouped.html:12
+#: instances/templates/allinstances_index_nongrouped.html:10
+msgid "Status"
+msgstr "Durum"
+
+#: computes/templates/computes/evacuate.html:45
+#: computes/templates/computes/instances.html:49
+msgid "VCPU"
+msgstr "VCPU"
+
+#: computes/templates/computes/evacuate.html:68
+msgid "Migrations at once"
+msgstr "Aynı anda taşıma"
+
+#: computes/templates/computes/evacuate.html:73
+#, python-format
+msgid "Migrate the chosen VMs from %(source)s to %(dest)s?"
+msgstr ""
+"Seçilen sanal makineler %(source)s sunucusundan %(dest)s sunucusuna taşınsın "
+"mı?"
+
 #: computes/templates/computes/form.html:5
 msgid "Edit host"
 msgstr "Sunucuyu düzenle"
@@ -2238,31 +2357,21 @@ msgstr "Aygıtlar"
 msgid "New Instance"
 msgstr "Yeni sanal makine"
 
-#: computes/templates/computes/instances.html:30
+#: computes/templates/computes/instances.html:31
 #, python-format
 msgid "Problem occurred with host %(name)s: %(error)s"
 msgstr "%(name)s sunucusuyla ilgili bir sorun oluştu: %(error)s"
 
-#: computes/templates/computes/instances.html:36
+#: computes/templates/computes/instances.html:37
 #: computes/templates/computes/list.html:16
 msgid "Warning"
 msgstr "Uyarı"
 
-#: computes/templates/computes/instances.html:37
+#: computes/templates/computes/instances.html:38
 msgid "Hypervisor doesn't have any Instances"
 msgstr "Hipervizör üzerinde hiç sanal makine yok"
 
-#: computes/templates/computes/instances.html:47
-#: instances/templates/allinstances_index_grouped.html:12
-#: instances/templates/allinstances_index_nongrouped.html:10
-msgid "Status"
-msgstr "Durum"
-
-#: computes/templates/computes/instances.html:48
-msgid "VCPU"
-msgstr "VCPU"
-
-#: computes/templates/computes/instances.html:50
+#: computes/templates/computes/instances.html:51
 #: computes/templates/computes/list.html:60
 #: instances/templates/allinstances_index_grouped.html:18
 #: instances/templates/allinstances_index_nongrouped.html:16
@@ -2506,17 +2615,24 @@ msgstr ""
 "Sunucudaki /etc/default/webvirt-gstfsd içindeki GSTFSD_KEY değerinin 64 "
 "onaltılık karakterini girin"
 
-#: computes/views.py:148
+#: computes/views.py:151
 #, python-format
 msgid "The host did not answer within %(seconds)s seconds"
 msgstr "Sunucu %(seconds)s saniye içinde yanıt vermedi"
 
-#: computes/views.py:236
+#: computes/views.py:274
+msgid ""
+"A disk file is not on storage both hosts share: migrate it from its page"
+msgstr ""
+"Bir disk dosyası iki sunucunun paylaştığı depolamada değil: sanal makineyi "
+"kendi sayfasından taşıyın"
+
+#: computes/views.py:289
 #, python-format
 msgid "The host was saved, but the panel cannot connect to it: %(error)s"
 msgstr "Sunucu kaydedildi, ancak panel ona bağlanamıyor: %(error)s"
 
-#: computes/views.py:292
+#: computes/views.py:345
 #, python-format
 msgid ""
 "Its VMs keep running on the host and leave the panel; their owners are kept "
@@ -3292,78 +3408,78 @@ msgstr "Sanal makine taşındı, ancak NVRAM dosyası kaynakta kaldı: %(error)s
 msgid "Migrate VM"
 msgstr "Sanal makineyi taşı"
 
-#: instances/jobs.py:1209
+#: instances/jobs.py:1212
 msgid "Migrating the VM"
 msgstr "Sanal makine taşınıyor"
 
-#: instances/jobs.py:1258
+#: instances/jobs.py:1261
 msgid "libvirt is still migrating the VM"
 msgstr "libvirt sanal makineyi hâlâ taşıyor"
 
-#: instances/jobs.py:1270
+#: instances/jobs.py:1273
 msgid "The VM stayed on the source host"
 msgstr "Sanal makine kaynak sunucuda kaldı"
 
-#: instances/jobs.py:1272
+#: instances/jobs.py:1275
 msgid ""
 "The VM is on both computes or on neither; check them, then resolve this job."
 msgstr ""
 "Sanal makine ya iki sunucuda da var ya da hiçbirinde yok; kontrol edin, sonra"
 " bu işi çözün."
 
-#: instances/jobs.py:1291
+#: instances/jobs.py:1294
 msgid "Move disk"
 msgstr "Diski taşı"
 
-#: instances/jobs.py:1298
+#: instances/jobs.py:1301
 msgid "Choose a disk of the VM"
 msgstr "Sanal makinenin bir diskini seçin"
 
-#: instances/jobs.py:1322
+#: instances/jobs.py:1325
 msgid "Copying the disk"
 msgstr "Disk kopyalanıyor"
 
-#: instances/jobs.py:1364
+#: instances/jobs.py:1367
 #, python-format
 msgid "Another block job runs on %(dev)s; check the VM"
 msgstr ""
 "%(dev)s üzerinde başka bir blok işi çalışıyor; sanal makineyi kontrol edin"
 
-#: instances/jobs.py:1370
+#: instances/jobs.py:1373
 #, python-format
 msgid "The disk stayed in %(path)s; remove %(dest)s if it is there"
 msgstr "Disk %(path)s içinde kaldı; varsa %(dest)s dosyasını silin"
 
-#: instances/jobs.py:1372
+#: instances/jobs.py:1375
 #, python-format
 msgid "The definitions of %(dev)s name %(paths)s; check the VM"
 msgstr "%(dev)s tanımları %(paths)s gösteriyor; sanal makineyi kontrol edin"
 
-#: instances/jobs.py:1379
+#: instances/jobs.py:1382
 #, python-format
 msgid "Disk %(path)s was kept: a disk file that stays needs it"
 msgstr "%(path)s diski korundu: kalan bir disk dosyası ona ihtiyaç duyuyor"
 
-#: instances/jobs.py:1380
+#: instances/jobs.py:1383
 #, python-format
 msgid "The VM is removed, but disk %(path)s was not deleted: %(err)s"
 msgstr "Sanal makine kaldırıldı, ancak %(path)s diski silinmedi: %(err)s"
 
-#: instances/jobs.py:1381
+#: instances/jobs.py:1384
 #, python-format
 msgid "Disk %(path)s is used by another VM and was kept"
 msgstr ""
 "%(path)s diski başka bir sanal makine tarafından kullanılıyor ve korundu"
 
-#: instances/jobs.py:1435
+#: instances/jobs.py:1438
 msgid "Delete VM"
 msgstr "Sanal makineyi sil"
 
-#: instances/jobs.py:1465
+#: instances/jobs.py:1468
 msgid "Deleting the VM"
 msgstr "Sanal makine siliniyor"
 
-#: instances/jobs.py:1477
+#: instances/jobs.py:1480
 msgid "The VM was not deleted; it may have been shut off"
 msgstr "Sanal makine silinmedi; kapatılmış olabilir"
 
@@ -5018,12 +5134,6 @@ msgstr "Ağ"
 msgid "Host devices"
 msgstr "Sunucu aygıtları"
 
-#: instances/templates/instances/settings_tab.html:60
-#: instances/templates/instances/settings_tab.html:617
-#: instances/templates/instances/settings_tab.html:620
-msgid "Migrate"
-msgstr "Taşı"
-
 #: instances/templates/instances/settings_tab.html:65
 msgid "XML"
 msgstr "XML"
@@ -6319,10 +6429,6 @@ msgstr " Üzerindeki işler menüdeki İşler bölümünden izlenebilir."
 #, python-format
 msgid "'%(name)s' is no longer on its host."
 msgstr "'%(name)s' artık sunucusunda yok."
-
-#: instances/views.py:379
-msgid "There is no other host to migrate to."
-msgstr "Taşınacak başka bir sunucu yok."
 
 #: instances/views.py:381
 msgid "A VM migrates when it is running, paused or shut off."

@@ -1165,7 +1165,9 @@ class MigrateInstance(Kind):
 
     def normalize(self, raw):
         # disk_pools: {target: pool of the destination} of the disks to copy there
+        # source: the host an evacuation migrates the VM from; one that left it since is refused
         return {"instance": int(raw["instance"]), "target": int(raw["target"]),
+                "source": int(raw["source"]) if raw.get("source") else None,
                 "disk_pools": {str(k): str(v) for k, v in (raw.get("disk_pools") or {}).items() if v},
                 **{k: bool(raw.get(k)) for k in MIGRATE_OPTIONS}}
 
@@ -1176,9 +1178,14 @@ class MigrateInstance(Kind):
 
     def plan(self, user, params):
         instance = _instance(params["instance"])
+        if params["source"] not in (None, instance.compute_id):
+            raise util.OperationError(MOVED)
         keys = vm_claims(Compute.objects.get(pk=params["target"]), instance.name)
-        keys.update({claims.compute_key(instance.compute_id): Claim.SHARED,
-                     claims.reconcile_key(instance.compute_id): Claim.EXCLUSIVE,
+        # migrations share the hosts' VM sets, so a host evacuates several VMs at once;
+        # creates, clones, deletes and the VM list reconcile still wait for them
+        keys.update({claims.reconcile_key(params["target"]): Claim.SHARED,
+                     claims.compute_key(instance.compute_id): Claim.SHARED,
+                     claims.reconcile_key(instance.compute_id): Claim.SHARED,
                      claims.instance_key(instance.uuid): Claim.EXCLUSIVE})
         if params["disk_pools"]:
             # a copy takes its file's name in the chosen pool; the source file may go
