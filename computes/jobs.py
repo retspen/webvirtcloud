@@ -94,7 +94,7 @@ class BulkMigrate(Kind):
                     continue  # it left the host meanwhile
                 raw = {"instance": pk, "source": p["compute"], "target": p["target"], "live": True, "autoconverge": True}
                 try:
-                    child = jobs.submit("instance.migrate", op.user, raw, f"evac-{op.pk.hex}-{pk}")
+                    child = jobs.submit("instance.migrate", op.user, raw, f"bulk-{op.pk.hex}-{pk}", parent=op)
                 except claims.Busy as busy:
                     if busy.blocker is not None and busy.blocker.state == Operation.UNCERTAIN:
                         # it holds its claims until someone resolves it
@@ -116,6 +116,10 @@ class BulkMigrate(Kind):
         if failed:
             raise util.OperationError(gettext_noop("These VMs did not migrate: %(vms)s"), vms=", ".join(failed))
         return {}
+
+    def progress(self, op):
+        """(the VMs whose migration ended, the chosen VMs)."""
+        return op.children.filter(state__in=Operation.TERMINAL).count(), len(op.params["instances"])
 
     def cancel(self, op):
         """run sees the cancel and cancels the migrations that run."""

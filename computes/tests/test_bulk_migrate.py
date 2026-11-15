@@ -222,3 +222,17 @@ class BulkMigrateJobTests(TestCase):
         raw = {"instance": self.vms[0].pk, "source": third.pk, "target": self.other.pk}
         with self.assertRaisesRegex(util.OperationError, "moved to another compute"):
             jobs.submit("instance.migrate", self.admin, raw, "key-mig00003")
+
+    def test_the_host_page_shows_the_bulk_migration_and_not_its_migrations(self):
+        params = {"compute": self.compute.pk, "target": self.other.pk, "parallel": 2, "instances": [self.vms[0].pk]}
+        bulk = jobs.submit("host.bulk_migrate", self.admin, params, "key-bulk0001")
+        child = jobs.submit("instance.migrate", self.admin, {"instance": self.vms[0].pk, "target": self.other.pk},
+                            "key-mig00004", parent=bulk)
+        self.client.force_login(self.admin)
+
+        def shown(key):
+            return [job["id"] for job in self.client.get(reverse("operation-resource"), {"key": key}).json()["jobs"]]
+
+        self.assertEqual(shown(claims.compute_key(self.compute.pk)), [str(bulk.pk)])
+        self.assertEqual(shown(claims.instance_key(self.vms[0].uuid)), [str(child.pk)])
+        self.assertEqual(BulkMigrate().progress(bulk), (0, 1))

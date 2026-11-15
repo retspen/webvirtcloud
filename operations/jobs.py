@@ -154,7 +154,7 @@ def _existing(user, key, kind_name, params):
     return op
 
 
-def submit(kind_name, user, raw_params, submission_key):
+def submit(kind_name, user, raw_params, submission_key, parent=None):
     if not KEY_RE.fullmatch(submission_key or ""):
         raise OperationError(gettext_noop("The form has no valid submission key; reload the page"))
     kind = get_kind(kind_name)
@@ -175,7 +175,7 @@ def submit(kind_name, user, raw_params, submission_key):
         raise
     op = Operation(
         kind=kind.name, user=user, username=user.username, submission_key=submission_key,
-        resource=plan.resource, resource_label=plan.label[:255], params=params, intent=plan.intent,
+        resource=plan.resource, resource_label=plan.label[:255], params=params, intent=plan.intent, parent=parent,
         time_limit=kind.time_limit, client_ip=_client_ip(),
     )
     if kind.runs_in_request:

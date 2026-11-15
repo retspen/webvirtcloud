@@ -35,6 +35,8 @@ class Operation(models.Model):
     client_ip = models.GenericIPAddressField(null=True)  # of the submission, for the job's Logs rows
     submission_key = models.CharField(max_length=64)
     resource = models.CharField(max_length=255, db_index=True)  # the page that shows the job
+    # the job that started this one (a bulk migration's migrations): its page shows that one only
+    parent = models.ForeignKey("self", null=True, on_delete=models.SET_NULL, related_name="children")
     resource_label = models.CharField(max_length=255)
     state = models.CharField(max_length=16, choices=STATES, default=QUEUED, db_index=True)
     params = models.JSONField(default=dict)
