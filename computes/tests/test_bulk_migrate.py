@@ -1,4 +1,4 @@
-"""Evacuating a host migrates its chosen VMs in one job, a migrate job each,
+"""Bulk migrating a host migrates its chosen VMs in one job, a migrate job each,
 the chosen number at once; the page ticks the running VMs, leaves the
 shut-off ones to choose and refuses a VM with a disk the two hosts do not
 share. Migrations share the hosts, so the job's migrations are admitted
@@ -14,7 +14,7 @@ from django.urls import reverse
 from instances.models import Instance
 from lxml import etree, html
 from appsettings.models import AppSettings
-from computes.jobs import EvacuateHost
+from computes.jobs import BulkMigrate
 from operations import claims, jobs
 from operations.models import Claim, Operation
 from vrtManager import util
@@ -24,7 +24,7 @@ DOMAIN = """<domain type='test'><name>{name}</name><memory unit='MiB'>128</memor
 LOCAL = "<devices><disk type='file' device='disk'><source file='/local/{name}.img'/><target dev='vda'/></disk></devices>"
 
 
-class EvacuateTests(TestCase):
+class BulkMigratePageTests(TestCase):
     def setUp(self):
         self.conn = libvirt.open("test:///default")
         self.addCleanup(self.conn.close)
@@ -49,7 +49,7 @@ class EvacuateTests(TestCase):
                 patch("instances.jobs.migration_target"), \
                 patch("computes.views.wvmInstances") as dest:
             dest.return_value.disk_plan.side_effect = disk_plan
-            response = self.client.get(reverse("evacuate", args=[self.compute.id]))
+            response = self.client.get(reverse("bulk_migrate", args=[self.compute.id]))
         return html.fromstring(response.content)
 
     def box(self, page, name):
@@ -69,23 +69,29 @@ class EvacuateTests(TestCase):
         self.assertIsNotNone(local.get("disabled"))
         self.assertIn("not on storage both hosts share", local.getparent().getparent().text_content())
 
-    def evacuate(self, target, chosen):
-        return self.client.post(reverse("evacuate", args=[self.compute.id]),
+    def bulk_migrate(self, target, chosen):
+        return self.client.post(reverse("bulk_migrate", args=[self.compute.id]),
                                 {"target": target, "instance": chosen, "parallel": "2", "submission_key": "evac0000key"})
 
-    def test_the_chosen_vms_go_in_one_evacuation_job(self):
+    def test_the_chosen_vms_go_in_one_bulk_migration_job(self):
         chosen = [self.vms["ev-run"].pk, self.vms["ev-off"].pk]
-        response = self.evacuate(self.other.pk, chosen)
+        response = self.bulk_migrate(self.other.pk, chosen)
         self.assertRedirects(response, reverse("instances", args=[self.compute.id]), fetch_redirect_response=False)
         (op,) = Operation.objects.all()
-        self.assertEqual((op.kind, op.params), ("host.evacuate", {"compute": self.compute.pk, "target": self.other.pk,
+        self.assertEqual((op.kind, op.params), ("host.bulk_migrate", {"compute": self.compute.pk, "target": self.other.pk,
                                                                   "parallel": 2, "instances": sorted(chosen)}))
 
     def test_a_destination_gone_since_the_form_was_shown_is_refused(self):
         gone = self.other.pk
         self.other.delete()
-        self.assertEqual(self.evacuate(gone, [self.vms["ev-run"].pk]).status_code, 404)
+        self.assertEqual(self.bulk_migrate(gone, [self.vms["ev-run"].pk]).status_code, 404)
         self.assertFalse(Operation.objects.exists())
+
+    def test_one_destination_is_named_and_several_are_a_choice(self):
+        self.assertEqual(self.page().xpath("//select[@name='target']"), [])
+        self.assertIn("ev-other", self.page().xpath("//strong/text()"))
+        Compute.objects.create(name="ev-third", hostname="198.51.100.32", login="", password="", type=4)
+        self.assertEqual(self.page().xpath("//select[@name='target']/option/text()"), ["ev-other", "ev-third"])
 
     def test_a_host_with_no_other_host_says_so(self):
         self.other.delete()
@@ -105,7 +111,7 @@ class Ctx:
         pass
 
 
-class EvacuateJobTests(TestCase):
+class BulkMigrateJobTests(TestCase):
     def setUp(self):
         self.compute = Compute.objects.create(name="ej", hostname="192.0.2.40", login="", password="", type=4)
         self.other = Compute.objects.create(name="ej-other", hostname="192.0.2.41", login="", password="", type=4)
@@ -117,12 +123,12 @@ class EvacuateJobTests(TestCase):
         self.addCleanup(patcher.stop)
 
     def run_job(self, parallel, ends):
-        """Runs the evacuation of every VM; each round, ends(job) gives the end state of a running migration."""
+        """Runs the bulk migration of every VM; each round, ends(job) gives the end state of a running migration."""
         params = {"compute": self.compute.pk, "target": self.other.pk, "parallel": parallel,
                   "instances": [vm.pk for vm in self.vms]}
-        op = Operation.objects.create(kind="host.evacuate", user=self.admin, username=self.admin.username,
+        op = Operation.objects.create(kind="host.bulk_migrate", user=self.admin, username=self.admin.username,
                                       submission_key="key-evac0001", params=params,
-                                      intent=EvacuateHost().plan(self.admin, params).intent)
+                                      intent=BulkMigrate().plan(self.admin, params).intent)
         most = []
 
         def round_ends(seconds):
@@ -134,7 +140,7 @@ class EvacuateJobTests(TestCase):
 
         with patch("computes.jobs.time.sleep", side_effect=round_ends):
             try:
-                return EvacuateHost().run(op, Ctx(op)), max(most)
+                return BulkMigrate().run(op, Ctx(op)), max(most)
             finally:
                 self.migrations = Operation.objects.filter(kind="instance.migrate")
 
@@ -167,14 +173,14 @@ class EvacuateJobTests(TestCase):
         self.run_job(1, ends)
         self.assertNotIn(left.pk, [job.params["instance"] for job in self.migrations])
 
-    def test_one_evacuation_runs_at_a_time(self):
+    def test_one_bulk_migration_runs_at_a_time(self):
         raw = {"compute": self.compute.pk, "target": self.other.pk, "parallel": 1, "instances": [self.vms[0].pk]}
-        jobs.submit("host.evacuate", self.admin, raw, "key-evac0002")
+        jobs.submit("host.bulk_migrate", self.admin, raw, "key-evac0002")
         with self.assertRaises(claims.Busy):
-            jobs.submit("host.evacuate", self.admin, {**raw, "compute": self.other.pk, "target": self.compute.pk},
+            jobs.submit("host.bulk_migrate", self.admin, {**raw, "compute": self.other.pk, "target": self.compute.pk},
                         "key-evac0003")
 
-    def test_a_host_changed_meanwhile_stops_the_evacuation(self):
+    def test_a_host_changed_meanwhile_stops_the_bulk_migration(self):
         def ends(job):
             Compute.objects.filter(pk=self.other.pk).update(hostname="192.0.2.99")
             return Operation.SUCCEEDED
@@ -183,7 +189,7 @@ class EvacuateJobTests(TestCase):
             self.run_job(1, ends)
         self.assertEqual(self.migrations.count(), 1)
 
-    def test_a_worker_lowered_to_one_slot_stops_the_evacuation(self):
+    def test_a_worker_lowered_to_one_slot_stops_the_bulk_migration(self):
         def ends(job):
             AppSettings.objects.filter(key="WORKER_CONCURRENCY").update(value="1")
             return Operation.SUCCEEDED

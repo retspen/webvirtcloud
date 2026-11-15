@@ -230,7 +230,7 @@ def instances(request, compute_id):
 
 
 @superuser_only
-def evacuate(request, compute_id):
+def bulk_migrate(request, compute_id):
     """Migrates the chosen VMs of the host to another in one job, for the
     host's maintenance: a migrate job each, the chosen number at once; a
     running VM live, a shut-off one offline. A VM with a disk file the two
@@ -247,7 +247,7 @@ def evacuate(request, compute_id):
         raw = {"compute": compute.pk, "target": target.pk, "parallel": request.POST.get("parallel", ""),
                "instances": [pk for pk in request.POST.getlist("instance") if pk.isdigit()]}
         try:
-            op = jobs.submit("host.evacuate", request.user, raw, request.POST.get("submission_key", ""))
+            op = jobs.submit("host.bulk_migrate", request.user, raw, request.POST.get("submission_key", ""))
         except claims.Busy as busy:
             messages.error(request, busy_message(busy, request.user))
         except (ValueError, jobs.SubmissionConflict, libvirtError) as err:
@@ -255,7 +255,7 @@ def evacuate(request, compute_id):
         else:
             jobs.remember_job(request, op)
             return redirect("instances", compute.pk)
-        return redirect(reverse("evacuate", args=[compute.pk]) + f"?target={target.pk}")
+        return redirect(reverse("bulk_migrate", args=[compute.pk]) + f"?target={target.pk}")
 
     chosen = request.GET.get("target")
     target = next((t for t in targets if str(t.pk) == chosen), targets[0] if targets else None)
@@ -274,7 +274,7 @@ def evacuate(request, compute_id):
                     instance.refusal = _("A disk file is not on storage both hosts share: migrate it from its page")
         except libvirtError as err:
             instance.refusal = error_text(request, err)
-    return render(request, "computes/evacuate.html",
+    return render(request, "computes/bulk_migrate.html",
                   {"compute": compute, "targets": targets, "target": target, "instances": instances,
                    "parallel": range(1, parallel_limit() + 1)})
 

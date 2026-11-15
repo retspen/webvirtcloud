@@ -183,7 +183,7 @@ class LiveJobsTestCase(TransactionTestCase):
         self.assertFalse(self.conn.lookupByUUIDString(uuid).isActive())  # defined on the source again
         self.assertEqual(Instance.objects.get(uuid=uuid).compute, self.compute)
 
-    def test_an_evacuation_migrates_the_chosen_vms_two_at_once(self):
+    def test_a_bulk_migration_migrates_the_chosen_vms_two_at_once(self):
         dest, dest_conn = self.second_host()
         vms = []
         for name, running in (("evac-run", True), ("evac-off", False)):
@@ -194,11 +194,11 @@ class LiveJobsTestCase(TransactionTestCase):
         local = self.vm("evac-disk")[0]  # its disk is in a pool of this host only
         local = Instance.objects.create(compute=self.compute, name=local.name(), uuid=local.UUIDString())
         self.client.force_login(self.admin)
-        page = html.fromstring(self.client.get(reverse("evacuate", args=[self.compute.pk]) + f"?target={dest.pk}").content)
+        page = html.fromstring(self.client.get(reverse("bulk_migrate", args=[self.compute.pk]) + f"?target={dest.pk}").content)
         disabled = {int(box.get("value")): box.get("disabled") is not None for box in page.xpath("//input[@name='instance']")}
         self.assertEqual([disabled[vm.pk] for vm in (*vms, local)], [False, False, True])  # the host's other VMs as they are
         raw = {"compute": self.compute.pk, "target": dest.pk, "parallel": 2, "instances": [vm.pk for vm in vms]}
-        self.run_job(jobs.submit("host.evacuate", self.admin, raw, "key-evac0001"), concurrency=4)
+        self.run_job(jobs.submit("host.bulk_migrate", self.admin, raw, "key-evac0001"), concurrency=4)
         self.assertEqual(Operation.objects.filter(kind="instance.migrate", state=Operation.SUCCEEDED).count(), 2)
         self.assertEqual([dest_conn.lookupByUUIDString(vm.uuid).isActive() for vm in vms], [True, False])
         self.assertEqual({vm.compute for vm in Instance.objects.filter(pk__in=[vm.pk for vm in vms])}, {dest})

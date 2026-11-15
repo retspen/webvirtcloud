@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-15 14:47+0000\n"
+"POT-Creation-Date: 2026-11-15 16:43+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -64,7 +64,7 @@ msgstr "Açık anahtar zaten mevcut"
 msgid "Invalid key"
 msgstr "Geçersiz anahtar"
 
-#: accounts/forms.py:95 computes/templates/computes/evacuate.html:43
+#: accounts/forms.py:95 computes/templates/computes/bulk_migrate.html:45
 #: computes/templates/computes/instances.html:46
 #: instances/templates/add_instance_volume.html:39
 #: instances/templates/allinstances_index_grouped.html:11
@@ -768,7 +768,7 @@ msgstr ""
 msgid "vCPUs"
 msgstr "vCPU"
 
-#: admin/forms.py:209 computes/templates/computes/evacuate.html:46
+#: admin/forms.py:209 computes/templates/computes/bulk_migrate.html:48
 #: computes/templates/computes/instances.html:50
 #: computes/templates/computes/list.html:59 computes/templates/overview.html:66
 #: computes/templates/overview.html:150
@@ -1937,8 +1937,8 @@ msgid "the libvirt of the host the panel runs on, by its socket"
 msgstr "panelin çalıştığı sunucunun libvirt'i, soketi üzerinden"
 
 #: computes/jobs.py:39
-msgid "Evacuate host"
-msgstr "Sunucuyu boşalt"
+msgid "Bulk migrate"
+msgstr "Toplu taşıma"
 
 #: computes/jobs.py:50
 msgid "Choose the VMs to migrate"
@@ -1953,7 +1953,7 @@ msgstr "Aynı anda en fazla %(limit)s taşıma çalışabilir"
 msgid "Migrating the VMs"
 msgstr "Sanal makineler taşınıyor"
 
-#: computes/jobs.py:84
+#: computes/jobs.py:85
 msgid ""
 "The worker now runs one job at a time: the VMs not yet started stay on the "
 "host"
@@ -1961,24 +1961,24 @@ msgstr ""
 "İş yürütücü artık aynı anda tek iş çalıştırıyor: henüz başlatılmamış sanal "
 "makineler sunucuda kalıyor"
 
-#: computes/jobs.py:87
+#: computes/jobs.py:88
 msgid "A host was changed or deleted: the VMs not yet started stay on the host"
 msgstr ""
 "Bir sunucu değiştirildi ya da silindi: henüz başlatılmamış sanal makineler "
 "sunucuda kalıyor"
 
-#: computes/jobs.py:111
+#: computes/jobs.py:117
 #, python-format
 msgid "These VMs did not migrate: %(vms)s"
 msgstr "Bu sanal makineler taşınamadı: %(vms)s"
 
-#: computes/jobs.py:119
+#: computes/jobs.py:125
 msgid ""
-"The evacuation stopped: the migrations it started go on as their own jobs; "
-"the other VMs stay"
+"The bulk migration stopped: the migrations it started go on as their own "
+"jobs; the other VMs stay"
 msgstr ""
-"Boşaltma durdu: başlattığı taşımalar kendi işleri olarak sürüyor; diğer sanal"
-" makineler yerinde kalıyor"
+"Toplu taşıma durdu: başlattığı taşımalar kendi işleri olarak sürüyor; diğer "
+"sanal makineler yerinde kalıyor"
 
 #: computes/models.py:21
 msgid "hostname"
@@ -2048,6 +2048,79 @@ msgid "This is another host than the one its VMs are on: add it as a new host"
 msgstr ""
 "Bu, VM'lerinin bulunduğu sunucudan başka bir sunucu: yeni bir sunucu olarak "
 "ekleyin"
+
+#: computes/templates/computes/bulk_migrate.html:5
+#: computes/templates/computes/bulk_migrate.html:6
+#: computes/templates/computes/instances.html:15
+msgid "Bulk Migrate"
+msgstr "Toplu Taşı"
+
+#: computes/templates/computes/bulk_migrate.html:15 instances/views.py:379
+msgid "There is no other host to migrate to."
+msgstr "Taşınacak başka bir sunucu yok."
+
+#: computes/templates/computes/bulk_migrate.html:17
+msgid ""
+"Each chosen VM migrates in a job of its own: a running VM live, a shut-off "
+"one offline. A VM that fails stays on this host."
+msgstr ""
+"Seçilen her sanal makine kendi işinde taşınır: çalışan sanal makine canlı, "
+"kapalı olan çevrimdışı. Taşınamayan sanal makine bu sunucuda kalır."
+
+#: computes/templates/computes/bulk_migrate.html:21
+#: computes/templates/computes/bulk_migrate.html:27
+msgid "Destination"
+msgstr "Hedef"
+
+#: computes/templates/computes/bulk_migrate.html:30
+msgid ""
+"The worker runs one job at a time: set Worker Concurrency to 2 or more on the"
+" Settings page."
+msgstr ""
+"İş yürütücü aynı anda tek iş çalıştırıyor: Ayarlar sayfasında Eş zamanlı iş "
+"sayısı değerini 2 veya daha fazla yapın."
+
+#: computes/templates/computes/bulk_migrate.html:32
+msgid "The host has no VMs."
+msgstr "Bu sunucuda sanal makine yok."
+
+#: computes/templates/computes/bulk_migrate.html:38
+msgid "Also migrate the shut-off VMs"
+msgstr "Kapalı sanal makineleri de taşı"
+
+#: computes/templates/computes/bulk_migrate.html:44
+msgid "Select all"
+msgstr "Tümünü seç"
+
+#: computes/templates/computes/bulk_migrate.html:46
+#: computes/templates/computes/instances.html:48
+#: instances/templates/allinstances_index_grouped.html:12
+#: instances/templates/allinstances_index_nongrouped.html:10
+msgid "Status"
+msgstr "Durum"
+
+#: computes/templates/computes/bulk_migrate.html:47
+#: computes/templates/computes/instances.html:49
+msgid "VCPU"
+msgstr "VCPU"
+
+#: computes/templates/computes/bulk_migrate.html:70
+msgid "Migrations at once"
+msgstr "Aynı anda taşıma"
+
+#: computes/templates/computes/bulk_migrate.html:75
+#, python-format
+msgid "Migrate the chosen VMs from %(source)s to %(dest)s?"
+msgstr ""
+"Seçilen sanal makineler %(source)s sunucusundan %(dest)s sunucusuna taşınsın "
+"mı?"
+
+#: computes/templates/computes/bulk_migrate.html:76
+#: instances/templates/instances/settings_tab.html:60
+#: instances/templates/instances/settings_tab.html:617
+#: instances/templates/instances/settings_tab.html:620
+msgid "Migrate"
+msgstr "Taşı"
 
 #: computes/templates/computes/capacity_line.txt:2
 #, python-format
@@ -2154,79 +2227,6 @@ msgstr "Kapalı sanal makinelerin vCPU'ları"
 #, python-format
 msgid "%(stopped)s of the host's %(cpus)s CPUs"
 msgstr "Sunucunun %(cpus)s CPU'sundan %(stopped)s"
-
-#: computes/templates/computes/evacuate.html:5
-#: computes/templates/computes/evacuate.html:6
-#: computes/templates/computes/instances.html:15
-msgid "Evacuate"
-msgstr "Boşalt"
-
-#: computes/templates/computes/evacuate.html:15 instances/views.py:379
-msgid "There is no other host to migrate to."
-msgstr "Taşınacak başka bir sunucu yok."
-
-#: computes/templates/computes/evacuate.html:17
-msgid ""
-"Each chosen VM migrates in a job of its own: a running VM live, a shut-off "
-"one offline. A VM that fails stays on this host."
-msgstr ""
-"Seçilen her sanal makine kendi işinde taşınır: çalışan sanal makine canlı, "
-"kapalı olan çevrimdışı. Taşınamayan sanal makine bu sunucuda kalır."
-
-#: computes/templates/computes/evacuate.html:20
-msgid "Destination"
-msgstr "Hedef"
-
-#: computes/templates/computes/evacuate.html:25
-msgid "Check"
-msgstr "Denetle"
-
-#: computes/templates/computes/evacuate.html:28
-msgid ""
-"The worker runs one job at a time: set Worker Concurrency to 2 or more on the"
-" Settings page."
-msgstr ""
-"İş yürütücü aynı anda tek iş çalıştırıyor: Ayarlar sayfasında Eş zamanlı iş "
-"sayısı değerini 2 veya daha fazla yapın."
-
-#: computes/templates/computes/evacuate.html:30
-msgid "The host has no VMs."
-msgstr "Bu sunucuda sanal makine yok."
-
-#: computes/templates/computes/evacuate.html:36
-msgid "Also migrate the shut-off VMs"
-msgstr "Kapalı sanal makineleri de taşı"
-
-#: computes/templates/computes/evacuate.html:42
-#: computes/templates/computes/evacuate.html:74
-#: instances/templates/instances/settings_tab.html:60
-#: instances/templates/instances/settings_tab.html:617
-#: instances/templates/instances/settings_tab.html:620
-msgid "Migrate"
-msgstr "Taşı"
-
-#: computes/templates/computes/evacuate.html:44
-#: computes/templates/computes/instances.html:48
-#: instances/templates/allinstances_index_grouped.html:12
-#: instances/templates/allinstances_index_nongrouped.html:10
-msgid "Status"
-msgstr "Durum"
-
-#: computes/templates/computes/evacuate.html:45
-#: computes/templates/computes/instances.html:49
-msgid "VCPU"
-msgstr "VCPU"
-
-#: computes/templates/computes/evacuate.html:68
-msgid "Migrations at once"
-msgstr "Aynı anda taşıma"
-
-#: computes/templates/computes/evacuate.html:73
-#, python-format
-msgid "Migrate the chosen VMs from %(source)s to %(dest)s?"
-msgstr ""
-"Seçilen sanal makineler %(source)s sunucusundan %(dest)s sunucusuna taşınsın "
-"mı?"
 
 #: computes/templates/computes/form.html:5
 msgid "Edit host"
@@ -3408,78 +3408,78 @@ msgstr "Sanal makine taşındı, ancak NVRAM dosyası kaynakta kaldı: %(error)s
 msgid "Migrate VM"
 msgstr "Sanal makineyi taşı"
 
-#: instances/jobs.py:1212
+#: instances/jobs.py:1216
 msgid "Migrating the VM"
 msgstr "Sanal makine taşınıyor"
 
-#: instances/jobs.py:1261
+#: instances/jobs.py:1265
 msgid "libvirt is still migrating the VM"
 msgstr "libvirt sanal makineyi hâlâ taşıyor"
 
-#: instances/jobs.py:1273
+#: instances/jobs.py:1277
 msgid "The VM stayed on the source host"
 msgstr "Sanal makine kaynak sunucuda kaldı"
 
-#: instances/jobs.py:1275
+#: instances/jobs.py:1279
 msgid ""
 "The VM is on both computes or on neither; check them, then resolve this job."
 msgstr ""
 "Sanal makine ya iki sunucuda da var ya da hiçbirinde yok; kontrol edin, sonra"
 " bu işi çözün."
 
-#: instances/jobs.py:1294
+#: instances/jobs.py:1298
 msgid "Move disk"
 msgstr "Diski taşı"
 
-#: instances/jobs.py:1301
+#: instances/jobs.py:1305
 msgid "Choose a disk of the VM"
 msgstr "Sanal makinenin bir diskini seçin"
 
-#: instances/jobs.py:1325
+#: instances/jobs.py:1329
 msgid "Copying the disk"
 msgstr "Disk kopyalanıyor"
 
-#: instances/jobs.py:1367
+#: instances/jobs.py:1371
 #, python-format
 msgid "Another block job runs on %(dev)s; check the VM"
 msgstr ""
 "%(dev)s üzerinde başka bir blok işi çalışıyor; sanal makineyi kontrol edin"
 
-#: instances/jobs.py:1373
+#: instances/jobs.py:1377
 #, python-format
 msgid "The disk stayed in %(path)s; remove %(dest)s if it is there"
 msgstr "Disk %(path)s içinde kaldı; varsa %(dest)s dosyasını silin"
 
-#: instances/jobs.py:1375
+#: instances/jobs.py:1379
 #, python-format
 msgid "The definitions of %(dev)s name %(paths)s; check the VM"
 msgstr "%(dev)s tanımları %(paths)s gösteriyor; sanal makineyi kontrol edin"
 
-#: instances/jobs.py:1382
+#: instances/jobs.py:1386
 #, python-format
 msgid "Disk %(path)s was kept: a disk file that stays needs it"
 msgstr "%(path)s diski korundu: kalan bir disk dosyası ona ihtiyaç duyuyor"
 
-#: instances/jobs.py:1383
+#: instances/jobs.py:1387
 #, python-format
 msgid "The VM is removed, but disk %(path)s was not deleted: %(err)s"
 msgstr "Sanal makine kaldırıldı, ancak %(path)s diski silinmedi: %(err)s"
 
-#: instances/jobs.py:1384
+#: instances/jobs.py:1388
 #, python-format
 msgid "Disk %(path)s is used by another VM and was kept"
 msgstr ""
 "%(path)s diski başka bir sanal makine tarafından kullanılıyor ve korundu"
 
-#: instances/jobs.py:1438
+#: instances/jobs.py:1442
 msgid "Delete VM"
 msgstr "Sanal makineyi sil"
 
-#: instances/jobs.py:1468
+#: instances/jobs.py:1472
 msgid "Deleting the VM"
 msgstr "Sanal makine siliniyor"
 
-#: instances/jobs.py:1480
+#: instances/jobs.py:1484
 msgid "The VM was not deleted; it may have been shut off"
 msgstr "Sanal makine silinmedi; kapatılmış olabilir"
 
@@ -9453,36 +9453,36 @@ msgstr ""
 "Bağlantı başarısız: %(host)s yanıt vermiyor: %(requests)s istek hâlâ onu "
 "bekliyor"
 
-#: vrtManager/connection.py:243
+#: vrtManager/connection.py:248
 #, python-format
 msgid "Connection Failed: %(host)s did not answer within %(seconds)s s"
 msgstr "Bağlantı başarısız: %(host)s %(seconds)s sn içinde yanıt vermedi"
 
-#: vrtManager/connection.py:254
+#: vrtManager/connection.py:259
 msgid "the connection closed right after opening"
 msgstr "bağlantı açıldıktan hemen sonra kapandı"
 
-#: vrtManager/connection.py:267
+#: vrtManager/connection.py:272
 #, python-format
 msgid "Connection Failed: %(error)s"
 msgstr "Bağlantı başarısız: %(error)s"
 
-#: vrtManager/connection.py:336
+#: vrtManager/connection.py:341
 #, python-format
 msgid "Connection closed (%(reason)s)"
 msgstr "Bağlantı kapandı (%(reason)s)"
 
-#: vrtManager/connection.py:488
+#: vrtManager/connection.py:493
 #, python-format
 msgid "Connection Failed: %(host)s is not connected"
 msgstr "Bağlantı başarısız: %(host)s bağlı değil"
 
-#: vrtManager/connection.py:540
+#: vrtManager/connection.py:545
 #, python-format
 msgid "This host has no architecture %(arch)s"
 msgstr "Bu sunucuda %(arch)s mimarisi yok"
 
-#: vrtManager/connection.py:1203
+#: vrtManager/connection.py:1214
 #, python-format
 msgid ""
 "Pool %(pool)s is not active: the files the disks of the VMs in it are made "

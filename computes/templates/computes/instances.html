@@ -12,7 +12,7 @@
     {% bs_icon 'plus-circle-fill' %}
 </a>
 {% if instances %}
-<a href="{% url 'evacuate' compute.id %}" class="btn btn-outline-primary mt-1 me-1 float-end">{% trans "Evacuate" %}</a>
+<a href="{% url 'bulk_migrate' compute.id %}" class="btn btn-outline-primary mt-1 me-1 float-end">{% trans "Bulk Migrate" %}</a>
     {% include 'search_block.html' %}
 {% endif %}
 {% endblock page_heading_extra %}

@@ -2,8 +2,8 @@
 {% load i18n %}
 {% load static %}
 {% load operations %}
-{% block title %}{% trans "Evacuate" %} - {{ compute.name }}{% endblock %}
-{% block page_heading %}{{ compute.name }} - {% trans "Evacuate" %}{% endblock page_heading %}
+{% block title %}{% trans "Bulk Migrate" %} - {{ compute.name }}{% endblock %}
+{% block page_heading %}{{ compute.name }} - {% trans "Bulk Migrate" %}{% endblock page_heading %}
 
 {% block content %}
 <div class="row">
@@ -15,15 +15,17 @@
 <div class="alert alert-warning shadow-sm">{% trans "There is no other host to migrate to." %}</div>
 {% else %}
 <p class="text-body-secondary">{% trans "Each chosen VM migrates in a job of its own: a running VM live, a shut-off one offline. A VM that fails stays on this host." %}</p>
-<form method="get" class="row g-2 align-items-end mb-3">
-    <div class="col-auto">
-        <label class="form-label" for="evacuate-target">{% trans "Destination" %}</label>
-        <select name="target" id="evacuate-target" class="form-select">
-            {% for host in targets %}<option value="{{ host.pk }}"{% if host == target %} selected{% endif %}>{{ host.name }}</option>{% endfor %}
-        </select>
-    </div>
-    <div class="col-auto"><button type="submit" class="btn btn-outline-secondary">{% trans "Check" %}</button></div>
+{% if targets|length > 1 %}
+{# another destination reloads the list: which VMs can go depends on it #}
+<form method="get" class="mb-3">
+    <label class="form-label" for="bulk-migrate-target">{% trans "Destination" %}</label>
+    <select name="target" id="bulk-migrate-target" class="form-select w-auto">
+        {% for host in targets %}<option value="{{ host.pk }}"{% if host == target %} selected{% endif %}>{{ host.name }}</option>{% endfor %}
+    </select>
 </form>
+{% else %}
+<p class="mb-3">{% trans "Destination" %}: <strong>{{ target.name }}</strong></p>
+{% endif %}
 {% if not parallel %}
 <div class="alert alert-warning shadow-sm">{% trans "The worker runs one job at a time: set Worker Concurrency to 2 or more on the Settings page." %}</div>
 {% elif not instances %}
@@ -32,14 +34,14 @@
 <form method="post">{% csrf_token %}{% submission_key %}
     <input type="hidden" name="target" value="{{ target.pk }}">
     <div class="form-check mb-2">
-        <input class="form-check-input" type="checkbox" id="evacuate-shut-off">
-        <label class="form-check-label" for="evacuate-shut-off">{% trans "Also migrate the shut-off VMs" %}</label>
+        <input class="form-check-input" type="checkbox" id="bulk-migrate-shut-off">
+        <label class="form-check-label" for="bulk-migrate-shut-off">{% trans "Also migrate the shut-off VMs" %}</label>
     </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle">
             <thead>
                 <tr>
-                    <th scope="col"><span class="visually-hidden">{% trans "Migrate" %}</span></th>
+                    <th scope="col"><input class="form-check-input" type="checkbox" id="bulk-migrate-all" aria-label="{% trans "Select all" %}" title="{% trans "Select all" %}"></th>
                     <th scope="col">{% trans "Name" %}</th>
                     <th scope="col">{% trans "Status" %}</th>
                     <th scope="col">{% trans "VCPU" %}</th>
@@ -51,10 +53,10 @@
                 {% for instance in instances %}
                 <tr>
                     <td>
-                        <input class="form-check-input" type="checkbox" name="instance" value="{{ instance.pk }}" id="evacuate-{{ instance.pk }}"
+                        <input class="form-check-input" type="checkbox" name="instance" value="{{ instance.pk }}" id="bulk-migrate-{{ instance.pk }}"
                             {% if instance.info.0 == 5 %} data-shut-off{% elif not instance.refusal %} checked{% endif %}{% if instance.refusal %} disabled{% endif %}>
                     </td>
-                    <td><label for="evacuate-{{ instance.pk }}">{{ instance.name }}</label></td>
+                    <td><label for="bulk-migrate-{{ instance.pk }}">{{ instance.name }}</label></td>
                     <td>{% include 'instance_state.html' %}</td>
                     <td>{{ instance.info.3 }}</td>
                     <td class="text-end">{% if instance.info %}{% widthratio instance.info.2 1024 1 %} MiB{% endif %}</td>
@@ -65,8 +67,8 @@
         </table>
     </div>
     <div class="mb-3">
-        <label class="form-label" for="evacuate-parallel">{% trans "Migrations at once" %}</label>
-        <select name="parallel" id="evacuate-parallel" class="form-select w-auto">
+        <label class="form-label" for="bulk-migrate-parallel">{% trans "Migrations at once" %}</label>
+        <select name="parallel" id="bulk-migrate-parallel" class="form-select w-auto">
             {% for n in parallel %}<option value="{{ n }}"{% if forloop.last %} selected{% endif %}>{{ n }}</option>{% endfor %}
         </select>
     </div>
@@ -77,5 +79,5 @@
 {% endif %}
 {% endblock %}
 {% block script %}
-<script src="{% static 'js/evacuate.js' %}"></script>
+<script src="{% static 'js/bulk_migrate.js' %}"></script>
 {% endblock %}

@@ -14,7 +14,7 @@ from operations.jobs import Cancelled, Kind, Outcome, Plan, register
 from operations.models import Claim, Operation
 
 
-# where a host is: an evacuation stops if either host's record points elsewhere since it was asked
+# where a host is: a bulk migration stops if either host's record points elsewhere since it was asked
 WHERE = ("hostname", "login", "type")
 
 
@@ -23,20 +23,20 @@ def _where(params):
 
 
 def parallel_limit():
-    """The most migrations an evacuation runs at once: the worker gives a
-    host's jobs half of its slots, and the evacuation itself takes one."""
+    """The most migrations a bulk migration runs at once: the worker gives a
+    host's jobs half of its slots, and the bulk migration itself takes one."""
     slots = utils.concurrency()
     return min(max(1, slots // 2), slots - 1)
 
 
 @register
-class EvacuateHost(Kind):
+class BulkMigrate(Kind):
     """Migrates the chosen VMs of a host to another, each in a migrate job
     of its own, at most parallel at once: one that fails leaves its VM on
     the host and the rest go on."""
 
-    name = "host.evacuate"
-    label = gettext_noop("Evacuate host")
+    name = "host.bulk_migrate"
+    label = gettext_noop("Bulk migrate")
     cancellable = True
 
     def normalize(self, raw):
@@ -55,7 +55,7 @@ class EvacuateHost(Kind):
     def plan(self, user, params):
         compute = Compute.objects.get(pk=params["compute"])
         target = Compute.objects.get(pk=params["target"])
-        return Plan(claims={claims.evacuate_key(): Claim.EXCLUSIVE}, resource=claims.compute_key(compute.pk),
+        return Plan(claims={claims.bulk_migrate_key(): Claim.EXCLUSIVE}, resource=claims.compute_key(compute.pk),
                     label=f"{compute.name} -> {target.name}", intent={"migrations": {}, "where": _where(params)})
 
     def precheck(self, op, ctx):
@@ -122,9 +122,9 @@ class EvacuateHost(Kind):
 
     def reconcile(self, op):
         return Outcome(Operation.FAILED, error=utils.say(gettext_noop(
-            "The evacuation stopped: the migrations it started go on as their own jobs; the other VMs stay")))
+            "The bulk migration stopped: the migrations it started go on as their own jobs; the other VMs stay")))
 
     def log_entry(self, op, state):
         source, _sep, target = op.resource_label.partition(" -> ")
-        message = f"Evacuate to {target}"
+        message = f"Bulk migrate to {target}"
         return source, "", "", message if state == Operation.SUCCEEDED else f"{message} ({state})"
