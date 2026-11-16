@@ -5,14 +5,14 @@ one job of migrate jobs that take only a running VM."""
 from unittest.mock import patch
 
 import libvirt
-from computes.balance import propose
+from computes.balance import propose, spread
 from computes.jobs import Balance
 from computes.models import Compute
 from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 from instances.models import Instance
-from lxml import etree, html
+from lxml import html
 from operations import claims, jobs
 from operations.models import Operation
 
@@ -73,6 +73,20 @@ class ProposeTests(SimpleTestCase):
         self.assertEqual(propose(loads, [(1, "a", 4, 2, {"b"})], ROOM)[0], [])
 
 
+class SpreadTests(SimpleTestCase):
+    def test_the_largest_vm_goes_first_each_to_the_emptiest_host(self):
+        loads = {"b": (4, 0), "c": (0, 0)}
+        vms = [(1, 2, 1, True, {"b", "c"}), (2, 6, 1, True, {"b", "c"}), (3, 3, 1, False, {"b", "c"})]
+        placed, after = spread(loads, vms, ROOM)
+        self.assertEqual(placed, {2: "c", 3: "b", 1: "c"})
+        self.assertEqual(after, {"b": [7, 1], "c": [8, 2]})
+
+    def test_a_running_vm_goes_only_where_it_fits_and_a_shut_off_one_anywhere(self):
+        loads = {"b": (0, 0)}
+        placed, _after = spread(loads, [(1, 8, 1, True, {"b"}), (2, 8, 1, False, {"b"})], {"b": 4})
+        self.assertEqual(placed, {2: "b"})
+
+
 class BalancePageTests(TestCase):
     def setUp(self):
         self.conn = libvirt.open("test:///default")
@@ -91,14 +105,11 @@ class BalancePageTests(TestCase):
         self.client.force_login(get_user_model().objects.create_superuser("ba-admin", "ba@example.com", "pw"))
 
     def page(self, **query):
-        def disk_plan(conn, xml):
-            return [{"shared": "/local/" not in path} for path in etree.fromstring(xml).xpath("//source/@file")]
-
         with patch("vrtManager.connection.connection_manager.get_connection", return_value=self.conn), \
                 patch("computes.views.utils.refresh_instance_database"), \
                 patch("instances.jobs.migration_target"), \
-                patch("computes.views.wvmInstances") as dest:
-            dest.return_value.disk_plan.side_effect = disk_plan
+                patch("computes.reach.wvmInstances") as dest:
+            dest.return_value.shares.side_effect = lambda conn, directory: directory != "/local"
             self.response = self.client.get(reverse("balance"), query)
         return html.fromstring(self.response.content)
 

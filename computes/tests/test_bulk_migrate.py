@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from instances.models import Instance
-from lxml import etree, html
+from lxml import html
 from appsettings.models import AppSettings
 from computes.jobs import BulkMigrate
 from operations import claims, jobs
@@ -40,16 +40,13 @@ class BulkMigratePageTests(TestCase):
             self.vms[name] = Instance.objects.create(compute=self.compute, name=name, uuid=domain.UUIDString())
         self.client.force_login(get_user_model().objects.create_superuser("ev-admin", "ev@example.com", "pw"))
 
-    def page(self):
-        def disk_plan(conn, xml):
-            return [{"shared": "/local/" not in path} for path in etree.fromstring(xml).xpath("//source/@file")]
-
+    def page(self, **query):
         with patch("vrtManager.connection.connection_manager.get_connection", return_value=self.conn), \
                 patch("computes.views.utils.refresh_instance_database"), \
                 patch("instances.jobs.migration_target"), \
-                patch("computes.views.wvmInstances") as dest:
-            dest.return_value.disk_plan.side_effect = disk_plan
-            response = self.client.get(reverse("bulk_migrate", args=[self.compute.id]))
+                patch("computes.reach.wvmInstances") as dest:
+            dest.return_value.shares.side_effect = lambda conn, directory: directory != "/local"
+            response = self.client.get(reverse("bulk_migrate", args=[self.compute.id]), query)
         return html.fromstring(response.content)
 
     def box(self, page, name):
@@ -78,8 +75,8 @@ class BulkMigratePageTests(TestCase):
         response = self.bulk_migrate(self.other.pk, chosen)
         self.assertRedirects(response, reverse("instances", args=[self.compute.id]), fetch_redirect_response=False)
         (op,) = Operation.objects.all()
-        self.assertEqual((op.kind, op.params), ("host.bulk_migrate", {"compute": self.compute.pk, "target": self.other.pk,
-                                                                  "parallel": 2, "instances": sorted(chosen)}))
+        self.assertEqual((op.kind, op.params), ("host.bulk_migrate", {
+            "compute": self.compute.pk, "parallel": 2, "moves": [[pk, self.other.pk] for pk in sorted(chosen)]}))
 
     def test_a_destination_gone_since_the_form_was_shown_is_refused(self):
         gone = self.other.pk
@@ -91,7 +88,46 @@ class BulkMigratePageTests(TestCase):
         self.assertEqual(self.page().xpath("//select[@name='target']"), [])
         self.assertIn("ev-other", self.page().xpath("//div[contains(@class, 'card-header')]/span/text()"))
         Compute.objects.create(name="ev-third", hostname="198.51.100.32", login="", password="", type=4)
-        self.assertEqual(self.page().xpath("//select[@name='target']/option/text()"), ["ev-other", "ev-third"])
+        self.assertEqual(self.page().xpath("//select[@name='target']/option/text()"),
+                         ["Spread over the other hosts", "ev-other", "ev-third"])
+
+    def spread(self, page):
+        """{VM name: the host it goes to} of the migrations the page would run."""
+        names = {str(vm.pk): name for name, vm in self.vms.items()}
+        hosts = {str(host.pk): host.name for host in Compute.objects.all()}
+        (form,) = page.xpath("//form[contains(@class, 'card')]")
+        return {names[vm]: hosts[target] for vm, target in zip(form.xpath(".//input[@name='instance']/@value"),
+                                                               form.xpath(".//input[@name='target']/@value"))}
+
+    def test_with_several_hosts_the_vms_spread_over_them(self):
+        Compute.objects.create(name="ev-third", hostname="198.51.100.32", login="", password="", type=4)
+        self.assertEqual(self.spread(self.page()), {"ev-run": "ev-other"})
+        both = [self.vms["ev-run"].pk, self.vms["ev-off"].pk]
+        # a shut-off VM ticked goes too, to the host the running one left emptier
+        self.assertEqual(self.spread(self.page(shown=both, vm=both)), {"ev-run": "ev-other", "ev-off": "ev-third"})
+        # one unticked stays
+        self.assertEqual(self.spread(self.page(shown=both, vm=both[1:])), {"ev-off": "ev-other"})
+
+    def test_the_vms_spread_also_when_this_hosts_capacity_cannot_be_read(self):
+        Compute.objects.create(name="ev-third", hostname="198.51.100.32", login="", password="", type=4)
+        real = Compute.capacity.func
+
+        def capacity(host):
+            return None if host.pk == self.compute.pk else real(host)
+
+        with patch.object(Compute, "capacity", property(capacity)):
+            self.assertEqual(self.spread(self.page()), {"ev-run": "ev-other"})
+
+    def test_spread_vms_go_in_one_bulk_migration_job_with_their_hosts(self):
+        third = Compute.objects.create(name="ev-third", hostname="198.51.100.32", login="", password="", type=4)
+        run, off = self.vms["ev-run"].pk, self.vms["ev-off"].pk
+        response = self.client.post(reverse("bulk_migrate", args=[self.compute.id]),
+                                    {"spread": "1", "instance": [run, off], "target": [self.other.pk, third.pk],
+                                     "parallel": "2", "submission_key": "evac0000spr"})
+        self.assertRedirects(response, reverse("instances", args=[self.compute.id]), fetch_redirect_response=False)
+        (op,) = Operation.objects.all()
+        self.assertEqual(op.params["moves"], sorted([[run, self.other.pk], [off, third.pk]]))
+        self.assertEqual(op.resource_label, "ev -> ev-other, ev-third")
 
     def test_a_host_with_no_other_host_says_so(self):
         self.other.delete()
@@ -124,8 +160,7 @@ class BulkMigrateJobTests(TestCase):
 
     def run_job(self, parallel, ends):
         """Runs the bulk migration of every VM; each round, ends(job) gives the end state of a running migration."""
-        params = {"compute": self.compute.pk, "target": self.other.pk, "parallel": parallel,
-                  "instances": [vm.pk for vm in self.vms]}
+        params = {"compute": self.compute.pk, "parallel": parallel, "moves": [[vm.pk, self.other.pk] for vm in self.vms]}
         op = Operation.objects.create(kind="host.bulk_migrate", user=self.admin, username=self.admin.username,
                                       submission_key="key-evac0001", params=params,
                                       intent=BulkMigrate().plan(self.admin, params).intent)
@@ -182,11 +217,11 @@ class BulkMigrateJobTests(TestCase):
         self.assertNotIn(left.pk, [job.params["instance"] for job in self.migrations])
 
     def test_one_bulk_migration_runs_at_a_time(self):
-        raw = {"compute": self.compute.pk, "target": self.other.pk, "parallel": 1, "instances": [self.vms[0].pk]}
+        raw = {"compute": self.compute.pk, "parallel": 1, "moves": [[self.vms[0].pk, self.other.pk]]}
         jobs.submit("host.bulk_migrate", self.admin, raw, "key-evac0002")
         with self.assertRaises(claims.Busy):
-            jobs.submit("host.bulk_migrate", self.admin, {**raw, "compute": self.other.pk, "target": self.compute.pk},
-                        "key-evac0003")
+            jobs.submit("host.bulk_migrate", self.admin,
+                        {**raw, "compute": self.other.pk, "moves": [[self.vms[0].pk, self.compute.pk]]}, "key-evac0003")
 
     def test_a_host_changed_meanwhile_stops_the_bulk_migration(self):
         def ends(job):
@@ -232,7 +267,7 @@ class BulkMigrateJobTests(TestCase):
             jobs.submit("instance.migrate", self.admin, raw, "key-mig00003")
 
     def test_the_host_page_shows_the_bulk_migration_and_not_its_migrations(self):
-        params = {"compute": self.compute.pk, "target": self.other.pk, "parallel": 2, "instances": [self.vms[0].pk]}
+        params = {"compute": self.compute.pk, "parallel": 2, "moves": [[self.vms[0].pk, self.other.pk]]}
         bulk = jobs.submit("host.bulk_migrate", self.admin, params, "key-bulk0001")
         child = jobs.submit("instance.migrate", self.admin, {"instance": self.vms[0].pk, "target": self.other.pk},
                             "key-mig00004", parent=bulk)

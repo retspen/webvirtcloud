@@ -135,29 +135,39 @@ class Migrations(Kind):
 
 @register
 class BulkMigrate(Migrations):
-    """Migrates the chosen VMs of a host to another, for the host's
-    maintenance: a running VM live, a shut-off one offline."""
+    """Migrates the chosen VMs of a host to other hosts, one or several,
+    for the host's maintenance: a running VM live, a shut-off one offline."""
 
     name = "host.bulk_migrate"
     label = gettext_noop("Bulk migrate")
 
     def normalize(self, raw):
-        return {"compute": int(raw["compute"]), "target": int(raw["target"]), "parallel": int(raw["parallel"]),
-                "instances": sorted({int(pk) for pk in raw["instances"]})}
+        moves = {int(vm): int(target) for vm, target in raw["moves"]}
+        return {"compute": int(raw["compute"]), "parallel": int(raw["parallel"]),
+                "moves": [[vm, target] for vm, target in sorted(moves.items())]}
 
     def moves(self, params):
-        return [(vm, params["compute"], params["target"]) for vm in params["instances"]]
+        return [(vm, params["compute"], target) for vm, target in params["moves"]]
+
+    def validate(self, user, params):
+        super().validate(user, params)
+        targets = {target for _vm, target in params["moves"]}
+        if params["compute"] in targets:
+            raise util.OperationError(gettext_noop("A VM is already on its destination"))
+        if Compute.objects.filter(pk__in=targets).count() != len(targets):
+            raise util.OperationError(gettext_noop("A destination host was deleted"))
 
     def plan(self, user, params):
         compute = Compute.objects.get(pk=params["compute"])
-        target = Compute.objects.get(pk=params["target"])
+        targets = {target for _vm, target in params["moves"]}
+        names = Compute.objects.filter(pk__in=targets).order_by("name").values_list("name", flat=True)
         return Plan(claims={claims.bulk_migrate_key(): Claim.EXCLUSIVE}, resource=claims.compute_key(compute.pk),
-                    label=f"{compute.name} -> {target.name}",
+                    label=f"{compute.name} -> {', '.join(names)}",
                     intent={"migrations": {}, "where": _where(self.hosts(params))})
 
     def log_entry(self, op, state):
-        source, _sep, target = op.resource_label.partition(" -> ")
-        message = f"Bulk migrate to {target}"
+        source, _sep, targets = op.resource_label.partition(" -> ")
+        message = f"Bulk migrate to {targets}"
         return source, "", "", message if state == Operation.SUCCEEDED else f"{message} ({state})"
 
 

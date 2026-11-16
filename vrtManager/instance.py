@@ -119,6 +119,14 @@ def _rate(before, after, seconds, scale=1):
     return scale * (after - before) / seconds
 
 
+def file_disks(xml):
+    """The disks of the definition xml that are files: (disk element, path)."""
+    for disk in ElementTree.fromstring(xml).iter("disk"):
+        source = disk.find("source")
+        if disk.get("type") == "file" and source is not None and source.get("file"):
+            yield disk, source.get("file")
+
+
 class wvmInstances(wvmConnect):
     def nwfilters_unlike(self, source, names):
         """Of the network filters named and those they reference: the ones
@@ -310,26 +318,27 @@ class wvmInstances(wvmConnect):
             source.set("file", dest)
         return etree.tostring(tree, encoding="unicode")
 
+    def shares(self, conn, directory):
+        """Whether this host and that of conn see directory as one, as the
+        storage pools both have there are one (same_directory); False when
+        not, or when it cannot be told."""
+        here, there = self.pool_at(directory), conn.pool_at(directory)
+        try:
+            return here is not None and there is not None and self.same_directory(there, here)
+        except libvirtError:
+            return False  # not known to be shared: copied, never assumed
+
     def disk_plan(self, conn, xml):
         """How the file disks of the VM of conn (on the source) in xml, the
         definition the migration carries, can reach this host: a list of
         {target, path, capacity, shared, refusal}. shared: both hosts see the
-        file at its path, as the directory both have as a storage pool is
-        one (same_directory); False when not, or when it cannot be told.
+        file at its path (shares); False when not, or when it cannot be told.
         refusal: why the disk cannot be copied, or None."""
         rows, shared = [], {}
-        for disk in ElementTree.fromstring(xml).iter("disk"):
-            source = disk.find("source")
-            if disk.get("type") != "file" or source is None or not source.get("file"):
-                continue
-            path = source.get("file")
+        for disk, path in file_disks(xml):
             directory = os.path.dirname(path)
             if directory not in shared:
-                here, there = self.pool_at(directory), conn.pool_at(directory)
-                try:
-                    shared[directory] = here is not None and there is not None and self.same_directory(there, here)
-                except libvirtError:
-                    shared[directory] = False  # not known to be shared: copied, never assumed
+                shared[directory] = self.shares(conn, directory)
             try:
                 volume = conn.wvm.storageVolLookupByPath(path)
             except libvirtError:

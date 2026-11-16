@@ -19,13 +19,12 @@ from django.views.decorators.debug import sensitive_post_parameters
 from webvirtcloud.middleware import error_text
 from instances.models import Instance
 from instances.utils import read_list_rows, vm_states
-from libvirt import VIR_DOMAIN_XML_INACTIVE, libvirtError
+from libvirt import libvirtError
 from logs.audit import audit, changed_fields, snapshot
 from operations import claims, jobs
 from operations.utils import busy_message
 from vrtManager.connection import CONN_SOCKET, CONN_SSH, CONN_TCP, CONN_TLS
 from vrtManager.hostdetails import wvmHostDetails
-from vrtManager.instance import wvmInstances
 from vrtManager.storage import wvmStorages
 
 from computes.forms import (
@@ -230,41 +229,54 @@ def instances(request, compute_id):
     )
 
 
-def migration_refusal(request, instance, target, dests):
-    """Why the VM cannot migrate to target in a bulk migration, or None: a
-    disk file the two hosts do not share takes a copy, chosen on the VM's
-    Migrate tab. dests: {compute pk: its connection}, filled as needed."""
-    from instances.jobs import migration_target
-
-    try:
-        migration_target(instance, target.pk)
-        if target.pk not in dests:
-            dests[target.pk] = wvmInstances(target.hostname, target.login, target.password, target.type)
-        domain = instance.proxy.instance
-        for xml in (domain.XMLDesc(0), domain.XMLDesc(VIR_DOMAIN_XML_INACTIVE)):
-            if not all(disk["shared"] for disk in dests[target.pk].disk_plan(instance.proxy, xml)):
-                return _("A disk file is not on storage both hosts share: migrate it from its page")
-    except libvirtError as err:
-        return error_text(request, err)
-    return None
+def read_fleet():
+    """The computes; those the panel reads now, {pk: compute}, read side by
+    side and bounded (one that does not answer is left out); their VMs, with
+    their info; what each gives its running VMs, {pk: [memory KiB, vCPUs]};
+    and the memory KiB its running and paused VMs, also those the panel does
+    not list, leave of its memory, {pk: KiB}."""
+    computes = list(Compute.objects.order_by("name"))
+    read_hosts(computes)
+    hosts = {compute.pk: compute for compute in computes if compute.status is True and compute.shown_capacity}
+    for compute in hosts.values():
+        utils.refresh_instance_database(compute)
+    instances = list(Instance.objects.filter(compute__in=hosts).order_by("name"))
+    read_list_rows(instances, hosts.values())
+    loads = {pk: [0, 0] for pk in hosts}
+    for instance in instances:
+        if instance.info and instance.info[0] == 1:
+            loads[instance.compute_id][0] += instance.info[2]
+            loads[instance.compute_id][1] += instance.info[3]
+    room = {pk: (compute.shown_capacity["memory"] - compute.shown_capacity["assigned"]["running"]) // 1024
+            for pk, compute in hosts.items()}
+    return computes, hosts, instances, loads, room
 
 
 @superuser_only
 def bulk_migrate(request, compute_id):
-    """Migrates the chosen VMs of the host to another in one job, for the
-    host's maintenance: a migrate job each, the chosen number at once; a
-    running VM live, a shut-off one offline. A VM with a disk file the two
-    hosts do not share is not offered: it takes a copy, chosen on its own
-    Migrate tab."""
+    """Migrates the chosen VMs of the host in one job, for the host's
+    maintenance: a migrate job each, the chosen number at once; a running VM
+    live, a shut-off one offline. They go to one host, or are spread over the
+    others (computes.balance.spread), where the page shows each one going: a
+    VM ticked or unticked then makes the spread again, as the form sends the
+    VMs it showed ("shown") and the ticked ones ("vm"). A VM with a disk file
+    the hosts do not share is not offered: it takes a copy, chosen on its
+    own Migrate tab."""
+    from computes.balance import spread
     from computes.jobs import parallel_limit
+    from computes.reach import Reach
 
     compute = get_object_or_404(Compute, pk=compute_id)
     targets = list(Compute.objects.exclude(pk=compute.pk).order_by("name"))
     if request.method == "POST":
-        # the destination the form showed, not another one taken in its place
-        target = get_object_or_404(Compute.objects.exclude(pk=compute.pk), pk=request.POST.get("target", "") or None)
-        raw = {"compute": compute.pk, "target": target.pk, "parallel": request.POST.get("parallel", ""),
-               "instances": [pk for pk in request.POST.getlist("instance") if pk.isdigit()]}
+        chosen = request.POST.getlist("instance")
+        if request.POST.get("spread"):
+            moves, again = list(zip(chosen, request.POST.getlist("target"))), "spread"
+        else:
+            # the destination the form showed, not another one taken in its place
+            target = get_object_or_404(Compute.objects.exclude(pk=compute.pk), pk=request.POST.get("target", "") or None)
+            moves, again = [(pk, target.pk) for pk in chosen], target.pk
+        raw = {"compute": compute.pk, "parallel": request.POST.get("parallel", ""), "moves": moves}
         try:
             op = jobs.submit("host.bulk_migrate", request.user, raw, request.POST.get("submission_key", ""))
         except claims.Busy as busy:
@@ -274,18 +286,48 @@ def bulk_migrate(request, compute_id):
         else:
             jobs.remember_job(request, op)
             return redirect("instances", compute.pk)
-        return redirect(reverse("bulk_migrate", args=[compute.pk]) + f"?target={target.pk}")
+        return redirect(reverse("bulk_migrate", args=[compute.pk]) + f"?target={again}")
 
-    chosen = request.GET.get("target")
-    target = next((t for t in targets if str(t.pk) == chosen), targets[0] if targets else None)
+    reach = Reach(request)
+    spreading = len(targets) > 1 and request.GET.get("target", "spread") == "spread"
     utils.refresh_instance_database(compute)
     instances = list(Instance.objects.filter(compute=compute).order_by("name"))
     read_list_rows(instances, [compute])
-    dests = {}
-    for instance in instances if target else ():
-        instance.refusal = migration_refusal(request, instance, target, dests)
+    if not spreading:
+        target = next((t for t in targets if str(t.pk) == request.GET.get("target")), targets[0] if targets else None)
+        for instance in instances if target else ():
+            instance.refusal = reach.refusal(instance, target)
+        return render(request, "computes/bulk_migrate.html",
+                      {"compute": compute, "targets": targets, "target": target, "instances": instances,
+                       "parallel": range(1, parallel_limit() + 1)})
+
+    # the other hosts' loads: the VMs of this one are read above, also when its capacity cannot be
+    _computes, hosts, _instances, loads, room = read_fleet()
+    others = {pk: host for pk, host in hosts.items() if pk != compute.pk}
+    shown, ticked = request.GET.getlist("shown"), request.GET.getlist("vm")
+    vms = []
+    for instance in instances:
+        refusals = {host: reach.refusal(instance, host) for host in others.values()}
+        can_go = {host.pk for host, refusal in refusals.items() if refusal is None}
+        if not can_go:
+            instance.refusal = "; ".join(f"{host.name}: {refusal}" for host, refusal in refusals.items())
+            continue
+        instance.refusal = None
+        shut_off = bool(instance.info) and instance.info[0] == 5
+        # at first the VMs that are not shut off, as with one destination; then the ticked ones
+        if instance.info and (str(instance.pk) in ticked if shown else not shut_off):
+            vms.append((instance.pk, instance.info[2], instance.info[3], not shut_off, can_go))
+    placed, _after = spread({pk: loads[pk] for pk in others}, vms, {pk: room[pk] for pk in others})
+    for instance in instances:
+        instance.target = others.get(placed.get(instance.pk))
+        if instance.target is None and any(vm[0] == instance.pk for vm in vms):
+            instance.note = _("No other host has room for it")
+    going = [instance for instance in instances if instance.target]
     return render(request, "computes/bulk_migrate.html",
-                  {"compute": compute, "targets": targets, "target": target, "instances": instances,
+                  {"compute": compute, "targets": targets, "spreading": True, "instances": instances,
+                   "all_ticked": len(going) == len([instance for instance in instances if not instance.refusal]),
+                   "shut_off_ticked": any(instance.info[0] == 5 for instance in going),
+                   "unreachable": [host for host in targets if host.pk not in others],
                    "parallel": range(1, parallel_limit() + 1)})
 
 
@@ -298,6 +340,7 @@ def balance(request):
     ("shown") and the ticked ones ("vm")."""
     from computes.balance import propose
     from computes.jobs import parallel_limit
+    from computes.reach import Reach
 
     if request.method == "POST":
         moves = zip(request.POST.getlist("instance"), request.POST.getlist("source"), request.POST.getlist("target"))
@@ -313,23 +356,14 @@ def balance(request):
             return redirect("computes")
         return redirect("balance")
 
-    computes = list(Compute.objects.order_by("name"))
-    read_hosts(computes)  # side by side and bounded: a host that does not answer is left out
-    hosts = {compute.pk: compute for compute in computes if compute.status is True and compute.shown_capacity}
-    for compute in hosts.values():
-        utils.refresh_instance_database(compute)
-    instances = list(Instance.objects.filter(compute__in=hosts).order_by("name"))
-    read_list_rows(instances, hosts.values())
+    computes, hosts, instances, loads, room = read_fleet()
     running = [instance for instance in instances if instance.info and instance.info[0] == 1]
     pinned = set(request.GET.getlist("shown")) - set(request.GET.getlist("vm"))
-    loads = {pk: [0, 0] for pk in hosts}
-    movable, unmovable, dests = [], [], {}
+    movable, unmovable, reach = [], [], Reach(request)
     for instance in running:
-        loads[instance.compute_id][0] += instance.info[2]
-        loads[instance.compute_id][1] += instance.info[3]
         if str(instance.pk) in pinned:
             continue
-        refusals = {target: migration_refusal(request, instance, target, dests)
+        refusals = {target: reach.refusal(instance, target)
                     for target in hosts.values() if target.pk != instance.compute_id}
         targets = {target.pk for target, refusal in refusals.items() if refusal is None}
         if targets:
@@ -337,9 +371,6 @@ def balance(request):
         elif refusals:
             instance.refusals = [f"{target.name}: {refusal}" for target, refusal in refusals.items()]
             unmovable.append(instance)
-    # what the running and paused VMs, also those the panel does not list, leave of each host's memory
-    room = {pk: (compute.shown_capacity["memory"] - compute.shown_capacity["assigned"]["running"]) // 1024
-            for pk, compute in hosts.items()}
     moves, after = propose(loads, movable, room)
     # the bars of each host's memory before and after, on the scale of the largest
     scale = max([load[0] for load in (*loads.values(), *after.values())] + [1])

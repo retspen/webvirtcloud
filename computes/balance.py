@@ -1,5 +1,7 @@
-"""The Balance page's proposal: which running VMs to migrate so that the
-hosts give their running VMs about the same memory, then the same vCPUs."""
+"""Where VMs migrate: the Balance page's proposal (propose), which running
+VMs to migrate so that the hosts give their running VMs about the same
+memory, then the same vCPUs; and a bulk migration's spread over the other
+hosts (spread)."""
 
 
 def propose(loads, vms, room):
@@ -58,3 +60,29 @@ def _steps(loads, vms, room, per_memory):
         room[target] -= ram
         left.remove(vm)
         moves.append((pk, source, target))
+
+
+def spread(loads, vms, room):
+    """Where each VM of a host being emptied goes: {VM: target}, and the
+    loads after. loads and room as propose's, of the hosts the VMs may go
+    to. vms: (VM, memory KiB, vCPUs, whether it holds its memory (not shut
+    off), the hosts it may go to).
+
+    The largest VMs first, each to the host it may go to that has the least
+    memory, then vCPUs, with it; one that holds its memory only where it
+    fits the room. A shut-off VM counts too: it takes its memory when it
+    starts. A VM no host takes is left out."""
+    loads = {host: list(load) for host, load in loads.items()}
+    room = dict(room)
+    placed = {}
+    for pk, ram, vcpus, holds, targets in sorted(vms, key=lambda vm: (-vm[1], -vm[2], vm[0])):
+        fits = sorted(target for target in targets if not holds or ram <= room[target])
+        if not fits:
+            continue
+        target = min(fits, key=lambda host: (loads[host][0] + ram, loads[host][1] + vcpus))
+        loads[target][0] += ram
+        loads[target][1] += vcpus
+        if holds:
+            room[target] -= ram
+        placed[pk] = target
+    return placed, loads
