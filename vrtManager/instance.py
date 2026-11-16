@@ -149,15 +149,15 @@ class wvmInstances(wvmConnect):
         return sorted(missing), sorted(unlike)
 
     def moveto(self, conn, name, live, unsafe, offline, autoconverge=False, compress=False, uri=None,
-               pools=None, on_copy=None):
+               pools=None, on_copy=None, running_only=False):
         """Migrates the VM of conn (a wvmInstance on the source) here.
 
         The mode follows the VM's state, read once: a running VM migrates
         live or, without live, paused for the transfer (non-live); a paused
         VM stays paused; a shut-off VM moves offline, also when the request
         was made while it ran (live). An offline request for a running or
-        paused VM is refused. unsafe, autoconverge (live only) and
-        compress apply to a running VM. uri: the native migration URI
+        paused VM is refused, and with running_only a VM not running.
+        unsafe, autoconverge (live only) and compress apply to a running VM. uri: the native migration URI
         (tcp://address) on the destination; None lets libvirt use the
         destination's own hostname. pools: {target: pool here} of the disks
         libvirt copies into those pools during the migration (disk_copies);
@@ -166,6 +166,8 @@ class wvmInstances(wvmConnect):
         libvirt makes them. Returns the mode and options used, for the log,
         and each copied disk's path and the path of its copy here."""
         state = conn.get_status()
+        if running_only and state != 1:
+            raise util.OperationError(gettext_noop("The VM is not running"))
         if state == 5:
             mode = ["offline"]
         elif state in (1, 3):

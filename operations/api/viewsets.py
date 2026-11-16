@@ -50,9 +50,10 @@ class OperationViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewset
             raise ValidationError({"key": "required"})
         if not visible(request.user, key):
             raise Http404
-        # the jobs on the resource and the page's own; a job another one on this page started shows in that one
-        active = list(Operation.objects.filter(Q(claims__resource=key) | Q(resource=key), state__in=SHOWN_STATES)
-                      .exclude(parent__resource=key).distinct())
+        # the page's own jobs and the jobs on its resource; a job another one started (a bulk migration's
+        # migration) shows on its own page only, the one that started it on its pages
+        active = list(Operation.objects.filter(Q(resource=key) | Q(claims__resource=key, parent__isnull=True),
+                                               state__in=SHOWN_STATES).distinct())
         mine = [op for op in active if may_see(op, request.user)]
         others = [summary(op, request.user) for op in active if not may_see(op, request.user)]
         seen = last_seen()

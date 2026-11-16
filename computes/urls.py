@@ -28,6 +28,7 @@ def superuser_only_patterns(patterns):
 
 urlpatterns = [
     path("", views.computes, name="computes"),
+    path("balance/", views.balance, name="balance"),
     path(
         "add_tcp_host/",
         views.compute_create,

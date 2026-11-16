@@ -30,6 +30,17 @@ class MigrationFlagsTestCase(unittest.TestCase):
         destination().moveto(source, "vm", live=True, unsafe=False, offline=False)
         self.assertIsNone(source.instance.calls[0][1])
 
+    def test_running_only_refuses_a_vm_not_running(self):
+        for state in (3, 5):
+            with self.subTest(state=state):
+                source = FakeSource(state)
+                with self.assertRaisesRegex(util.OperationError, "not running"):
+                    destination().moveto(source, "vm", live=True, unsafe=False, offline=False, running_only=True)
+                self.assertEqual(source.instance.calls, [])
+        source = FakeSource(1)
+        destination().moveto(source, "vm", live=True, unsafe=False, offline=False, running_only=True)
+        self.assertEqual(len(source.instance.calls), 1)
+
 
 class ShutOffMigrationTestCase(unittest.TestCase):
     """libvirt's offline migration fails on some builds (RHEL-156800); a

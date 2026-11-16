@@ -42,8 +42,9 @@ def reconcile_key(compute_id):
 
 
 def bulk_migrate_key():
-    """The bulk migrations: one at a time. One waits in a worker slot for its
-    migrations; several could take every slot and leave none for them."""
+    """The bulk migrations and balances: one at a time. One waits in a worker
+    slot for its migrations; several could take every slot and leave none
+    for them. The Computes page shows them."""
     return "bulk_migrate"
 
 

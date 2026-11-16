@@ -1075,7 +1075,7 @@ class CreateInstance(Kind):
         return _log(op, state, "create")
 
 
-MIGRATE_OPTIONS = ("live", "unsafe", "offline", "autoconverge", "compress", "delete_source")
+MIGRATE_OPTIONS = ("live", "unsafe", "offline", "autoconverge", "compress", "delete_source", "running_only")
 
 
 def migration_target(instance, target_pk):

@@ -306,6 +306,7 @@ def migrate_instance(
     autoconverge=False,
     compress=False,
     delete_source=False,
+    running_only=False,
     disk_pools=None,
     ip=None,
     on_moved=None,
@@ -345,6 +346,7 @@ def migrate_instance(
             uri=new_compute.migration_uri,
             pools=disk_pools,
             on_copy=on_copy,
+            running_only=running_only,
         )
     except Exception as error:
         log(f"migrate to {target}", error)
