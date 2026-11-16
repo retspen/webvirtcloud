@@ -89,7 +89,7 @@ class BulkMigratePageTests(TestCase):
 
     def test_one_destination_is_named_and_several_are_a_choice(self):
         self.assertEqual(self.page().xpath("//select[@name='target']"), [])
-        self.assertIn("ev-other", self.page().xpath("//strong/text()"))
+        self.assertIn("ev-other", self.page().xpath("//div[contains(@class, 'card-header')]/span/text()"))
         Compute.objects.create(name="ev-third", hostname="198.51.100.32", login="", password="", type=4)
         self.assertEqual(self.page().xpath("//select[@name='target']/option/text()"), ["ev-other", "ev-third"])
 

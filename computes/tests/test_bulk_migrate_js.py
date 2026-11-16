@@ -20,23 +20,29 @@ const boxes = [
 ];
 const handlers = {};
 const box = (id) => ({addEventListener: (name, fn) => { handlers[id] = fn; }});
-const ids = {"bulk-migrate-all": box("all"), "bulk-migrate-shut-off": box("shut-off"), "bulk-migrate-target": box("target")};
+const button = {disabled: false}, counter = {textContent: ""};
+const ids = {"bulk-migrate-all": box("all"), "bulk-migrate-shut-off": box("shut-off"), "bulk-migrate-target": box("target"),
+             "bulk-migrate-submit": button, "bulk-migrate-count": counter};
 let submitted = 0;
 const selectors = {
     "input[name=instance]:not(:disabled)": (b) => !b.disabled,
     "input[data-shut-off]:not(:disabled)": (b) => b.shutOff && !b.disabled,
+    "input[name=instance]:checked": (b) => b.checked,
 };
 vm.runInNewContext(SCRIPT, vm.createContext({document: {
     getElementById: (id) => ids[id],
     querySelectorAll: (selector) => boxes.filter(selectors[selector]),
+    addEventListener: (name, fn) => { handlers.document = fn; },
 }}));
 const ticked = () => boxes.filter((b) => b.checked).map((b) => b.name);
-const seen = [];
+const seen = [], counts = [[counter.textContent, button.disabled]];
 for (const [id, checked] of STEPS) {
     handlers[id]({target: {checked, form: {submit: () => { submitted += 1; }}}});
+    handlers.document();  // the change bubbles to the page
     seen.push(ticked());
+    counts.push([counter.textContent, button.disabled]);
 }
-console.log(JSON.stringify({seen, submitted}));
+console.log(JSON.stringify({seen, submitted, counts}));
 """
 
 
@@ -53,6 +59,10 @@ class BulkMigrateScriptTests(unittest.TestCase):
 
     def test_the_shut_off_box_ticks_only_the_shut_off_vms(self):
         self.assertEqual(self.run_script([["shut-off", True], ["shut-off", False]])["seen"], [["run", "off"], ["run"]])
+
+    def test_the_button_counts_the_ticked_vms_and_is_off_without_one(self):
+        self.assertEqual(self.run_script([["all", False], ["all", True]])["counts"],
+                         [[1, False], [0, True], [2, False]])
 
     def test_another_destination_reloads_the_list(self):
         self.assertEqual(self.run_script([["target", False]])["submitted"], 1)

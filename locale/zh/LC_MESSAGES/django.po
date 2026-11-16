@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-16 05:10+0000\n"
+"POT-Creation-Date: 2026-11-16 06:19+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -63,7 +63,7 @@ msgstr "无效的密钥"
 
 #: accounts/forms.py:95 computes/templates/computes/balance.html:57
 #: computes/templates/computes/balance.html:104
-#: computes/templates/computes/bulk_migrate.html:45
+#: computes/templates/computes/bulk_migrate.html:47
 #: computes/templates/computes/instances.html:46
 #: instances/templates/add_instance_volume.html:39
 #: instances/templates/allinstances_index_grouped.html:11
@@ -749,7 +749,7 @@ msgid "vCPUs"
 msgstr "vCPU"
 
 #: admin/forms.py:209 computes/templates/computes/balance.html:58
-#: computes/templates/computes/bulk_migrate.html:48
+#: computes/templates/computes/bulk_migrate.html:49
 #: computes/templates/computes/instances.html:50
 #: computes/templates/computes/list.html:62 computes/templates/overview.html:66
 #: computes/templates/overview.html:150
@@ -2038,7 +2038,7 @@ msgid_plural "Proposed migrations (%(counter)s)"
 msgstr[0] "建议的迁移（%(counter)s）"
 
 #: computes/templates/computes/balance.html:56
-#: computes/templates/computes/bulk_migrate.html:44
+#: computes/templates/computes/bulk_migrate.html:46
 msgid "Select all"
 msgstr "全选"
 
@@ -2047,7 +2047,7 @@ msgid "Migration"
 msgstr "迁移"
 
 #: computes/templates/computes/balance.html:81
-#: computes/templates/computes/bulk_migrate.html:70
+#: computes/templates/computes/bulk_migrate.html:73
 msgid "Migrations at once"
 msgstr "同时迁移数"
 
@@ -2062,7 +2062,7 @@ msgid "Migrate the VMs listed?"
 msgstr "迁移列出的虚拟机？"
 
 #: computes/templates/computes/balance.html:88
-#: computes/templates/computes/bulk_migrate.html:30
+#: computes/templates/computes/bulk_migrate.html:22
 msgid ""
 "The worker runs one job at a time: set Worker Concurrency to 2 or more on the"
 " Settings page."
@@ -2082,6 +2082,7 @@ msgid "Let it move"
 msgstr "允许迁移"
 
 #: computes/templates/computes/balance.html:106
+#: computes/templates/computes/bulk_migrate.html:51
 msgid "Why"
 msgstr "原因"
 
@@ -2089,58 +2090,49 @@ msgstr "原因"
 msgid "You kept it here: tick it to let it move"
 msgstr "您将其保留在原处：勾选后即可迁移"
 
-#: computes/templates/computes/bulk_migrate.html:5
 #: computes/templates/computes/bulk_migrate.html:6
+#: computes/templates/computes/bulk_migrate.html:7
 #: computes/templates/computes/instances.html:15
 msgid "Bulk Migrate"
 msgstr "批量迁移"
 
-#: computes/templates/computes/bulk_migrate.html:15 instances/views.py:379
+#: computes/templates/computes/bulk_migrate.html:16 instances/views.py:379
 msgid "There is no other host to migrate to."
 msgstr "没有其他可迁移到的主机。"
 
-#: computes/templates/computes/bulk_migrate.html:17
+#: computes/templates/computes/bulk_migrate.html:18
 msgid ""
 "Each chosen VM migrates in a job of its own: a running VM live, a shut-off "
 "one offline. A VM that fails stays on this host."
 msgstr "每台选中的虚拟机在各自的任务中迁移：运行中的虚拟机在线迁移，已关机的离线迁移。迁移失败的虚拟机留在此主机上。"
 
-#: computes/templates/computes/bulk_migrate.html:21
-#: computes/templates/computes/bulk_migrate.html:27
-msgid "Destination"
-msgstr "目标主机"
-
-#: computes/templates/computes/bulk_migrate.html:32
+#: computes/templates/computes/bulk_migrate.html:24
 msgid "The host has no VMs."
 msgstr "此主机没有虚拟机。"
 
-#: computes/templates/computes/bulk_migrate.html:38
+#: computes/templates/computes/bulk_migrate.html:31
+msgid "Destination"
+msgstr "目标主机"
+
+#: computes/templates/computes/bulk_migrate.html:39
 msgid "Also migrate the shut-off VMs"
 msgstr "同时迁移已关机的虚拟机"
 
-#: computes/templates/computes/bulk_migrate.html:46
+#: computes/templates/computes/bulk_migrate.html:48
 #: computes/templates/computes/instances.html:48
 #: instances/templates/allinstances_index_grouped.html:12
 #: instances/templates/allinstances_index_nongrouped.html:10
 msgid "Status"
 msgstr "状态"
 
-#: computes/templates/computes/bulk_migrate.html:47
-#: computes/templates/computes/instances.html:49
-msgid "VCPU"
-msgstr "VCPU"
-
-#: computes/templates/computes/bulk_migrate.html:75
+#: computes/templates/computes/bulk_migrate.html:77
 #, python-format
 msgid "Migrate the chosen VMs from %(source)s to %(dest)s?"
 msgstr "将选中的虚拟机从 %(source)s 迁移到 %(dest)s？"
 
-#: computes/templates/computes/bulk_migrate.html:76
-#: instances/templates/instances/settings_tab.html:60
-#: instances/templates/instances/settings_tab.html:617
-#: instances/templates/instances/settings_tab.html:620
-msgid "Migrate"
-msgstr "迁移"
+#: computes/templates/computes/bulk_migrate.html:79
+msgid "Migrate the chosen VMs"
+msgstr "迁移所选虚拟机"
 
 #: computes/templates/computes/capacity_line.txt:2
 #, python-format
@@ -2372,6 +2364,10 @@ msgstr "警告"
 #: computes/templates/computes/instances.html:38
 msgid "Hypervisor doesn't have any Instances"
 msgstr "虚拟机管理程序中没有任何虚拟机"
+
+#: computes/templates/computes/instances.html:49
+msgid "VCPU"
+msgstr "VCPU"
 
 #: computes/templates/computes/instances.html:51
 #: computes/templates/computes/list.html:63
@@ -4969,6 +4965,12 @@ msgstr "网络"
 #: instances/templates/instances/settings_tab.html:46
 msgid "Host devices"
 msgstr "主机设备"
+
+#: instances/templates/instances/settings_tab.html:60
+#: instances/templates/instances/settings_tab.html:617
+#: instances/templates/instances/settings_tab.html:620
+msgid "Migrate"
+msgstr "迁移"
 
 #: instances/templates/instances/settings_tab.html:65
 msgid "XML"
