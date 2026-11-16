@@ -54,6 +54,20 @@ class ProposeTests(SimpleTestCase):
         vms = [(1, "a", 30, 0, {"b"}), (2, "b", 40, 0, {"c"})]
         self.assertEqual(propose(loads, vms, {"a": 0, "b": 0, "c": 100})[0], [(2, "b", "c")])
 
+    def test_small_vms_move_rather_than_a_large_one_for_the_same_balance(self):
+        # a: a large VM (16) and two small ones (1, 2); b: one small VM (1). Moving the large VM to b and
+        # the small one back ends as even as moving the two small ones, which moves far less memory
+        loads = {"a": (19, 7), "b": (1, 4)}
+        vms = [(1, "a", 16, 2, {"b"}), (2, "a", 1, 1, {"b"}), (3, "a", 2, 4, {"b"}), (4, "b", 1, 4, {"a"})]
+        moves, after = propose(loads, vms, ROOM)
+        self.assertEqual(moves, [(2, "a", "b"), (3, "a", "b")])
+        self.assertEqual(after, {"a": [16, 2], "b": [4, 9]})
+
+    def test_a_large_vm_moves_when_only_it_evens_out_the_hosts(self):
+        loads = {"a": (20, 0), "b": (0, 0)}
+        vms = [(1, "a", 10, 0, {"b"}), (2, "a", 1, 0, {"b"})]
+        self.assertEqual(propose(loads, vms, {"a": 100, "b": 100})[0], [(1, "a", "b")])
+
     def test_even_hosts_need_no_move(self):
         loads = {"a": (4, 2), "b": (4, 2)}
         self.assertEqual(propose(loads, [(1, "a", 4, 2, {"b"})], ROOM)[0], [])

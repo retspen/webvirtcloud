@@ -11,9 +11,25 @@ def propose(loads, vms, room):
     memory KiB its running and paused VMs leave}; the VMs moved to a host
     fit in it without those moved away, so the moves may run in any order.
 
-    Each step takes the one move that most lowers the sum of the squared
-    memory loads, then of the squared vCPU loads, and stops when none does:
-    each VM moves at most once."""
+    The proposal is made twice, step by step, each step taking the move
+    that most lowers the sum of the squared memory loads, then of the
+    squared vCPU loads: once the move that lowers it most, once the move
+    that lowers it most for the memory it moves. The one that evens out the
+    hosts more is taken, and of two that do it as well, the one that moves
+    less memory: small VMs rather than a large one."""
+    sizes = {vm[0]: vm[2] for vm in vms}
+
+    def rank(plan):
+        moves, after = plan
+        squares = tuple(sum(load[i] ** 2 for load in after.values()) for i in (0, 1))
+        return squares, sum(sizes[pk] for pk, _source, _target in moves)
+
+    return min((_steps(loads, vms, room, per_memory) for per_memory in (False, True)), key=rank)
+
+
+def _steps(loads, vms, room, per_memory):
+    """The moves and the loads after them, a move at a time while one lowers
+    the sums of squares; each VM moves at most once."""
     loads = {host: list(load) for host, load in loads.items()}
     room = dict(room)
     left, moves = sorted(vms), []
@@ -27,11 +43,14 @@ def propose(loads, vms, room):
                 # the change of each sum of squares: (s - x)² + (t + x)² - s² - t²
                 change = tuple(2 * size * (loads[target][i] - loads[source][i] + size)
                                for i, size in enumerate((ram, vcpus)))
-                if change < (0, 0) and (best is None or change < best[0]):
-                    best = (change, vm, target)
+                if change >= (0, 0):
+                    continue
+                gain = (change[0] / ram, change[1]) if per_memory and ram else change
+                if best is None or gain < best[0]:
+                    best = (gain, vm, target)
         if best is None:
             return moves, loads
-        _change, vm, target = best
+        _gain, vm, target = best
         pk, source, ram, vcpus, _targets = vm
         for i, size in enumerate((ram, vcpus)):
             loads[source][i] -= size
