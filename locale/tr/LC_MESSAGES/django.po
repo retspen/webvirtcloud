@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-16 04:31+0000\n"
+"POT-Creation-Date: 2026-11-16 05:10+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -64,7 +64,8 @@ msgstr "Açık anahtar zaten mevcut"
 msgid "Invalid key"
 msgstr "Geçersiz anahtar"
 
-#: accounts/forms.py:95 computes/templates/computes/balance.html:45
+#: accounts/forms.py:95 computes/templates/computes/balance.html:57
+#: computes/templates/computes/balance.html:104
 #: computes/templates/computes/bulk_migrate.html:45
 #: computes/templates/computes/instances.html:46
 #: instances/templates/add_instance_volume.html:39
@@ -237,7 +238,7 @@ msgid "Add VM"
 msgstr "Sanal makine ekle"
 
 #: accounts/templates/account.html:68 admin/templates/admin/logs.html:40
-#: computes/templates/computes/balance.html:17
+#: computes/templates/computes/balance.html:105
 #: computes/templates/computes/list.html:59
 #: instances/templates/allinstances.html:108
 #: instances/templates/allinstances_index_nongrouped.html:8
@@ -770,8 +771,7 @@ msgstr ""
 msgid "vCPUs"
 msgstr "vCPU"
 
-#: admin/forms.py:209 computes/templates/computes/balance.html:18
-#: computes/templates/computes/balance.html:47
+#: admin/forms.py:209 computes/templates/computes/balance.html:58
 #: computes/templates/computes/bulk_migrate.html:48
 #: computes/templates/computes/instances.html:50
 #: computes/templates/computes/list.html:62 computes/templates/overview.html:66
@@ -1985,8 +1985,8 @@ msgstr ""
 msgid "Bulk migrate"
 msgstr "Toplu taşıma"
 
-#: computes/jobs.py:171 computes/templates/computes/balance.html:5
-#: computes/templates/computes/balance.html:6
+#: computes/jobs.py:171 computes/templates/computes/balance.html:6
+#: computes/templates/computes/balance.html:12
 #: computes/templates/computes/list.html:12
 msgid "Balance"
 msgstr "Dengele"
@@ -2064,65 +2064,87 @@ msgstr ""
 "Bu, VM'lerinin bulunduğu sunucudan başka bir sunucu: yeni bir sunucu olarak "
 "ekleyin"
 
-#: computes/templates/computes/balance.html:9
-msgid ""
-"Migrations of running VMs that even out the memory, then the vCPUs, the hosts"
-" give their running VMs. Each VM migrates live in a job of its own; one that "
-"fails or stops meanwhile stays where it is."
-msgstr ""
-"Sunucuların çalışan sanal makinelere verdiği belleği, ardından vCPU'ları "
-"eşitleyen taşımalar. Her sanal makine kendi işinde canlı taşınır; başarısız "
-"olan ya da bu arada duran sanal makine olduğu yerde kalır."
-
 #: computes/templates/computes/balance.html:11
+#: computes/templates/computes/list.html:6
+#: computes/templates/computes/list.html:14 templates/navbar.html:18
+msgid "Computes"
+msgstr "Sunucular"
+
+#: computes/templates/computes/balance.html:15
+msgid ""
+"Migrations that share the memory, then the vCPUs, of running VMs evenly among"
+" the hosts."
+msgstr ""
+"Çalışan sanal makinelerin belleğini, ardından vCPU'larını sunuculara eşit "
+"dağıtan taşımalar."
+
+#: computes/templates/computes/balance.html:17
 msgid "These hosts cannot be read and are left out:"
 msgstr "Bu sunucular okunamıyor ve hesaba katılmadı:"
 
-#: computes/templates/computes/balance.html:19
-#: computes/templates/computes/balance.html:46
-#: computes/templates/computes/bulk_migrate.html:47
-#: computes/templates/computes/instances.html:49
-msgid "VCPU"
-msgstr "VCPU"
+#: computes/templates/computes/balance.html:28
+#: instances/templates/instances/snapshots_tab.html:18
+msgid "Now"
+msgstr "Şimdi"
 
-#: computes/templates/computes/balance.html:33
-msgid "After: if every migration below succeeds."
-msgstr "Sonrası: aşağıdaki taşımaların hepsi başarılı olursa."
+#: computes/templates/computes/balance.html:28
+msgid "Running VMs"
+msgstr "Çalışan sanal makineler"
 
-#: computes/templates/computes/balance.html:44
+#: computes/templates/computes/balance.html:29
+#: computes/templates/computes/balance.html:32
+#: computes/templates/computes/capacity_vcpus.html:4
+#, python-format
+msgid "%(counter)s vCPU"
+msgid_plural "%(counter)s vCPUs"
+msgstr[0] "%(counter)s vCPU"
+msgstr[1] "%(counter)s vCPU"
+
+#: computes/templates/computes/balance.html:31
+msgid "After"
+msgstr "Sonra"
+
+#: computes/templates/computes/balance.html:34
+msgid "Memory now"
+msgstr "Şimdiki bellek"
+
+#: computes/templates/computes/balance.html:34
+msgid "Memory after"
+msgstr "Sonraki bellek"
+
+#: computes/templates/computes/balance.html:51
+#, python-format
+msgid "Proposed migration (%(counter)s)"
+msgid_plural "Proposed migrations (%(counter)s)"
+msgstr[0] "Önerilen taşımalar (%(counter)s)"
+msgstr[1] "Önerilen taşımalar (%(counter)s)"
+
+#: computes/templates/computes/balance.html:56
 #: computes/templates/computes/bulk_migrate.html:44
 msgid "Select all"
 msgstr "Tümünü seç"
 
-#: computes/templates/computes/balance.html:48
-#: instances/templates/instances/settings_tab.html:527
-#: networks/templates/network.html:396
-msgid "From"
-msgstr "Başlangıç"
+#: computes/templates/computes/balance.html:60
+msgid "Migration"
+msgstr "Taşıma"
 
-#: computes/templates/computes/balance.html:49
-#: instances/templates/instances/settings_tab.html:532
-#: networks/templates/network.html:400
-msgid "To"
-msgstr "Bitiş"
+#: computes/templates/computes/balance.html:81
+#: computes/templates/computes/bulk_migrate.html:70
+msgid "Migrations at once"
+msgstr "Aynı anda taşıma"
 
-#: computes/templates/computes/balance.html:67
-msgid "No migration would even out the hosts more."
-msgstr "Sunucuları daha fazla dengeleyecek bir taşıma yok."
+#: computes/templates/computes/balance.html:85
+#, python-format
+msgid "Migrate %(counter)s VM"
+msgid_plural "Migrate %(counter)s VMs"
+msgstr[0] "%(counter)s sanal makineyi taşı"
+msgstr[1] "%(counter)s sanal makineyi taşı"
 
-#: computes/templates/computes/balance.html:70
-msgid "Stay where they are"
-msgstr "Yerinde kalanlar"
+#: computes/templates/computes/balance.html:86
+msgid "Migrate the VMs listed?"
+msgstr "Listelenen sanal makineler taşınsın mı?"
 
-#: computes/templates/computes/balance.html:76
-msgid "Let it move"
-msgstr "Taşınabilsin"
-
-#: computes/templates/computes/balance.html:87
-msgid "Cannot move"
-msgstr "Taşınamayanlar"
-
-#: computes/templates/computes/balance.html:105
+#: computes/templates/computes/balance.html:88
 #: computes/templates/computes/bulk_migrate.html:30
 msgid ""
 "The worker runs one job at a time: set Worker Concurrency to 2 or more on the"
@@ -2131,22 +2153,26 @@ msgstr ""
 "İş yürütücü aynı anda tek iş çalıştırıyor: Ayarlar sayfasında Eş zamanlı iş "
 "sayısı değerini 2 veya daha fazla yapın."
 
-#: computes/templates/computes/balance.html:114
-#: computes/templates/computes/bulk_migrate.html:70
-msgid "Migrations at once"
-msgstr "Aynı anda taşıma"
+#: computes/templates/computes/balance.html:93
+msgid "The hosts are balanced: no migration would even them out more."
+msgstr "Sunucular dengeli: onları daha fazla dengeleyecek bir taşıma yok."
 
-#: computes/templates/computes/balance.html:119
-msgid "Migrate the VMs listed?"
-msgstr "Listelenen sanal makineler taşınsın mı?"
+#: computes/templates/computes/balance.html:98
+msgid "Stay where they are"
+msgstr "Yerinde kalanlar"
 
-#: computes/templates/computes/balance.html:119
-#: computes/templates/computes/bulk_migrate.html:76
-#: instances/templates/instances/settings_tab.html:60
-#: instances/templates/instances/settings_tab.html:617
-#: instances/templates/instances/settings_tab.html:620
-msgid "Migrate"
-msgstr "Taşı"
+#: computes/templates/computes/balance.html:103
+#: computes/templates/computes/balance.html:112
+msgid "Let it move"
+msgstr "Taşınabilsin"
+
+#: computes/templates/computes/balance.html:106
+msgid "Why"
+msgstr "Neden"
+
+#: computes/templates/computes/balance.html:115
+msgid "You kept it here: tick it to let it move"
+msgstr "Yerinde tuttunuz: taşınabilmesi için işaretleyin"
 
 #: computes/templates/computes/bulk_migrate.html:5
 #: computes/templates/computes/bulk_migrate.html:6
@@ -2186,12 +2212,24 @@ msgstr "Kapalı sanal makineleri de taşı"
 msgid "Status"
 msgstr "Durum"
 
+#: computes/templates/computes/bulk_migrate.html:47
+#: computes/templates/computes/instances.html:49
+msgid "VCPU"
+msgstr "VCPU"
+
 #: computes/templates/computes/bulk_migrate.html:75
 #, python-format
 msgid "Migrate the chosen VMs from %(source)s to %(dest)s?"
 msgstr ""
 "Seçilen sanal makineler %(source)s sunucusundan %(dest)s sunucusuna taşınsın "
 "mı?"
+
+#: computes/templates/computes/bulk_migrate.html:76
+#: instances/templates/instances/settings_tab.html:60
+#: instances/templates/instances/settings_tab.html:617
+#: instances/templates/instances/settings_tab.html:620
+msgid "Migrate"
+msgstr "Taşı"
 
 #: computes/templates/computes/capacity_line.txt:2
 #, python-format
@@ -2257,13 +2295,6 @@ msgid "%(counter)s more pool"
 msgid_plural "%(counter)s more pools"
 msgstr[0] "%(counter)s havuz daha"
 msgstr[1] "%(counter)s havuz daha"
-
-#: computes/templates/computes/capacity_vcpus.html:4
-#, python-format
-msgid "%(counter)s vCPU"
-msgid_plural "%(counter)s vCPUs"
-msgstr[0] "%(counter)s vCPU"
-msgstr[1] "%(counter)s vCPU"
 
 #: computes/templates/computes/capacity_vcpus.html:4
 #: computes/templates/computes/list.html:42
@@ -2454,11 +2485,6 @@ msgstr "Hipervizör üzerinde hiç sanal makine yok"
 #: storages/templates/storage.html:126 virtsecrets/templates/secrets.html:33
 msgid "Actions"
 msgstr "Eylemler"
-
-#: computes/templates/computes/list.html:6
-#: computes/templates/computes/list.html:14 templates/navbar.html:18
-msgid "Computes"
-msgstr "Sunucular"
 
 #: computes/templates/computes/list.html:19
 msgid "You don't have any computes"
@@ -2698,12 +2724,12 @@ msgstr ""
 "Bir disk dosyası iki sunucunun paylaştığı depolamada değil: sanal makineyi "
 "kendi sayfasından taşıyın"
 
-#: computes/views.py:359
+#: computes/views.py:366
 #, python-format
 msgid "The host was saved, but the panel cannot connect to it: %(error)s"
 msgstr "Sunucu kaydedildi, ancak panel ona bağlanamıyor: %(error)s"
 
-#: computes/views.py:415
+#: computes/views.py:422
 #, python-format
 msgid ""
 "Its VMs keep running on the host and leave the panel; their owners are kept "
@@ -5617,6 +5643,16 @@ msgstr "Sanal makinenin sunucu aygıtı yok."
 msgid "Migration route"
 msgstr "Taşıma yolu"
 
+#: instances/templates/instances/settings_tab.html:527
+#: networks/templates/network.html:396
+msgid "From"
+msgstr "Başlangıç"
+
+#: instances/templates/instances/settings_tab.html:532
+#: networks/templates/network.html:400
+msgid "To"
+msgstr "Bitiş"
+
 #: instances/templates/instances/settings_tab.html:541
 msgid ""
 "The VM is running: it migrates live, or paused for the transfer when Live "
@@ -6041,10 +6077,6 @@ msgid ""
 msgstr ""
 "Bu sanal makinede bir disk işi çalışıyor; bitene kadar anlık görüntü "
 "işlemleri kullanılamaz."
-
-#: instances/templates/instances/snapshots_tab.html:18
-msgid "Now"
-msgstr "Şimdi"
 
 #: instances/templates/instances/snapshots_tab.html:20
 #: instances/templates/instances/snapshots_tab.html:31

@@ -106,7 +106,8 @@ class BalancePageTests(TestCase):
 
     def test_a_vm_with_a_disk_the_hosts_do_not_share_cannot_move_and_still_counts(self):
         page = self.page()
-        self.assertIn("ba-local", page.xpath("//h5[.='Cannot move']/following-sibling::div[1]")[0].text_content())
+        (row,) = [row for row in page.xpath("//tr") if "ba-local" in row.text_content()]
+        self.assertIn("not on storage both hosts share", row.text_content())
         host = next(host for host in self.response.context["hosts"] if host == self.compute)
         self.assertEqual(host.before, [3 * 128 * 1024, 3])  # the shut-off VM is not counted
         self.assertNotIn(str(self.vms["ba-off"].pk), page.xpath("//input[@name='vm' or @name='instance']/@value"))

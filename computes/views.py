@@ -341,8 +341,11 @@ def balance(request):
     room = {pk: (compute.shown_capacity["memory"] - compute.shown_capacity["assigned"]["running"]) // 1024
             for pk, compute in hosts.items()}
     moves, after = propose(loads, movable, room)
+    # the bars of each host's memory before and after, on the scale of the largest
+    scale = max([load[0] for load in (*loads.values(), *after.values())] + [1])
     for pk, compute in hosts.items():
         compute.before, compute.after = loads[pk], after[pk]
+        compute.bars = [load[0] * 100 / scale for load in (loads[pk], after[pk])]
     by_pk = {instance.pk: instance for instance in running}
     for vm, _source, target in moves:
         by_pk[vm].target = hosts[target]

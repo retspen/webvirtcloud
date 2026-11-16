@@ -2,123 +2,131 @@
 {% load i18n %}
 {% load static %}
 {% load operations %}
+{% load bootstrap_icons %}
 {% block title %}{% trans "Balance" %}{% endblock %}
-{% block page_heading %}{% trans "Balance" %}{% endblock page_heading %}
 
 {% block content %}
-<p class="text-body-secondary">{% trans "Migrations of running VMs that even out the memory, then the vCPUs, the hosts give their running VMs. Each VM migrates live in a job of its own; one that fails or stops meanwhile stays where it is." %}</p>
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb shadow-sm">
+        <li class="breadcrumb-item"><a href="{% url 'computes' %}">{% bs_icon 'hdd-rack' %} {% trans "Computes" %}</a></li>
+        <li class="breadcrumb-item active fw-bold" aria-current="page">{% trans "Balance" %}</li>
+    </ol>
+</nav>
+<p class="text-body-secondary">{% trans "Migrations that share the memory, then the vCPUs, of running VMs evenly among the hosts." %}</p>
 {% if unreachable %}
 <div class="alert alert-warning shadow-sm">{% trans "These hosts cannot be read and are left out:" %} {{ unreachable|join:", " }}</div>
 {% endif %}
-<div class="table-responsive">
-    <table class="table align-middle w-auto">
-        <thead>
-            <tr>
-                <th scope="col">{% trans "Host" %}</th>
-                <th scope="col" class="text-end">{% trans "Memory" %}</th>
-                <th scope="col" class="text-end">{% trans "VCPU" %}</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for host in hosts %}
-            <tr>
-                <td>{{ host.name }}</td>
-                <td class="text-end text-nowrap">{% widthratio host.before.0 1048576 1 %} GiB{% if host.after.0 != host.before.0 %} &rarr; <strong>{% widthratio host.after.0 1048576 1 %} GiB</strong>{% endif %}</td>
-                <td class="text-end text-nowrap">{{ host.before.1 }}{% if host.after.1 != host.before.1 %} &rarr; <strong>{{ host.after.1 }}</strong>{% endif %}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+
+{# each host's running VMs: memory now and, light to dark, after the migrations; all bars on one scale #}
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3 mb-4">
+    {% for host in hosts %}
+    <div class="col">
+        <div class="card h-100 shadow-sm"><div class="card-body">
+            <div class="fw-semibold mb-2">{{ host.name }}</div>
+            {% for bar in host.bars %}{% if forloop.first or moves %}
+            {% if forloop.first %}{% with memory=host.before.0 vcpus=host.before.1 %}
+            <div class="d-flex justify-content-between small"><span class="text-body-secondary">{% if moves %}{% trans "Now" %}{% else %}{% trans "Running VMs" %}{% endif %}</span>
+                <span>{% widthratio memory 1 1024 as bytes %}{{ bytes|filesizeformat }}, {% blocktrans count counter=vcpus %}{{ counter }} vCPU{% plural %}{{ counter }} vCPUs{% endblocktrans %}</span></div>
+            {% endwith %}{% else %}{% with memory=host.after.0 vcpus=host.after.1 %}
+            <div class="d-flex justify-content-between small mt-2"><span class="text-body-secondary">{% trans "After" %}</span>
+                <span class="fw-semibold">{% widthratio memory 1 1024 as bytes %}{{ bytes|filesizeformat }}, {% blocktrans count counter=vcpus %}{{ counter }} vCPU{% plural %}{{ counter }} vCPUs{% endblocktrans %}</span></div>
+            {% endwith %}{% endif %}
+            <div class="progress" role="progressbar" style="--bs-progress-height: 0.6rem;" aria-label="{% if forloop.first %}{% trans "Memory now" %}{% else %}{% trans "Memory after" %}{% endif %}"
+                 aria-valuenow="{{ bar|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar bg-primary{% if forloop.first and moves %} bg-opacity-50{% endif %}" style="width: {{ bar|stringformat:".1f" }}%"></div>
+            </div>
+            {% endif %}{% endfor %}
+        </div></div>
+    </div>
+    {% endfor %}
 </div>
-<p class="small text-body-secondary">{% trans "After: if every migration below succeeds." %}</p>
 
 {# unticking a VM keeps it where it is and makes the proposal again #}
 <form method="get" id="balance-form">
     {% for instance in moves %}<input type="hidden" name="shown" value="{{ instance.pk }}">{% endfor %}
     {% for instance in pinned %}<input type="hidden" name="shown" value="{{ instance.pk }}">{% endfor %}
-    {% if moves %}
+</form>
+{% if moves %}
+<form method="post" class="card shadow-sm mb-4">{% csrf_token %}{% submission_key %}
+    <div class="card-header fw-semibold">{% blocktrans count counter=moves|length %}Proposed migration ({{ counter }}){% plural %}Proposed migrations ({{ counter }}){% endblocktrans %}</div>
     <div class="table-responsive">
-        <table class="table table-hover align-middle">
+        <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr>
-                    <th scope="col"><input class="form-check-input" type="checkbox" id="balance-all"{% if not pinned %} checked{% endif %} aria-label="{% trans "Select all" %}" title="{% trans "Select all" %}"></th>
+                    <th scope="col" class="ps-3"><input class="form-check-input" type="checkbox" id="balance-all" form="balance-form"{% if not pinned %} checked{% endif %} aria-label="{% trans "Select all" %}" title="{% trans "Select all" %}"></th>
                     <th scope="col">{% trans "Name" %}</th>
-                    <th scope="col">{% trans "VCPU" %}</th>
                     <th scope="col" class="text-end">{% trans "Memory" %}</th>
-                    <th scope="col">{% trans "Host" %}</th>
-                    <th scope="col">{% trans "Destination" %}</th>
+                    <th scope="col" class="text-end">vCPU</th>
+                    <th scope="col">{% trans "Migration" %}</th>
                 </tr>
             </thead>
             <tbody>
                 {% for instance in moves %}
                 <tr>
-                    <td><input class="form-check-input" type="checkbox" name="vm" value="{{ instance.pk }}" id="balance-{{ instance.pk }}" checked></td>
-                    <td><label for="balance-{{ instance.pk }}">{{ instance.name }}</label></td>
-                    <td>{{ instance.info.3 }}</td>
-                    <td class="text-end">{% widthratio instance.info.2 1024 1 %} MiB</td>
-                    <td>{{ instance.compute.name }}</td>
-                    <td>{{ instance.target.name }}</td>
+                    <td class="ps-3"><input class="form-check-input" type="checkbox" name="vm" value="{{ instance.pk }}" id="balance-{{ instance.pk }}" form="balance-form" checked></td>
+                    <td><label for="balance-{{ instance.pk }}">{{ instance.name }}</label>
+                        <input type="hidden" name="instance" value="{{ instance.pk }}">
+                        <input type="hidden" name="source" value="{{ instance.compute_id }}">
+                        <input type="hidden" name="target" value="{{ instance.target.pk }}"></td>
+                    <td class="text-end text-nowrap">{% widthratio instance.info.2 1 1024 as bytes %}{{ bytes|filesizeformat }}</td>
+                    <td class="text-end">{{ instance.info.3 }}</td>
+                    <td>{{ instance.compute.name }} {% bs_icon 'arrow-right' %} {{ instance.target.name }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    {% else %}
-    <div class="alert alert-info shadow-sm">{% trans "No migration would even out the hosts more." %}</div>
-    {% endif %}
-    {% if pinned %}
-    <h5>{% trans "Stay where they are" %}</h5>
+    <div class="card-footer d-flex flex-wrap align-items-center gap-2">
+        {% if parallel %}
+        <label class="small text-body-secondary" for="balance-parallel">{% trans "Migrations at once" %}</label>
+        <select name="parallel" id="balance-parallel" class="form-select form-select-sm w-auto">
+            {% for n in parallel %}<option value="{{ n }}"{% if forloop.last %} selected{% endif %}>{{ n }}</option>{% endfor %}
+        </select>
+        {% blocktrans count counter=moves|length asvar label %}Migrate {{ counter }} VM{% plural %}Migrate {{ counter }} VMs{% endblocktrans %}
+        <button type="submit" class="btn btn-primary ms-auto" data-confirm="{% trans "Migrate the VMs listed?" %}">{{ label }}</button>
+        {% else %}
+        <span class="small text-warning-emphasis">{% trans "The worker runs one job at a time: set Worker Concurrency to 2 or more on the Settings page." %}</span>
+        {% endif %}
+    </div>
+</form>
+{% else %}
+<div class="alert alert-success shadow-sm">{% trans "The hosts are balanced: no migration would even them out more." %}</div>
+{% endif %}
+
+{% if pinned or unmovable %}
+<div class="card shadow-sm">
+    <div class="card-header fw-semibold">{% trans "Stay where they are" %}</div>
     <div class="table-responsive">
-        <table class="table align-middle">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col" class="ps-3"><span class="visually-hidden">{% trans "Let it move" %}</span></th>
+                    <th scope="col">{% trans "Name" %}</th>
+                    <th scope="col">{% trans "Host" %}</th>
+                    <th scope="col">{% trans "Why" %}</th>
+                </tr>
+            </thead>
             <tbody>
                 {% for instance in pinned %}
                 <tr>
-                    <td><input class="form-check-input" type="checkbox" name="vm" value="{{ instance.pk }}" id="balance-{{ instance.pk }}" aria-label="{% trans "Let it move" %}" title="{% trans "Let it move" %}"></td>
+                    <td class="ps-3"><input class="form-check-input" type="checkbox" name="vm" value="{{ instance.pk }}" id="balance-{{ instance.pk }}" form="balance-form" aria-label="{% trans "Let it move" %}" title="{% trans "Let it move" %}"></td>
                     <td><label for="balance-{{ instance.pk }}">{{ instance.name }}</label></td>
                     <td>{{ instance.compute.name }}</td>
+                    <td class="small text-body-secondary">{% trans "You kept it here: tick it to let it move" %}</td>
+                </tr>
+                {% endfor %}
+                {% for instance in unmovable %}
+                <tr>
+                    <td class="ps-3"></td>
+                    <td>{{ instance.name }}</td>
+                    <td>{{ instance.compute.name }}</td>
+                    <td class="small text-body-secondary">{% for refusal in instance.refusals %}{{ refusal }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    {% endif %}
-</form>
-{% if unmovable %}
-<h5>{% trans "Cannot move" %}</h5>
-<div class="table-responsive">
-    <table class="table align-middle">
-        <tbody>
-            {% for instance in unmovable %}
-            <tr>
-                <td>{{ instance.name }}</td>
-                <td>{{ instance.compute.name }}</td>
-                <td class="small text-danger">{% for refusal in instance.refusals %}{{ refusal }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
 </div>
-{% endif %}
-
-{% if moves %}
-{% if not parallel %}
-<div class="alert alert-warning shadow-sm">{% trans "The worker runs one job at a time: set Worker Concurrency to 2 or more on the Settings page." %}</div>
-{% else %}
-<form method="post">{% csrf_token %}{% submission_key %}
-    {% for instance in moves %}
-    <input type="hidden" name="instance" value="{{ instance.pk }}">
-    <input type="hidden" name="source" value="{{ instance.compute_id }}">
-    <input type="hidden" name="target" value="{{ instance.target.pk }}">
-    {% endfor %}
-    <div class="mb-3">
-        <label class="form-label" for="balance-parallel">{% trans "Migrations at once" %}</label>
-        <select name="parallel" id="balance-parallel" class="form-select w-auto">
-            {% for n in parallel %}<option value="{{ n }}"{% if forloop.last %} selected{% endif %}>{{ n }}</option>{% endfor %}
-        </select>
-    </div>
-    <button type="submit" class="btn btn-primary" data-confirm="{% trans "Migrate the VMs listed?" %}">{% trans "Migrate" %}</button>
-</form>
-{% endif %}
 {% endif %}
 {% endblock %}
 {% block script %}

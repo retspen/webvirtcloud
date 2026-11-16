@@ -12,18 +12,18 @@ SCRIPT = Path(__file__).resolve().parents[2] / "static" / "js" / "balance.js"
 
 RUN = """
 const vm = require("vm");
-const boxes = [{name: "moves", checked: true}, {name: "stays", checked: false}];
+const boxes = [{name: "vm", id: "moves", checked: true}, {name: "vm", id: "stays", checked: false}];
 let handler, submitted = 0;
-const form = {
+const form = {elements: boxes, submit: () => { submitted += 1; }};
+const other = {elements: [], submit: () => { throw new Error("another form"); }};
+vm.runInNewContext(SCRIPT, vm.createContext({document: {
+    getElementById: () => form,
     addEventListener: (name, fn) => { handler = fn; },
-    querySelectorAll: () => boxes,
-    submit: () => { submitted += 1; },
-};
-vm.runInNewContext(SCRIPT, vm.createContext({document: {getElementById: () => form}}));
+}}));
 const seen = [];
-for (const [id, checked] of STEPS) {
-    handler({target: {id, checked}});
-    seen.push(boxes.filter((b) => b.checked).map((b) => b.name));
+for (const [id, checked, owner] of STEPS) {
+    handler({target: {id, checked, form: owner === "other" ? other : form}});
+    seen.push(boxes.filter((b) => b.checked).map((b) => b.id));
 }
 console.log(JSON.stringify({seen, submitted}));
 """
@@ -39,6 +39,9 @@ class BalanceScriptTests(unittest.TestCase):
 
     def test_a_vm_box_makes_the_proposal_again(self):
         self.assertEqual(self.run_script([["balance-7", False]]), {"seen": [["moves"]], "submitted": 1})
+
+    def test_a_change_outside_the_proposal_does_not_reload_it(self):
+        self.assertEqual(self.run_script([["balance-parallel", True, "other"]])["submitted"], 0)
 
     def test_select_all_ticks_or_unticks_every_vm_and_makes_the_proposal_again(self):
         result = self.run_script([["balance-all", True], ["balance-all", False]])
