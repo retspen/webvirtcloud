@@ -12,6 +12,16 @@
         {% include "computes/host_nav.html" with section="instances" detail=True %}
     </div>
 </div>
+{% if entering %}
+{# asked from "Put in maintenance": the host goes in maintenance with its VMs' migration, or without one #}
+<div class="alert alert-warning shadow-sm d-flex flex-wrap align-items-center gap-2">
+    <div class="me-auto">{% blocktrans with host=compute.name %}Put {{ host }} in maintenance: from then on no new VM or migration comes to it, its VMs cannot be started there, and Balance leaves it out. Migrate its VMs below, or put it in maintenance without migrating them.{% endblocktrans %}</div>
+    <form method="post" action="{% url 'compute_maintenance' compute.id %}">{% csrf_token %}
+        <input type="hidden" name="maintenance" value="on">
+        <button type="submit" class="btn btn-sm btn-warning" data-confirm="{% trans "Put the host in maintenance without migrating its VMs?" %}">{% trans "Put in maintenance without migrating" %}</button>
+    </form>
+</div>
+{% endif %}
 {% if not targets %}
 <div class="alert alert-warning shadow-sm">{% trans "There is no other host to migrate to." %}</div>
 {% else %}
@@ -21,6 +31,7 @@
 {% endif %}
 {# another destination reloads the list: which VMs can go depends on it; spread over the hosts, so does a VM ticked #}
 <form method="get" id="bulk-migrate-choose"{% if spreading %} data-spread{% endif %}>
+    {% if entering %}<input type="hidden" name="maintenance" value="on">{% endif %}
     {% if spreading %}{% for instance in instances %}{% if not instance.refusal %}<input type="hidden" name="shown" value="{{ instance.pk }}">{% endif %}{% endfor %}{% endif %}
 </form>
 {% if not parallel %}
@@ -29,6 +40,7 @@
 <div class="alert alert-info shadow-sm">{% trans "The host has no VMs." %}</div>
 {% else %}
 <form method="post" class="card shadow-sm">{% csrf_token %}{% submission_key %}
+    {% if entering %}<input type="hidden" name="maintenance" value="on">{% endif %}
     {% if spreading %}<input type="hidden" name="spread" value="1">{% else %}<input type="hidden" name="target" value="{{ target.pk }}">{% endif %}
     <div class="card-header d-flex flex-wrap align-items-center gap-2">
         <span class="fw-semibold">{{ compute.name }}</span> {% bs_icon 'arrow-right' %}
@@ -88,13 +100,15 @@
         <select name="parallel" id="bulk-migrate-parallel" class="form-select form-select-sm w-auto">
             {% for n in parallel %}<option value="{{ n }}"{% if forloop.last %} selected{% endif %}>{{ n }}</option>{% endfor %}
         </select>
-        {% if spreading %}
+        {% if entering %}
+        {% blocktrans with source=compute.name asvar question %}Put {{ source }} in maintenance and migrate the chosen VMs?{% endblocktrans %}
+        {% elif spreading %}
         {% blocktrans with source=compute.name asvar question %}Migrate the chosen VMs from {{ source }} to the hosts shown?{% endblocktrans %}
         {% else %}
         {% blocktrans with source=compute.name dest=target.name asvar question %}Migrate the chosen VMs from {{ source }} to {{ dest }}?{% endblocktrans %}
         {% endif %}
         <button type="submit" class="btn btn-primary ms-auto" id="bulk-migrate-submit" data-confirm="{{ question }}">
-            {% trans "Migrate the chosen VMs" %} <span class="badge text-bg-light" id="bulk-migrate-count"></span>
+            {% if entering %}{% trans "Migrate and put in maintenance" %}{% else %}{% trans "Migrate the chosen VMs" %}{% endif %} <span class="badge text-bg-light" id="bulk-migrate-count"></span>
         </button>
     </div>
 </form>

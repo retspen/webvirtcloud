@@ -9,7 +9,7 @@ from admin.decorators import superuser_only
 from django.conf import settings
 from django.contrib import messages
 from django.core import signing
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -23,6 +23,7 @@ from instances.utils import read_list_rows, vm_states
 from libvirt import libvirtError
 from logs.audit import audit, changed_fields, snapshot
 from operations import claims, jobs
+from operations.models import Operation
 from operations.utils import busy_message
 from vrtManager.connection import CONN_SOCKET, CONN_SSH, CONN_TCP, CONN_TLS
 from vrtManager.hostdetails import wvmHostDetails
@@ -65,6 +66,8 @@ def shown_capacity(compute):
         cpu_scale = max(vcpus["all"], cpus) or 1
         given["cpu_bar"] = {"running": vcpus["running"] * 100 / cpu_scale, "stopped": vcpus["stopped"] * 100 / cpu_scale}
         given["vm_count"] = sum(given["vms"].values())
+        # the VMs that keep a host in maintenance from being ready: all but the shut-off ones
+        given["active"] = given["vm_count"] - given["vms"]["shutoff"]
     return given
 
 
@@ -194,7 +197,11 @@ def overview(request, compute_id):
     compute = get_object_or_404(Compute, pk=compute_id)
     # the connection itself, not a TCP probe: ssh aliases and ProxyJump hosts
     # are not reachable by name and port from here
-    context = {"compute": compute, "connected": compute.status is True}
+    context = {"compute": compute, "connected": compute.status is True,
+               # the host's latest bulk migration: in maintenance, whether its VMs are being moved, or how that ended
+               "bulk": Operation.objects.filter(kind="host.bulk_migrate", resource=claims.compute_key(compute.pk))
+               .order_by("-created_at").first()}
+    context["bulk_running"] = context["bulk"] is not None and context["bulk"].state in Operation.ACTIVE
     if context["connected"]:
         try:
             conn = wvmHostDetails(compute.hostname, compute.login, compute.password, compute.type)
@@ -264,7 +271,11 @@ def bulk_migrate(request, compute_id):
     VM ticked or unticked then makes the spread again, as the form sends the
     VMs it showed ("shown") and the ticked ones ("vm"). A VM with a disk file
     the hosts do not share is not offered: it takes a copy, chosen on its
-    own Migrate tab."""
+    own Migrate tab.
+
+    Asked from the host's "Put in maintenance" ("maintenance"), the page
+    puts the host in maintenance with the job, in one transaction: with
+    the job admitted, or not at all."""
     from computes.balance import spread
     from computes.jobs import parallel_limit
     from computes.reach import Reach
@@ -280,9 +291,19 @@ def bulk_migrate(request, compute_id):
             # the destination the form showed, not another one taken in its place
             target = get_object_or_404(Compute.objects.exclude(pk=compute.pk), pk=request.POST.get("target", "") or None)
             moves, again = [(pk, target.pk) for pk in chosen], target.pk
-        raw = {"compute": compute.pk, "parallel": request.POST.get("parallel", ""), "moves": moves}
+        entering = request.POST.get("maintenance") == "on"
+        raw = {"compute": compute.pk, "parallel": request.POST.get("parallel", ""), "moves": moves, "maintenance": entering}
+        key = request.POST.get("submission_key", "")
         try:
-            op = jobs.submit("host.bulk_migrate", request.user, raw, request.POST.get("submission_key", ""))
+            with transaction.atomic():
+                Compute.objects.select_for_update().filter(pk=compute.pk).first()  # one maintenance change at a time
+                # a form sent again finds its job: it does not put back a host taken out of maintenance since;
+                # one sent after its key expired makes a new job, and puts it in maintenance with it
+                found = Operation.objects.filter(user=request.user, submission_key=key).values_list("pk", flat=True).first()
+                op = jobs.submit("host.bulk_migrate", request.user, raw, key)
+                if entering and op.pk != found:
+                    with audit(request, compute, f"Compute {compute.name}", "maintenance on"):
+                        Compute.objects.filter(pk=compute.pk).update(maintenance=True)
         except claims.Busy as busy:
             messages.error(request, busy_message(busy, request.user))
         except (ValueError, jobs.SubmissionConflict, libvirtError) as err:
@@ -290,8 +311,10 @@ def bulk_migrate(request, compute_id):
         else:
             jobs.remember_job(request, op)
             return redirect("instances", compute.pk)
-        return redirect(reverse("bulk_migrate", args=[compute.pk]) + f"?target={again}")
+        return redirect(reverse("bulk_migrate", args=[compute.pk]) + f"?target={again}"
+                        + ("&maintenance=on" if entering else ""))
 
+    entering = request.GET.get("maintenance") == "on" and not compute.maintenance
     reach = Reach(request)
     spreading = len(targets) > 1 and request.GET.get("target", "spread") == "spread"
     utils.refresh_instance_database(compute)
@@ -303,7 +326,7 @@ def bulk_migrate(request, compute_id):
             instance.refusal = reach.refusal(instance, target)
         return render(request, "computes/bulk_migrate.html",
                       {"compute": compute, "targets": targets, "target": target, "instances": instances,
-                       "parallel": range(1, parallel_limit() + 1)})
+                       "parallel": range(1, parallel_limit() + 1), "entering": entering})
 
     # the other hosts' loads: the VMs of this one are read above, also when its capacity cannot be
     _computes, hosts, _instances, loads, room, sizes = read_fleet()
@@ -328,7 +351,7 @@ def bulk_migrate(request, compute_id):
             instance.note = _("No other host has room for it")
     going = [instance for instance in instances if instance.target]
     return render(request, "computes/bulk_migrate.html",
-                  {"compute": compute, "targets": targets, "spreading": True, "instances": instances,
+                  {"compute": compute, "targets": targets, "spreading": True, "instances": instances, "entering": entering,
                    "all_ticked": len(going) == len([instance for instance in instances if not instance.refusal]),
                    "shut_off_ticked": any(instance.info[0] == 5 for instance in going),
                    "unreachable": [host for host in targets if host.pk not in others],

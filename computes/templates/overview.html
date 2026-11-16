@@ -2,19 +2,25 @@
 {% load i18n %}
 {% load static %}
 {% load bootstrap_icons %}
+{% load operations %}
 
 {% block title %}{% trans "Overview" %} - {{ compute.name }}{% endblock %}
 
 {% block page_heading_extra %}
+{% if compute.maintenance %}
 <form method="post" action="{% url 'compute_maintenance' compute.id %}" class="d-inline">{% csrf_token %}
-    {% if compute.maintenance %}
     <input type="hidden" name="maintenance" value="off">
-    <button type="submit" class="btn btn-sm btn-warning">{% bs_icon 'wrench-adjustable' %} {% trans "End maintenance" %}</button>
-    {% else %}
-    <input type="hidden" name="maintenance" value="on">
-    <button type="submit" class="btn btn-sm btn-outline-warning" data-confirm="{% trans "Put the host in maintenance? No new VM or migration comes to it and Balance leaves it out; its VMs keep running." %}">{% bs_icon 'wrench-adjustable' %} {% trans "Put in maintenance" %}</button>
-    {% endif %}
+    <button type="submit" class="btn btn-sm btn-warning"{% if bulk_running %} data-confirm="{% trans "Allow new VMs and migrations on the host again? Its bulk migration goes on." %}"{% endif %}>{% bs_icon 'wrench-adjustable' %} {% trans "End maintenance" %}</button>
 </form>
+{% elif given.active %}
+{# its VMs are migrated with it: the Bulk Migrate page puts it in maintenance, with or without moving them #}
+<a class="btn btn-sm btn-outline-warning" href="{% url 'bulk_migrate' compute.id %}?maintenance=on">{% bs_icon 'wrench-adjustable' %} {% trans "Put in maintenance" %}</a>
+{% else %}
+<form method="post" action="{% url 'compute_maintenance' compute.id %}" class="d-inline">{% csrf_token %}
+    <input type="hidden" name="maintenance" value="on">
+    <button type="submit" class="btn btn-sm btn-outline-warning" data-confirm="{% trans "Put the host in maintenance? No new VM or migration comes to it, its VMs cannot be started there, and Balance leaves it out." %}">{% bs_icon 'wrench-adjustable' %} {% trans "Put in maintenance" %}</button>
+</form>
+{% endif %}
 <a class="btn btn-sm btn-outline-primary" href="{% url 'compute_update' compute.id %}">{% bs_icon 'pencil' %} {% trans "Edit connection" %}</a>
 <a class="btn btn-sm btn-outline-danger" href="{% url 'compute_delete' compute.id %}">{% bs_icon 'x-circle' %} {% trans "Remove from panel" %}</a>
 {% endblock page_heading_extra %}
@@ -37,9 +43,28 @@
 {% include "computes/host_nav.html" with section="overview" %}
 
 {% if compute.maintenance %}
+{# ready once none of its VMs runs: the state comes from its VMs, not from a job #}
 <div class="alert alert-warning" role="status">
     {% url 'bulk_migrate' compute.id as bulk_url %}
-    {% blocktrans %}In maintenance: no new VM or migration comes to this host and Balance leaves it out. <a href="{{ bulk_url }}">Bulk Migrate</a> moves its VMs to the other hosts.{% endblocktrans %}
+    {% if not given %}
+    {% trans "Maintenance requested: the host cannot be read, so whether its VMs still run is not known." %}
+    {% elif given.active %}
+    {% blocktrans count counter=given.active %}Maintenance requested: {{ counter }} VM still runs on this host.{% plural %}Maintenance requested: {{ counter }} VMs still run on this host.{% endblocktrans %}
+    {% blocktrans %}<a href="{{ bulk_url }}">Bulk Migrate</a> moves them to the other hosts; shut down those that cannot move.{% endblocktrans %}
+    {% else %}
+    <span class="fw-semibold">{% trans "In maintenance: no VM runs on this host." %}</span>
+    {% endif %}
+    {% trans "No new VM or migration comes to it, its VMs cannot be started there, and Balance leaves it out." %}
+    {% if bulk and not given or bulk and given.active %}
+    <div class="mt-2 small">
+        {% url 'operations:job' bulk.pk as job_url %}
+        {% if bulk_running %}
+        {% blocktrans %}Its VMs are being migrated: <a href="{{ job_url }}">see the job</a>.{% endblocktrans %}
+        {% else %}
+        {% blocktrans with state=bulk.state|state_label when=bulk.created_at|date:"SHORT_DATETIME_FORMAT" %}Its last bulk migration, of {{ when }}: {{ state }}. <a href="{{ job_url }}">See the job</a>.{% endblocktrans %}
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 {% endif %}
 

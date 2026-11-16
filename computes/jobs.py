@@ -153,8 +153,10 @@ class BulkMigrate(Migrations):
 
     def normalize(self, raw):
         moves = {int(vm): int(target) for vm, target in raw["moves"]}
+        # maintenance: the host was put in maintenance with the job (computes.views.bulk_migrate)
         return {"compute": int(raw["compute"]), "parallel": int(raw["parallel"]),
-                "moves": [[vm, target] for vm, target in sorted(moves.items())]}
+                "moves": [[vm, target] for vm, target in sorted(moves.items())],
+                "maintenance": bool(raw.get("maintenance"))}
 
     def moves(self, params):
         return [(vm, params["compute"], target) for vm, target in params["moves"]]

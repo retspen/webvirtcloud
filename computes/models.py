@@ -52,8 +52,9 @@ class Compute(Model):
     # reaches it: one host is one compute, and a compute's VMs stay on it
     host_uuid = CharField(max_length=36, blank=True, default="", editable=False)
 
-    # in maintenance: no new VM and no migration comes to the host, and Balance
-    # leaves it out; its VMs run on and Bulk Migrate empties it (refuse_new_vms)
+    # in maintenance: no new VM and no migration comes to the host, none of its
+    # VMs starts there, and Balance leaves it out; Bulk Migrate empties it, and
+    # it is ready once none of its VMs runs (refuse_new_vms, refuse_start)
     maintenance = BooleanField(default=False, editable=False)
 
     class Meta:
@@ -64,6 +65,12 @@ class Compute(Model):
         if self.maintenance:
             raise util.OperationError(gettext_noop("%(compute)s is in maintenance: no new VM or migration comes to it"),
                                       compute=self.name)
+
+    def refuse_start(self):
+        """Refuses starting or resuming a VM of the host while it is in maintenance."""
+        if self.maintenance:
+            raise util.OperationError(gettext_noop("%(compute)s is in maintenance: its VMs cannot be started there; "
+                                                   "migrate the VM to start it on another host"), compute=self.name)
 
     @property
     def migration_uri(self):

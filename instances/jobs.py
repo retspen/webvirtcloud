@@ -239,6 +239,7 @@ def _finish_clone(op, clone, warning):
         if clone.get("memory"):
             proxy.resize_mem(clone["memory"], clone["memory"])
         if clone.get("start"):
+            c.refuse_start()  # put in maintenance while the disks were copied: the clone stays off
             proxy.start()
     except libvirtError as err:
         notes += say(_("The clone is made, but not as asked: %(error)s"), error=err)
@@ -494,6 +495,18 @@ def _revert_quota(user, instance, proxy, params):
                                   quota=utils.quota_message(quota), name=params["name"])
 
 
+def _revert_start(instance, proxy, params):
+    """A revert to a snapshot of the VM running or paused (with its memory)
+    starts a shut-off VM, and one of it running resumes a paused VM: not on
+    a host in maintenance (Compute.refuse_start). A disk-only one
+    ("disk-snapshot") keeps the VM as it is."""
+    snapshot = proxy._snapshot(params["name"], params["external"])
+    state = util.get_xml_path(snapshot.getXMLDesc(0), "/domainsnapshot/state")
+    status = proxy.get_status()
+    if status == 5 and state in ("running", "paused") or status == 3 and state == "running":
+        instance.compute.refuse_start()
+
+
 @register
 class RevertSnapshot(Kind):
     name = "snapshot.revert"
@@ -507,7 +520,7 @@ class RevertSnapshot(Kind):
     def validate(self, user, params):
         instance = _authorized(user, params["instance"])
         proxy = _proxy(instance)
-        proxy._snapshot(params["name"], params["external"])
+        _revert_start(instance, proxy, params)
         _revert_quota(user, instance, proxy, params)
 
     def plan(self, user, params):
@@ -528,8 +541,10 @@ class RevertSnapshot(Kind):
             proxy.check_external_revert(op.params["name"])
         else:
             proxy.check_internal_revert()
+        instance = _instance(op.params["instance"])
+        _revert_start(instance, proxy, op.params)  # put in maintenance meanwhile, or the VM shut off
         # again: a resize while it was queued may have used the quota
-        _revert_quota(op.user, _instance(op.params["instance"]), proxy, op.params)
+        _revert_quota(op.user, instance, proxy, op.params)
         # a revert gives the VM the host devices it had then: not one given since to another VM
         has_hostdevs, definitions = _snapshot_definitions(proxy, op.params)
         if has_hostdevs:

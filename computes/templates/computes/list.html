@@ -75,7 +75,8 @@
                             {% else %}
                                 <span class="badge text-bg-danger">{% trans "Not connected" %}</span>
                             {% endif %}
-                            {% if compute.maintenance %}<span class="badge text-bg-warning">{% trans "In maintenance" %}</span>{% endif %}
+                            {% if compute.maintenance %}{# ready once none of its VMs runs; while that is not known, only asked for #}
+                            <span class="badge text-bg-warning">{% if compute.shown_capacity and not compute.shown_capacity.active %}{% trans "In maintenance" %}{% else %}{% trans "Maintenance requested" %}{% endif %}</span>{% endif %}
                             <span class="badge text-bg-light border">{{ compute.connection_name }}</span>
                         </div>
                         <div class="small text-body-secondary font-monospace mt-1">{{ compute.hostname }}</div>

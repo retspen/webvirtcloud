@@ -82,7 +82,8 @@ class BulkMigratePageTests(TestCase):
         self.assertRedirects(response, reverse("instances", args=[self.compute.id]), fetch_redirect_response=False)
         (op,) = Operation.objects.all()
         self.assertEqual((op.kind, op.params), ("host.bulk_migrate", {
-            "compute": self.compute.pk, "parallel": 2, "moves": [[pk, self.other.pk] for pk in sorted(chosen)]}))
+            "compute": self.compute.pk, "parallel": 2, "moves": [[pk, self.other.pk] for pk in sorted(chosen)],
+            "maintenance": False}))
 
     def test_a_destination_gone_since_the_form_was_shown_is_refused(self):
         gone = self.other.pk

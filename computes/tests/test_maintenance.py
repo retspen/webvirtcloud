@@ -2,8 +2,9 @@
 it out; its VMs run on. A superuser puts it in maintenance and takes it out
 on its page, each change audited."""
 
+from datetime import timedelta
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from computes.jobs import Balance
 from computes.models import Compute
@@ -11,10 +12,13 @@ from computes.tests.test_balance import Ctx
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
-from instances.jobs import CloneInstance, CreateInstance, migration_target
+from django.utils import timezone
+from instances.jobs import CloneInstance, CreateInstance, _finish_clone, _revert_start, migration_target
 from instances.models import Instance
+from libvirt import libvirtError
 from logs.models import Logs
-from operations.models import Operation
+from operations.jobs import SUBMISSION_KEY_TTL
+from operations.models import Claim, Operation
 from vrtManager import util
 
 REFUSED = "is in maintenance: no new VM or migration comes to it"
@@ -104,3 +108,169 @@ class BalanceLeavesItOutTests(TestCase):
         with self.assertRaisesRegex(util.OperationError, "mb-vm: mb-0 is in maintenance"):
             Balance().run(op, Ctx(op))
         self.assertFalse(Operation.objects.filter(kind="instance.migrate").exists())
+
+
+class NoStartTests(TestCase):
+    """None of the VMs of a host in maintenance starts there, also for its owner."""
+
+    def setUp(self):
+        self.compute = Compute.objects.create(name="ms", hostname="192.0.2.81", login="", password="", type=1,
+                                              maintenance=True)
+        self.instance = Instance.objects.create(compute=self.compute, name="ms-vm",
+                                                uuid="00000000-0000-4000-8000-000000000301")
+        self.client.force_login(get_user_model().objects.create_superuser("ms-admin", "ms@example.com", "pw"))
+        self.proxy = MagicMock()
+        patcher = patch.object(Instance, "proxy", new_callable=lambda: self.proxy)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_a_vm_is_not_started_nor_resumed_nor_power_cycled(self):
+        for action in ("poweron", "resume", "powercycle"):
+            response = self.client.post(reverse(f"instances:{action}", args=[self.instance.pk]), follow=True)
+            self.assertContains(response, "ms is in maintenance: its VMs cannot be started there")
+        self.proxy.start.assert_not_called()
+        self.proxy.resume.assert_not_called()
+        self.proxy.force_shutdown.assert_not_called()  # a power cycle would leave it off
+
+    def test_no_revert_starts_a_shut_off_vm(self):
+        self.proxy.get_status.return_value = 5
+        for state, refused in (("running", True), ("paused", True), ("shutoff", False), ("disk-snapshot", False)):
+            self.proxy._snapshot.return_value.getXMLDesc.return_value = (
+                f"<domainsnapshot><state>{state}</state></domainsnapshot>")
+            if refused:
+                with self.assertRaisesRegex(util.OperationError, "its VMs cannot be started there"):
+                    _revert_start(self.instance, self.proxy, {"name": "s", "external": False})
+            else:
+                _revert_start(self.instance, self.proxy, {"name": "s", "external": False})
+        self.proxy.get_status.return_value = 3  # paused: a running snapshot resumes it
+        self.proxy._snapshot.return_value.getXMLDesc.return_value = "<domainsnapshot><state>running</state></domainsnapshot>"
+        with self.assertRaisesRegex(util.OperationError, "its VMs cannot be started there"):
+            _revert_start(self.instance, self.proxy, {"name": "s", "external": False})
+        self.proxy.get_status.return_value = 1  # running already: the revert starts nothing
+        self.proxy._snapshot.return_value.getXMLDesc.return_value = "<domainsnapshot><state>running</state></domainsnapshot>"
+        _revert_start(self.instance, self.proxy, {"name": "s", "external": False})
+
+    def test_a_running_vm_still_stops(self):
+        self.client.post(reverse("instances:poweroff", args=[self.instance.pk]))
+        self.proxy.shutdown.assert_called_once()
+
+
+class MaintenanceWithMigrationTests(TestCase):
+    """"Put in maintenance" on a host with running VMs opens Bulk Migrate,
+    which puts the host in maintenance with the job, or without migrating."""
+
+    def setUp(self):
+        self.compute = Compute.objects.create(name="me", hostname="192.0.2.91", login="", password="", type=4)
+        self.other = Compute.objects.create(name="me-other", hostname="192.0.2.92", login="", password="", type=4)
+        self.vm = Instance.objects.create(compute=self.compute, name="me-vm", uuid="00000000-0000-4000-8000-000000000401")
+        self.admin = get_user_model().objects.create_superuser("me-admin", "me@example.com", "pw")
+        self.client.force_login(self.admin)
+        Logs.objects.all().delete()
+
+    def post(self, key="mnt00000key", moves=True):
+        return self.client.post(reverse("bulk_migrate", args=[self.compute.pk]), {
+            "target": self.other.pk, "instance": [self.vm.pk] if moves else [], "parallel": "1",
+            "maintenance": "on", "submission_key": key})
+
+    def maintenance(self):
+        self.compute.refresh_from_db()
+        return self.compute.maintenance
+
+    def test_the_host_goes_in_maintenance_with_the_job(self):
+        self.assertRedirects(self.post(), reverse("instances", args=[self.compute.pk]), fetch_redirect_response=False)
+        (op,) = Operation.objects.all()
+        self.assertTrue(op.params["maintenance"])
+        self.assertTrue(self.maintenance())
+        self.assertEqual(list(Logs.objects.values_list("message", flat=True)), ["Compute me: maintenance on"])
+
+    def test_a_refused_job_leaves_the_host_out_of_maintenance(self):
+        response = self.post(moves=False)
+        self.assertRedirects(response, reverse("bulk_migrate", args=[self.compute.pk]) + f"?target={self.other.pk}"
+                             "&maintenance=on", fetch_redirect_response=False)
+        self.assertFalse(Operation.objects.exists())
+        self.assertFalse(self.maintenance())
+
+    def test_the_form_sent_after_its_key_expired_puts_it_back_with_its_new_job(self):
+        self.post()
+        Operation.objects.update(created_at=timezone.now() - SUBMISSION_KEY_TTL - timedelta(minutes=1),
+                                 state=Operation.SUCCEEDED)
+        Claim.objects.all().delete()  # it ended
+        Compute.objects.filter(pk=self.compute.pk).update(maintenance=False)
+        self.post()
+        self.assertTrue(self.maintenance())
+        self.assertEqual(Operation.objects.count(), 2)
+
+    def test_the_form_sent_again_does_not_put_it_back(self):
+        self.post()
+        Compute.objects.filter(pk=self.compute.pk).update(maintenance=False)  # taken out since
+        self.post()
+        self.assertFalse(self.maintenance())
+        self.assertEqual(Operation.objects.count(), 1)
+
+    def page(self, **query):
+        def read_list_rows(instances, computes):  # a running VM, without asking a host
+            for instance in instances:
+                instance.__dict__["info"] = [1, 131072, 131072, 1, 0]
+
+        with patch("computes.views.utils.refresh_instance_database"), \
+                patch("computes.views.read_list_rows", side_effect=read_list_rows), \
+                patch("computes.reach.Reach.refusal", return_value=None):
+            return self.client.get(reverse("bulk_migrate", args=[self.compute.pk]), query)
+
+    def test_the_page_offers_both_ways_into_maintenance(self):
+        response = self.page(maintenance="on")
+        self.assertContains(response, "Put in maintenance without migrating")
+        self.assertContains(response, '<input type="hidden" name="maintenance" value="on">', count=3)
+        Compute.objects.filter(pk=self.compute.pk).update(maintenance=True)  # already: the plain page
+        self.assertNotContains(self.page(maintenance="on"), "Put in maintenance without migrating")
+
+
+class MaintenanceStateTests(TestCase):
+    """A host in maintenance is ready once none of its VMs runs; until then,
+    or while it cannot be read, its maintenance is only asked for."""
+
+    def setUp(self):
+        self.compute = Compute.objects.create(name="mz", hostname="192.0.2.95", login="", password="", type=4,
+                                              maintenance=True)
+        self.client.force_login(get_user_model().objects.create_superuser("mz-admin", "mz@example.com", "pw"))
+
+    @staticmethod
+    def given(**vms):
+        return {"vms": {"running": 0, "paused": 0, "shutoff": 0, "other": 0, **vms}, "cpus": 1, "memory": 1,
+                "vcpus": {"all": 0, "running": 0}, "assigned": {"all": 0, "running": 0}}
+
+    def overview(self, given):
+        with patch.object(Compute, "status", True), patch("computes.views.wvmHostDetails", side_effect=libvirtError("not read")), \
+                patch.object(Compute, "capacity", given), patch("computes.views.host_pools"):
+            return self.client.get(reverse("overview", args=[self.compute.pk]))
+
+    def test_running_or_paused_vms_keep_it_requested(self):
+        response = self.overview(self.given(running=1, paused=1, shutoff=3))
+        self.assertContains(response, "Maintenance requested: 2 VMs still run on this host.")
+        self.assertNotContains(response, "In maintenance: no VM runs")
+
+    def test_with_only_shut_off_vms_it_is_in_maintenance(self):
+        self.assertContains(self.overview(self.given(shutoff=3)), "In maintenance: no VM runs on this host.")
+
+    def test_a_host_that_cannot_be_read_is_not_said_ready(self):
+        self.assertContains(self.overview(None), "whether its VMs still run is not known")
+
+    def test_put_in_maintenance_leads_to_bulk_migrate_while_vms_run(self):
+        Compute.objects.filter(pk=self.compute.pk).update(maintenance=False)
+        response = self.overview(self.given(running=1))
+        self.assertContains(response, reverse("bulk_migrate", args=[self.compute.pk]) + "?maintenance=on")
+        response = self.overview(self.given(shutoff=1))
+        self.assertContains(response, reverse("compute_maintenance", args=[self.compute.pk]))
+
+
+class CloneStaysOffTests(TestCase):
+    def test_a_clone_made_while_the_host_went_in_maintenance_stays_off(self):
+        compute = Compute.objects.create(name="mc", hostname="192.0.2.97", login="", password="", type=1,
+                                         maintenance=True)
+        op = SimpleNamespace(intent={"compute": compute.pk, "name": "mc-clone",
+                                     "uuid": "00000000-0000-4000-8000-000000000501"},
+                             username="mc-admin", client_ip=None)
+        with patch("instances.jobs.wvmInstance") as proxy:
+            result = _finish_clone(op, {"start": True}, "")
+        proxy.return_value.start.assert_not_called()
+        self.assertIn("is in maintenance: its VMs cannot be started there", str(result["warning"]))
