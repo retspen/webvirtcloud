@@ -233,8 +233,9 @@ def read_fleet():
     """The computes; those the panel reads now, {pk: compute}, read side by
     side and bounded (one that does not answer is left out); their VMs, with
     their info; what each gives its running VMs, {pk: [memory KiB, vCPUs]};
-    and the memory KiB its running and paused VMs, also those the panel does
-    not list, leave of its memory, {pk: KiB}."""
+    the memory KiB its running and paused VMs, also those the panel does not
+    list, leave of its memory, {pk: KiB}; and its size, {pk: (memory KiB,
+    CPUs)}."""
     computes = list(Compute.objects.order_by("name"))
     read_hosts(computes)
     hosts = {compute.pk: compute for compute in computes if compute.status is True and compute.shown_capacity}
@@ -249,7 +250,8 @@ def read_fleet():
             loads[instance.compute_id][1] += instance.info[3]
     room = {pk: (compute.shown_capacity["memory"] - compute.shown_capacity["assigned"]["running"]) // 1024
             for pk, compute in hosts.items()}
-    return computes, hosts, instances, loads, room
+    sizes = {pk: (compute.shown_capacity["memory"] // 1024, compute.shown_capacity["cpus"]) for pk, compute in hosts.items()}
+    return computes, hosts, instances, loads, room, sizes
 
 
 @superuser_only
@@ -302,7 +304,7 @@ def bulk_migrate(request, compute_id):
                        "parallel": range(1, parallel_limit() + 1)})
 
     # the other hosts' loads: the VMs of this one are read above, also when its capacity cannot be
-    _computes, hosts, _instances, loads, room = read_fleet()
+    _computes, hosts, _instances, loads, room, sizes = read_fleet()
     others = {pk: host for pk, host in hosts.items() if pk != compute.pk}
     shown, ticked = request.GET.getlist("shown"), request.GET.getlist("vm")
     vms = []
@@ -317,7 +319,7 @@ def bulk_migrate(request, compute_id):
         # at first the VMs that are not shut off, as with one destination; then the ticked ones
         if instance.info and (str(instance.pk) in ticked if shown else not shut_off):
             vms.append((instance.pk, instance.info[2], instance.info[3], not shut_off, can_go))
-    placed, _after = spread({pk: loads[pk] for pk in others}, vms, {pk: room[pk] for pk in others})
+    placed, _after = spread({pk: loads[pk] for pk in others}, vms, {pk: room[pk] for pk in others}, sizes)
     for instance in instances:
         instance.target = others.get(placed.get(instance.pk))
         if instance.target is None and any(vm[0] == instance.pk for vm in vms):
@@ -333,8 +335,9 @@ def bulk_migrate(request, compute_id):
 
 @superuser_only
 def balance(request):
-    """Proposes migrations of running VMs that even out the memory, then
-    the vCPUs, the hosts give their running VMs (computes.balance), and
+    """Proposes migrations of running VMs that even out the share of their
+    memory, then of their CPUs, the hosts give their running VMs
+    (computes.balance), and
     runs the proposal shown in one job. A VM unticked stays where it is and
     the proposal is made again without it: the form sends the VMs it showed
     ("shown") and the ticked ones ("vm")."""
@@ -356,7 +359,7 @@ def balance(request):
             return redirect("computes")
         return redirect("balance")
 
-    computes, hosts, instances, loads, room = read_fleet()
+    computes, hosts, instances, loads, room, sizes = read_fleet()
     running = [instance for instance in instances if instance.info and instance.info[0] == 1]
     pinned = set(request.GET.getlist("shown")) - set(request.GET.getlist("vm"))
     movable, unmovable, reach = [], [], Reach(request)
@@ -371,12 +374,11 @@ def balance(request):
         elif refusals:
             instance.refusals = [f"{target.name}: {refusal}" for target, refusal in refusals.items()]
             unmovable.append(instance)
-    moves, after = propose(loads, movable, room)
-    # the bars of each host's memory before and after, on the scale of the largest
-    scale = max([load[0] for load in (*loads.values(), *after.values())] + [1])
+    moves, after = propose(loads, movable, room, sizes)
+    # the bars: the share of each host's memory before and after
     for pk, compute in hosts.items():
-        compute.before, compute.after = loads[pk], after[pk]
-        compute.bars = [load[0] * 100 / scale for load in (loads[pk], after[pk])]
+        compute.before, compute.after, compute.size = loads[pk], after[pk], sizes[pk]
+        compute.bars = [min(load[0] * 100 / max(sizes[pk][0], 1), 100) for load in (loads[pk], after[pk])]
     by_pk = {instance.pk: instance for instance in running}
     for vm, _source, target in moves:
         by_pk[vm].target = hosts[target]

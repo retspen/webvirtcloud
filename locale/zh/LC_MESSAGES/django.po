@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-16 07:18+0000\n"
+"POT-Creation-Date: 2026-11-16 10:39+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -61,8 +61,8 @@ msgstr "公钥已存在"
 msgid "Invalid key"
 msgstr "无效的密钥"
 
-#: accounts/forms.py:95 computes/templates/computes/balance.html:57
-#: computes/templates/computes/balance.html:104
+#: accounts/forms.py:95 computes/templates/computes/balance.html:58
+#: computes/templates/computes/balance.html:105
 #: computes/templates/computes/bulk_migrate.html:53
 #: computes/templates/computes/instances.html:46
 #: instances/templates/add_instance_volume.html:39
@@ -233,7 +233,7 @@ msgid "Add VM"
 msgstr "添加虚拟机"
 
 #: accounts/templates/account.html:68 admin/templates/admin/logs.html:40
-#: computes/templates/computes/balance.html:105
+#: computes/templates/computes/balance.html:106
 #: computes/templates/computes/list.html:59
 #: instances/templates/allinstances.html:108
 #: instances/templates/allinstances_index_nongrouped.html:8
@@ -748,7 +748,7 @@ msgstr "NEW_USER_DEFAULT_INSTANCES：%(name)s 已有所有者，且只允许一�
 msgid "vCPUs"
 msgstr "vCPU"
 
-#: admin/forms.py:209 computes/templates/computes/balance.html:58
+#: admin/forms.py:209 computes/templates/computes/balance.html:59
 #: computes/templates/computes/bulk_migrate.html:55
 #: computes/templates/computes/instances.html:50
 #: computes/templates/computes/list.html:62 computes/templates/overview.html:66
@@ -1990,7 +1990,7 @@ msgstr "其虚拟机所在的主机尚不明确：请在面板通过当前连接
 msgid "This is another host than the one its VMs are on: add it as a new host"
 msgstr "这不是其虚拟机所在的主机：请将其添加为新主机"
 
-#: computes/reach.py:56
+#: computes/reach.py:60
 msgid ""
 "A disk file is not on storage both hosts share: migrate it from its page"
 msgstr "有磁盘文件不在两台主机共享的存储上：请在该虚拟机的页面上迁移它"
@@ -2003,100 +2003,109 @@ msgstr "计算节点"
 
 #: computes/templates/computes/balance.html:15
 msgid ""
-"Migrations that share the memory, then the vCPUs, of running VMs evenly among"
-" the hosts."
-msgstr "在各主机之间均衡分配运行中虚拟机的内存（其次是 vCPU）的迁移。"
+"Migrations that give each host about the same share of its memory, then of "
+"its CPUs, for its running VMs: a host twice as large takes twice as much."
+msgstr "使每台主机为其运行中的虚拟机分配大致相同比例的内存（其次是 CPU）的迁移：两倍大的主机承担两倍的负载。"
 
 #: computes/templates/computes/balance.html:17
 #: computes/templates/computes/bulk_migrate.html:20
 msgid "These hosts cannot be read and are left out:"
 msgstr "以下主机无法读取，已排除："
 
-#: computes/templates/computes/balance.html:28
+#: computes/templates/computes/balance.html:29
 #: instances/templates/instances/snapshots_tab.html:18
 msgid "Now"
 msgstr "现在"
 
-#: computes/templates/computes/balance.html:28
+#: computes/templates/computes/balance.html:29
 msgid "Running VMs"
 msgstr "运行中的虚拟机"
 
-#: computes/templates/computes/balance.html:29
-#: computes/templates/computes/balance.html:32
+#: computes/templates/computes/balance.html:30
+#: computes/templates/computes/balance.html:33
 #: computes/templates/computes/capacity_vcpus.html:4
 #, python-format
 msgid "%(counter)s vCPU"
 msgid_plural "%(counter)s vCPUs"
 msgstr[0] "%(counter)s 个 vCPU"
 
-#: computes/templates/computes/balance.html:31
+#: computes/templates/computes/balance.html:30
+#: computes/templates/computes/balance.html:33
+#: computes/templates/computes/capacity_vcpus.html:4
+#: computes/templates/computes/list.html:42
+#, python-format
+msgid "on %(counter)s CPU"
+msgid_plural "on %(counter)s CPUs"
+msgstr[0] "基于 %(counter)s 个 CPU"
+
+#: computes/templates/computes/balance.html:32
 msgid "After"
 msgstr "之后"
 
-#: computes/templates/computes/balance.html:34
+#: computes/templates/computes/balance.html:35
 msgid "Memory now"
 msgstr "当前内存"
 
-#: computes/templates/computes/balance.html:34
+#: computes/templates/computes/balance.html:35
 msgid "Memory after"
 msgstr "迁移后内存"
 
-#: computes/templates/computes/balance.html:51
+#: computes/templates/computes/balance.html:52
 #, python-format
 msgid "Proposed migration (%(counter)s)"
 msgid_plural "Proposed migrations (%(counter)s)"
 msgstr[0] "建议的迁移（%(counter)s）"
 
-#: computes/templates/computes/balance.html:56
+#: computes/templates/computes/balance.html:57
 #: computes/templates/computes/bulk_migrate.html:52
 msgid "Select all"
 msgstr "全选"
 
-#: computes/templates/computes/balance.html:60
+#: computes/templates/computes/balance.html:61
 msgid "Migration"
 msgstr "迁移"
 
-#: computes/templates/computes/balance.html:81
+#: computes/templates/computes/balance.html:82
 #: computes/templates/computes/bulk_migrate.html:87
 msgid "Migrations at once"
 msgstr "同时迁移数"
 
-#: computes/templates/computes/balance.html:85
+#: computes/templates/computes/balance.html:86
 #, python-format
 msgid "Migrate %(counter)s VM"
 msgid_plural "Migrate %(counter)s VMs"
 msgstr[0] "迁移 %(counter)s 台虚拟机"
 
-#: computes/templates/computes/balance.html:86
+#: computes/templates/computes/balance.html:87
 msgid "Migrate the VMs listed?"
 msgstr "迁移列出的虚拟机？"
 
-#: computes/templates/computes/balance.html:88
+#: computes/templates/computes/balance.html:89
 #: computes/templates/computes/bulk_migrate.html:27
 msgid ""
 "The worker runs one job at a time: set Worker Concurrency to 2 or more on the"
 " Settings page."
 msgstr "任务执行器一次只运行一个任务：请在设置页面将工作进程并发数设为 2 或更大。"
 
-#: computes/templates/computes/balance.html:93
+#: computes/templates/computes/balance.html:94
 msgid "The hosts are balanced: no migration would even them out more."
 msgstr "主机已均衡：没有能使其更均衡的迁移。"
 
-#: computes/templates/computes/balance.html:98
+#: computes/templates/computes/balance.html:99
 msgid "Stay where they are"
 msgstr "留在原处"
 
-#: computes/templates/computes/balance.html:103
-#: computes/templates/computes/balance.html:112
+#: computes/templates/computes/balance.html:104
+#: computes/templates/computes/balance.html:113
 msgid "Let it move"
 msgstr "允许迁移"
 
-#: computes/templates/computes/balance.html:106
+#: computes/templates/computes/balance.html:107
 #: computes/templates/computes/bulk_migrate.html:58
 msgid "Why"
 msgstr "原因"
 
-#: computes/templates/computes/balance.html:115
+#: computes/templates/computes/balance.html:116
 msgid "You kept it here: tick it to let it move"
 msgstr "您将其保留在原处：勾选后即可迁移"
 
@@ -2210,13 +2219,6 @@ msgstr "没有活动的存储池。"
 msgid "%(counter)s more pool"
 msgid_plural "%(counter)s more pools"
 msgstr[0] "另有 %(counter)s 个存储池"
-
-#: computes/templates/computes/capacity_vcpus.html:4
-#: computes/templates/computes/list.html:42
-#, python-format
-msgid "on %(counter)s CPU"
-msgid_plural "on %(counter)s CPUs"
-msgstr[0] "基于 %(counter)s 个 CPU"
 
 #: computes/templates/computes/capacity_vcpus.html:6
 msgid ""
@@ -2625,16 +2627,16 @@ msgstr "请输入主机 /etc/default/webvirt-gstfsd 中 GSTFSD_KEY 的 64 个十
 msgid "The host did not answer within %(seconds)s seconds"
 msgstr "主机未在 %(seconds)s 秒内响应"
 
-#: computes/views.py:324
+#: computes/views.py:326
 msgid "No other host has room for it"
 msgstr "没有其他主机能容纳它"
 
-#: computes/views.py:397
+#: computes/views.py:399
 #, python-format
 msgid "The host was saved, but the panel cannot connect to it: %(error)s"
 msgstr "主机已保存，但面板无法连接到它：%(error)s"
 
-#: computes/views.py:453
+#: computes/views.py:455
 #, python-format
 msgid ""
 "Its VMs keep running on the host and leave the panel; their owners are kept "
