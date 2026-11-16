@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import libvirt
 from computes.models import Compute
+from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -67,7 +68,7 @@ class BulkMigratePageTests(TestCase):
         self.assertIn("not on storage both hosts share", local.getparent().getparent().text_content())
 
     def test_a_host_in_maintenance_is_no_destination(self):
-        Compute.objects.create(name="ev-rest", hostname="198.51.100.32", login="", password="", type=4, maintenance=True)
+        Compute.objects.create(name="ev-rest", hostname="198.51.100.32", login="", password="", type=4, maintenance_since=timezone.now())
         page = self.page()
         self.assertEqual(page.xpath("//select[@id='bulk-migrate-target']"), [])  # one destination left: no choice
         self.assertNotIn("ev-rest", page.text_content())

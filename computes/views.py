@@ -10,6 +10,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.core import signing
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -198,9 +199,11 @@ def overview(request, compute_id):
     # the connection itself, not a TCP probe: ssh aliases and ProxyJump hosts
     # are not reachable by name and port from here
     context = {"compute": compute, "connected": compute.status is True,
-               # the host's latest bulk migration: in maintenance, whether its VMs are being moved, or how that ended
+               # in maintenance, the host's latest bulk migration of that maintenance, or one still running:
+               # whether its VMs are being moved, or how that ended
                "bulk": Operation.objects.filter(kind="host.bulk_migrate", resource=claims.compute_key(compute.pk))
-               .order_by("-created_at").first()}
+               .filter(Q(created_at__gte=compute.maintenance_since) | Q(state__in=Operation.ACTIVE))
+               .order_by("-created_at").first() if compute.maintenance else None}
     context["bulk_running"] = context["bulk"] is not None and context["bulk"].state in Operation.ACTIVE
     if context["connected"]:
         try:
@@ -282,7 +285,7 @@ def bulk_migrate(request, compute_id):
 
     compute = get_object_or_404(Compute, pk=compute_id)
     # a host in maintenance takes no VM (Compute.refuse_new_vms)
-    targets = list(Compute.objects.exclude(pk=compute.pk).filter(maintenance=False).order_by("name"))
+    targets = list(Compute.objects.exclude(pk=compute.pk).filter(maintenance_since=None).order_by("name"))
     if request.method == "POST":
         chosen = request.POST.getlist("instance")
         if request.POST.get("spread"):
@@ -303,7 +306,7 @@ def bulk_migrate(request, compute_id):
                 op = jobs.submit("host.bulk_migrate", request.user, raw, key)
                 if entering and op.pk != found:
                     with audit(request, compute, f"Compute {compute.name}", "maintenance on"):
-                        Compute.objects.filter(pk=compute.pk).update(maintenance=True)
+                        Compute.objects.filter(pk=compute.pk).update(maintenance_since=op.created_at)
         except claims.Busy as busy:
             messages.error(request, busy_message(busy, request.user))
         except (ValueError, jobs.SubmissionConflict, libvirtError) as err:
@@ -480,7 +483,10 @@ def maintenance(request, compute_id):
     wanted = request.POST.get("maintenance") == "on"
     action = "maintenance on" if wanted else "maintenance off"
     with audit(request, compute, f"Compute {compute.name}", action):
-        Compute.objects.filter(pk=compute.pk).update(maintenance=wanted)
+        if wanted:  # already in maintenance: since then still
+            Compute.objects.filter(pk=compute.pk, maintenance_since=None).update(maintenance_since=timezone.now())
+        else:
+            Compute.objects.filter(pk=compute.pk).update(maintenance_since=None)
     return redirect("overview", compute.pk)
 
 

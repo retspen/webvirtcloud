@@ -2,7 +2,7 @@ from ipaddress import ip_address
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import BooleanField, CharField, IntegerField, Model, Q, UniqueConstraint
+from django.db.models import CharField, DateTimeField, IntegerField, Model, Q, UniqueConstraint
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import gettext_noop
@@ -54,11 +54,16 @@ class Compute(Model):
 
     # in maintenance: no new VM and no migration comes to the host, none of its
     # VMs starts there, and Balance leaves it out; Bulk Migrate empties it, and
-    # it is ready once none of its VMs runs (refuse_new_vms, refuse_start)
-    maintenance = BooleanField(default=False, editable=False)
+    # it is ready once none of its VMs runs (refuse_new_vms, refuse_start);
+    # since when: the host's bulk migrations from then on are its own
+    maintenance_since = DateTimeField(null=True, blank=True, editable=False)
 
     class Meta:
         constraints = [UniqueConstraint(fields=["host_uuid"], condition=~Q(host_uuid=""), name="one_compute_per_host")]
+
+    @property
+    def maintenance(self):
+        return self.maintenance_since is not None
 
     def refuse_new_vms(self):
         """Refuses a VM made on or migrated to the host while it is in maintenance."""

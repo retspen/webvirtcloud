@@ -12,7 +12,7 @@ from logs.audit import request_ip, write
 from operations import claims, jobs
 from operations.utils import busy_message, public_error_text, said, summary, words
 
-from vrtManager.util import ConnectionFailed, InUse
+from vrtManager.util import ConnectionFailed, InUse, OperationError
 from webvirtcloud import log_context
 from webvirtcloud.log_context import current_request
 
@@ -151,10 +151,10 @@ class ExceptionMiddleware:
             messages.error(request, busy_message(exception, request.user))
             return redirect(request.get_full_path())
         if isinstance(exception, libvirtError):
-            messages.error(
-                request,
-                _("libvirt Error - %(exception)s") % {"exception": error_text(request, exception)},
-            )
+            text = error_text(request, exception)
+            # the panel's own refusal (OperationError) is not libvirt's error
+            messages.error(request, text if isinstance(exception, OperationError)
+                           else _("libvirt Error - %(exception)s") % {"exception": text})
             if request.method not in ("GET", "HEAD"):
                 # a refused form: back to the page it was on, with the reason
                 return redirect(same_origin_referer(request, "/"))

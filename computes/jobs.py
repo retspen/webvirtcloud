@@ -204,7 +204,7 @@ class Balance(Migrations):
     def check_move(self, source, target):
         """Balance leaves a host in maintenance out: it takes no VM and gives none."""
         super().check_move(source, target)
-        if host := Compute.objects.filter(pk=source, maintenance=True).first():
+        if host := Compute.objects.filter(pk=source, maintenance_since__isnull=False).first():
             raise util.OperationError(gettext_noop("%(compute)s is in maintenance: Balance leaves it out"),
                                       compute=host.name)
 

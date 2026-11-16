@@ -10,7 +10,9 @@ from computes.jobs import Balance
 from computes.models import Compute
 from computes.tests.test_balance import Ctx
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.db import connection
+from django.db.migrations.executor import MigrationExecutor
+from django.test import TestCase, TransactionTestCase
 from django.urls import reverse
 from django.utils import timezone
 from instances.jobs import CloneInstance, CreateInstance, _finish_clone, _revert_start, migration_target
@@ -35,9 +37,11 @@ class MaintenanceSwitchTests(TestCase):
 
     def test_the_form_sets_the_state_it_names_and_each_change_is_audited(self):
         self.assertRedirects(self.switch("on"), reverse("overview", args=[self.compute.pk]), fetch_redirect_response=False)
-        self.switch("on")  # a second page sent meanwhile does not turn it back
         self.compute.refresh_from_db()
-        self.assertTrue(self.compute.maintenance)
+        since = self.compute.maintenance_since
+        self.switch("on")  # a second page sent meanwhile does not turn it back, nor starts it anew
+        self.compute.refresh_from_db()
+        self.assertEqual(self.compute.maintenance_since, since)
         self.switch("off")
         self.compute.refresh_from_db()
         self.assertFalse(self.compute.maintenance)
@@ -48,7 +52,7 @@ class MaintenanceSwitchTests(TestCase):
         self.assertEqual(self.client.get(reverse("compute_maintenance", args=[self.compute.pk])).status_code, 405)
 
     def test_a_vm_cannot_be_created_from_its_pages(self):
-        self.compute.maintenance = True
+        self.compute.maintenance_since = timezone.now()
         self.compute.save()
         for url in (reverse("instances:create_instance_select_type", args=[self.compute.pk]),
                     reverse("instances:create_instance", args=[self.compute.pk, "x86_64", "q35"])):
@@ -61,7 +65,7 @@ class MaintenanceGuardTests(TestCase):
     def setUp(self):
         self.admin = get_user_model().objects.create_superuser("mg-admin", "mg@example.com", "pw")
         self.host = Compute.objects.create(name="mg", hostname="192.0.2.62", login="", password="", type=4,
-                                           maintenance=True)
+                                           maintenance_since=timezone.now())
         self.other = Compute.objects.create(name="mg-other", hostname="192.0.2.63", login="", password="", type=4)
 
     def test_no_vm_migrates_to_it(self):
@@ -90,12 +94,12 @@ class BalanceLeavesItOutTests(TestCase):
         self.params = {"parallel": 1, "moves": [[self.vm.pk, self.hosts[0].pk, self.hosts[1].pk]]}
 
     def maintenance(self, host):
-        Compute.objects.filter(pk=host.pk).update(maintenance=True)
+        Compute.objects.filter(pk=host.pk).update(maintenance_since=timezone.now())
 
     def test_a_move_from_or_to_a_host_in_maintenance_is_refused(self):
         for host, text in ((self.hosts[0], "mb-0 is in maintenance: Balance leaves it out"),
                            (self.hosts[1], f"mb-1 {REFUSED}")):
-            Compute.objects.update(maintenance=False)
+            Compute.objects.update(maintenance_since=None)
             self.maintenance(host)
             with self.assertRaisesRegex(util.OperationError, text):
                 Balance().validate(self.admin, Balance().normalize(self.params))
@@ -115,7 +119,7 @@ class NoStartTests(TestCase):
 
     def setUp(self):
         self.compute = Compute.objects.create(name="ms", hostname="192.0.2.81", login="", password="", type=1,
-                                              maintenance=True)
+                                              maintenance_since=timezone.now())
         self.instance = Instance.objects.create(compute=self.compute, name="ms-vm",
                                                 uuid="00000000-0000-4000-8000-000000000301")
         self.client.force_login(get_user_model().objects.create_superuser("ms-admin", "ms@example.com", "pw"))
@@ -128,6 +132,7 @@ class NoStartTests(TestCase):
         for action in ("poweron", "resume", "powercycle"):
             response = self.client.post(reverse(f"instances:{action}", args=[self.instance.pk]), follow=True)
             self.assertContains(response, "ms is in maintenance: its VMs cannot be started there")
+            self.assertNotContains(response, "libvirt Error")  # the panel's own refusal
         self.proxy.start.assert_not_called()
         self.proxy.resume.assert_not_called()
         self.proxy.force_shutdown.assert_not_called()  # a power cycle would leave it off
@@ -181,6 +186,7 @@ class MaintenanceWithMigrationTests(TestCase):
         (op,) = Operation.objects.all()
         self.assertTrue(op.params["maintenance"])
         self.assertTrue(self.maintenance())
+        self.assertEqual(self.compute.maintenance_since, op.created_at)  # the job is of this maintenance
         self.assertEqual(list(Logs.objects.values_list("message", flat=True)), ["Compute me: maintenance on"])
 
     def test_a_refused_job_leaves_the_host_out_of_maintenance(self):
@@ -195,14 +201,14 @@ class MaintenanceWithMigrationTests(TestCase):
         Operation.objects.update(created_at=timezone.now() - SUBMISSION_KEY_TTL - timedelta(minutes=1),
                                  state=Operation.SUCCEEDED)
         Claim.objects.all().delete()  # it ended
-        Compute.objects.filter(pk=self.compute.pk).update(maintenance=False)
+        Compute.objects.filter(pk=self.compute.pk).update(maintenance_since=None)
         self.post()
         self.assertTrue(self.maintenance())
         self.assertEqual(Operation.objects.count(), 2)
 
     def test_the_form_sent_again_does_not_put_it_back(self):
         self.post()
-        Compute.objects.filter(pk=self.compute.pk).update(maintenance=False)  # taken out since
+        Compute.objects.filter(pk=self.compute.pk).update(maintenance_since=None)  # taken out since
         self.post()
         self.assertFalse(self.maintenance())
         self.assertEqual(Operation.objects.count(), 1)
@@ -221,7 +227,7 @@ class MaintenanceWithMigrationTests(TestCase):
         response = self.page(maintenance="on")
         self.assertContains(response, "Put in maintenance without migrating")
         self.assertContains(response, '<input type="hidden" name="maintenance" value="on">', count=3)
-        Compute.objects.filter(pk=self.compute.pk).update(maintenance=True)  # already: the plain page
+        Compute.objects.filter(pk=self.compute.pk).update(maintenance_since=timezone.now())  # already: the plain page
         self.assertNotContains(self.page(maintenance="on"), "Put in maintenance without migrating")
 
 
@@ -231,7 +237,7 @@ class MaintenanceStateTests(TestCase):
 
     def setUp(self):
         self.compute = Compute.objects.create(name="mz", hostname="192.0.2.95", login="", password="", type=4,
-                                              maintenance=True)
+                                              maintenance_since=timezone.now())
         self.client.force_login(get_user_model().objects.create_superuser("mz-admin", "mz@example.com", "pw"))
 
     @staticmethod
@@ -255,8 +261,26 @@ class MaintenanceStateTests(TestCase):
     def test_a_host_that_cannot_be_read_is_not_said_ready(self):
         self.assertContains(self.overview(None), "whether its VMs still run is not known")
 
+    def bulk(self, state, before):
+        op = Operation.objects.create(kind="host.bulk_migrate", user=None, username="mz-admin", state=state,
+                                      resource=f"compute:{self.compute.pk}")
+        if before:
+            Operation.objects.filter(pk=op.pk).update(created_at=self.compute.maintenance_since - timedelta(hours=1))
+        return op
+
+    def test_only_a_bulk_migration_of_this_maintenance_or_one_still_running_is_shown(self):
+        self.bulk(Operation.SUCCEEDED, before=True)  # an earlier one
+        response = self.overview(self.given(running=1))
+        self.assertNotContains(response, "bulk migration")
+        self.assertNotContains(response, "being migrated")
+        running = self.bulk(Operation.RUNNING, before=True)
+        self.assertContains(self.overview(self.given(running=1)), "Its VMs are being migrated")
+        Operation.objects.filter(pk=running.pk).update(state=Operation.FAILED)
+        self.bulk(Operation.FAILED, before=False)
+        self.assertContains(self.overview(self.given(running=1)), "Its last bulk migration")
+
     def test_put_in_maintenance_leads_to_bulk_migrate_while_vms_run(self):
-        Compute.objects.filter(pk=self.compute.pk).update(maintenance=False)
+        Compute.objects.filter(pk=self.compute.pk).update(maintenance_since=None)
         response = self.overview(self.given(running=1))
         self.assertContains(response, reverse("bulk_migrate", args=[self.compute.pk]) + "?maintenance=on")
         response = self.overview(self.given(shutoff=1))
@@ -266,7 +290,7 @@ class MaintenanceStateTests(TestCase):
 class CloneStaysOffTests(TestCase):
     def test_a_clone_made_while_the_host_went_in_maintenance_stays_off(self):
         compute = Compute.objects.create(name="mc", hostname="192.0.2.97", login="", password="", type=1,
-                                         maintenance=True)
+                                         maintenance_since=timezone.now())
         op = SimpleNamespace(intent={"compute": compute.pk, "name": "mc-clone",
                                      "uuid": "00000000-0000-4000-8000-000000000501"},
                              username="mc-admin", client_ip=None)
@@ -274,3 +298,17 @@ class CloneStaysOffTests(TestCase):
             result = _finish_clone(op, {"start": True}, "")
         proxy.return_value.start.assert_not_called()
         self.assertIn("is in maintenance: its VMs cannot be started there", str(result["warning"]))
+
+
+class MaintenanceSinceMigrationTests(TransactionTestCase):
+    """A host in maintenance before maintenance_since stays in maintenance."""
+
+    def test_a_host_in_maintenance_stays_in_it(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate([("computes", "0010_maintenance")])
+        old = executor.loader.project_state([("computes", "0010_maintenance")]).apps.get_model("computes", "Compute")
+        old.objects.create(name="mm-on", hostname="192.0.2.97", login="", password="", type=4, maintenance=True)
+        old.objects.create(name="mm-off", hostname="192.0.2.98", login="", password="", type=4)
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
+        self.assertEqual({c.name: c.maintenance for c in Compute.objects.all()}, {"mm-on": True, "mm-off": False})

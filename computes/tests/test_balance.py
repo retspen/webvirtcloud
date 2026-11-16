@@ -8,6 +8,7 @@ import libvirt
 from computes.balance import propose, spread
 from computes.jobs import Balance
 from computes.models import Compute
+from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
@@ -168,7 +169,7 @@ class BalancePageTests(TestCase):
         self.assertIn("ba-other", page.xpath("//div[contains(@class, 'alert-warning')]")[0].text_content())
 
     def test_a_host_in_maintenance_is_left_out(self):
-        Compute.objects.filter(pk=self.other.pk).update(maintenance=True)
+        Compute.objects.filter(pk=self.other.pk).update(maintenance_since=timezone.now())
         page = self.page()
         self.assertEqual(self.moved(page), [])
         self.assertEqual(list(self.response.context["hosts"]), [self.compute])
