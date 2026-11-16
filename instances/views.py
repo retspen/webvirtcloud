@@ -853,13 +853,13 @@ def poweron(request, pk):
         messages.warning(request, _("Templates cannot be started."))
     elif options.validated_data["fresh"]:  # the saved state is discarded: the VM boots anew
         with audit_vm(request, instance, "power on without the saved state"):
-            instance.compute.refuse_start()
             instance.proxy.check_start_hostdevs(restore=False)
+            instance.compute.refuse_start()  # right before the start: maintenance may begin while devices are checked
             instance.proxy.start(VIR_DOMAIN_START_FORCE_BOOT)
     else:
         with audit_vm(request, instance, "power on"):
-            instance.compute.refuse_start()
             instance.proxy.check_start_hostdevs()
+            instance.compute.refuse_start()
             instance.proxy.start()
 
     return get_safe_redirect(
@@ -1860,6 +1860,7 @@ def set_autostart(request, pk):
         messages.error(request, _("Templates cannot be started."))
         return _back(request, pk, "boot_opt")
     with audit_vm(request, instance, "enable autostart"):
+        instance.compute.refuse_start()  # it would start there when the host boots
         instance.proxy.set_autostart(1)
     return _back(request, pk, "boot_opt")
 
@@ -2597,6 +2598,7 @@ def create_instance_select_type(request, compute_id):
             else:
                 with libvirt_compute_lock(compute):
                     with audit(request, compute, f"VM {name}", "define from XML", instance=name) as entry:
+                        compute.refuse_new_vms()  # put in maintenance since the page was opened
                         check_hostdevs(conn, name, [etree.fromstring(xml)])
                         conn._defineXML(xml)
                         refresh_instance_database(compute)
@@ -2605,6 +2607,8 @@ def create_instance_select_type(request, compute_id):
                 return redirect(reverse("instances:instance", args=[instance.id]))
         except util.etree.Error as err:
             xml_error = _("The XML is not well-formed: %(error)s") % {"error": err}
+        except util.OperationError as err:
+            xml_error = error_text(request, err)
         except libvirtError as err:
             xml_error = _("libvirt Error - %(exception)s") % {"exception": error_text(request, err)}
 

@@ -152,7 +152,8 @@ class CreateDialogHostsTestCase(TestCase):
         self.assertEqual([e.text for e in dialog.xpath(".//a/div/div[1]")], ["cd2"])
         (item,) = dialog.xpath(".//div[@aria-disabled='true']")
         self.assertIn("cd1", item.text_content())
-        self.assertIn("In maintenance", item.text_content())
+        self.assertIn("Maintenance", item.text_content())
+        self.assertNotIn("In maintenance", item.text_content())  # it may still be only requested
 
     def test_no_reachable_compute_is_said(self):
         dialog = self.dialog(set())

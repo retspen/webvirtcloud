@@ -221,6 +221,10 @@ def overview(request, compute_id):
             context["read_error"] = str(error)
         context["given"] = shown_capacity(compute)
         context["storage"] = host_pools(compute)
+        if compute.maintenance:
+            # libvirt starts these itself when the host boots: the panel cannot refuse that
+            with suppress(libvirtError):
+                context["autostart"] = sorted(dom.name() for dom in compute.proxy.wvm.listAllDomains() if dom.autostart())
     return render(request, "overview.html", context)
 
 

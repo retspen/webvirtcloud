@@ -55,6 +55,9 @@
     <span class="fw-semibold">{% trans "In maintenance: no VM runs on this host." %}</span>
     {% endif %}
     {% trans "No new VM or migration comes to it, its VMs cannot be started there, and Balance leaves it out." %}
+    {% if autostart %}
+    <div class="mt-2">{% blocktrans with vms=autostart|join:", " %}These VMs start by themselves when the host boots: {{ vms }}. Turn their autostart off before restarting the host.{% endblocktrans %}</div>
+    {% endif %}
     {% if bulk and not given or bulk and given.active %}
     <div class="mt-2 small">
         {% url 'operations:job' bulk.pk as job_url %}

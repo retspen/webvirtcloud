@@ -6,6 +6,7 @@ from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+from accounts.models import UserInstance
 from computes.jobs import Balance
 from computes.models import Compute
 from computes.tests.test_balance import Ctx
@@ -15,7 +16,7 @@ from django.db.migrations.executor import MigrationExecutor
 from django.test import TestCase, TransactionTestCase
 from django.urls import reverse
 from django.utils import timezone
-from instances.jobs import CloneInstance, CreateInstance, _finish_clone, _revert_start, migration_target
+from instances.jobs import CloneInstance, CreateInstance, RevertSnapshot, _finish_clone, _revert_start, migration_target
 from instances.models import Instance
 from libvirt import libvirtError
 from logs.models import Logs
@@ -155,6 +156,39 @@ class NoStartTests(TestCase):
         self.proxy._snapshot.return_value.getXMLDesc.return_value = "<domainsnapshot><state>running</state></domainsnapshot>"
         _revert_start(self.instance, self.proxy, {"name": "s", "external": False})
 
+    def test_nor_by_its_owner(self):
+        owner = get_user_model().objects.create_user("ms-owner", "owner@example.com", "pw")
+        UserInstance.objects.create(instance=self.instance, user=owner)
+        self.client.force_login(owner)
+        response = self.client.post(reverse("instances:poweron", args=[self.instance.pk]), follow=True)
+        self.assertContains(response, "ms is in maintenance: its VMs cannot be started there")
+        self.proxy.start.assert_not_called()
+
+    def test_a_revert_job_that_would_start_it_is_refused(self):
+        self.proxy.get_status.return_value = 5
+        self.proxy._snapshot.return_value.getXMLDesc.return_value = "<domainsnapshot><state>running</state></domainsnapshot>"
+        admin = get_user_model().objects.get(username="ms-admin")
+        with patch("instances.jobs._proxy", return_value=self.proxy), \
+                self.assertRaisesRegex(util.OperationError, "its VMs cannot be started there"):
+            RevertSnapshot().validate(admin, {"instance": self.instance.pk, "name": "s", "external": False})
+
+    def test_its_autostart_cannot_be_turned_on(self):
+        response = self.client.post(reverse("instances:set_autostart", args=[self.instance.pk]), follow=True)
+        self.assertContains(response, "ms is in maintenance: its VMs cannot be started there")
+        self.proxy.set_autostart.assert_not_called()
+
+    def test_a_compute_read_before_the_maintenance_refuses_too(self):
+        held = Compute.objects.get(pk=self.compute.pk)
+        Compute.objects.filter(pk=held.pk).update(maintenance_since=None)
+        held.refuse_start()  # out of maintenance now, though the object says otherwise
+        Compute.objects.filter(pk=held.pk).update(maintenance_since=timezone.now())
+        stale = Compute.objects.get(pk=held.pk)
+        stale.maintenance_since = None  # as read before it went in maintenance
+        with self.assertRaisesRegex(util.OperationError, "its VMs cannot be started there"):
+            stale.refuse_start()
+        with self.assertRaisesRegex(util.OperationError, REFUSED):
+            stale.refuse_new_vms()
+
     def test_a_running_vm_still_stops(self):
         self.client.post(reverse("instances:poweroff", args=[self.instance.pk]))
         self.proxy.shutdown.assert_called_once()
@@ -257,6 +291,14 @@ class MaintenanceStateTests(TestCase):
 
     def test_with_only_shut_off_vms_it_is_in_maintenance(self):
         self.assertContains(self.overview(self.given(shutoff=3)), "In maintenance: no VM runs on this host.")
+
+    def test_the_vms_that_autostart_when_the_host_boots_are_named(self):
+        doms = [MagicMock(**{"name.return_value": name, "autostart.return_value": on})
+                for name, on in (("mz-b", 1), ("mz-off", 0), ("mz-a", 1))]
+        proxy = MagicMock(**{"wvm.listAllDomains.return_value": doms})
+        with patch.object(Compute, "proxy", new_callable=lambda: proxy):
+            response = self.overview(self.given(shutoff=3))
+        self.assertContains(response, "These VMs start by themselves when the host boots: mz-a, mz-b.")
 
     def test_a_host_that_cannot_be_read_is_not_said_ready(self):
         self.assertContains(self.overview(None), "whether its VMs still run is not known")

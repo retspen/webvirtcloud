@@ -19,7 +19,7 @@
                     {% if compute.maintenance %}
                     <div class="list-group-item py-3" aria-disabled="true">
                         <span class="fw-semibold text-body-secondary">{{ compute.name }}</span>
-                        <span class="badge text-bg-warning ms-2">{% trans "In maintenance" %}</span>
+                        <span class="badge text-bg-warning ms-2">{% trans "Maintenance" %}</span>{# requested or ready: no new VM comes either way #}
                         <div class="small text-body-secondary">{% trans "No new VM comes to a host in maintenance." %}</div>
                     </div>
                     {% else %}

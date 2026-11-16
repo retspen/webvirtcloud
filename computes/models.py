@@ -65,15 +65,19 @@ class Compute(Model):
     def maintenance(self):
         return self.maintenance_since is not None
 
+    def _in_maintenance_now(self):
+        """Read now: a page or job may hold the compute from before it went in maintenance."""
+        return Compute.objects.filter(pk=self.pk, maintenance_since__isnull=False).exists()
+
     def refuse_new_vms(self):
         """Refuses a VM made on or migrated to the host while it is in maintenance."""
-        if self.maintenance:
+        if self._in_maintenance_now():
             raise util.OperationError(gettext_noop("%(compute)s is in maintenance: no new VM or migration comes to it"),
                                       compute=self.name)
 
     def refuse_start(self):
-        """Refuses starting or resuming a VM of the host while it is in maintenance."""
-        if self.maintenance:
+        """Refuses starting or resuming a VM of the host, or its autostart, while it is in maintenance."""
+        if self._in_maintenance_now():
             raise util.OperationError(gettext_noop("%(compute)s is in maintenance: its VMs cannot be started there; "
                                                    "migrate the VM to start it on another host"), compute=self.name)
 
