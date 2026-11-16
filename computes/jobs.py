@@ -44,6 +44,13 @@ class Migrations(Kind):
     def hosts(self, params):
         return {host for _vm, source, target in self.moves(params) for host in (source, target)}
 
+    def check_move(self, source, target):
+        """Refuses (OperationError) a move to a host in maintenance, when the
+        job is asked for and again before the VM's migration starts; the
+        migrate job checks the rest."""
+        if host := Compute.objects.filter(pk=target).first():
+            host.refuse_new_vms()
+
     def validate(self, user, params):
         if not user.is_superuser:
             raise PermissionDenied
@@ -52,6 +59,8 @@ class Migrations(Kind):
         if not 1 <= params["parallel"] <= parallel_limit():
             raise util.OperationError(gettext_noop("At most %(limit)s migrations can run at once"),
                                       limit=parallel_limit())
+        for _vm, source, target in self.moves(params):
+            self.check_move(source, target)
 
     def precheck(self, op, ctx):
         if op.user is None or not op.user.is_active or not op.user.is_superuser:
@@ -96,6 +105,7 @@ class Migrations(Kind):
                 raw = {"instance": vm, "source": source, "target": target, "live": True, "autoconverge": True,
                        **self.options}
                 try:
+                    self.check_move(source, target)  # a host put in maintenance since
                     child = jobs.submit("instance.migrate", op.user, raw, f"bulk-{op.pk.hex}-{vm}", parent=op)
                 except claims.Busy as busy:
                     if busy.blocker is not None and busy.blocker.state == Operation.UNCERTAIN:
@@ -188,6 +198,13 @@ class Balance(Migrations):
 
     def moves(self, params):
         return [tuple(move) for move in params["moves"]]
+
+    def check_move(self, source, target):
+        """Balance leaves a host in maintenance out: it takes no VM and gives none."""
+        super().check_move(source, target)
+        if host := Compute.objects.filter(pk=source, maintenance=True).first():
+            raise util.OperationError(gettext_noop("%(compute)s is in maintenance: Balance leaves it out"),
+                                      compute=host.name)
 
     def validate(self, user, params):
         super().validate(user, params)

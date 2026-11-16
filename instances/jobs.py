@@ -605,6 +605,7 @@ class CloneInstance(Kind):
 
     def plan(self, user, params):
         instance = _clonable(user, params["instance"])
+        instance.compute.refuse_new_vms()  # the clone is made on the VM's host
         # the source once a request: a running VM's NICs read its guest agent, which may take its whole timeout
         with instance.proxy.cached_reads():
             data, quota = clone_data(user, instance, params["fields"])
@@ -624,6 +625,7 @@ class CloneInstance(Kind):
         instance = _clonable(op.user, op.params["instance"])
         if instance.compute_id != op.intent["compute"]:
             raise util.OperationError(MOVED)
+        instance.compute.refuse_new_vms()
         # a VM found on a host since the job was queued may have taken the name
         if Instance.objects.filter(name=op.intent["name"]).exists():
             raise util.OperationError(_("Instance '%(clone_name)s' already exists!"), clone_name=op.intent["name"])
@@ -904,6 +906,7 @@ class CreateInstance(Kind):
             raise PermissionDenied
         data = params
         c = get_object_or_404(Compute, pk=data["compute"])
+        c.refuse_new_vms()
         conn = wvmCreate(c.hostname, c.login, c.password, c.type)
         cdrom_buses = [bus for bus in conn.get_disk_bus_types(data["arch"], data["machine"]) if bus in CDROM_BUSES]
         if data["name"] in conn.get_instances():
@@ -951,6 +954,7 @@ class CreateInstance(Kind):
         if Instance.objects.filter(name__exact=op.params["name"]).exists():
             raise util.OperationError(_("There is an instance with same name. Remove it and try again!"))
         c = Compute.objects.get(pk=op.params["compute"])
+        c.refuse_new_vms()  # put in maintenance since the job was queued
         conn = wvmCreate(c.hostname, c.login, c.password, c.type)
         if op.params["name"] in conn.get_instances():
             raise util.OperationError(_("A virtual machine with this name already exists"))
@@ -1080,10 +1084,12 @@ MIGRATE_OPTIONS = ("live", "unsafe", "offline", "autoconverge", "compress", "del
 
 def migration_target(instance, target_pk):
     """The destination; refused when the VM is already there, also under
-    another record of its host, or it cannot be reached."""
+    another record of its host, it is in maintenance, or it cannot be
+    reached."""
     target = Compute.objects.get(pk=target_pk)
     if target.pk == instance.compute_id:
         raise util.OperationError(_("The instance is already on %(compute)s"), compute=target.name)
+    target.refuse_new_vms()
     if not target.status:
         raise util.OperationError(_("%(compute)s is not reachable"), compute=target.name)
     if target.proxy.host_uuid() == instance.proxy.host_uuid():

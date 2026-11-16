@@ -75,6 +75,7 @@
                             {% else %}
                                 <span class="badge text-bg-danger">{% trans "Not connected" %}</span>
                             {% endif %}
+                            {% if compute.maintenance %}<span class="badge text-bg-warning">{% trans "In maintenance" %}</span>{% endif %}
                             <span class="badge text-bg-light border">{{ compute.connection_name }}</span>
                         </div>
                         <div class="small text-body-secondary font-monospace mt-1">{{ compute.hostname }}</div>

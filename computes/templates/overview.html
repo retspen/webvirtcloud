@@ -6,6 +6,15 @@
 {% block title %}{% trans "Overview" %} - {{ compute.name }}{% endblock %}
 
 {% block page_heading_extra %}
+<form method="post" action="{% url 'compute_maintenance' compute.id %}" class="d-inline">{% csrf_token %}
+    {% if compute.maintenance %}
+    <input type="hidden" name="maintenance" value="off">
+    <button type="submit" class="btn btn-sm btn-warning">{% bs_icon 'wrench-adjustable' %} {% trans "End maintenance" %}</button>
+    {% else %}
+    <input type="hidden" name="maintenance" value="on">
+    <button type="submit" class="btn btn-sm btn-outline-warning" data-confirm="{% trans "Put the host in maintenance? No new VM or migration comes to it and Balance leaves it out; its VMs keep running." %}">{% bs_icon 'wrench-adjustable' %} {% trans "Put in maintenance" %}</button>
+    {% endif %}
+</form>
 <a class="btn btn-sm btn-outline-primary" href="{% url 'compute_update' compute.id %}">{% bs_icon 'pencil' %} {% trans "Edit connection" %}</a>
 <a class="btn btn-sm btn-outline-danger" href="{% url 'compute_delete' compute.id %}">{% bs_icon 'x-circle' %} {% trans "Remove from panel" %}</a>
 {% endblock page_heading_extra %}
@@ -26,6 +35,13 @@
 </div>
 
 {% include "computes/host_nav.html" with section="overview" %}
+
+{% if compute.maintenance %}
+<div class="alert alert-warning" role="status">
+    {% url 'bulk_migrate' compute.id as bulk_url %}
+    {% blocktrans %}In maintenance: no new VM or migration comes to this host and Balance leaves it out. <a href="{{ bulk_url }}">Bulk Migrate</a> moves its VMs to the other hosts.{% endblocktrans %}
+</div>
+{% endif %}
 
 {% if not connected %}
 <div class="alert alert-warning" role="alert">

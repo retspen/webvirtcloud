@@ -16,6 +16,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.debug import sensitive_post_parameters
+from django.views.decorators.http import require_POST
 from webvirtcloud.middleware import error_text
 from instances.models import Instance
 from instances.utils import read_list_rows, vm_states
@@ -269,7 +270,8 @@ def bulk_migrate(request, compute_id):
     from computes.reach import Reach
 
     compute = get_object_or_404(Compute, pk=compute_id)
-    targets = list(Compute.objects.exclude(pk=compute.pk).order_by("name"))
+    # a host in maintenance takes no VM (Compute.refuse_new_vms)
+    targets = list(Compute.objects.exclude(pk=compute.pk).filter(maintenance=False).order_by("name"))
     if request.method == "POST":
         chosen = request.POST.getlist("instance")
         if request.POST.get("spread"):
@@ -305,7 +307,7 @@ def bulk_migrate(request, compute_id):
 
     # the other hosts' loads: the VMs of this one are read above, also when its capacity cannot be
     _computes, hosts, _instances, loads, room, sizes = read_fleet()
-    others = {pk: host for pk, host in hosts.items() if pk != compute.pk}
+    others = {pk: host for pk, host in hosts.items() if pk != compute.pk and not host.maintenance}
     shown, ticked = request.GET.getlist("shown"), request.GET.getlist("vm")
     vms = []
     for instance in instances:
@@ -360,7 +362,11 @@ def balance(request):
         return redirect("balance")
 
     computes, hosts, instances, loads, room, sizes = read_fleet()
-    running = [instance for instance in instances if instance.info and instance.info[0] == 1]
+    # a host in maintenance is left out: its VMs neither count nor move, and it takes none
+    resting = [hosts.pop(pk) for pk in [pk for pk, compute in hosts.items() if compute.maintenance]]
+    loads, room, sizes = ({pk: part[pk] for pk in hosts} for part in (loads, room, sizes))
+    running = [instance for instance in instances
+               if instance.info and instance.info[0] == 1 and instance.compute_id in hosts]
     pinned = set(request.GET.getlist("shown")) - set(request.GET.getlist("vm"))
     movable, unmovable, reach = [], [], Reach(request)
     for instance in running:
@@ -383,7 +389,8 @@ def balance(request):
     for vm, _source, target in moves:
         by_pk[vm].target = hosts[target]
     return render(request, "computes/balance.html", {
-        "hosts": hosts.values(), "unreachable": [compute for compute in computes if compute.pk not in hosts],
+        "hosts": hosts.values(), "resting": resting,
+        "unreachable": [compute for compute in computes if compute.pk not in hosts and compute not in resting],
         "moves": [by_pk[vm] for vm, _source, _target in moves],
         "pinned": [instance for instance in running if str(instance.pk) in pinned],
         "unmovable": unmovable, "parallel": range(1, parallel_limit() + 1)})
@@ -438,6 +445,20 @@ def compute_update(request, compute_id):
             return saved(request, form)
 
     return render(request, "computes/form.html", {"form": form})
+
+
+@require_POST
+@superuser_only
+def maintenance(request, compute_id):
+    """Puts the host in maintenance or takes it out (Compute.maintenance), as
+    the form asks: the state it names, not the other one of the moment, so
+    a second page sent meanwhile does not turn it back."""
+    compute = get_object_or_404(Compute, pk=compute_id)
+    wanted = request.POST.get("maintenance") == "on"
+    action = "maintenance on" if wanted else "maintenance off"
+    with audit(request, compute, f"Compute {compute.name}", action):
+        Compute.objects.filter(pk=compute.pk).update(maintenance=wanted)
+    return redirect("overview", compute.pk)
 
 
 @superuser_only

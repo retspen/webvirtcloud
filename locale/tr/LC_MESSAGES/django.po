@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-16 10:39+0000\n"
+"POT-Creation-Date: 2026-11-16 12:53+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -64,8 +64,8 @@ msgstr "Açık anahtar zaten mevcut"
 msgid "Invalid key"
 msgstr "Geçersiz anahtar"
 
-#: accounts/forms.py:95 computes/templates/computes/balance.html:58
-#: computes/templates/computes/balance.html:105
+#: accounts/forms.py:95 computes/templates/computes/balance.html:61
+#: computes/templates/computes/balance.html:108
 #: computes/templates/computes/bulk_migrate.html:53
 #: computes/templates/computes/instances.html:46
 #: instances/templates/add_instance_volume.html:39
@@ -151,7 +151,7 @@ msgstr "en fazla disk boyutu (GiB)"
 msgid "Can change password"
 msgstr "Parola değiştirebilir"
 
-#: accounts/models.py:92 appsettings/models.py:9 computes/models.py:20
+#: accounts/models.py:92 appsettings/models.py:9 computes/models.py:22
 #: instances/models.py:33
 msgid "name"
 msgstr "ad"
@@ -218,7 +218,7 @@ msgstr "Kullanıcı bölümleri"
 
 #: accounts/templates/account.html:50 accounts/templates/account.html:58
 #: admin/forms.py:207 computes/templates/computes/list.html:33
-#: computes/templates/computes/list.html:60 computes/templates/overview.html:46
+#: computes/templates/computes/list.html:60 computes/templates/overview.html:62
 #: instances/views.py:262
 msgid "VMs"
 msgstr "Sanal makineler"
@@ -238,7 +238,7 @@ msgid "Add VM"
 msgstr "Sanal makine ekle"
 
 #: accounts/templates/account.html:68 admin/templates/admin/logs.html:40
-#: computes/templates/computes/balance.html:106
+#: computes/templates/computes/balance.html:109
 #: computes/templates/computes/list.html:59
 #: instances/templates/allinstances.html:108
 #: instances/templates/allinstances_index_nongrouped.html:8
@@ -253,7 +253,7 @@ msgstr "Sunucu"
 msgid "Power and console only"
 msgstr "Yalnızca güç ve konsol"
 
-#: accounts/templates/account.html:80 computes/templates/computes/list.html:105
+#: accounts/templates/account.html:80 computes/templates/computes/list.html:106
 #: instances/templates/instance_actions.html:9
 #: storages/templates/storage.html:140
 #, python-format
@@ -762,7 +762,7 @@ msgstr ""
 "yalnızca bir sahibe izin veriliyor"
 
 #: admin/forms.py:208 computes/templates/computes/list.html:61
-#: computes/templates/overview.html:58 instances/forms.py:15
+#: computes/templates/overview.html:74 instances/forms.py:15
 #: instances/templates/allinstances_index_grouped.html:16
 #: instances/templates/allinstances_index_nongrouped.html:14
 #: instances/templates/create_instance_w2.html:63
@@ -771,14 +771,14 @@ msgstr ""
 msgid "vCPUs"
 msgstr "vCPU"
 
-#: admin/forms.py:209 computes/templates/computes/balance.html:59
+#: admin/forms.py:209 computes/templates/computes/balance.html:62
 #: computes/templates/computes/bulk_migrate.html:55
 #: computes/templates/computes/instances.html:50
-#: computes/templates/computes/list.html:62 computes/templates/overview.html:66
-#: computes/templates/overview.html:150
+#: computes/templates/computes/list.html:62 computes/templates/overview.html:82
+#: computes/templates/overview.html:166
 #: instances/templates/allinstances_index_grouped.html:17
 #: instances/templates/allinstances_index_nongrouped.html:15
-#: instances/templates/create_inst_block.html:33
+#: instances/templates/create_inst_block.html:40
 #: instances/templates/instance.html:66
 #: instances/templates/instances/resize_tab.html:18
 #: instances/templates/instances/stats_tab.html:36
@@ -1940,20 +1940,20 @@ msgstr "Yerel"
 msgid "the libvirt of the host the panel runs on, by its socket"
 msgstr "panelin çalıştığı sunucunun libvirt'i, soketi üzerinden"
 
-#: computes/jobs.py:51
+#: computes/jobs.py:58
 msgid "Choose the VMs to migrate"
 msgstr "Taşınacak sanal makineleri seçin"
 
-#: computes/jobs.py:53
+#: computes/jobs.py:60
 #, python-format
 msgid "At most %(limit)s migrations can run at once"
 msgstr "Aynı anda en fazla %(limit)s taşıma çalışabilir"
 
-#: computes/jobs.py:67
+#: computes/jobs.py:76
 msgid "Migrating the VMs"
 msgstr "Sanal makineler taşınıyor"
 
-#: computes/jobs.py:86
+#: computes/jobs.py:95
 msgid ""
 "The worker now runs one job at a time: the VMs not yet started stay where "
 "they are"
@@ -1961,19 +1961,19 @@ msgstr ""
 "İş yürütücü artık aynı anda tek iş çalıştırıyor: henüz başlatılmamış sanal "
 "makineler oldukları yerde kalıyor"
 
-#: computes/jobs.py:88
+#: computes/jobs.py:97
 msgid ""
 "A host was changed or deleted: the VMs not yet started stay where they are"
 msgstr ""
 "Bir sunucu değiştirildi ya da silindi: henüz başlatılmamış sanal makineler "
 "oldukları yerde kalıyor"
 
-#: computes/jobs.py:119
+#: computes/jobs.py:129
 #, python-format
 msgid "These VMs did not migrate: %(vms)s"
 msgstr "Bu sanal makineler taşınamadı: %(vms)s"
 
-#: computes/jobs.py:133
+#: computes/jobs.py:143
 msgid ""
 "The bulk migration stopped: the migrations it started go on as their own "
 "jobs; the other VMs stay"
@@ -1981,45 +1981,50 @@ msgstr ""
 "Toplu taşıma durdu: başlattığı taşımalar kendi işleri olarak sürüyor; diğer "
 "sanal makineler yerinde kalıyor"
 
-#: computes/jobs.py:142
+#: computes/jobs.py:152
 msgid "Bulk migrate"
 msgstr "Toplu taşıma"
 
-#: computes/jobs.py:156 computes/jobs.py:195
+#: computes/jobs.py:166 computes/jobs.py:212
 msgid "A VM is already on its destination"
 msgstr "Bir sanal makine zaten hedef sunucusunda"
 
-#: computes/jobs.py:158
+#: computes/jobs.py:168
 msgid "A destination host was deleted"
 msgstr "Bir hedef sunucu silindi"
 
-#: computes/jobs.py:181 computes/templates/computes/balance.html:6
+#: computes/jobs.py:191 computes/templates/computes/balance.html:6
 #: computes/templates/computes/balance.html:12
 #: computes/templates/computes/list.html:12
 msgid "Balance"
 msgstr "Dengele"
 
-#: computes/models.py:21
+#: computes/jobs.py:206
+#, python-format
+msgid "%(compute)s is in maintenance: Balance leaves it out"
+msgstr "%(compute)s bakımda: Dengele onu hesaba katmaz"
+
+#: computes/models.py:23
 msgid "hostname"
 msgstr "sunucuadı"
 
-#: computes/models.py:22
+#: computes/models.py:24
 msgid "login"
 msgstr "kullanıcı"
 
-#: computes/models.py:23
+#: computes/models.py:25
 msgid "password"
 msgstr "parola"
 
-#: computes/models.py:24
+#: computes/models.py:26
 msgid "details"
 msgstr "detaylar"
 
-#: computes/models.py:27
+#: computes/models.py:29
 msgid "migration address"
 msgstr "taşıma adresi"
 
-#: computes/models.py:33
+#: computes/models.py:35
 msgid ""
 "IP address or host name the other hosts send migrating VMs to; empty: the "
 "address the panel reaches the host at"
@@ -2027,11 +2032,11 @@ msgstr ""
 "Diğer sunucuların taşınan sanal makineleri gönderdiği IP adresi veya ana "
 "bilgisayar adı; boş: panelin bu sunucuya ulaştığı adres"
 
-#: computes/models.py:38 computes/templates/computes/form.html:34
+#: computes/models.py:40 computes/templates/computes/form.html:34
 msgid "gstfsd key"
 msgstr "gstfsd anahtarı"
 
-#: computes/models.py:44
+#: computes/models.py:46
 msgid ""
 "GSTFSD_KEY in the host's /etc/default/webvirt-gstfsd: the panel sets the root"
 " password and SSH key of a shut-off VM with it; empty: they cannot be set "
@@ -2041,12 +2046,17 @@ msgstr ""
 "sanal makinenin root parolasını ve SSH anahtarını bununla ayarlar; boş: bu "
 "sunucuda ayarlanamazlar"
 
-#: computes/models.py:180
+#: computes/models.py:65
+#, python-format
+msgid "%(compute)s is in maintenance: no new VM or migration comes to it"
+msgstr "%(compute)s bakımda: ona yeni sanal makine ya da taşıma gelmez"
+
+#: computes/models.py:192
 #, python-format
 msgid "This host is already added as %(name)s"
 msgstr "Bu sunucu zaten %(name)s olarak ekli"
 
-#: computes/models.py:183
+#: computes/models.py:195
 #, python-format
 msgid ""
 "The panel cannot reach the host to tell that its VMs are there: %(error)s"
@@ -2054,7 +2064,7 @@ msgstr ""
 "Panel sunucuya ulaşamadığı için VM'lerinin orada olduğunu doğrulayamıyor: "
 "%(error)s"
 
-#: computes/models.py:190
+#: computes/models.py:202
 msgid ""
 "The host its VMs are on is not known yet: change the connection when the "
 "panel has reached the host at its current one"
@@ -2062,7 +2072,7 @@ msgstr ""
 "VM'lerinin bulunduğu sunucu henüz bilinmiyor: bağlantıyı, panel sunucuya "
 "mevcut bağlantısından ulaştıktan sonra değiştirin"
 
-#: computes/models.py:193
+#: computes/models.py:205
 msgid "This is another host than the one its VMs are on: add it as a new host"
 msgstr ""
 "Bu, VM'lerinin bulunduğu sunucudan başka bir sunucu: yeni bir sunucu olarak "
@@ -2095,17 +2105,21 @@ msgstr ""
 msgid "These hosts cannot be read and are left out:"
 msgstr "Bu sunucular okunamıyor ve hesaba katılmadı:"
 
-#: computes/templates/computes/balance.html:29
+#: computes/templates/computes/balance.html:20
+msgid "These hosts are in maintenance and are left out:"
+msgstr "Bu sunucular bakımda ve hesaba katılmadı:"
+
+#: computes/templates/computes/balance.html:32
 #: instances/templates/instances/snapshots_tab.html:18
 msgid "Now"
 msgstr "Şimdi"
 
-#: computes/templates/computes/balance.html:29
+#: computes/templates/computes/balance.html:32
 msgid "Running VMs"
 msgstr "Çalışan sanal makineler"
 
-#: computes/templates/computes/balance.html:30
 #: computes/templates/computes/balance.html:33
+#: computes/templates/computes/balance.html:36
 #: computes/templates/computes/capacity_vcpus.html:4
 #, python-format
 msgid "%(counter)s vCPU"
@@ -2113,8 +2127,8 @@ msgid_plural "%(counter)s vCPUs"
 msgstr[0] "%(counter)s vCPU"
 msgstr[1] "%(counter)s vCPU"
 
-#: computes/templates/computes/balance.html:30
 #: computes/templates/computes/balance.html:33
+#: computes/templates/computes/balance.html:36
 #: computes/templates/computes/capacity_vcpus.html:4
 #: computes/templates/computes/list.html:42
 #, python-format
@@ -2123,51 +2137,51 @@ msgid_plural "on %(counter)s CPUs"
 msgstr[0] "%(counter)s CPU üzerinde"
 msgstr[1] "%(counter)s CPU üzerinde"
 
-#: computes/templates/computes/balance.html:32
+#: computes/templates/computes/balance.html:35
 msgid "After"
 msgstr "Sonra"
 
-#: computes/templates/computes/balance.html:35
+#: computes/templates/computes/balance.html:38
 msgid "Memory now"
 msgstr "Şimdiki bellek"
 
-#: computes/templates/computes/balance.html:35
+#: computes/templates/computes/balance.html:38
 msgid "Memory after"
 msgstr "Sonraki bellek"
 
-#: computes/templates/computes/balance.html:52
+#: computes/templates/computes/balance.html:55
 #, python-format
 msgid "Proposed migration (%(counter)s)"
 msgid_plural "Proposed migrations (%(counter)s)"
 msgstr[0] "Önerilen taşımalar (%(counter)s)"
 msgstr[1] "Önerilen taşımalar (%(counter)s)"
 
-#: computes/templates/computes/balance.html:57
+#: computes/templates/computes/balance.html:60
 #: computes/templates/computes/bulk_migrate.html:52
 msgid "Select all"
 msgstr "Tümünü seç"
 
-#: computes/templates/computes/balance.html:61
+#: computes/templates/computes/balance.html:64
 msgid "Migration"
 msgstr "Taşıma"
 
-#: computes/templates/computes/balance.html:82
+#: computes/templates/computes/balance.html:85
 #: computes/templates/computes/bulk_migrate.html:87
 msgid "Migrations at once"
 msgstr "Aynı anda taşıma"
 
-#: computes/templates/computes/balance.html:86
+#: computes/templates/computes/balance.html:89
 #, python-format
 msgid "Migrate %(counter)s VM"
 msgid_plural "Migrate %(counter)s VMs"
 msgstr[0] "%(counter)s sanal makineyi taşı"
 msgstr[1] "%(counter)s sanal makineyi taşı"
 
-#: computes/templates/computes/balance.html:87
+#: computes/templates/computes/balance.html:90
 msgid "Migrate the VMs listed?"
 msgstr "Listelenen sanal makineler taşınsın mı?"
 
-#: computes/templates/computes/balance.html:89
+#: computes/templates/computes/balance.html:92
 #: computes/templates/computes/bulk_migrate.html:27
 msgid ""
 "The worker runs one job at a time: set Worker Concurrency to 2 or more on the"
@@ -2176,25 +2190,25 @@ msgstr ""
 "İş yürütücü aynı anda tek iş çalıştırıyor: Ayarlar sayfasında Eş zamanlı iş "
 "sayısı değerini 2 veya daha fazla yapın."
 
-#: computes/templates/computes/balance.html:94
+#: computes/templates/computes/balance.html:97
 msgid "The hosts are balanced: no migration would even them out more."
 msgstr "Sunucular dengeli: onları daha fazla dengeleyecek bir taşıma yok."
 
-#: computes/templates/computes/balance.html:99
+#: computes/templates/computes/balance.html:102
 msgid "Stay where they are"
 msgstr "Yerinde kalanlar"
 
-#: computes/templates/computes/balance.html:104
-#: computes/templates/computes/balance.html:113
+#: computes/templates/computes/balance.html:107
+#: computes/templates/computes/balance.html:116
 msgid "Let it move"
 msgstr "Taşınabilsin"
 
-#: computes/templates/computes/balance.html:107
+#: computes/templates/computes/balance.html:110
 #: computes/templates/computes/bulk_migrate.html:58
 msgid "Why"
 msgstr "Neden"
 
-#: computes/templates/computes/balance.html:116
+#: computes/templates/computes/balance.html:119
 msgid "You kept it here: tick it to let it move"
 msgstr "Yerinde tuttunuz: taşınabilmesi için işaretleyin"
 
@@ -2271,7 +2285,7 @@ msgstr[1] ""
 "bellek."
 
 #: computes/templates/computes/capacity_line.txt:4
-#: computes/templates/computes/list.html:98 computes/templates/overview.html:83
+#: computes/templates/computes/list.html:99 computes/templates/overview.html:99
 msgid "The capacity could not be read."
 msgstr "Kapasite okunamadı."
 
@@ -2303,7 +2317,7 @@ msgstr "Sunucunun %(memory)s belleğinden %(stopped)s"
 
 #: computes/templates/computes/capacity_memory.html:18
 #: computes/templates/computes/capacity_vcpus.html:18
-#: computes/templates/computes/list.html:89
+#: computes/templates/computes/list.html:90
 #, python-format
 msgid "%(running)s running"
 msgstr "%(running)s çalışıyor"
@@ -2365,7 +2379,7 @@ msgid "Edit host: %(name)s"
 msgstr "Sunucuyu düzenle: %(name)s"
 
 #: computes/templates/computes/form.html:19
-#: computes/templates/overview.html:181
+#: computes/templates/overview.html:197
 msgid "Connection"
 msgstr "Bağlantı"
 
@@ -2412,7 +2426,7 @@ msgstr "Sunucu bölümleri"
 
 #: computes/templates/computes/host_nav.html:7
 #: computes/templates/computes/host_nav.html:8
-#: computes/templates/computes/list.html:107 computes/templates/overview.html:6
+#: computes/templates/computes/list.html:108 computes/templates/overview.html:6
 msgid "Overview"
 msgstr "Genel Bakış"
 
@@ -2420,7 +2434,7 @@ msgstr "Genel Bakış"
 #: computes/templates/computes/host_nav.html:12
 #: computes/templates/computes/instances.html:6
 #: computes/templates/computes/instances.html:7
-#: computes/templates/overview.html:52 instances/templates/allinstances.html:4
+#: computes/templates/overview.html:68 instances/templates/allinstances.html:4
 #: instances/templates/allinstances.html:5
 #: instances/templates/instances/host_link.html:7
 #: instances/templates/instances/host_link.html:9 templates/navbar.html:14
@@ -2429,7 +2443,7 @@ msgstr "Sanal Makineler"
 
 #: computes/templates/computes/host_nav.html:15
 #: computes/templates/computes/host_nav.html:16
-#: computes/templates/overview.html:74
+#: computes/templates/overview.html:90
 #: instances/templates/instances/settings_tab.html:551
 #: instances/templates/instances/settings_tab.html:828
 #: storages/templates/storage.html:6 storages/templates/storage.html:8
@@ -2538,7 +2552,7 @@ msgstr "Atanan bellek"
 msgid "of %(memory)s"
 msgstr "/ %(memory)s"
 
-#: computes/templates/computes/list.html:74 computes/templates/overview.html:19
+#: computes/templates/computes/list.html:74 computes/templates/overview.html:28
 #: console/templates/console-vnc.html:13
 #: console/templates/console-xterm.html:16
 #: instances/templates/allinstances_index_grouped.html:36
@@ -2547,22 +2561,27 @@ msgstr "/ %(memory)s"
 msgid "Connected"
 msgstr "Bağlı"
 
-#: computes/templates/computes/list.html:76 computes/templates/overview.html:21
+#: computes/templates/computes/list.html:76 computes/templates/overview.html:30
 #: instances/templates/allinstances_index_grouped.html:38
 msgid "Not connected"
 msgstr "Bağlı değil"
 
-#: computes/templates/computes/list.html:98
+#: computes/templates/computes/list.html:78
+#: instances/templates/create_inst_block.html:22
+msgid "In maintenance"
+msgstr "Bakımda"
+
+#: computes/templates/computes/list.html:99
 msgid "No capacity while the host cannot be reached."
 msgstr "Sunucuya ulaşılamadığı sürece kapasite gösterilmez."
 
-#: computes/templates/computes/list.html:108 computes/templates/overview.html:9
-#: computes/templates/overview.html:34
+#: computes/templates/computes/list.html:109
+#: computes/templates/overview.html:18 computes/templates/overview.html:50
 msgid "Edit connection"
 msgstr "Bağlantıyı düzenle"
 
-#: computes/templates/computes/list.html:110
-#: computes/templates/overview.html:10
+#: computes/templates/computes/list.html:111
+#: computes/templates/overview.html:19
 msgid "Remove from panel"
 msgstr "Panelden kaldır"
 
@@ -2576,7 +2595,34 @@ msgstr "%(name)s kullanımı"
 msgid "%(free)s free of %(size)s"
 msgstr "%(size)s alanın %(free)s kadarı boş"
 
-#: computes/templates/overview.html:32
+#: computes/templates/overview.html:12
+msgid "End maintenance"
+msgstr "Bakımdan çıkar"
+
+#: computes/templates/overview.html:15
+msgid ""
+"Put the host in maintenance? No new VM or migration comes to it and Balance "
+"leaves it out; its VMs keep running."
+msgstr ""
+"Sunucu bakıma alınsın mı? Ona yeni sanal makine ya da taşıma gelmez ve "
+"Dengele onu hesaba katmaz; sanal makineleri çalışmaya devam eder."
+
+#: computes/templates/overview.html:15
+msgid "Put in maintenance"
+msgstr "Bakıma al"
+
+#: computes/templates/overview.html:42
+#, python-format
+msgid ""
+"In maintenance: no new VM or migration comes to this host and Balance leaves "
+"it out. <a href=\"%(bulk_url)s\">Bulk Migrate</a> moves its VMs to the other "
+"hosts."
+msgstr ""
+"Bakımda: bu sunucuya yeni sanal makine ya da taşıma gelmez ve Dengele onu "
+"hesaba katmaz. <a href=\"%(bulk_url)s\">Toplu Taşı</a> sanal makinelerini "
+"diğer sunuculara taşır."
+
+#: computes/templates/overview.html:48
 msgid ""
 "The panel cannot reach this host, so its VMs, capacity and load are not "
 "shown:"
@@ -2584,51 +2630,51 @@ msgstr ""
 "Panel bu sunucuya ulaşamıyor, bu yüzden sanal makineleri, kapasitesi ve yükü "
 "gösterilmiyor:"
 
-#: computes/templates/overview.html:33
+#: computes/templates/overview.html:49
 msgid "Try again"
 msgstr "Yeniden dene"
 
-#: computes/templates/overview.html:39
+#: computes/templates/overview.html:55
 msgid "The host's details could not be read:"
 msgstr "Sunucunun ayrıntıları okunamadı:"
 
-#: computes/templates/overview.html:50
+#: computes/templates/overview.html:66
 #, python-format
 msgid "%(running)s running, %(shutoff)s shut off"
 msgstr "%(running)s çalışıyor, %(shutoff)s kapalı"
 
-#: computes/templates/overview.html:50
+#: computes/templates/overview.html:66
 #, python-format
 msgid "%(paused)s paused"
 msgstr "%(paused)s duraklatılmış"
 
-#: computes/templates/overview.html:50
+#: computes/templates/overview.html:66
 #, python-format
 msgid "%(other)s other"
 msgstr "%(other)s diğer"
 
-#: computes/templates/overview.html:77 storages/templates/storages.html:5
+#: computes/templates/overview.html:93 storages/templates/storages.html:5
 #: storages/templates/storages.html:7
 msgid "Storages"
 msgstr "Depolamalar"
 
-#: computes/templates/overview.html:91
+#: computes/templates/overview.html:107
 msgid "CPU in use"
 msgstr "Kullanılan CPU"
 
-#: computes/templates/overview.html:94
+#: computes/templates/overview.html:110
 msgid "CPU in use, recent readings"
 msgstr "Kullanımdaki CPU, son ölçümler"
 
-#: computes/templates/overview.html:101
+#: computes/templates/overview.html:117
 msgid "Memory in use"
 msgstr "Kullanılan bellek"
 
-#: computes/templates/overview.html:104
+#: computes/templates/overview.html:120
 msgid "Memory in use, recent readings"
 msgstr "Kullanımdaki bellek, son ölçümler"
 
-#: computes/templates/overview.html:110
+#: computes/templates/overview.html:126
 msgid ""
 "The last 10 readings, one every 5 seconds. Memory in use leaves out the "
 "host's buffers and cache."
@@ -2636,78 +2682,78 @@ msgstr ""
 "Her 5 saniyede bir alınan son 10 ölçüm. Kullanımdaki bellek, sunucunun "
 "tamponlarını ve önbelleğini içermez."
 
-#: computes/templates/overview.html:111
+#: computes/templates/overview.html:127
 #: instances/templates/instances/stats_tab.html:4
 msgid "average over"
 msgstr "ortalama süresi"
 
-#: computes/templates/overview.html:111
+#: computes/templates/overview.html:127
 #: instances/templates/instances/stats_tab.html:6
 msgctxt "chart"
 msgid "Usage"
 msgstr "Kullanım"
 
-#: computes/templates/overview.html:111
+#: computes/templates/overview.html:127
 #, python-format
 msgid "Updated at %%(time)s."
 msgstr "%%(time)s itibarıyla güncellendi."
 
-#: computes/templates/overview.html:112
+#: computes/templates/overview.html:128
 #, python-format
 msgid "Not updated since %%(time)s: the host did not answer."
 msgstr "%%(time)s itibarıyla güncellenmedi: sunucu yanıt vermedi."
 
-#: computes/templates/overview.html:112
+#: computes/templates/overview.html:128
 msgid "Waiting for the first reading."
 msgstr "İlk ölçüm bekleniyor."
 
-#: computes/templates/overview.html:119
+#: computes/templates/overview.html:135
 msgid "Hardware"
 msgstr "Donanım"
 
-#: computes/templates/overview.html:122
+#: computes/templates/overview.html:138
 msgid "Processor"
 msgstr "İşlemci"
 
-#: computes/templates/overview.html:126
+#: computes/templates/overview.html:142
 #: instances/templates/create_instance_w1.html:22
 msgid "Architecture"
 msgstr "Mimari"
 
-#: computes/templates/overview.html:130
+#: computes/templates/overview.html:146
 msgid "Logical CPUs"
 msgstr "Mantıksal CPUlar"
 
-#: computes/templates/overview.html:134
+#: computes/templates/overview.html:150
 msgid "Physical cores"
 msgstr "Fiziksel çekirdekler"
 
-#: computes/templates/overview.html:138
+#: computes/templates/overview.html:154
 msgid "Sockets"
 msgstr "Soketler"
 
-#: computes/templates/overview.html:142
+#: computes/templates/overview.html:158
 msgid "NUMA nodes"
 msgstr "NUMA düğümleri"
 
-#: computes/templates/overview.html:146
+#: computes/templates/overview.html:162
 msgid "Clock"
 msgstr "Saat"
 
-#: computes/templates/overview.html:158
+#: computes/templates/overview.html:174
 msgid "Software and connection"
 msgstr "Yazılım ve bağlantı"
 
-#: computes/templates/overview.html:161
+#: computes/templates/overview.html:177
 #: instances/templates/instances/info_tab.html:6
 msgid "Hostname"
 msgstr "Sunucuadı"
 
-#: computes/templates/overview.html:173
+#: computes/templates/overview.html:189
 msgid "Guest architectures"
 msgstr "Konuk mimarileri"
 
-#: computes/templates/overview.html:177
+#: computes/templates/overview.html:193
 msgid "Emulator"
 msgstr "Emülatör"
 
@@ -2735,21 +2781,21 @@ msgstr ""
 "Sunucudaki /etc/default/webvirt-gstfsd içindeki GSTFSD_KEY değerinin 64 "
 "onaltılık karakterini girin"
 
-#: computes/views.py:150
+#: computes/views.py:151
 #, python-format
 msgid "The host did not answer within %(seconds)s seconds"
 msgstr "Sunucu %(seconds)s saniye içinde yanıt vermedi"
 
-#: computes/views.py:326
+#: computes/views.py:328
 msgid "No other host has room for it"
 msgstr "Başka hiçbir sunucuda ona yer yok"
 
-#: computes/views.py:399
+#: computes/views.py:406
 #, python-format
 msgid "The host was saved, but the panel cannot connect to it: %(error)s"
 msgstr "Sunucu kaydedildi, ancak panel ona bağlanamıyor: %(error)s"
 
-#: computes/views.py:455
+#: computes/views.py:476
 #, python-format
 msgid ""
 "Its VMs keep running on the host and leave the panel; their owners are kept "
@@ -3139,7 +3185,7 @@ msgstr "Klonun adını boş adlar listesinden seçin"
 msgid "%(quota)s: cannot create '%(clone_name)s'."
 msgstr "%(quota)s: '%(clone_name)s' oluşturulamıyor."
 
-#: instances/jobs.py:206 instances/jobs.py:629
+#: instances/jobs.py:206 instances/jobs.py:631
 #, python-format
 msgid "Instance '%(clone_name)s' already exists!"
 msgstr "'%(clone_name)s' sanal makinesi zaten mevcut!"
@@ -3305,15 +3351,15 @@ msgstr ""
 msgid "Clone VM"
 msgstr "Sanal makineyi klonla"
 
-#: instances/jobs.py:639 instances/jobs.py:646 instances/jobs.py:986
+#: instances/jobs.py:641 instances/jobs.py:648 instances/jobs.py:990
 msgid "Copying disks"
 msgstr "Diskler kopyalanıyor"
 
-#: instances/jobs.py:698
+#: instances/jobs.py:700
 msgid "libvirt has no result of the copy"
 msgstr "libvirt'te kopyanın sonucu yok"
 
-#: instances/jobs.py:709
+#: instances/jobs.py:711
 #, python-format
 msgid ""
 "The copy failed: %(error)s. The guest's file systems could not be thawed "
@@ -3322,11 +3368,11 @@ msgstr ""
 "Kopyalama başarısız oldu: %(error)s. Konuğun dosya sistemleri çözülemedi "
 "(%(thaw)s); şununla çözün: virsh domfsthaw %(vm)s"
 
-#: instances/jobs.py:712 instances/jobs.py:804
+#: instances/jobs.py:714 instances/jobs.py:806
 msgid "The copy failed"
 msgstr "Kopyalama başarısız oldu"
 
-#: instances/jobs.py:739
+#: instances/jobs.py:741
 #, python-format
 msgid ""
 "The VM is no longer on the compute the job ran on; check these volumes, then "
@@ -3335,7 +3381,7 @@ msgstr ""
 "Sanal makine artık işin çalıştığı sunucuda değil; şu birimleri kontrol edin, "
 "sonra bu işi çözün: %(volumes)s"
 
-#: instances/jobs.py:780
+#: instances/jobs.py:782
 #, python-format
 msgid ""
 "A volume of the clone was being created; check these volumes, then resolve "
@@ -3344,15 +3390,15 @@ msgstr ""
 "Klonun bir birimi oluşturuluyordu; şu birimleri kontrol edin, sonra bu işi "
 "çözün: %(volumes)s"
 
-#: instances/jobs.py:784
+#: instances/jobs.py:786
 msgid "The job stopped before the copy started"
 msgstr "İş, kopyalama başlamadan durdu"
 
-#: instances/jobs.py:791
+#: instances/jobs.py:793
 msgid "libvirt is still copying the disks"
 msgstr "libvirt diskleri hâlâ kopyalıyor"
 
-#: instances/jobs.py:794
+#: instances/jobs.py:796
 #, python-format
 msgid ""
 "Another backup runs on the VM; check these volumes, then resolve this job: "
@@ -3361,7 +3407,7 @@ msgstr ""
 "Sanal makinede başka bir yedekleme çalışıyor; şu birimleri kontrol edin, "
 "sonra bu işi çözün: %(volumes)s"
 
-#: instances/jobs.py:799
+#: instances/jobs.py:801
 #, python-format
 msgid ""
 "libvirt has no result of the copy; check these volumes, then resolve this "
@@ -3370,7 +3416,7 @@ msgstr ""
 "libvirt'te kopyanın sonucu yok; şu birimleri kontrol edin, sonra bu işi "
 "çözün: %(volumes)s"
 
-#: instances/jobs.py:811
+#: instances/jobs.py:813
 #, python-format
 msgid ""
 "The disks were copied, but the clone could not be defined: %(error)s; check "
@@ -3379,33 +3425,33 @@ msgstr ""
 "Diskler kopyalandı, ancak klon tanımlanamadı: %(error)s; şu birimleri kontrol"
 " edin, sonra bu işi çözün: %(volumes)s"
 
-#: instances/jobs.py:841
+#: instances/jobs.py:843
 msgid "Image has already exist. Please check volumes or change instance name"
 msgstr ""
 "İmaj zaten mevcut. Lütfen ya makine adını değişin ya da disk alanlarını "
 "kontrol edin"
 
-#: instances/jobs.py:849
+#: instances/jobs.py:851
 msgid "Each network card needs a network"
 msgstr "Her ağ kartının bir ağı olmalı"
 
-#: instances/jobs.py:851 vrtManager/instance.py:2858
+#: instances/jobs.py:853 vrtManager/instance.py:2858
 #, python-format
 msgid "This host has no network %(name)s"
 msgstr "Bu sunucuda %(name)s ağı yok"
 
-#: instances/jobs.py:853 vrtManager/instance.py:2860
+#: instances/jobs.py:855 vrtManager/instance.py:2860
 #, python-format
 msgid "This host has no network filter %(name)s"
 msgstr "Bu sunucuda %(name)s ağ filtresi yok"
 
-#: instances/jobs.py:869
+#: instances/jobs.py:871
 #, python-format
 msgid "MAC address %(mac)s is a NIC's of another VM on this host"
 msgstr ""
 "%(mac)s MAC adresi bu sunucudaki başka bir sanal makinenin ağ kartının adresi"
 
-#: instances/jobs.py:878
+#: instances/jobs.py:880
 #, python-format
 msgid ""
 "Disk cache %(cache)s does not go with disk I/O native, which Settings set: "
@@ -3414,73 +3460,73 @@ msgstr ""
 "%(cache)s disk önbelleği, Ayarlar'daki native disk G/Ç ile kullanılamaz: none"
 " ya da directsync seçin"
 
-#: instances/jobs.py:886 instances/templates/create_instance_w1.html:60
+#: instances/jobs.py:888 instances/templates/create_instance_w1.html:60
 #: instances/templates/create_instance_w2.html:356
 msgid "Create VM"
 msgstr "Sanal makine oluştur"
 
-#: instances/jobs.py:910 instances/jobs.py:956 instances/views.py:2580
+#: instances/jobs.py:913 instances/jobs.py:960 instances/views.py:2592
 msgid "A virtual machine with this name already exists"
 msgstr "Bu isimde bir sanal makine mevcut"
 
-#: instances/jobs.py:912 instances/jobs.py:952
+#: instances/jobs.py:915 instances/jobs.py:955
 msgid "There is an instance with same name. Remove it and try again!"
 msgstr "Aynı isimde başka bir sanal makine var. Onu silip yeniden deneyin!"
 
-#: instances/jobs.py:915
+#: instances/jobs.py:918
 msgid "First you need to create or select an image"
 msgstr "Öncelikle bir imaj oluşturun ya da mevcut bir imajı seçin"
 
-#: instances/jobs.py:917
+#: instances/jobs.py:920
 msgid "Choose one disk source: a new disk, existing volumes or a template"
 msgstr ""
 "Tek bir disk kaynağı seçin: yeni bir disk, mevcut birimler ya da bir şablon"
 
-#: instances/jobs.py:920
+#: instances/jobs.py:923
 msgid "Invalid cache mode"
 msgstr "Geçersiz önbellek modu"
 
-#: instances/jobs.py:923
+#: instances/jobs.py:926
 #, python-format
 msgid "This host offers no CPU mode or model %(mode)s"
 msgstr "Bu sunucu %(mode)s CPU modunu veya modelini sunmuyor"
 
-#: instances/jobs.py:925
+#: instances/jobs.py:928
 #, python-format
 msgid "A %(arch)s VM cannot have a %(model)s network card"
 msgstr "Bir %(arch)s VM'inde %(model)s ağ kartı olamaz"
 
-#: instances/jobs.py:927
+#: instances/jobs.py:930
 #, python-format
 msgid "A CD-ROM cannot use the %(bus)s bus"
 msgstr "CD-ROM %(bus)s veri yolunu kullanamaz"
 
-#: instances/jobs.py:930
+#: instances/jobs.py:933
 msgid "The cloud-init seed is read from a CD-ROM: choose its bus"
 msgstr "cloud-init tohumu bir CD-ROM'dan okunur: veri yolunu seçin"
 
-#: instances/jobs.py:933
+#: instances/jobs.py:936
 msgid "The cloud-init seed needs a directory storage pool for the disk"
 msgstr "cloud-init tohumu, disk için bir dizin depolama havuzu gerektirir"
 
-#: instances/jobs.py:937
+#: instances/jobs.py:940
 #, python-format
 msgid "This host offers no firmware %(firmware)s"
 msgstr "Bu sunucu %(firmware)s firmware'ini sunmuyor"
 
-#: instances/jobs.py:939 vrtManager/instance.py:3207
+#: instances/jobs.py:942 vrtManager/instance.py:3207
 msgid "This host offers no TPM 2.0: install swtpm on it"
 msgstr "Bu sunucu TPM 2.0 sunmuyor: üzerine swtpm kurun"
 
-#: instances/jobs.py:1006
+#: instances/jobs.py:1010
 msgid "Writing the cloud-init seed"
 msgstr "cloud-init tohumu yazılıyor"
 
-#: instances/jobs.py:1013
+#: instances/jobs.py:1017
 msgid "Defining the VM"
 msgstr "Sanal makine tanımlanıyor"
 
-#: instances/jobs.py:1055
+#: instances/jobs.py:1059
 #, python-format
 msgid ""
 "The panel failed unexpectedly; its log has the details. Remove these volumes "
@@ -3489,114 +3535,114 @@ msgstr ""
 "Panel beklenmedik bir hatayla karşılaştı; ayrıntılar panelin günlüğünde. Bu "
 "birimleri elle kaldırın: %(volumes)s"
 
-#: instances/jobs.py:1059
+#: instances/jobs.py:1063
 #, python-format
 msgid "%(error)s. Remove these volumes by hand: %(volumes)s"
 msgstr "%(error)s. Şu birimleri elle silin: %(volumes)s"
 
-#: instances/jobs.py:1086
+#: instances/jobs.py:1091
 #, python-format
 msgid "The instance is already on %(compute)s"
 msgstr "Sanal makine zaten %(compute)s üzerinde"
 
-#: instances/jobs.py:1088
+#: instances/jobs.py:1094
 #, python-format
 msgid "%(compute)s is not reachable"
 msgstr "%(compute)s sunucusuna ulaşılamıyor"
 
-#: instances/jobs.py:1090
+#: instances/jobs.py:1096
 #, python-format
 msgid "%(compute)s is the VM's own host under another name"
 msgstr "%(compute)s, sanal makinenin kendi sunucusunun başka bir adı"
 
-#: instances/jobs.py:1147
+#: instances/jobs.py:1153
 #, python-format
 msgid ""
 "The VM migrated, but autostart could not be set on the destination: %(error)s"
 msgstr ""
 "Sanal makine taşındı, ancak hedefte otomatik başlatma ayarlanamadı: %(error)s"
 
-#: instances/jobs.py:1154
+#: instances/jobs.py:1160
 #, python-format
 msgid "The VM migrated, but its NVRAM file stays on the source: %(error)s"
 msgstr "Sanal makine taşındı, ancak NVRAM dosyası kaynakta kaldı: %(error)s"
 
-#: instances/jobs.py:1162
+#: instances/jobs.py:1168
 msgid "Migrate VM"
 msgstr "Sanal makineyi taşı"
 
-#: instances/jobs.py:1216
+#: instances/jobs.py:1222
 msgid "Migrating the VM"
 msgstr "Sanal makine taşınıyor"
 
-#: instances/jobs.py:1265
+#: instances/jobs.py:1271
 msgid "libvirt is still migrating the VM"
 msgstr "libvirt sanal makineyi hâlâ taşıyor"
 
-#: instances/jobs.py:1277
+#: instances/jobs.py:1283
 msgid "The VM stayed on the source host"
 msgstr "Sanal makine kaynak sunucuda kaldı"
 
-#: instances/jobs.py:1279
+#: instances/jobs.py:1285
 msgid ""
 "The VM is on both computes or on neither; check them, then resolve this job."
 msgstr ""
 "Sanal makine ya iki sunucuda da var ya da hiçbirinde yok; kontrol edin, sonra"
 " bu işi çözün."
 
-#: instances/jobs.py:1298
+#: instances/jobs.py:1304
 msgid "Move disk"
 msgstr "Diski taşı"
 
-#: instances/jobs.py:1305
+#: instances/jobs.py:1311
 msgid "Choose a disk of the VM"
 msgstr "Sanal makinenin bir diskini seçin"
 
-#: instances/jobs.py:1329
+#: instances/jobs.py:1335
 msgid "Copying the disk"
 msgstr "Disk kopyalanıyor"
 
-#: instances/jobs.py:1371
+#: instances/jobs.py:1377
 #, python-format
 msgid "Another block job runs on %(dev)s; check the VM"
 msgstr ""
 "%(dev)s üzerinde başka bir blok işi çalışıyor; sanal makineyi kontrol edin"
 
-#: instances/jobs.py:1377
+#: instances/jobs.py:1383
 #, python-format
 msgid "The disk stayed in %(path)s; remove %(dest)s if it is there"
 msgstr "Disk %(path)s içinde kaldı; varsa %(dest)s dosyasını silin"
 
-#: instances/jobs.py:1379
+#: instances/jobs.py:1385
 #, python-format
 msgid "The definitions of %(dev)s name %(paths)s; check the VM"
 msgstr "%(dev)s tanımları %(paths)s gösteriyor; sanal makineyi kontrol edin"
 
-#: instances/jobs.py:1386
+#: instances/jobs.py:1392
 #, python-format
 msgid "Disk %(path)s was kept: a disk file that stays needs it"
 msgstr "%(path)s diski korundu: kalan bir disk dosyası ona ihtiyaç duyuyor"
 
-#: instances/jobs.py:1387
+#: instances/jobs.py:1393
 #, python-format
 msgid "The VM is removed, but disk %(path)s was not deleted: %(err)s"
 msgstr "Sanal makine kaldırıldı, ancak %(path)s diski silinmedi: %(err)s"
 
-#: instances/jobs.py:1388
+#: instances/jobs.py:1394
 #, python-format
 msgid "Disk %(path)s is used by another VM and was kept"
 msgstr ""
 "%(path)s diski başka bir sanal makine tarafından kullanılıyor ve korundu"
 
-#: instances/jobs.py:1442
+#: instances/jobs.py:1448
 msgid "Delete VM"
 msgstr "Sanal makineyi sil"
 
-#: instances/jobs.py:1472
+#: instances/jobs.py:1478
 msgid "Deleting the VM"
 msgstr "Sanal makine siliniyor"
 
-#: instances/jobs.py:1484
+#: instances/jobs.py:1490
 msgid "The VM was not deleted; it may have been shut off"
 msgstr "Sanal makine silinmedi; kapatılmış olabilir"
 
@@ -3779,7 +3825,7 @@ msgid "Disk source"
 msgstr "Disk kaynağı"
 
 #: instances/templates/add_instance_volume.html:21
-#: instances/templates/create_instance_w2.html:134 instances/views.py:2607
+#: instances/templates/create_instance_w2.html:134 instances/views.py:2619
 msgid "New disk"
 msgstr "Yeni disk"
 
@@ -4034,23 +4080,27 @@ msgid "Choose the host the VM runs on."
 msgstr "Sanal makinenin çalışacağı sunucuyu seçin."
 
 #: instances/templates/create_inst_block.html:23
+msgid "No new VM comes to a host in maintenance."
+msgstr "Bakımdaki sunucuya yeni sanal makine gelmez."
+
+#: instances/templates/create_inst_block.html:30
 #: instances/templates/instance.html:62
 #: instances/templates/instances/resize_tab.html:15
 #: instances/templates/instances/stats_tab.html:29
 msgid "CPU"
 msgstr "CPU"
 
-#: instances/templates/create_inst_block.html:25
+#: instances/templates/create_inst_block.html:32
 #, python-format
 msgid "CPU usage of %(name)s"
 msgstr "%(name)s CPU kullanımı"
 
-#: instances/templates/create_inst_block.html:35
+#: instances/templates/create_inst_block.html:42
 #, python-format
 msgid "Memory usage of %(name)s"
 msgstr "%(name)s bellek kullanımı"
 
-#: instances/templates/create_inst_block.html:49
+#: instances/templates/create_inst_block.html:57
 #, python-format
 msgid ""
 "No compute is reachable: see the <a href=\"%(computes_url)s\">Computes</a> "
@@ -4059,7 +4109,7 @@ msgstr ""
 "Erişilebilir sunucu yok: <a href=\"%(computes_url)s\">Sunucular</a> sayfasına"
 " bakın."
 
-#: instances/templates/create_inst_block.html:51
+#: instances/templates/create_inst_block.html:59
 #, python-format
 msgid ""
 "There is no compute yet: add the first host on the <a "
@@ -4165,7 +4215,7 @@ msgstr "Özel CPU modelleri"
 msgid "Size (GiB)"
 msgstr "Boyut (GiB)"
 
-#: instances/templates/create_instance_w2.html:161 instances/views.py:2608
+#: instances/templates/create_instance_w2.html:161 instances/views.py:2620
 msgid "Existing volumes"
 msgstr "Mevcut birimler"
 
@@ -4201,7 +4251,7 @@ msgstr "Aygıt"
 msgid "Remove"
 msgstr "Kaldır"
 
-#: instances/templates/create_instance_w2.html:194 instances/views.py:2609
+#: instances/templates/create_instance_w2.html:194 instances/views.py:2621
 msgid "Clone from template"
 msgstr "Şablondan klonla"
 
@@ -6850,7 +6900,7 @@ msgstr "Ön yükleme sırası başarıyla değiştirildi."
 msgid "The XML is empty"
 msgstr "XML boş"
 
-#: instances/views.py:1943 instances/views.py:2591
+#: instances/views.py:1943 instances/views.py:2603
 #, python-format
 msgid "The XML is not well-formed: %(error)s"
 msgstr "XML düzgün biçimlendirilmemiş: %(error)s"
@@ -7006,28 +7056,28 @@ msgstr "Şablon olup olmadığını değiştirmek için sanal makineyi kapatın.
 msgid "%(quota)s: '%(instance_name)s' stays a template."
 msgstr "%(quota)s: '%(instance_name)s' şablon olarak kalıyor."
 
-#: instances/views.py:2578
+#: instances/views.py:2590
 msgid "The XML has no name"
 msgstr "XML'de ad yok"
 
-#: instances/views.py:2593 webvirtcloud/middleware.py:156
+#: instances/views.py:2605 webvirtcloud/middleware.py:156
 #, python-format
 msgid "libvirt Error - %(exception)s"
 msgstr "libvirt Hatası - %(exception)s"
 
-#: instances/views.py:2607
+#: instances/views.py:2619
 msgid "An empty disk of the size you set"
 msgstr "Belirlediğiniz boyutta boş bir disk"
 
-#: instances/views.py:2608
+#: instances/views.py:2620
 msgid "Volumes already in a pool"
 msgstr "Bir havuzda zaten bulunan birimler"
 
-#: instances/views.py:2609
+#: instances/views.py:2621
 msgid "A copy of a template volume"
 msgstr "Bir şablon biriminin kopyası"
 
-#: instances/views.py:2697
+#: instances/views.py:2711
 msgid ""
 "This host has no running storage pool for the VM's disks: add or start one on"
 " its Storage page."
@@ -7035,29 +7085,29 @@ msgstr ""
 "Bu sunucuda sanal makinenin diskleri için çalışan bir depolama havuzu yok: "
 "Depolama sayfasından bir tane ekleyin ya da başlatın."
 
-#: instances/views.py:2699
+#: instances/views.py:2713
 msgid "This host has no network for the VM: add one on its Networks page."
 msgstr ""
 "Bu sunucuda sanal makine için ağ yok: Ağlar sayfasından bir tane ekleyin."
 
-#: instances/views.py:2731
+#: instances/views.py:2745
 #, python-format
 msgid "The machine type is q35, not %(machine)s: UEFI Secure Boot needs it"
 msgstr "Makine türü %(machine)s değil q35: UEFI Secure Boot bunu gerektiriyor"
 
-#: instances/views.py:2760
+#: instances/views.py:2774
 msgid "Flavor Created"
 msgstr "Flavor Oluşturuldu"
 
-#: instances/views.py:2768
+#: instances/views.py:2782
 msgid "Create Flavor"
 msgstr "Kullanıcı Oluştur"
 
-#: instances/views.py:2780
+#: instances/views.py:2794
 msgid "Flavor Deleted"
 msgstr "Flavor Silindi"
 
-#: instances/views.py:2786
+#: instances/views.py:2800
 msgid "Only the size template goes; VMs made from it keep their size."
 msgstr ""
 "Yalnızca boyut şablonu silinir; ondan oluşturulan sanal makineler boyutlarını"

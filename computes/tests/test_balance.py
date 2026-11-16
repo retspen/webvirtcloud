@@ -167,6 +167,14 @@ class BalancePageTests(TestCase):
         self.assertEqual(self.moved(page), [])
         self.assertIn("ba-other", page.xpath("//div[contains(@class, 'alert-warning')]")[0].text_content())
 
+    def test_a_host_in_maintenance_is_left_out(self):
+        Compute.objects.filter(pk=self.other.pk).update(maintenance=True)
+        page = self.page()
+        self.assertEqual(self.moved(page), [])
+        self.assertEqual(list(self.response.context["hosts"]), [self.compute])
+        self.assertIn("in maintenance and are left out: ba-other", page.xpath("//div[contains(@class, 'alert-secondary')]")[0].text_content())
+        self.assertEqual(page.xpath("//div[contains(@class, 'alert-warning')]"), [])  # not said to be unreadable
+
     def test_the_moves_shown_go_in_one_balance_job(self):
         vm = self.vms["ba-1"].pk
         response = self.client.post(reverse("balance"), {"instance": [vm], "source": [self.compute.pk],

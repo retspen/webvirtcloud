@@ -145,6 +145,14 @@ class CreateDialogHostsTestCase(TestCase):
         self.assertEqual([e.text for e in dialog.xpath(".//a/div/div[1]")], ["cd2"])
         self.assertNotIn("No compute is reachable", dialog.text_content())
 
+    def test_a_host_in_maintenance_is_listed_but_cannot_be_chosen(self):
+        Compute.objects.filter(name="cd1").update(maintenance=True)
+        dialog = self.dialog({"cd1", "cd2"})
+        self.assertEqual([e.text for e in dialog.xpath(".//a/div/div[1]")], ["cd2"])
+        (item,) = dialog.xpath(".//div[@aria-disabled='true']")
+        self.assertIn("cd1", item.text_content())
+        self.assertIn("In maintenance", item.text_content())
+
     def test_no_reachable_compute_is_said(self):
         dialog = self.dialog(set())
         self.assertEqual(dialog.xpath(".//a[contains(@class, 'list-group-item')]"), [])

@@ -16,6 +16,13 @@
                 <div class="text-body-secondary mb-3">{% trans "Choose the host the VM runs on." %}</div>
                 <div class="list-group">
                     {% for compute in reachable_computes %}
+                    {% if compute.maintenance %}
+                    <div class="list-group-item py-3" aria-disabled="true">
+                        <span class="fw-semibold text-body-secondary">{{ compute.name }}</span>
+                        <span class="badge text-bg-warning ms-2">{% trans "In maintenance" %}</span>
+                        <div class="small text-body-secondary">{% trans "No new VM comes to a host in maintenance." %}</div>
+                    </div>
+                    {% else %}
                     <a class="list-group-item list-group-item-action py-3" href="{% url 'instances:create_instance_select_type' compute.id %}">
                         <div class="row g-2 align-items-center">
                             <div class="col-12 col-md-3 fw-semibold">{{ compute.name }}</div>
@@ -43,6 +50,7 @@
                             <div class="col-12 col-md-8 offset-md-3 small text-body-secondary compute-capacity" data-url="{% url 'compute_capacity' compute.id %}"></div>
                         </div>
                     </a>
+                    {% endif %}
                     {% empty %}
                     {% url 'computes' as computes_url %}
                     {% if computes %}

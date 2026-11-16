@@ -2,12 +2,14 @@ from ipaddress import ip_address
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import CharField, IntegerField, Model, Q, UniqueConstraint
+from django.db.models import BooleanField, CharField, IntegerField, Model, Q, UniqueConstraint
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_noop
 from libvirt import libvirtError, virConnect
 
 from computes.validators import validate_gstfsd_key, validate_hostname, validate_login, validate_migration_address
+from vrtManager import util
 from vrtManager.connection import connection_manager
 from vrtManager.hostdetails import wvmHostDetails
 
@@ -50,8 +52,18 @@ class Compute(Model):
     # reaches it: one host is one compute, and a compute's VMs stay on it
     host_uuid = CharField(max_length=36, blank=True, default="", editable=False)
 
+    # in maintenance: no new VM and no migration comes to the host, and Balance
+    # leaves it out; its VMs run on and Bulk Migrate empties it (refuse_new_vms)
+    maintenance = BooleanField(default=False, editable=False)
+
     class Meta:
         constraints = [UniqueConstraint(fields=["host_uuid"], condition=~Q(host_uuid=""), name="one_compute_per_host")]
+
+    def refuse_new_vms(self):
+        """Refuses a VM made on or migrated to the host while it is in maintenance."""
+        if self.maintenance:
+            raise util.OperationError(gettext_noop("%(compute)s is in maintenance: no new VM or migration comes to it"),
+                                      compute=self.name)
 
     @property
     def migration_uri(self):

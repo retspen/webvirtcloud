@@ -2542,6 +2542,16 @@ def getvvfile(request, pk):
     return response
 
 
+def in_maintenance(request, compute):
+    """Back to the VM list, saying why, when the host a VM is made on is in maintenance."""
+    try:
+        compute.refuse_new_vms()
+    except util.OperationError as err:
+        messages.error(request, str(err))
+        return redirect("instances:index")
+    return None
+
+
 @superuser_only
 def create_instance_select_type(request, compute_id):
     """
@@ -2551,6 +2561,8 @@ def create_instance_select_type(request, compute_id):
     """
 
     compute = get_object_or_404(Compute, pk=compute_id)
+    if refused := in_maintenance(request, compute):
+        return refused
 
     conn = wvmCreate(compute.hostname, compute.login, compute.password, compute.type)
     instances = conn.get_instances()
@@ -2636,6 +2648,8 @@ def create_instance(request, compute_id, arch, machine):
     """
 
     compute = get_object_or_404(Compute, pk=compute_id)
+    if refused := in_maintenance(request, compute):
+        return refused
     vm_form = None
     refused = False
     disk_source = request.POST.get("disk_source", "new")

@@ -66,6 +66,12 @@ class BulkMigratePageTests(TestCase):
         self.assertIsNotNone(local.get("disabled"))
         self.assertIn("not on storage both hosts share", local.getparent().getparent().text_content())
 
+    def test_a_host_in_maintenance_is_no_destination(self):
+        Compute.objects.create(name="ev-rest", hostname="198.51.100.32", login="", password="", type=4, maintenance=True)
+        page = self.page()
+        self.assertEqual(page.xpath("//select[@id='bulk-migrate-target']"), [])  # one destination left: no choice
+        self.assertNotIn("ev-rest", page.text_content())
+
     def bulk_migrate(self, target, chosen):
         return self.client.post(reverse("bulk_migrate", args=[self.compute.id]),
                                 {"target": target, "instance": chosen, "parallel": "2", "submission_key": "evac0000key"})

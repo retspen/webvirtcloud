@@ -60,6 +60,7 @@ urlpatterns = [
                 path("", views.overview, name="overview"),
                 path("update/", views.compute_update, name="compute_update"),
                 path("delete/", views.compute_delete, name="compute_delete"),
+                path("maintenance/", views.maintenance, name="compute_maintenance"),
                 path("statistics", views.compute_graph, name="compute_graph"),
                 path("capacity/", views.capacity, name="compute_capacity"),
                 path("instances/", views.instances, name="instances"),

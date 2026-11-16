@@ -16,6 +16,9 @@
 {% if unreachable %}
 <div class="alert alert-warning shadow-sm">{% trans "These hosts cannot be read and are left out:" %} {{ unreachable|join:", " }}</div>
 {% endif %}
+{% if resting %}
+<div class="alert alert-secondary shadow-sm">{% trans "These hosts are in maintenance and are left out:" %} {{ resting|join:", " }}</div>
+{% endif %}
 
 {# each host's running VMs: the share of its memory now and, light to dark, after the migrations #}
 <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3 mb-4">
