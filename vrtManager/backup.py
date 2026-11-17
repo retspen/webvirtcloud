@@ -128,13 +128,14 @@ class wvmBackup(wvmInstance):
             disk_owner_uid=owner_uid, disk_owner_gid=owner_gid,
         )
 
-    def make_live_targets(self, disks, pool, names, owner_uid, owner_gid):
+    def make_live_targets(self, disks, pool, names, owner_uid, owner_gid, backing=None):
         """The empty volumes a running VM's push backup writes into, in the
-        target pool; the targets begin_clone_backup takes."""
+        target pool, each on its backing file of backing ({dev: file name},
+        an incremental backup's); the targets begin_clone_backup takes."""
         targets = []
         for disk in disks:
             target = {"dev": disk["dev"], "pool": pool, "name": names[disk["dev"]],
-                      "capacity": disk["capacity"], "format": disk["format"]}
+                      "capacity": disk["capacity"], "format": disk["format"], "backing": (backing or {}).get(disk["dev"])}
             target["path"] = self.create_clone_target(target, owner_uid, owner_gid)
             targets.append(target)
         return targets
@@ -145,6 +146,40 @@ class wvmBackup(wvmInstance):
         with self._nvram_pool() as pool:
             vol = self._find_volume(pool, os.path.basename(path))
             return None if vol is None else self.download_volume(vol)
+
+    def checkpoint_usable(self, name, devs):
+        """Whether the checkpoint name can be an incremental backup's base:
+        on this host, with a bitmap of known size for each disk of devs
+        (libvirt leaves the size out for a lost or invalid bitmap)."""
+        try:
+            xml = self.instance.checkpointLookupByName(name).getXMLDesc(libvirt.VIR_DOMAIN_CHECKPOINT_XML_SIZE)
+        except libvirt.libvirtError as err:
+            if err.get_error_code() != libvirt.VIR_ERR_NO_DOMAIN_CHECKPOINT:
+                raise
+            return False
+        sized = set(etree.fromstring(xml).xpath("disks/disk[@checkpoint='bitmap' and @size]/@name"))
+        return set(devs) <= sized
+
+    def prune_checkpoints(self, keep, known, devs):
+        """Deletes the backups' checkpoints (wvc-) of a running VM but those
+        of keep, and their bitmaps. known: {name: creation time} of the
+        checkpoints the panel made; one libvirt no longer lists (after a
+        migration) is redefined first so that its bitmap goes too."""
+        listed = {cp.getName() for cp in self.instance.listAllCheckpoints(0)}
+        for name in sorted(({n for n in listed if n.startswith("wvc-")} | set(known)) - set(keep)):
+            if name not in listed:
+                disks = "".join(f"<disk name='{dev}' checkpoint='bitmap' bitmap='{name}'/>" for dev in devs)
+                try:
+                    self.instance.checkpointCreateXML(
+                        f"<domaincheckpoint><name>{name}</name><creationTime>{known[name]}</creationTime>"
+                        f"<disks>{disks}</disks></domaincheckpoint>", libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE)
+                except libvirt.libvirtError:
+                    continue  # nothing of it is left to delete
+            checkpoint = self.instance.checkpointLookupByName(name)
+            try:
+                checkpoint.delete(0)
+            except libvirt.libvirtError:  # its bitmap is gone: only the record is left
+                checkpoint.delete(libvirt.VIR_DOMAIN_CHECKPOINT_DELETE_METADATA_ONLY)
 
     def read_tpm(self):
         """The shut-off VM's TPM state files: {name: bytes}, {} when it never

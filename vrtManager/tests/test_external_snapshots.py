@@ -272,6 +272,18 @@ class CreateTestCase(unittest.TestCase):
         # before, for the free space; after, for the new overlays
         self.assertEqual(p.refresh_instance_pools.call_count, 2)
 
+    def test_a_shut_off_vms_backup_checkpoints_are_forgotten_first(self):
+        # libvirt 11.10 refuses an offline external snapshot while a checkpoint exists
+        p = proxy(status=5)
+        events = []
+        checkpoints = [MagicMock(**{"getName.return_value": n}) for n in ("wvc-a", "other")]
+        for cp in checkpoints:
+            cp.delete.side_effect = lambda flags, n=cp.getName(): events.append(("delete", n, flags))
+        p.instance.listAllCheckpoints.return_value = checkpoints
+        p.instance.snapshotCreateXML.side_effect = lambda xml, flags: events.append(("snapshot",))
+        p.create_external_snapshot("snap-1")
+        self.assertEqual(events, [("delete", "wvc-a", libvirt.VIR_DOMAIN_CHECKPOINT_DELETE_METADATA_ONLY), ("snapshot",)])
+
     def test_description_is_escaped(self):
         p = proxy()
         p.create_external_snapshot("s", "<x> & 'y'")

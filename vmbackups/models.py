@@ -47,6 +47,7 @@ class BackupPolicy(models.Model):
     instances = models.ManyToManyField(Instance, blank=True, related_name="backup_policies")
     time = models.TimeField()  # in the panel's time zone
     keep = models.PositiveSmallIntegerField()
+    full_every = models.PositiveSmallIntegerField(default=1)  # a full backup every N; the others incremental
     frozen = models.BooleanField(default=False)
     enabled = models.BooleanField(default=True)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
@@ -104,6 +105,9 @@ class Backup(models.Model):
     manifest = models.JSONField(default=dict)
     operation = models.ForeignKey(Operation, on_delete=models.SET_NULL, null=True)
     policy = models.ForeignKey(BackupPolicy, on_delete=models.SET_NULL, null=True, related_name="backups")
+    # an incremental backup's base; its disk files have the parent's as backing files
+    parent = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, related_name="children")
+    checkpoint = models.CharField(max_length=64, blank=True)  # the VM's checkpoint made with it
 
     class Meta:
         ordering = ["-created_at"]

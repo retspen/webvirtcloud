@@ -126,6 +126,44 @@ def _nvram(op, proxy):
     raise util.OperationError(_("The VM's NVRAM file changed while it was backed up; back the VM up again"))
 
 
+def _chain_parent(policy, instance, target, plan, proxy, pool):
+    """The backup a scheduled backup of the VM builds on, or None for a full
+    one: the schedule's newest ready backup with a checkpoint, in a chain
+    shorter than full_every, of the same disks, every file of its chain in
+    the target, and its checkpoint's bitmaps whole on the VM."""
+    last = (Backup.objects.filter(instance=instance, policy=policy, target=target, state=Backup.READY)
+            .exclude(checkpoint="").order_by("-created_at").first())
+    chain, backup = [], last
+    while backup is not None:
+        chain.append(backup)
+        backup = backup.parent
+    if not chain or len(chain) >= policy.full_every or any(b.state != Backup.READY for b in chain):
+        return None
+    if chain[-1].manifest.get("parent"):  # its base's row is gone: the chain cannot be read whole
+        return None
+    devs = sorted(d["dev"] for d in plan["disks"])
+    if sorted(last.files.filter(role=BackupFile.DISK).values_list("dev", flat=True)) != devs:
+        return None
+    pool.refresh(0)
+    files = set(BackupFile.objects.filter(backup__in=chain, role=BackupFile.DISK).values_list("volume", flat=True))
+    if not files <= set(pool.listVolumes()):
+        return None
+    return last if proxy.checkpoint_usable(last.checkpoint, devs) else None
+
+
+def _prune_checkpoints(op, proxy, plan):
+    """The VM's backup checkpoints deleted but each schedule's newest ready
+    one, the base of its next incremental backup."""
+    backups = Backup.objects.filter(vm_uuid=op.intent["uuid"]).exclude(checkpoint="").exclude(uuid=op.intent["backup"])
+    keep = set()
+    for policy_id in backups.filter(policy__full_every__gt=1).values_list("policy", flat=True).distinct():
+        newest = backups.filter(policy=policy_id, state=Backup.READY).order_by("-created_at").first()
+        if newest is not None:
+            keep.add(newest.checkpoint)
+    known = {b.checkpoint: int(b.created_at.timestamp()) for b in backups}
+    proxy.prune_checkpoints(keep=keep, known=known, devs=[d["dev"] for d in plan["disks"]])
+
+
 def _publish(op, proxy, pool):
     """The copied disks are complete: the NVRAM file, the definition and the
     manifest written and read back, then the row ready with its files.
@@ -159,6 +197,8 @@ def _publish(op, proxy, pool):
         "created_at": backup.created_at.isoformat(),
         "consistency": op.intent["consistency"],
         "nvram": "copied" if nvram is not None else ("never written" if plan["nvram"] else "none"),
+        "parent": str(backup.parent.uuid) if backup.parent else None,
+        "checkpoint": backup.checkpoint,
         "tpm": "copied" if tpm else ("never written" if tpm == {} else "none"),
         "files": files,
         "left_out": plan["left_out"],
@@ -235,12 +275,19 @@ class CreateBackup(Kind):
         status = proxy.get_status()
         live = status != VIR_DOMAIN_SHUTOFF
         names = backup_file_names(op.intent["backup"], plan["disks"], bool(plan["nvram"]))
-        ctx.record_intent(live=live, plan=plan, names=names, pool=row.pool, pool_uuid=row.pool_uuid,
-                          consistency=Backup.OFFLINE if not live else Backup.CRASH)
         # a schedule deleted since the job was queued: the backup is kept, without it
         policy = BackupPolicy.objects.filter(pk=op.params.get("policy")).first() if op.params.get("policy") else None
+        # a running VM's scheduled backup makes a checkpoint the next one builds on (bitmaps need qcow2 disks)
+        checkpoint = (f"wvc-{op.intent['backup']}" if live and policy and policy.full_every > 1
+                      and all(d["format"] == "qcow2" for d in plan["disks"]) else "")
+        parent = _chain_parent(policy, instance, target, plan, proxy, pool) if checkpoint else None
+        backing = {f.dev: f.volume for f in parent.files.filter(role=BackupFile.DISK)} if parent else {}
+        ctx.record_intent(live=live, plan=plan, names=names, pool=row.pool, pool_uuid=row.pool_uuid,
+                          consistency=Backup.OFFLINE if not live else Backup.CRASH, checkpoint=checkpoint,
+                          parent=parent.checkpoint if parent else None, backing=backing)
         Backup.objects.create(uuid=op.intent["backup"], target=target, instance=instance, vm_uuid=instance.uuid,
-                              vm_name=instance.name, compute_name=instance.compute.name, operation=op, policy=policy)
+                              vm_name=instance.name, compute_name=instance.compute.name, operation=op, policy=policy,
+                              parent=parent, checkpoint=checkpoint)
         ctx.set_phase(_("Copying disks"))
         if live:
             return self._run_live(op, ctx, proxy, pool, status)
@@ -265,8 +312,11 @@ class CreateBackup(Kind):
         if plan["nvram"]:
             data = proxy.read_nvram(plan["nvram"])
             ctx.record_intent(nvram_before=hashlib.sha256(data).hexdigest() if data is not None else None)
+        if op.params.get("policy"):  # before the backup begins: a stopped worker leaves nothing undone
+            _prune_checkpoints(op, proxy, plan)
         ctx.record_intent(made=True)
-        targets = proxy.make_live_targets(plan["disks"], op.intent["pool"], names["disks"], *_owner())
+        targets = proxy.make_live_targets(plan["disks"], op.intent["pool"], names["disks"], *_owner(),
+                                          backing=op.intent["backing"])
         ctx.record_intent(paths=[t["path"] for t in targets])
         # a completed result libvirt still holds is of an earlier job
         proxy.discard_backup_result()
@@ -292,7 +342,8 @@ class CreateBackup(Kind):
                         # frozen some file systems: frozen stays recorded, so the guest is thawed as frozen
                     else:
                         ctx.record_intent(consistency=Backup.FROZEN)
-                proxy.begin_clone_backup(targets)
+                proxy.begin_clone_backup(targets, incremental=op.intent["parent"],
+                                         checkpoint=op.intent["checkpoint"] or None)
             finally:
                 if op.intent.get("frozen"):
                     thaw_error = self._thaw(op, ctx, proxy)

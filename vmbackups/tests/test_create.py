@@ -48,7 +48,7 @@ def proxy(status=libvirt.VIR_DOMAIN_SHUTOFF, nvram=None):
     p.wvm.getLibVersion.return_value = 11_010_000
     p.wvm.getVersion.return_value = 10_001_000
     p.is_agent_ready.return_value = True
-    p.make_live_targets.side_effect = lambda disks, pool, names, uid, gid: [
+    p.make_live_targets.side_effect = lambda disks, pool, names, uid, gid, backing=None: [
         {"dev": d["dev"], "path": f"/b1/{names[d['dev']]}", "format": d["format"]} for d in disks]
     p.backup_targets.return_value = None
     p.backup_progress.return_value = None
@@ -436,6 +436,100 @@ class CreateBackupTests(TransactionTestCase):
         op.refresh_from_db()
         self.run_job(op)
         self.assertIsNone(self.backup(op).policy)
+
+    def chain(self, full_every=3, links=1):
+        """A schedule whose last backups of the VM form a chain of links points."""
+        import datetime
+
+        from vmbackups.models import BackupPolicy
+
+        self.policy = BackupPolicy.objects.create(name="nightly", target=self.target, time=datetime.time(2), keep=7,
+                                                  full_every=full_every, owner=self.admin)
+        parent = None
+        for _n in range(links):
+            parent = Backup.objects.create(target=self.target, instance=self.vm, vm_uuid=self.vm.uuid, vm_name="vm1",
+                                           compute_name="h1", state=Backup.READY, policy=self.policy, parent=parent)
+            parent.checkpoint = f"wvc-{parent.uuid}"
+            parent.save()
+            BackupFile.objects.create(backup=parent, role=BackupFile.DISK, dev="vda", volume=f"{parent.prefix}-vda.qcow2",
+                                      format="qcow2", capacity=GIB)
+        self.pool.listVolumes.return_value = [f.volume for f in BackupFile.objects.all()]
+        self.proxy.get_status.return_value = libvirt.VIR_DOMAIN_RUNNING
+        self.proxy.checkpoint_usable.return_value = True
+        return parent
+
+    def scheduled(self):
+        op = jobs.submit("backup.create", self.admin, {"instance": self.vm.pk, "target": self.target.pk,
+                                                       "policy": self.policy.pk}, f"key-{uuid4().hex[:12]}")
+        acquire(WORKER, "wvc-test")
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker=WORKER)
+        op.refresh_from_db()
+        return op
+
+    def test_a_schedules_backup_builds_on_its_last_one(self):
+        parent = self.chain()
+        op = self.scheduled()
+        self.run_job(op)
+        backup = self.backup(op)
+        self.assertEqual((backup.parent, backup.checkpoint), (parent, f"wvc-{backup.uuid}"))
+        self.assertEqual(self.proxy.make_live_targets.call_args.kwargs["backing"], {"vda": f"{parent.prefix}-vda.qcow2"})
+        self.assertEqual(self.proxy.begin_clone_backup.call_args.kwargs,
+                         {"incremental": parent.checkpoint, "checkpoint": backup.checkpoint})
+        self.proxy.checkpoint_usable.assert_called_with(parent.checkpoint, ["vda"])
+        self.assertEqual((backup.manifest["parent"], backup.manifest["checkpoint"]), (str(parent.uuid), backup.checkpoint))
+        # the checkpoints pruned before the backup began: the anchor stays
+        keep = self.proxy.prune_checkpoints.call_args.kwargs["keep"]
+        self.assertEqual(keep, {parent.checkpoint})
+        self.assertIn(parent.checkpoint, self.proxy.prune_checkpoints.call_args.kwargs["known"])
+
+    def test_a_chain_as_long_as_full_every_starts_again(self):
+        self.chain(full_every=3, links=3)
+        op = self.scheduled()
+        self.run_job(op)
+        backup = self.backup(op)
+        self.assertIsNone(backup.parent)
+        self.assertEqual(backup.checkpoint, f"wvc-{backup.uuid}")  # the next one builds on it
+        self.assertEqual(self.proxy.begin_clone_backup.call_args.kwargs, {"incremental": None, "checkpoint": backup.checkpoint})
+        self.assertEqual(self.proxy.make_live_targets.call_args.kwargs["backing"], {})
+
+    def test_a_base_that_cannot_be_used_gives_a_full_backup(self):
+        for name, broken in (
+            ("lost bitmap", lambda: setattr(self.proxy.checkpoint_usable, "return_value", False)),
+            ("file gone", lambda: setattr(self.pool.listVolumes, "return_value", [])),
+            ("disk added", lambda: self.proxy.backup_plan.return_value["disks"].append(
+                {"dev": "vdb", "path": "/pool/b.qcow2", "pool": "default", "format": "qcow2", "capacity": GIB})),
+        ):
+            with self.subTest(name):
+                Backup.objects.all().delete()
+                from vmbackups.models import BackupPolicy
+
+                BackupPolicy.objects.all().delete()
+                self.proxy.backup_plan.return_value = plan()
+                self.chain()
+                broken()
+                Operation.objects.update(state=Operation.SUCCEEDED)
+                from operations.models import Claim
+
+                Claim.objects.all().delete()
+                op = self.scheduled()
+                self.run_job(op)
+                self.assertIsNone(self.backup(op).parent)
+
+    def test_full_every_one_and_backups_by_hand_make_no_checkpoint(self):
+        self.chain(full_every=1)
+        op = self.scheduled()
+        self.run_job(op)
+        self.assertEqual((self.backup(op).parent, self.backup(op).checkpoint), (None, ""))
+        self.assertEqual(self.proxy.begin_clone_backup.call_args.kwargs, {"incremental": None, "checkpoint": None})
+        # a schedule changed to full backups only: the checkpoints it left go
+        self.assertEqual(self.proxy.prune_checkpoints.call_args.kwargs["keep"], set())
+
+    def test_a_raw_disk_or_a_shut_off_vm_makes_no_checkpoint(self):
+        self.chain()
+        self.proxy.backup_plan.return_value["disks"][0]["format"] = "raw"  # no bitmaps in a raw file
+        op = self.scheduled()
+        self.run_job(op)
+        self.assertEqual(self.backup(op).checkpoint, "")
 
     def test_the_log_names_the_target_and_consistency(self):
         op = self.submit()

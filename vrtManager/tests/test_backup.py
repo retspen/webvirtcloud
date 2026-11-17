@@ -6,6 +6,7 @@ from contextlib import nullcontext
 from unittest.mock import MagicMock
 
 import libvirt
+from lxml import etree
 
 from vrtManager import util
 from vrtManager.backup import backup_file_names, check_target_space, put_file, wvmBackup
@@ -433,3 +434,97 @@ class RestoreHostTestCase(unittest.TestCase):
         self.check(conn, "swtpm", definition=with_tpm)
         offers("<value>tpm-tis</value><value>tpm-crb</value>")
         self.check(conn, definition=with_tpm)
+
+
+class CheckpointTestCase(unittest.TestCase):
+    """The checkpoints an incremental backup builds on (wvmBackup)."""
+
+    def proxy(self, checkpoints):
+        p = wvmBackup.__new__(wvmBackup)
+        p.instance = MagicMock()
+        p.wvm = MagicMock()
+        self.deleted, self.redefined = [], []
+        objs = {}
+
+        def lookup(name):
+            if name not in checkpoints:
+                raise error(libvirt.VIR_ERR_NO_DOMAIN_CHECKPOINT)
+            if name not in objs:
+                cp = MagicMock()
+                cp.getName.return_value = name
+                cp.getXMLDesc.return_value = checkpoints[name]
+                cp.delete.side_effect = lambda flags, n=name: self.on_delete(n, flags, checkpoints)
+                objs[name] = cp
+            return objs[name]
+
+        p.instance.checkpointLookupByName.side_effect = lookup
+        p.instance.listAllCheckpoints.side_effect = lambda flags=0: [lookup(n) for n in list(checkpoints)]
+
+        def redefine(xml, flags):
+            name = etree.fromstring(xml).findtext("name")
+            self.redefined.append((name, flags, xml))
+            checkpoints[name] = "<domaincheckpoint/>"
+
+        p.instance.checkpointCreateXML.side_effect = redefine
+        return p
+
+    gone = set()
+
+    def on_delete(self, name, flags, checkpoints):
+        if flags == 0 and name in self.gone:
+            raise error(libvirt.VIR_ERR_INTERNAL_ERROR)  # its bitmap is not in the disk
+        self.deleted.append((name, flags))
+        checkpoints.pop(name)
+
+    def test_a_checkpoint_is_usable_only_with_a_size_for_every_disk(self):
+        sized = ("<domaincheckpoint><disks><disk name='vda' checkpoint='bitmap' size='0'/>"
+                 "<disk name='vdb' checkpoint='bitmap' size='4096'/></disks></domaincheckpoint>")
+        lost = sized.replace(" size='4096'", "")  # libvirt leaves size out for a lost or invalid bitmap
+        p = self.proxy({"wvc-a": sized, "wvc-b": lost})
+        self.assertTrue(p.checkpoint_usable("wvc-a", ["vda", "vdb"]))
+        self.assertFalse(p.checkpoint_usable("wvc-b", ["vda", "vdb"]))
+        self.assertFalse(p.checkpoint_usable("wvc-a", ["vda", "vdb", "vdc"]))
+        self.assertFalse(p.checkpoint_usable("wvc-x", ["vda"]))  # not on this host (after a migration)
+        p.instance.checkpointLookupByName("wvc-a").getXMLDesc.assert_called_with(libvirt.VIR_DOMAIN_CHECKPOINT_XML_SIZE)
+
+    def test_pruning_keeps_the_anchors_and_removes_orphan_bitmaps(self):
+        p = self.proxy({"wvc-keep": "<x/>", "wvc-old": "<x/>", "other": "<x/>"})
+        self.gone = {"wvc-lost"}
+        p.prune_checkpoints(keep={"wvc-keep"}, known={"wvc-keep": 1, "wvc-old": 2, "wvc-orphan": 3, "wvc-lost": 4},
+                            devs=["vda"])
+        self.assertEqual(sorted(self.deleted), [("wvc-lost", libvirt.VIR_DOMAIN_CHECKPOINT_DELETE_METADATA_ONLY),
+                                                ("wvc-old", 0), ("wvc-orphan", 0)])
+        # a name libvirt does not list is redefined first, so its bitmap goes with it
+        self.assertEqual([(n, f) for n, f, _x in self.redefined], [("wvc-lost", libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE),
+                                                                  ("wvc-orphan", libvirt.VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE)])
+        xml = etree.fromstring(dict((n, x) for n, _f, x in self.redefined)["wvc-orphan"])
+        self.assertEqual((xml.findtext("creationTime"), xml.xpath("disks/disk/@bitmap")), ("3", ["wvc-orphan"]))
+
+    def test_metadata_only_drop_offline(self):
+        p = self.proxy({"wvc-a": "<x/>", "wvc-b": "<x/>", "other": "<x/>"})
+        p.drop_checkpoint_metadata()
+        self.assertEqual(sorted(self.deleted), [("wvc-a", libvirt.VIR_DOMAIN_CHECKPOINT_DELETE_METADATA_ONLY),
+                                                ("wvc-b", libvirt.VIR_DOMAIN_CHECKPOINT_DELETE_METADATA_ONLY)])
+
+    def test_an_incremental_backup_names_its_base_and_checkpoint(self):
+        p = wvmBackup.__new__(wvmBackup)
+        p.instance = MagicMock()
+        p.begin_clone_backup([{"dev": "vda", "path": "/b/x.qcow2", "format": "qcow2"}], incremental="wvc-a",
+                             checkpoint="wvc-b")
+        backup_xml, checkpoint_xml, _flags = p.instance.backupBegin.call_args.args
+        self.assertEqual(etree.fromstring(backup_xml).findtext("incremental"), "wvc-a")
+        cp = etree.fromstring(checkpoint_xml)
+        self.assertEqual((cp.findtext("name"), cp.xpath("disks/disk/@name")), ("wvc-b", ["vda"]))
+        p.begin_clone_backup([{"dev": "vda", "path": "/b/x.qcow2", "format": "qcow2"}])
+        self.assertIsNone(etree.fromstring(p.instance.backupBegin.call_args.args[0]).find("incremental"))
+        self.assertIsNone(p.instance.backupBegin.call_args.args[1])
+
+    def test_an_incremental_target_has_its_base_as_backing_file(self):
+        p = wvmBackup.__new__(wvmBackup)
+        p.wvm = MagicMock()
+        p.make_live_targets([{"dev": "vda", "capacity": GIB, "format": "qcow2"}], "b1", {"vda": "wvc-n-vda.qcow2"}, 107, 107,
+                            backing={"vda": "wvc-p-vda.qcow2"})
+        vol = etree.fromstring(p.wvm.storagePoolLookupByName.return_value.createXML.call_args.args[0])
+        # relative: the target pool's directory may differ per host
+        self.assertEqual((vol.findtext("backingStore/path"), vol.xpath("string(backingStore/format/@type)")),
+                         ("wvc-p-vda.qcow2", "qcow2"))

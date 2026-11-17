@@ -25,6 +25,7 @@ from libvirt import (
     VIR_DOMAIN_XML_SECURE,
     VIR_DOMAIN_XML_INACTIVE,
     VIR_DOMAIN_XML_MIGRATABLE,
+    VIR_DOMAIN_CHECKPOINT_DELETE_METADATA_ONLY,
     VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA,
     VIR_DOMAIN_UNDEFINE_KEEP_NVRAM,
     VIR_ERR_NO_DOMAIN,
@@ -2104,6 +2105,8 @@ class wvmInstance(wvmConnect):
         if quiesce:
             self.ping_agent()
             flags |= VIR_DOMAIN_SNAPSHOT_CREATE_QUIESCE
+        if not self.instance.isActive():  # libvirt 11.10 makes no offline external snapshot while a checkpoint exists
+            self.drop_checkpoint_metadata()
         self.instance.snapshotCreateXML(xml, flags)
         self._refresh_pools_after_snapshot()
 
@@ -2756,23 +2759,46 @@ class wvmInstance(wvmConnect):
             self._refuse_taken(vol.storagePoolLookupByVolume(), clone_data["disk-" + dev])
 
     def create_clone_target(self, target, owner_uid, owner_gid):
-        """An empty volume for a copied disk; libvirt refuses one that exists.
-        Returns its path."""
+        """An empty volume for a copied disk, with target["backing"] (a file
+        name in the same pool) as its backing file when given; libvirt
+        refuses one that exists. Returns its path."""
         pool = self.wvm.storagePoolLookupByName(target["pool"])
         xml = self._clone_volume_xml(target["name"], target["capacity"], target["format"], owner_uid, owner_gid)
+        if target.get("backing"):  # an incremental backup's: the file of the backup it builds on, in its directory
+            tree = etree.fromstring(xml)
+            store = etree.SubElement(tree, "backingStore")
+            etree.SubElement(store, "path").text = target["backing"]
+            etree.SubElement(store, "format", type="qcow2")
+            xml = etree.tostring(tree).decode()
         return pool.createXML(xml, 0).path()
 
-    def begin_clone_backup(self, targets):
+    def drop_checkpoint_metadata(self):
+        """The backups' checkpoints (wvc-) of a shut-off VM forgotten, as
+        libvirt deletes bitmaps only of a running one: the next scheduled
+        backup is full, and removes the bitmaps left (prune_checkpoints)."""
+        for checkpoint in self.instance.listAllCheckpoints(0):
+            if checkpoint.getName().startswith("wvc-"):
+                checkpoint.delete(VIR_DOMAIN_CHECKPOINT_DELETE_METADATA_ONLY)
+
+    def begin_clone_backup(self, targets, incremental=None, checkpoint=None):
         """Starts libvirt's push backup of the targets' disks into their
-        volumes. The VM keeps running when the guest shuts down meanwhile."""
+        volumes: of the blocks changed since the checkpoint incremental only,
+        when given, and making the checkpoint checkpoint of the disks, when
+        given. The VM keeps running when the guest shuts down meanwhile."""
         disks = "".join(
             f"<disk name='{util.xml_escape(t['dev'])}' backup='yes' type='file'>"
             f"<target file='{util.xml_escape(t['path'])}'/><driver type='{util.xml_escape(t['format'])}'/></disk>"
             for t in targets
         )
+        since = f"<incremental>{util.xml_escape(incremental)}</incremental>" if incremental else ""
+        checkpoint_xml = None
+        if checkpoint:
+            checkpoint_xml = (f"<domaincheckpoint><name>{util.xml_escape(checkpoint)}</name><disks>"
+                              + "".join(f"<disk name='{util.xml_escape(t['dev'])}'/>" for t in targets)
+                              + "</disks></domaincheckpoint>")
         self.instance.backupBegin(
-            f"<domainbackup mode='push'><disks>{disks}</disks></domainbackup>",
-            None,
+            f"<domainbackup mode='push'>{since}<disks>{disks}</disks></domainbackup>",
+            checkpoint_xml,
             VIR_DOMAIN_BACKUP_BEGIN_REUSE_EXTERNAL | VIR_DOMAIN_BACKUP_BEGIN_PRESERVE_SHUTDOWN_DOMAIN,
         )
 
