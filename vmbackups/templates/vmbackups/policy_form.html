@@ -19,4 +19,5 @@
     {% bootstrap_field form.enabled %}
     <p class="small text-body-secondary">{% trans "Each VM is backed up once a day, starting at the time; a VM that has not started within 6 hours waits for the next day. Older backups of each VM beyond the number kept are deleted, a chain of incremental backups once all of it is beyond; backups taken by hand are not." %}</p>
     <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
+    <a class="btn btn-outline-secondary ms-1" href="{% url 'vmbackups:policies' %}">{% trans "Cancel" %}</a>
 </form>

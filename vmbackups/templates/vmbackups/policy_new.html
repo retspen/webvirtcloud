@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "New schedule" %} - {% trans "Backup schedules" %}{% endblock %}
+{% block style %}<link href="{% static 'css/tom-select.bootstrap5.min.css' %}" rel="stylesheet">{% endblock %}
+
+{% block page_heading %}<a href="{% url 'vmbackups:policies' %}">{% trans "Schedules" %}</a> / {% trans "New schedule" %}{% endblock page_heading %}
+
+{% block content %}
+    <div class="card" style="max-width: 48rem;">
+        <div class="card-body">{% include "vmbackups/policy_form.html" %}</div>
+    </div>
+{% endblock %}
+{% block script %}
+<script src="{% static 'js/tom-select.complete.min.js' %}"></script>
+<script src="{% static 'js/searchable_select.js' %}"></script>
+{% endblock %}

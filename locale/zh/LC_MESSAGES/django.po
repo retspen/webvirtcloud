@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 19:05+0000\n"
+"POT-Creation-Date: 2026-11-17 19:26+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -73,8 +73,8 @@ msgstr "无效的密钥"
 #: networks/templates/network.html:373 nwfilters/templates/nwfilters.html:29
 #: storages/templates/storage.html:123 virtsecrets/forms.py:34
 #: virtsecrets/forms.py:36 vmbackups/forms.py:23 vmbackups/forms.py:36
-#: vmbackups/forms.py:81 vmbackups/templates/vmbackups/policies.html:16
-#: vmbackups/templates/vmbackups/targets.html:17
+#: vmbackups/forms.py:81 vmbackups/templates/vmbackups/policies.html:17
+#: vmbackups/templates/vmbackups/targets.html:18
 msgid "Name"
 msgstr "名称"
 
@@ -220,7 +220,7 @@ msgstr "用户页面导航"
 #: accounts/templates/account.html:50 accounts/templates/account.html:58
 #: admin/forms.py:210 computes/templates/computes/list.html:33
 #: computes/templates/computes/list.html:60 computes/templates/overview.html:90
-#: instances/views.py:263 vmbackups/templates/vmbackups/policies.html:16
+#: instances/views.py:263 vmbackups/templates/vmbackups/policies.html:17
 msgid "VMs"
 msgstr "虚拟机"
 
@@ -323,6 +323,8 @@ msgstr "您在此处保持登录；您的其他会话将结束。"
 #: templates/common/confirm_delete.html:25 templates/common/form.html:27
 #: virtsecrets/templates/create_secret_block.html:48
 #: virtsecrets/templates/secrets.html:106
+#: vmbackups/templates/vmbackups/policy_form.html:22
+#: vmbackups/templates/vmbackups/target_new.html:18
 msgid "Cancel"
 msgstr "取消"
 
@@ -539,7 +541,7 @@ msgstr "为用户添加密钥表单"
 #: instances/templates/instances/boot_device.html:17
 #: networks/templates/network.html:134 nwfilters/templates/nwfilter.html:45
 #: vmbackups/templates/vmbackups/target.html:64
-#: vmbackups/templates/vmbackups/targets.html:40
+#: vmbackups/templates/vmbackups/target_new.html:17
 msgid "Add"
 msgstr "添加"
 
@@ -792,11 +794,12 @@ msgstr "磁盘"
 #: admin/forms.py:214 instances/templates/instance.html:112
 #: templates/navbar.html:21 vmbackups/templates/vmbackups/index.html:7
 #: vmbackups/templates/vmbackups/index.html:9
-#: vmbackups/templates/vmbackups/policies.html:9
+#: vmbackups/templates/vmbackups/policies.html:8
 #: vmbackups/templates/vmbackups/restore.html:9
 #: vmbackups/templates/vmbackups/restore_disk.html:9
 #: vmbackups/templates/vmbackups/restore_over.html:8
-#: vmbackups/templates/vmbackups/targets.html:17
+#: vmbackups/templates/vmbackups/targets.html:7
+#: vmbackups/templates/vmbackups/targets.html:18
 msgid "Backups"
 msgstr "备份"
 
@@ -3972,7 +3975,7 @@ msgstr "折叠或展开 %(name)s"
 
 #: instances/templates/allinstances_index_grouped.html:40
 #: nwfilters/templates/nwfilters.html:48
-#: vmbackups/templates/vmbackups/policies.html:23
+#: vmbackups/templates/vmbackups/policies.html:24
 #, python-format
 msgid "%(counter)s VM"
 msgid_plural "%(counter)s VMs"
@@ -6268,7 +6271,7 @@ msgstr "仍在运行的搜索过多；请稍后再试。"
 #: storages/templates/storage.html:91
 #: vmbackups/templates/vmbackups/index.html:28
 #: vmbackups/templates/vmbackups/index.html:48
-#: vmbackups/templates/vmbackups/policies.html:17
+#: vmbackups/templates/vmbackups/policies.html:18
 #: vmbackups/templates/vmbackups/vm_tab.html:42
 msgid "State"
 msgstr "状态"
@@ -9243,7 +9246,7 @@ msgstr "某计算节点的所有虚拟机"
 msgid "Or these VMs"
 msgstr "或这些虚拟机"
 
-#: vmbackups/forms.py:82 vmbackups/templates/vmbackups/policies.html:16
+#: vmbackups/forms.py:82 vmbackups/templates/vmbackups/policies.html:17
 msgid "Daily at"
 msgstr "每天时间"
 
@@ -9259,7 +9262,7 @@ msgstr "每 N 次备份进行一次完整备份"
 msgid "Require frozen file systems"
 msgstr "要求冻结文件系统"
 
-#: vmbackups/forms.py:84 vmbackups/templates/vmbackups/policies.html:28
+#: vmbackups/forms.py:84 vmbackups/templates/vmbackups/policies.html:29
 msgid "Enabled"
 msgstr "已启用"
 
@@ -9641,16 +9644,19 @@ msgid ""
 msgstr "删除 %(vm)s 于 %(time)s 的备份？其文件将从 %(target)s 中移除；此操作无法撤销。"
 
 #: vmbackups/templates/vmbackups/index.html:11
-#: vmbackups/templates/vmbackups/policies.html:9
+#: vmbackups/templates/vmbackups/policies.html:8
 #: vmbackups/templates/vmbackups/policy.html:9
+#: vmbackups/templates/vmbackups/policy_new.html:8
 msgid "Schedules"
 msgstr "计划"
 
 #: vmbackups/templates/vmbackups/index.html:12
 #: vmbackups/templates/vmbackups/target.html:7
 #: vmbackups/templates/vmbackups/target.html:9
-#: vmbackups/templates/vmbackups/targets.html:6
-#: vmbackups/templates/vmbackups/targets.html:8
+#: vmbackups/templates/vmbackups/target_new.html:6
+#: vmbackups/templates/vmbackups/target_new.html:8
+#: vmbackups/templates/vmbackups/targets.html:5
+#: vmbackups/templates/vmbackups/targets.html:7
 msgid "Backup targets"
 msgstr "备份目标"
 
@@ -9660,7 +9666,7 @@ msgstr "虚拟机名称"
 
 #: vmbackups/templates/vmbackups/index.html:21
 #: vmbackups/templates/vmbackups/index.html:47
-#: vmbackups/templates/vmbackups/policies.html:16
+#: vmbackups/templates/vmbackups/policies.html:17
 #: vmbackups/templates/vmbackups/vm_tab.html:42
 msgid "Target"
 msgstr "目标"
@@ -9716,43 +9722,52 @@ msgstr "还没有备份。请在虚拟机的备份选项卡中备份虚拟机。
 
 #: vmbackups/templates/vmbackups/policies.html:6
 #: vmbackups/templates/vmbackups/policy.html:6
+#: vmbackups/templates/vmbackups/policy_new.html:5
 msgid "Backup schedules"
 msgstr "备份计划"
 
-#: vmbackups/templates/vmbackups/policies.html:17
+#: vmbackups/templates/vmbackups/policies.html:10
+#: vmbackups/templates/vmbackups/policy_new.html:5
+#: vmbackups/templates/vmbackups/policy_new.html:8
+msgid "New schedule"
+msgstr "新建计划"
+
+#: vmbackups/templates/vmbackups/policies.html:18
 msgid "Backups kept"
 msgstr "保留的备份数"
 
-#: vmbackups/templates/vmbackups/policies.html:17
+#: vmbackups/templates/vmbackups/policies.html:18
 msgid "Full backup"
 msgstr "完整备份"
 
-#: vmbackups/templates/vmbackups/policies.html:23
+#: vmbackups/templates/vmbackups/policies.html:24
 #, python-format
 msgid "Every VM of %(compute)s"
 msgstr "%(compute)s 的所有虚拟机"
 
-#: vmbackups/templates/vmbackups/policies.html:27
+#: vmbackups/templates/vmbackups/policies.html:28
 msgid "Every backup"
 msgstr "每次备份"
 
-#: vmbackups/templates/vmbackups/policies.html:27
+#: vmbackups/templates/vmbackups/policies.html:28
 #, python-format
 msgid "Every %(n)s backups"
 msgstr "每 %(n)s 次备份一次"
 
-#: vmbackups/templates/vmbackups/policies.html:28
+#: vmbackups/templates/vmbackups/policies.html:29
 #: vmbackups/templates/vmbackups/vm_tab.html:35
 msgid "Disabled"
 msgstr "已禁用"
 
-#: vmbackups/templates/vmbackups/policies.html:35
+#: vmbackups/templates/vmbackups/policies.html:36
 msgid "No backup schedule yet."
 msgstr "还没有备份计划。"
 
-#: vmbackups/templates/vmbackups/policies.html:39
-msgid "Add a backup schedule"
-msgstr "添加备份计划"
+#: vmbackups/templates/vmbackups/policies.html:36
+msgid ""
+"A schedule backs chosen VMs, or every VM of a compute, up every day and keeps"
+" the newest."
+msgstr "计划每天备份所选虚拟机或某计算节点的全部虚拟机，并保留最新的备份。"
 
 #: vmbackups/templates/vmbackups/policy.html:12
 #, python-format
@@ -9940,24 +9955,27 @@ msgstr "要删除此备份目标吗？其存储池仍保留在主机上。"
 msgid "Delete target"
 msgstr "删除目标"
 
-#: vmbackups/templates/vmbackups/targets.html:11
+#: vmbackups/templates/vmbackups/target_new.html:6
+#: vmbackups/templates/vmbackups/target_new.html:8
+#: vmbackups/templates/vmbackups/targets.html:9
+msgid "New target"
+msgstr "新建目标"
+
+#: vmbackups/templates/vmbackups/target_new.html:11
+#: vmbackups/templates/vmbackups/targets.html:12
 msgid ""
 "A backup target is a directory or NFS storage pool made on the hosts. Use "
 "storage apart from the VMs' disks: a target on the same storage is lost with "
 "it."
 msgstr "备份目标是在主机上创建的目录或 NFS 存储池。请使用与虚拟机磁盘分开的存储：位于同一存储上的目标会随之一起丢失。"
 
-#: vmbackups/templates/vmbackups/targets.html:17
+#: vmbackups/templates/vmbackups/targets.html:18
 msgid "Storage pools"
 msgstr "存储池"
 
-#: vmbackups/templates/vmbackups/targets.html:31
+#: vmbackups/templates/vmbackups/targets.html:32
 msgid "No backup target yet."
 msgstr "还没有备份目标。"
-
-#: vmbackups/templates/vmbackups/targets.html:35
-msgid "Add a backup target"
-msgstr "添加备份目标"
 
 #: vmbackups/templates/vmbackups/vm_tab.html:11
 #: vmbackups/templates/vmbackups/vm_tab.html:26
@@ -10002,48 +10020,53 @@ msgstr "没有向虚拟机所有者开放的备份目标在此虚拟机的主机
 msgid "No backup target has a storage pool on this VM's host."
 msgstr "没有备份目标在此虚拟机的主机上有存储池。"
 
-#: vmbackups/views.py:83 vmbackups/views.py:111
+#: vmbackups/views.py:67
+#, python-format
+msgid "Backup target %(name)s is added."
+msgstr "已添加备份目标 %(name)s。"
+
+#: vmbackups/views.py:90 vmbackups/views.py:118
 #, python-format
 msgid "Backup target %(target)s has backups; delete them first"
 msgstr "备份目标 %(target)s 中有备份；请先删除它们"
 
-#: vmbackups/views.py:86
+#: vmbackups/views.py:93
 #, python-format
 msgid "Backup target %(target)s has schedules; delete them first"
 msgstr "备份目标 %(target)s 有计划；请先删除它们"
 
-#: vmbackups/views.py:95
+#: vmbackups/views.py:102
 #, python-format
 msgid "VM owners with the backup permission may now use %(target)s."
 msgstr "拥有备份权限的虚拟机所有者现在可以使用 %(target)s。"
 
-#: vmbackups/views.py:96
+#: vmbackups/views.py:103
 #, python-format
 msgid "Only superusers use %(target)s now."
 msgstr "现在仅超级用户使用 %(target)s。"
 
-#: vmbackups/views.py:128
+#: vmbackups/views.py:135
 #, python-format
 msgid ""
 "Storage pool %(pool)s of %(compute)s is not the same directory as storage "
 "pool %(other)s of %(other_compute)s"
 msgstr "%(compute)s 的存储池 %(pool)s 与 %(other_compute)s 的存储池 %(other)s 不是同一目录"
 
-#: vmbackups/views.py:164
+#: vmbackups/views.py:171
 msgid "Choose a backup target"
 msgstr "请选择备份目标"
 
-#: vmbackups/views.py:200
+#: vmbackups/views.py:207
 #, python-format
 msgid "The backup of %(vm)s taken %(time)s is being deleted."
 msgstr "正在删除 %(vm)s 于 %(time)s 的备份。"
 
-#: vmbackups/views.py:290 vmbackups/views.py:313
+#: vmbackups/views.py:304 vmbackups/views.py:325
 #, python-format
 msgid "Backup schedule %(name)s is saved."
 msgstr "备份计划 %(name)s 已保存。"
 
-#: vmbackups/views.py:304
+#: vmbackups/views.py:316
 #, python-format
 msgid "Backup schedule %(name)s is deleted; its backups stay."
 msgstr "备份计划 %(name)s 已删除；其备份保留。"

@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load bootstrap_icons %}
-{% load django_bootstrap5 %}
 
 {% block title %}{% trans "Backup targets" %}{% endblock %}
 
-{% block page_heading %}{% trans "Backup targets" %}{% endblock page_heading %}
+{% block page_heading %}<a href="{% url 'vmbackups:index' %}">{% trans "Backups" %}</a> / {% trans "Backup targets" %}{% endblock page_heading %}
+
+{% block page_heading_extra %}<a class="btn btn-primary btn-sm" href="{% url 'vmbackups:target_new' %}">{% bs_icon 'plus' %} {% trans "New target" %}</a>{% endblock page_heading_extra %}
 
 {% block content %}
     <p class="text-body-secondary">{% blocktrans %}A backup target is a directory or NFS storage pool made on the hosts. Use storage apart from the VMs' disks: a target on the same storage is lost with it.{% endblocktrans %}</p>
@@ -31,14 +32,4 @@
         <div class="alert alert-info">{% trans "No backup target yet." %}</div>
     {% endif %}
 
-    <div class="card" style="max-width: 40rem;">
-        <div class="card-header fw-semibold">{% trans "Add a backup target" %}</div>
-        <div class="card-body">
-            <form method="post">
-                {% csrf_token %}
-                {% bootstrap_form form %}
-                <button type="submit" class="btn btn-primary">{% bs_icon 'plus' %} {% trans "Add" %}</button>
-            </form>
-        </div>
-    </div>
 {% endblock %}

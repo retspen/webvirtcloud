@@ -29,7 +29,7 @@ class PolicyPageTests(TestCase):
     def post(self, **fields):
         data = {"name": "nightly", "target": self.target.pk, "time": "02:00", "keep": "7", "full_every": "1", "enabled": "on",
                 **fields}
-        return self.client.post(reverse("vmbackups:policies"), data)
+        return self.client.post(reverse("vmbackups:policy_new"), data)
 
     def test_a_schedule_of_chosen_vms(self):
         response = self.post(instances=[self.vm1.pk])
@@ -59,6 +59,15 @@ class PolicyPageTests(TestCase):
         response = self.post(compute=self.c2.pk)
         self.assertContains(response, "has no storage pool on h2")
         self.assertFalse(BackupPolicy.objects.exists())
+
+    def test_the_list_leads_to_the_new_schedule_page(self):
+        from lxml import html as lxml_html
+
+        page = lxml_html.fromstring(self.client.get(reverse("vmbackups:policies")).content)
+        self.assertEqual(page.xpath("//a[@href=$u]/@href", u=reverse("vmbackups:policy_new")), [reverse("vmbackups:policy_new")])
+        self.assertFalse(page.xpath("//div[@role='main']//form[@method='post']"))  # no form on the list
+        new = lxml_html.fromstring(self.client.get(reverse("vmbackups:policy_new")).content)
+        self.assertTrue(new.xpath("//input[@name='name']"))
 
     def test_keep_and_full_every_at_least_one(self):
         self.assertEqual(self.post(instances=[self.vm1.pk], keep="0").status_code, 200)

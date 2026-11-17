@@ -4,9 +4,10 @@
 {% load bootstrap_icons %}
 
 {% block title %}{% trans "Backup schedules" %}{% endblock %}
-{% block style %}<link href="{% static 'css/tom-select.bootstrap5.min.css' %}" rel="stylesheet">{% endblock %}
 
 {% block page_heading %}<a href="{% url 'vmbackups:index' %}">{% trans "Backups" %}</a> / {% trans "Schedules" %}{% endblock page_heading %}
+
+{% block page_heading_extra %}<a class="btn btn-primary btn-sm" href="{% url 'vmbackups:policy_new' %}">{% bs_icon 'plus' %} {% trans "New schedule" %}</a>{% endblock page_heading_extra %}
 
 {% block content %}
     {% if policies %}
@@ -32,15 +33,7 @@
         </table>
     </div>
     {% else %}
-        <div class="alert alert-info">{% trans "No backup schedule yet." %}</div>
+        <div class="alert alert-info">{% trans "No backup schedule yet." %} {% trans "A schedule backs chosen VMs, or every VM of a compute, up every day and keeps the newest." %}</div>
     {% endif %}
 
-    <div class="card" style="max-width: 48rem;">
-        <div class="card-header fw-semibold">{% trans "Add a backup schedule" %}</div>
-        <div class="card-body">{% include "vmbackups/policy_form.html" %}</div>
-    </div>
-{% endblock %}
-{% block script %}
-<script src="{% static 'js/tom-select.complete.min.js' %}"></script>
-<script src="{% static 'js/searchable_select.js' %}"></script>
 {% endblock %}

@@ -45,6 +45,13 @@ def connect(compute):
 
 @superuser_only
 def targets(request):
+    rows = BackupTarget.objects.annotate(backup_count=Count("backups")).prefetch_related("pools__compute").order_by("name")
+    return render(request, "vmbackups/targets.html", {"targets": rows})
+
+
+@superuser_only
+def target_new(request):
+    """A new backup target, with its first host's storage pool."""
     form = TargetForm(request.POST or None)
     if form.is_valid():
         data = form.cleaned_data
@@ -57,9 +64,9 @@ def targets(request):
         except libvirtError as err:
             form.add_error("pool", str(err))
         else:
+            messages.success(request, _("Backup target %(name)s is added.") % {"name": target.name})
             return redirect("vmbackups:target", target.id)
-    rows = BackupTarget.objects.annotate(backup_count=Count("backups")).prefetch_related("pools__compute").order_by("name")
-    return render(request, "vmbackups/targets.html", {"targets": rows, "form": form})
+    return render(request, "vmbackups/target_new.html", {"form": form})
 
 
 def pool_state(row):
@@ -279,7 +286,14 @@ def restore_disk(request, uuid):
 
 @superuser_only
 def policies(request):
-    """The backup schedules, and a new one; the superuser who saves one is its owner, whom its jobs run as."""
+    """The backup schedules."""
+    rows = BackupPolicy.objects.select_related("target", "compute", "owner").annotate(vm_count=Count("instances"))
+    return render(request, "vmbackups/policies.html", {"policies": rows.order_by("name")})
+
+
+@superuser_only
+def policy_new(request):
+    """A new backup schedule; the superuser who saves one is its owner, whom its jobs run as."""
     form = PolicyForm(request.POST or None)
     if form.is_valid():
         with audit(request, None, f"Backup schedule {form.cleaned_data['name']}", "add"):
@@ -289,9 +303,7 @@ def policies(request):
             form.save_m2m()
         messages.success(request, _("Backup schedule %(name)s is saved.") % {"name": policy.name})
         return redirect("vmbackups:policies")
-    rows = BackupPolicy.objects.select_related("target", "compute", "owner").annotate(vm_count=Count("instances"))
-    return render(request, "vmbackups/policies.html", {"policies": rows.order_by("name"), "form": form,
-                                                       "time_zone": settings.TIME_ZONE})
+    return render(request, "vmbackups/policy_new.html", {"form": form, "time_zone": settings.TIME_ZONE})
 
 
 @superuser_only

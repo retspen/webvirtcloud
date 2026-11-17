@@ -87,7 +87,7 @@ class TargetPageTests(TestCase):
 
     def test_a_target_is_added_with_its_pool_uuid(self, mock_pool, mock_conn):
         mock_pool.return_value = pool_mock()
-        response = self.client.post(reverse("vmbackups:targets"), {"name": "nfs1", "compute": self.c1.id, "pool": "b1"})
+        response = self.client.post(reverse("vmbackups:target_new"), {"name": "nfs1", "compute": self.c1.id, "pool": "b1"})
         target = BackupTarget.objects.get(name="nfs1")
         self.assertRedirects(response, reverse("vmbackups:target", args=[target.id]), fetch_redirect_response=False)
         row = target.pools.get()
@@ -95,7 +95,7 @@ class TargetPageTests(TestCase):
 
     def test_a_refused_pool_adds_no_target(self, mock_pool, mock_conn):
         mock_pool.side_effect = OperationError("Storage pool %(pool)s is not usable", pool="b1")
-        response = self.client.post(reverse("vmbackups:targets"), {"name": "nfs1", "compute": self.c1.id, "pool": "b1"})
+        response = self.client.post(reverse("vmbackups:target_new"), {"name": "nfs1", "compute": self.c1.id, "pool": "b1"})
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Storage pool b1 is not usable")
         self.assertFalse(BackupTarget.objects.exists())
