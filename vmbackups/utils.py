@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.utils.translation import gettext, gettext_noop
 from libvirt import libvirtError
 from lxml import etree
@@ -6,7 +7,7 @@ from storages.forms import inside
 from vrtManager.backup import wvmBackup
 from vrtManager.util import InUse
 
-from .models import Backup, BackupTarget, BackupTargetPool
+from .models import Backup, BackupPolicy, BackupTarget, BackupTargetPool
 
 
 def inside_vm_pool(conn, pool):
@@ -53,4 +54,6 @@ def vm_tab(instance):
             wvmBackup(c.hostname, c.login, c.password, c.type, instance.name, uuid=instance.uuid).backup_plan()
         except libvirtError as err:
             problem = str(err)
-    return {"rows": instance.backups.select_related("target", "operation"), "targets": targets, "problem": problem}
+    schedules = BackupPolicy.objects.filter(Q(instances=instance) | Q(compute=instance.compute_id)).distinct()
+    return {"rows": instance.backups.select_related("target", "operation"), "targets": targets, "problem": problem,
+            "schedules": schedules.order_by("name")}

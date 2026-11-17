@@ -75,7 +75,8 @@ msgstr "Geçersiz anahtar"
 #: interfaces/templates/interface.html:119 networks/templates/network.html:145
 #: networks/templates/network.html:373 nwfilters/templates/nwfilters.html:29
 #: storages/templates/storage.html:123 virtsecrets/forms.py:34
-#: virtsecrets/forms.py:36 vmbackups/forms.py:22 vmbackups/forms.py:35
+#: virtsecrets/forms.py:36 vmbackups/forms.py:23 vmbackups/forms.py:36
+#: vmbackups/forms.py:57 vmbackups/templates/vmbackups/policies.html:16
 #: vmbackups/templates/vmbackups/targets.html:17
 msgid "Name"
 msgstr "Ad"
@@ -220,7 +221,7 @@ msgstr "Kullanıcı bölümleri"
 #: accounts/templates/account.html:50 accounts/templates/account.html:58
 #: admin/forms.py:207 computes/templates/computes/list.html:33
 #: computes/templates/computes/list.html:60 computes/templates/overview.html:90
-#: instances/views.py:263
+#: instances/views.py:263 vmbackups/templates/vmbackups/policies.html:16
 msgid "VMs"
 msgstr "Sanal makineler"
 
@@ -965,6 +966,7 @@ msgstr "Mesaj"
 
 #: admin/templates/admin/logs.html:43
 #: instances/templates/instances/stats_tab.html:72
+#: vmbackups/templates/vmbackups/policy.html:29
 msgid "Result"
 msgstr "Sonuç"
 
@@ -983,7 +985,8 @@ msgstr "Tamamlandı"
 
 #: admin/templates/admin/logs.html:56 admin/views.py:395 logs/views.py:18
 #: operations/templates/operations/job.html:107
-#: vmbackups/templates/vmbackups/index.html:31
+#: vmbackups/templates/vmbackups/index.html:32
+#: vmbackups/templates/vmbackups/policy.html:38
 #: vmbackups/templates/vmbackups/state.html:1
 msgid "Failed"
 msgstr "Başarısız"
@@ -2461,6 +2464,7 @@ msgstr "hiçbiri"
 #: networks/templates/network.html:337 networks/templates/network.html:379
 #: networks/templates/network.html:406 networks/templates/network.html:445
 #: nwfilters/templates/nwfilter.html:157 templates/common/form.html:28
+#: vmbackups/templates/vmbackups/policy_form.html:18
 msgid "Save"
 msgstr "Kaydet"
 
@@ -3949,7 +3953,7 @@ msgstr "Sunucunun bir havuzunda zaten bulunan bir birim."
 #: instances/templates/create_instance_w2.html:137
 #: instances/templates/create_instance_w2.html:165
 #: instances/templates/instances/move_disk.html:16
-#: instances/templates/instances/settings_tab.html:223 vmbackups/forms.py:13
+#: instances/templates/instances/settings_tab.html:223 vmbackups/forms.py:14
 msgid "Storage pool"
 msgstr "Depolama havuzu"
 
@@ -3961,8 +3965,8 @@ msgstr "Harf, rakam, nokta, tire ve alt çizgi."
 
 #: instances/templates/add_instance_volume.html:44
 #: instances/templates/instances/settings_tab.html:851
-#: vmbackups/templates/vmbackups/index.html:45
-#: vmbackups/templates/vmbackups/vm_tab.html:36
+#: vmbackups/templates/vmbackups/index.html:47
+#: vmbackups/templates/vmbackups/vm_tab.html:41
 msgid "Size"
 msgstr "Boyut"
 
@@ -4121,8 +4125,9 @@ msgstr "Adres"
 
 #: instances/templates/allinstances.html:105 instances/views.py:240
 #: interfaces/templates/interface.html:153 networks/templates/network.html:202
-#: vmbackups/templates/vmbackups/index.html:15
-#: vmbackups/templates/vmbackups/index.html:44
+#: vmbackups/templates/vmbackups/index.html:16
+#: vmbackups/templates/vmbackups/index.html:46
+#: vmbackups/templates/vmbackups/policy.html:29
 msgid "VM"
 msgstr "VM"
 
@@ -4142,6 +4147,7 @@ msgstr "%(name)s öğesini daralt veya genişlet"
 
 #: instances/templates/allinstances_index_grouped.html:40
 #: nwfilters/templates/nwfilters.html:48
+#: vmbackups/templates/vmbackups/policies.html:23
 #, python-format
 msgid "%(counter)s VM"
 msgid_plural "%(counter)s VMs"
@@ -4556,6 +4562,7 @@ msgstr "İstatistikler"
 #: instances/templates/instance.html:112 templates/navbar.html:21
 #: vmbackups/templates/vmbackups/index.html:6
 #: vmbackups/templates/vmbackups/index.html:8
+#: vmbackups/templates/vmbackups/policies.html:9
 #: vmbackups/templates/vmbackups/restore.html:9
 #: vmbackups/templates/vmbackups/targets.html:17
 msgid "Backups"
@@ -6620,9 +6627,10 @@ msgstr "Çok fazla arama hâlâ çalışıyor; birazdan yeniden deneyin."
 #: operations/templates/operations/jobs.html:38
 #: operations/templates/operations/jobs.html:62
 #: storages/templates/storage.html:91
-#: vmbackups/templates/vmbackups/index.html:26
-#: vmbackups/templates/vmbackups/index.html:45
-#: vmbackups/templates/vmbackups/vm_tab.html:36
+#: vmbackups/templates/vmbackups/index.html:27
+#: vmbackups/templates/vmbackups/index.html:47
+#: vmbackups/templates/vmbackups/policies.html:17
+#: vmbackups/templates/vmbackups/vm_tab.html:41
 msgid "State"
 msgstr "Durum"
 
@@ -8286,8 +8294,8 @@ msgstr "Filtre oluştur"
 
 #: nwfilters/templates/nwfilter.html:15 nwfilters/templates/nwfilter.html:54
 #: operations/templates/operations/jobs.html:46
-#: vmbackups/templates/vmbackups/index.html:13
-#: vmbackups/templates/vmbackups/index.html:36
+#: vmbackups/templates/vmbackups/index.html:14
+#: vmbackups/templates/vmbackups/index.html:38
 msgid "Filter"
 msgstr "Filtre"
 
@@ -8325,6 +8333,8 @@ msgid "Parameters"
 msgstr "Parametreler"
 
 #: nwfilters/templates/nwfilter.html:64
+#: vmbackups/templates/vmbackups/index.html:34
+#: vmbackups/templates/vmbackups/state.html:1
 msgid "Missing"
 msgstr "Eksik"
 
@@ -8568,6 +8578,7 @@ msgid "Resolution"
 msgstr "Çözüm"
 
 #: operations/templates/operations/job.html:81
+#: vmbackups/templates/vmbackups/policy.html:36
 msgid "Started"
 msgstr "Başlangıç"
 
@@ -8630,7 +8641,7 @@ msgid "All kinds"
 msgstr "Tüm türler"
 
 #: operations/templates/operations/jobs.html:39
-#: vmbackups/templates/vmbackups/index.html:28
+#: vmbackups/templates/vmbackups/index.html:29
 msgid "All states"
 msgstr "Tüm durumlar"
 
@@ -9724,23 +9735,23 @@ msgstr ""
 "Eski değerin yerini hemen alır; bir parolanın şifrelediği veriler yeniden "
 "şifrelenmez."
 
-#: vmbackups/forms.py:12 vmbackups/forms.py:36
+#: vmbackups/forms.py:13 vmbackups/forms.py:37
 msgid "Compute"
 msgstr "Sunucu"
 
-#: vmbackups/forms.py:28
+#: vmbackups/forms.py:29
 msgid "A backup target with this name exists"
 msgstr "Bu adla bir yedek hedefi zaten var"
 
-#: vmbackups/forms.py:37
+#: vmbackups/forms.py:38
 msgid "Storage pool for the disks"
 msgstr "Diskler için depolama havuzu"
 
-#: vmbackups/forms.py:38
+#: vmbackups/forms.py:39
 msgid "Connect the network"
 msgstr "Ağı bağla"
 
-#: vmbackups/forms.py:39
+#: vmbackups/forms.py:40
 msgid ""
 "The restored guest keeps the VM's addresses and host name: connected beside "
 "the VM, they clash."
@@ -9748,14 +9759,50 @@ msgstr ""
 "Geri yüklenen konuk, sanal makinenin adreslerini ve ana bilgisayar adını "
 "taşır: sanal makinenin yanında ağa bağlanırsa çakışırlar."
 
-#: vmbackups/forms.py:41
+#: vmbackups/forms.py:42
 msgid "Start after restore"
 msgstr "Geri yüklendikten sonra başlat"
 
-#: vmbackups/jobs.py:57
+#: vmbackups/forms.py:57 vmbackups/templates/vmbackups/vm_tab.html:13
+msgid "Backup target"
+msgstr "Yedek hedefi"
+
+#: vmbackups/forms.py:57
+msgid "Every VM of a compute"
+msgstr "Bir sunucunun bütün sanal makineleri"
+
+#: vmbackups/forms.py:58
+msgid "Or these VMs"
+msgstr "Ya da bu sanal makineler"
+
+#: vmbackups/forms.py:58 vmbackups/templates/vmbackups/policies.html:16
+msgid "Daily at"
+msgstr "Her gün saat"
+
+#: vmbackups/forms.py:58
+msgid "Backups to keep of each VM"
+msgstr "Her sanal makineden tutulacak yedek sayısı"
+
+#: vmbackups/forms.py:59 vmbackups/templates/vmbackups/vm_tab.html:21
+msgid "Require frozen file systems"
+msgstr "Dosya sistemlerinin dondurulmasını zorunlu kıl"
+
+#: vmbackups/forms.py:59 vmbackups/templates/vmbackups/policies.html:27
+msgid "Enabled"
+msgstr "Etkin"
+
+#: vmbackups/forms.py:75
+msgid "Choose a compute or VMs, not both"
+msgstr "Bir sunucu ya da sanal makineler seçin, ikisini birden değil"
+
+#: vmbackups/forms.py:80 vmbackups/jobs.py:57
 #, python-format
 msgid "Backup target %(target)s has no storage pool on %(compute)s"
 msgstr "%(target)s yedek hedefinin %(compute)s üzerinde depolama havuzu yok"
+
+#: vmbackups/forms.py:87
+msgid "Keep one backup at least"
+msgstr "En az bir yedek tutun"
 
 #: vmbackups/jobs.py:67
 msgid "The VM must be running, paused or shut off to be backed up"
@@ -9993,6 +10040,12 @@ msgstr ""
 "hedeften kaldırılır."
 
 #: vmbackups/templates/vmbackups/index.html:10
+#: vmbackups/templates/vmbackups/policies.html:9
+#: vmbackups/templates/vmbackups/policy.html:9
+msgid "Schedules"
+msgstr "Zamanlamalar"
+
+#: vmbackups/templates/vmbackups/index.html:11
 #: vmbackups/templates/vmbackups/target.html:7
 #: vmbackups/templates/vmbackups/target.html:9
 #: vmbackups/templates/vmbackups/targets.html:6
@@ -10000,56 +10053,140 @@ msgstr ""
 msgid "Backup targets"
 msgstr "Yedek hedefleri"
 
-#: vmbackups/templates/vmbackups/index.html:16
+#: vmbackups/templates/vmbackups/index.html:17
 msgid "VM name"
 msgstr "Sanal makine adı"
 
-#: vmbackups/templates/vmbackups/index.html:19
-#: vmbackups/templates/vmbackups/index.html:44
-#: vmbackups/templates/vmbackups/vm_tab.html:36
+#: vmbackups/templates/vmbackups/index.html:20
+#: vmbackups/templates/vmbackups/index.html:46
+#: vmbackups/templates/vmbackups/policies.html:16
+#: vmbackups/templates/vmbackups/vm_tab.html:41
 msgid "Target"
 msgstr "Hedef"
 
-#: vmbackups/templates/vmbackups/index.html:21
+#: vmbackups/templates/vmbackups/index.html:22
 msgid "All targets"
 msgstr "Tüm hedefler"
 
-#: vmbackups/templates/vmbackups/index.html:29
+#: vmbackups/templates/vmbackups/index.html:30
 #: vmbackups/templates/vmbackups/state.html:1
 msgid "Ready"
 msgstr "Hazır"
 
-#: vmbackups/templates/vmbackups/index.html:30
+#: vmbackups/templates/vmbackups/index.html:31
 #: vmbackups/templates/vmbackups/state.html:1
 msgid "Creating"
 msgstr "Oluşturuluyor"
 
-#: vmbackups/templates/vmbackups/index.html:32
+#: vmbackups/templates/vmbackups/index.html:33
 #: vmbackups/templates/vmbackups/state.html:1
 msgid "Deleting"
 msgstr "Siliniyor"
 
-#: vmbackups/templates/vmbackups/index.html:44
-#: vmbackups/templates/vmbackups/vm_tab.html:36
+#: vmbackups/templates/vmbackups/index.html:46
+#: vmbackups/templates/vmbackups/vm_tab.html:41
 msgid "Time"
 msgstr "Zaman"
 
-#: vmbackups/templates/vmbackups/index.html:44
-#: vmbackups/templates/vmbackups/vm_tab.html:36
+#: vmbackups/templates/vmbackups/index.html:46
+#: vmbackups/templates/vmbackups/vm_tab.html:41
 msgid "Consistency"
 msgstr "Tutarlılık"
 
-#: vmbackups/templates/vmbackups/index.html:53
+#: vmbackups/templates/vmbackups/index.html:46
+msgid "Schedule"
+msgstr "Zamanlama"
+
+#: vmbackups/templates/vmbackups/index.html:55
 msgid "removed"
 msgstr "kaldırıldı"
 
-#: vmbackups/templates/vmbackups/index.html:67
+#: vmbackups/templates/vmbackups/index.html:60
+msgid "By hand"
+msgstr "Elle"
+
+#: vmbackups/templates/vmbackups/index.html:70
 msgid "No backup matches the filter."
 msgstr "Süzgece uyan yedek yok."
 
-#: vmbackups/templates/vmbackups/index.html:69
+#: vmbackups/templates/vmbackups/index.html:72
 msgid "No backup yet. Back a VM up from its Backups tab."
 msgstr "Henüz yedek yok. Bir sanal makineyi Yedekler sekmesinden yedekleyin."
+
+#: vmbackups/templates/vmbackups/policies.html:6
+#: vmbackups/templates/vmbackups/policy.html:6
+msgid "Backup schedules"
+msgstr "Yedekleme zamanlamaları"
+
+#: vmbackups/templates/vmbackups/policies.html:17
+msgid "Backups kept"
+msgstr "Tutulan yedek"
+
+#: vmbackups/templates/vmbackups/policies.html:23
+#, python-format
+msgid "Every VM of %(compute)s"
+msgstr "%(compute)s üzerindeki bütün sanal makineler"
+
+#: vmbackups/templates/vmbackups/policies.html:27
+#: vmbackups/templates/vmbackups/vm_tab.html:34
+msgid "Disabled"
+msgstr "Devre dışı"
+
+#: vmbackups/templates/vmbackups/policies.html:34
+msgid "No backup schedule yet."
+msgstr "Henüz yedekleme zamanlaması yok."
+
+#: vmbackups/templates/vmbackups/policies.html:38
+msgid "Add a backup schedule"
+msgstr "Yedekleme zamanlaması ekle"
+
+#: vmbackups/templates/vmbackups/policy.html:12
+#, python-format
+msgid "Its jobs run as %(owner)s, who saved it last."
+msgstr "İşleri, onu en son kaydeden %(owner)s olarak çalışır."
+
+#: vmbackups/templates/vmbackups/policy.html:21
+msgid "Delete this schedule? Its backups are kept."
+msgstr "Bu zamanlama silinsin mi? Yedekleri tutulur."
+
+#: vmbackups/templates/vmbackups/policy.html:21
+msgid "Delete schedule"
+msgstr "Zamanlamayı sil"
+
+#: vmbackups/templates/vmbackups/policy.html:25
+msgid "Runs"
+msgstr "Çalışmalar"
+
+#: vmbackups/templates/vmbackups/policy.html:29
+msgid "Day"
+msgstr "Gün"
+
+#: vmbackups/templates/vmbackups/policy.html:36
+msgid "Backup job"
+msgstr "Yedekleme işi"
+
+#: vmbackups/templates/vmbackups/policy.html:37
+msgid "Skipped"
+msgstr "Atlandı"
+
+#: vmbackups/templates/vmbackups/policy.html:47
+msgid "No run yet."
+msgstr "Henüz çalışma yok."
+
+#: vmbackups/templates/vmbackups/policy_form.html:12
+#, python-format
+msgid "Time zone: %(time_zone)s"
+msgstr "Saat dilimi: %(time_zone)s"
+
+#: vmbackups/templates/vmbackups/policy_form.html:17
+msgid ""
+"Each VM is backed up once a day, starting at the time; a VM that has not "
+"started within 6 hours waits for the next day. Older backups of each VM "
+"beyond the number kept are deleted; backups taken by hand are not."
+msgstr ""
+"Her sanal makine günde bir kez, bu saatten başlayarak yedeklenir; 6 saat "
+"içinde başlamayan bir sanal makine ertesi günü bekler. Her sanal makinenin "
+"tutulan sayıyı aşan eski yedekleri silinir; elle alınan yedekler silinmez."
 
 #: vmbackups/templates/vmbackups/restore.html:12
 #, python-format
@@ -10059,6 +10196,10 @@ msgid ""
 msgstr ""
 "%(vm)s sanal makinesinin %(time)s tarihli, %(target)s hedefindeki yedeği "
 "kendi UUID'si ve MAC adresleriyle yeni bir sanal makine olarak geri yüklenir."
+
+#: vmbackups/templates/vmbackups/state.html:1
+msgid "Files of the backup are missing from the target"
+msgstr "Yedeğin dosyaları hedefte yok"
 
 #: vmbackups/templates/vmbackups/target.html:13
 #, python-format
@@ -10138,14 +10279,6 @@ msgstr "Yedek hedefi ekle"
 msgid "Back up now"
 msgstr "Şimdi yedekle"
 
-#: vmbackups/templates/vmbackups/vm_tab.html:13
-msgid "Backup target"
-msgstr "Yedek hedefi"
-
-#: vmbackups/templates/vmbackups/vm_tab.html:21
-msgid "Require frozen file systems"
-msgstr "Dosya sistemlerinin dondurulmasını zorunlu kıl"
-
 #: vmbackups/templates/vmbackups/vm_tab.html:28
 msgid ""
 "A running VM keeps running: its disks are copied from one instant, its file "
@@ -10156,11 +10289,15 @@ msgstr ""
 " konuk ajanı yanıt verirse dosya sistemleri o an için dondurulur, vermezse "
 "yedek çökme tutarlıdır. Bellek saklanmaz."
 
-#: vmbackups/templates/vmbackups/vm_tab.html:53
+#: vmbackups/templates/vmbackups/vm_tab.html:33
+msgid "Schedules:"
+msgstr "Zamanlamalar:"
+
+#: vmbackups/templates/vmbackups/vm_tab.html:58
 msgid "No backup of this VM yet."
 msgstr "Bu sanal makinenin henüz yedeği yok."
 
-#: vmbackups/utils.py:27
+#: vmbackups/utils.py:28
 #, python-format
 msgid ""
 "Volume %(volume)s belongs to a backup of %(vm)s; delete the backup on the "
@@ -10168,7 +10305,7 @@ msgid ""
 msgstr ""
 "%(volume)s birimi %(vm)s yedeğine ait; yedeği Yedekler sayfasından silin"
 
-#: vmbackups/utils.py:37
+#: vmbackups/utils.py:38
 #, python-format
 msgid ""
 "Storage pool %(pool)s is backup target %(target)s; remove it from the target "
@@ -10176,17 +10313,22 @@ msgid ""
 msgstr ""
 "%(pool)s depolama havuzu %(target)s yedek hedefidir; önce hedeften çıkarın"
 
-#: vmbackups/utils.py:49
+#: vmbackups/utils.py:50
 msgid "No backup target has a storage pool on this VM's host."
 msgstr ""
 "Hiçbir yedek hedefinin bu sanal makinenin sunucusunda depolama havuzu yok."
 
-#: vmbackups/views.py:67 vmbackups/views.py:85
+#: vmbackups/views.py:68 vmbackups/views.py:89
 #, python-format
 msgid "Backup target %(target)s has backups; delete them first"
 msgstr "%(target)s yedek hedefinde yedekler var; önce onları silin"
 
-#: vmbackups/views.py:102
+#: vmbackups/views.py:71
+#, python-format
+msgid "Backup target %(target)s has schedules; delete them first"
+msgstr "%(target)s yedek hedefinin zamanlamaları var; önce onları silin"
+
+#: vmbackups/views.py:106
 #, python-format
 msgid ""
 "Storage pool %(pool)s of %(compute)s is not the same directory as storage "
@@ -10195,7 +10337,7 @@ msgstr ""
 "%(compute)s sunucusunun %(pool)s depolama havuzu, %(other_compute)s "
 "sunucusunun %(other)s depolama havuzuyla aynı dizin değil"
 
-#: vmbackups/views.py:134
+#: vmbackups/views.py:138
 msgid "Choose a backup target"
 msgstr "Bir yedek hedefi seçin"
 

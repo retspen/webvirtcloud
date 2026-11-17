@@ -7,7 +7,8 @@
 
 {% block page_heading %}{% trans "Backups" %}{% endblock page_heading %}
 
-{% block page_heading_extra %}<a class="btn btn-outline-primary btn-sm" href="{% url 'vmbackups:targets' %}">{% bs_icon 'hdd-network' %} {% trans "Backup targets" %}</a>{% endblock page_heading_extra %}
+{% block page_heading_extra %}<a class="btn btn-outline-primary btn-sm" href="{% url 'vmbackups:policies' %}">{% bs_icon 'list-task' %} {% trans "Schedules" %}</a>
+<a class="btn btn-outline-primary btn-sm" href="{% url 'vmbackups:targets' %}">{% bs_icon 'hdd-network' %} {% trans "Backup targets" %}</a>{% endblock page_heading_extra %}
 
 {% block content %}
     <form method="get" class="row g-2 mb-3" aria-label="{% trans "Filter" %}">
@@ -30,6 +31,7 @@
                 <option value="creating"{% if state == "creating" %} selected{% endif %}>{% trans "Creating" %}</option>
                 <option value="failed"{% if state == "failed" %} selected{% endif %}>{% trans "Failed" %}</option>
                 <option value="deleting"{% if state == "deleting" %} selected{% endif %}>{% trans "Deleting" %}</option>
+                <option value="missing"{% if state == "missing" %} selected{% endif %}>{% trans "Missing" %}</option>
             </select>
         </div>
         <div class="col-12 col-md-auto d-grid">
@@ -41,7 +43,7 @@
     <div class="table-responsive">
         <table class="table table-hover align-middle" id="backups">
             <thead>
-                <tr><th>{% trans "Time" %}</th><th>{% trans "VM" %}</th><th>{% trans "Target" %}</th><th>{% trans "Consistency" %}</th>
+                <tr><th>{% trans "Time" %}</th><th>{% trans "VM" %}</th><th>{% trans "Target" %}</th><th>{% trans "Consistency" %}</th><th>{% trans "Schedule" %}</th>
                     <th class="text-end">{% trans "Size" %}</th><th>{% trans "State" %}</th><th></th></tr>
             </thead>
             <tbody>
@@ -55,6 +57,7 @@
                     </td>
                     <td>{{ backup.target.name }}</td>
                     <td>{% include "vmbackups/consistency.html" %}</td>
+                    <td>{% if backup.policy %}<a href="{% url 'vmbackups:policy' backup.policy_id %}">{{ backup.policy.name }}</a>{% else %}<span class="text-body-secondary">{% trans "By hand" %}</span>{% endif %}</td>
                     <td class="text-end text-nowrap">{% if backup.size %}{{ backup.size|filesizeformat }}{% else %}–{% endif %}</td>
                     <td>{% include "vmbackups/state.html" %}</td>
                     <td class="text-end">{% include "vmbackups/delete_form.html" %}</td>

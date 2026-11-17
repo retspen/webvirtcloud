@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.db import transaction
+from django.conf import settings
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -18,8 +19,8 @@ from vrtManager.backup import pool_space, target_pool
 from vrtManager.connection import wvmConnect
 from vrtManager.util import OperationError
 
-from .forms import RestoreForm, TargetForm, TargetPoolForm
-from .models import Backup, BackupTarget
+from .forms import PolicyForm, RestoreForm, TargetForm, TargetPoolForm
+from .models import Backup, BackupPolicy, BackupTarget
 from .utils import inside_vm_pool
 
 
@@ -65,6 +66,9 @@ def target(request, target_id):
     if request.method == "POST" and "delete" in request.POST:
         if target.backups.exists():
             messages.error(request, _("Backup target %(target)s has backups; delete them first") % {"target": target.name})
+            return redirect("vmbackups:target", target.id)
+        if target.policies.exists():
+            messages.error(request, _("Backup target %(target)s has schedules; delete them first") % {"target": target.name})
             return redirect("vmbackups:target", target.id)
         with audit(request, None, subject, "delete"):
             target.delete()
@@ -140,7 +144,7 @@ def create(request, instance_id):
 @superuser_only
 def index(request):
     """Every backup, newest first; filtered by VM name, target and state."""
-    rows = Backup.objects.select_related("target", "instance")
+    rows = Backup.objects.select_related("target", "instance", "policy")
     vm, target, state = request.GET.get("vm", "").strip(), request.GET.get("target", ""), request.GET.get("state", "")
     if vm:
         rows = rows.filter(vm_name__icontains=vm)
@@ -189,3 +193,40 @@ def restore(request, uuid):
         else:
             return redirect("operations:job", op.pk)
     return render(request, "vmbackups/restore.html", {"backup": backup, "form": form})
+
+
+@superuser_only
+def policies(request):
+    """The backup schedules, and a new one; the superuser who saves one is its owner, whom its jobs run as."""
+    form = PolicyForm(request.POST or None)
+    if form.is_valid():
+        with audit(request, None, f"Backup schedule {form.cleaned_data['name']}", "add"):
+            policy = form.save(commit=False)
+            policy.owner = request.user
+            policy.save()
+            form.save_m2m()
+        return redirect("vmbackups:policy", policy.pk)
+    rows = BackupPolicy.objects.select_related("target", "compute", "owner").annotate(vm_count=Count("instances"))
+    return render(request, "vmbackups/policies.html", {"policies": rows.order_by("name"), "form": form,
+                                                       "time_zone": settings.TIME_ZONE})
+
+
+@superuser_only
+def policy(request, policy_id):
+    policy = get_object_or_404(BackupPolicy.objects.select_related("target", "compute", "owner"), pk=policy_id)
+    subject = f"Backup schedule {policy.name}"
+    if request.method == "POST" and "delete" in request.POST:
+        with audit(request, None, subject, "delete"):  # its backups stay, without a schedule
+            policy.delete()
+        return redirect("vmbackups:policies")
+    form = PolicyForm(request.POST or None, instance=policy)
+    if form.is_valid():
+        with audit(request, None, subject, "change"):
+            policy = form.save(commit=False)
+            policy.owner = request.user
+            policy.save()
+            form.save_m2m()
+        return redirect("vmbackups:policy", policy.pk)
+    runs = policy.runs.select_related("instance", "operation").order_by("-day", "instance__name")[:200]
+    return render(request, "vmbackups/policy.html", {"policy": policy, "form": form, "runs": runs,
+                                                     "time_zone": settings.TIME_ZONE})

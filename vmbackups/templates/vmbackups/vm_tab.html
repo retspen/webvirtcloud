@@ -29,6 +29,11 @@
             </form>
             {% endif %}
 
+            {% if backups.schedules %}
+            <p class="small mt-3 mb-0">{% trans "Schedules:" %}
+                {% for policy in backups.schedules %}<a href="{% url 'vmbackups:policy' policy.id %}">{{ policy.name }}</a> ({{ policy.time|time:"H:i" }}){% if not policy.enabled %} <span class="badge text-bg-secondary">{% trans "Disabled" %}</span>{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}
+            </p>
+            {% endif %}
             {% if backups.rows %}
             <div class="table-responsive mt-3">
                 <table class="table table-sm align-middle mb-0">

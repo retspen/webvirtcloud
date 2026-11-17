@@ -592,6 +592,8 @@ Superusers back a VM up from its **Backups** tab into a backup target: a `dir` o
 
 VMs with TPM state, host devices, shared host directories, or encrypted or non-file disks are not backed up; CD-ROMs are left out.
 
+**Backups → Schedules** backs VMs up every day: chosen VMs or every VM of a compute, into a target, at a time in the panel's time zone (`TZ`), keeping the newest backups of each VM up to a number. The job worker starts each VM's backup within 6 hours of the time, one copy at a time per target, and waits for a host in maintenance; a VM not started in that window waits for the next day. Older backups of a schedule are deleted; backups taken by hand are not. Each target is checked once a day: a backup whose files are gone is marked missing.
+
 The target must be:
 
 - on storage apart from the VMs' disks: a target on the same storage is lost with it;

@@ -1,0 +1,19 @@
+{% load i18n %}{% load django_bootstrap5 %}
+<form method="post">
+    {% csrf_token %}
+    {% bootstrap_form_errors form type="non_fields" %}
+    {% bootstrap_field form.name %}
+    {% bootstrap_field form.target %}
+    <div class="row g-2">
+        <div class="col-md-5">{% bootstrap_field form.compute %}</div>
+        <div class="col-md-7">{% bootstrap_field form.instances %}</div>
+    </div>
+    <div class="row g-2">
+        <div class="col-6">{% blocktrans asvar zone_help %}Time zone: {{ time_zone }}{% endblocktrans %}{% bootstrap_field form.time help_text=zone_help %}</div>
+        <div class="col-6">{% bootstrap_field form.keep %}</div>
+    </div>
+    {% bootstrap_field form.frozen %}
+    {% bootstrap_field form.enabled %}
+    <p class="small text-body-secondary">{% trans "Each VM is backed up once a day, starting at the time; a VM that has not started within 6 hours waits for the next day. Older backups of each VM beyond the number kept are deleted; backups taken by hand are not." %}</p>
+    <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
+</form>

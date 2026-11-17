@@ -2,8 +2,9 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from computes.models import Compute
+from instances.models import Instance
 
-from .models import BackupTarget
+from .models import BackupPolicy, BackupTarget
 
 
 class TargetPoolForm(forms.Form):
@@ -44,3 +45,43 @@ class RestoreForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields["compute"].queryset = Compute.objects.filter(backuptargetpool__target=backup.target).order_by("name")
         self.fields["name"].initial = f"{backup.vm_name}-restored"
+
+
+class PolicyForm(forms.ModelForm):
+    """A backup schedule: a compute's VMs or chosen VMs, all on hosts that
+    have a pool of its target."""
+
+    class Meta:
+        model = BackupPolicy
+        fields = ["name", "target", "compute", "instances", "time", "keep", "frozen", "enabled"]
+        labels = {"name": _("Name"), "target": _("Backup target"), "compute": _("Every VM of a compute"),
+                  "instances": _("Or these VMs"), "time": _("Daily at"), "keep": _("Backups to keep of each VM"),
+                  "frozen": _("Require frozen file systems"), "enabled": _("Enabled")}
+        widgets = {"time": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
+                   "instances": forms.SelectMultiple(attrs={"data-searchable": "1"})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["instances"].queryset = Instance.objects.filter(is_template=False).select_related("compute").order_by(
+            "name")
+        self.fields["instances"].label_from_instance = lambda vm: f"{vm.name} ({vm.compute.name})"
+        self.fields["keep"].validators.append(_min_one)
+        self.fields["keep"].widget.attrs["min"] = 1
+
+    def clean(self):
+        data = super().clean()
+        compute, vms, target = data.get("compute"), data.get("instances"), data.get("target")
+        if bool(compute) == bool(vms):
+            raise forms.ValidationError(_("Choose a compute or VMs, not both"))
+        if target is not None:
+            hosts = {compute} if compute else {vm.compute for vm in vms}
+            for host in sorted(hosts, key=lambda c: c.name):
+                if target.pool_on(host) is None:
+                    raise forms.ValidationError(_("Backup target %(target)s has no storage pool on %(compute)s"),
+                                                params={"target": target.name, "compute": host.name})
+        return data
+
+
+def _min_one(value):
+    if value < 1:
+        raise forms.ValidationError(_("Keep one backup at least"))

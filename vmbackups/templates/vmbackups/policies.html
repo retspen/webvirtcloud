@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+{% load bootstrap_icons %}
+
+{% block title %}{% trans "Backup schedules" %}{% endblock %}
+{% block style %}<link href="{% static 'css/tom-select.bootstrap5.min.css' %}" rel="stylesheet">{% endblock %}
+
+{% block page_heading %}<a href="{% url 'vmbackups:index' %}">{% trans "Backups" %}</a> / {% trans "Schedules" %}{% endblock page_heading %}
+
+{% block content %}
+    {% if policies %}
+    <div class="table-responsive mb-4">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr><th>{% trans "Name" %}</th><th>{% trans "VMs" %}</th><th>{% trans "Target" %}</th><th>{% trans "Daily at" %}</th>
+                    <th class="text-end">{% trans "Backups kept" %}</th><th>{% trans "State" %}</th></tr>
+            </thead>
+            <tbody>
+            {% for policy in policies %}
+                <tr>
+                    <td><a href="{% url 'vmbackups:policy' policy.id %}">{{ policy.name }}</a></td>
+                    <td>{% if policy.compute %}{% blocktrans with compute=policy.compute.name %}Every VM of {{ compute }}{% endblocktrans %}{% else %}{% blocktrans count counter=policy.vm_count %}{{ counter }} VM{% plural %}{{ counter }} VMs{% endblocktrans %}{% endif %}</td>
+                    <td>{{ policy.target.name }}</td>
+                    <td>{{ policy.time|time:"H:i" }}</td>
+                    <td class="text-end">{{ policy.keep }}</td>
+                    <td>{% if policy.enabled %}<span class="badge text-bg-success">{% trans "Enabled" %}</span>{% else %}<span class="badge text-bg-secondary">{% trans "Disabled" %}</span>{% endif %}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <div class="alert alert-info">{% trans "No backup schedule yet." %}</div>
+    {% endif %}
+
+    <div class="card" style="max-width: 48rem;">
+        <div class="card-header fw-semibold">{% trans "Add a backup schedule" %}</div>
+        <div class="card-body">{% include "vmbackups/policy_form.html" %}</div>
+    </div>
+{% endblock %}
+{% block script %}
+<script src="{% static 'js/tom-select.complete.min.js' %}"></script>
+<script src="{% static 'js/searchable_select.js' %}"></script>
+{% endblock %}
