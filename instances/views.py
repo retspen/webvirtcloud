@@ -2555,12 +2555,13 @@ def getvvfile(request, pk):
 
 
 def in_maintenance(request, compute):
-    """Back to the VM list, saying why, when the host a VM is made on is in maintenance."""
+    """Back to the page it was asked from (else the host's VM list), saying
+    why, when the host a VM is made on is in maintenance."""
     try:
         compute.refuse_new_vms()
     except util.OperationError as err:
         messages.error(request, str(err))
-        return redirect("instances:index")
+        return redirect(same_origin_referer(request, reverse("instances", args=[compute.pk])))
     return None
 
 

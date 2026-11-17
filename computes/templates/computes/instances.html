@@ -7,10 +7,17 @@
 {% block page_heading %}{{ compute.name }} - {% trans "Instances" %}{% endblock page_heading %}
 
 {% block page_heading_extra %}
+{% if compute.maintenance %}
+{# a disabled button shows no title: its wrapper says why #}
+<span class="d-inline-block mt-1 float-end" tabindex="0" title="{% blocktrans with compute=compute.name %}{{ compute }} is in maintenance: no new VM or migration comes to it{% endblocktrans %}">
+    <button type="button" class="btn btn-success" disabled aria-label="{% trans "New Instance" %}">{% bs_icon 'plus-circle-fill' %}</button>
+</span>
+{% else %}
 <a href="{% url 'instances:create_instance_select_type' compute.id %}"
     class="btn btn-success mt-1 float-end" title="{% trans "New Instance" %}">
     {% bs_icon 'plus-circle-fill' %}
 </a>
+{% endif %}
 {% if instances %}
 <a href="{% url 'bulk_migrate' compute.id %}" class="btn btn-outline-primary mt-1 me-1 float-end">{% trans "Bulk Migrate" %}</a>
     {% include 'search_block.html' %}

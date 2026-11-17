@@ -55,11 +55,26 @@ class MaintenanceSwitchTests(TestCase):
     def test_a_vm_cannot_be_created_from_its_pages(self):
         self.compute.maintenance_since = timezone.now()
         self.compute.save()
+        host_vms = reverse("instances", args=[self.compute.pk])
         for url in (reverse("instances:create_instance_select_type", args=[self.compute.pk]),
                     reverse("instances:create_instance", args=[self.compute.pk, "x86_64", "q35"])):
-            response = self.client.get(url, follow=True)
-            self.assertRedirects(response, reverse("instances:index"))
+            # back to the page it was asked from (the host's VM list), not every VM's
+            response = self.client.get(url, HTTP_REFERER=f"http://testserver{host_vms}")
+            self.assertEqual(response.url, f"http://testserver{host_vms}")
+            response = self.client.get(url, follow=True)  # typed in: the host's VM list too
+            self.assertRedirects(response, host_vms)
             self.assertContains(response, f"mt {REFUSED}")
+
+    def test_the_host_vm_list_offers_no_new_vm(self):
+        from lxml import html as lxml_html
+
+        page = lambda: lxml_html.fromstring(self.client.get(reverse("instances", args=[self.compute.pk])).content)
+        create = reverse("instances:create_instance_select_type", args=[self.compute.pk])
+        self.assertTrue(page().xpath("//a[@href=$u]", u=create))
+        self.compute.maintenance_since = timezone.now()
+        self.compute.save()
+        self.assertFalse(page().xpath("//a[@href=$u]", u=create))
+        self.assertTrue(page().xpath("//button[@disabled][contains(@aria-label, 'New Instance')]"))
 
 
 class MaintenanceGuardTests(TestCase):
