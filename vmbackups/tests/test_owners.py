@@ -292,3 +292,47 @@ class OwnerTests(TransactionTestCase):
         with self.assertRaises(PermissionDenied):
             self.submit("backup.restore_disk", {"backup": str(backup.uuid), "dev": "vda", "compute": self.compute.pk,
                                                 "pool": "default", "name": "x.qcow2"})
+
+    # pages
+
+    def test_the_restore_page_of_an_owner_names_the_vms_host_and_pool(self):
+        from django.urls import reverse
+        from lxml import html as lxml_html
+
+        backup = self.ready_backup()
+        self.client.force_login(self.owner)
+        with patch("vmbackups.views._vm_pool", return_value="default"):
+            page = lxml_html.fromstring(self.client.get(reverse("vmbackups:restore", args=[backup.uuid])).content)
+        self.assertFalse(page.xpath("//select[@name='compute']|//input[@name='pool']"))
+        self.assertIn("On h1, in storage pool default", page.text_content())
+        with (patch("vmbackups.views._vm_pool", return_value="default"),
+              patch("vmbackups.jobs._vm_pool", return_value="default"),
+              patch("vmbackups.jobs.wvmConnect", return_value=MagicMock()),
+              patch("vmbackups.jobs.get_file", return_value=DEFINITION),
+              patch("vmbackups.jobs.check_user_quota", return_value="")):
+            response = self.client.post(reverse("vmbackups:restore", args=[backup.uuid]),
+                                        {"name": "vm1-back", "submission_key": "key-owner-restore"})
+        op = Operation.objects.get(kind="backup.restore")
+        self.assertRedirects(response, reverse("operations:job", args=[op.pk]), fetch_redirect_response=False)
+        self.assertEqual((op.params["compute"], op.params["pool"]), (self.compute.pk, "default"))
+
+    def test_the_restore_pages_are_refused_without_the_rights(self):
+        from django.urls import reverse
+
+        backup = self.ready_backup()
+        self.client.force_login(self.owner)
+        BackupTarget.objects.filter(pk=self.target.pk).update(owners=False)
+        for name in ("restore", "restore_over"):
+            self.assertEqual(self.client.get(reverse(f"vmbackups:{name}", args=[backup.uuid])).status_code, 403)
+        BackupTarget.objects.filter(pk=self.target.pk).update(owners=True)
+        self.assertEqual(self.client.get(reverse("vmbackups:restore_disk", args=[backup.uuid])).status_code, 403)
+        self.assertEqual(self.client.get(reverse("vmbackups:index")).status_code, 403)
+
+    def test_a_superuser_opens_a_target_to_owners(self):
+        from django.urls import reverse
+
+        admin = get_user_model().objects.create_superuser("adm3", "c@example.com", "pw")
+        self.client.force_login(admin)
+        BackupTarget.objects.filter(pk=self.target.pk).update(owners=False)
+        self.client.post(reverse("vmbackups:target", args=[self.target.pk]), {"owners": "1"})
+        self.assertTrue(BackupTarget.objects.get(pk=self.target.pk).owners)

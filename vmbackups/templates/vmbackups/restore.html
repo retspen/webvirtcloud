@@ -14,6 +14,7 @@
         <div class="card-body">
             <form method="post">
                 {% csrf_token %}{% submission_key %}
+                {% if place %}<p>{% blocktrans with compute=place.compute.name pool=place.pool %}On {{ compute }}, in storage pool {{ pool }}: the VM's host and the pool of its first disk.{% endblocktrans %}</p>{% endif %}
                 {% bootstrap_form form %}
                 <button type="submit" class="btn btn-primary">{% bs_icon 'arrow-clockwise' %} {% trans "Restore" %}</button>
             </form>

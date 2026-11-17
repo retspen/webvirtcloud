@@ -1,4 +1,6 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.conf import settings
 from django.db.models import Count
@@ -11,6 +13,7 @@ from libvirt import libvirtError
 
 from admin.decorators import superuser_only
 from instances.models import Instance
+from instances.views import get_instance
 from logs.audit import audit
 from operations import claims, jobs
 from operations.utils import busy_message
@@ -20,9 +23,19 @@ from vrtManager.connection import wvmConnect
 from vrtManager.util import OperationError
 
 from .forms import PolicyForm, RestoreDiskForm, RestoreForm, TargetForm, TargetPoolForm
-from .jobs import _over_plan, _proxy
+from .jobs import _over_plan, _proxy, _vm_pool
 from .models import Backup, BackupPolicy, BackupTarget
 from .utils import inside_vm_pool
+
+
+def _may_restore(user, backup):
+    """A superuser; or a VM owner with the backup permission who may change
+    the backup's VM, on a target open to VM owners (the jobs check again)."""
+    if user.is_superuser:
+        return
+    if backup.instance_id is None or not backup.target.owners or not user.has_perm("instances.backup_instances"):
+        raise PermissionDenied
+    get_instance(user, backup.instance_id, perm_type="change")
 
 
 def connect(compute):
@@ -74,6 +87,11 @@ def target(request, target_id):
         with audit(request, None, subject, "delete"):
             target.delete()
         return redirect("vmbackups:targets")
+    if request.method == "POST" and "owners" in request.POST:
+        target.owners = request.POST["owners"] == "1"
+        with audit(request, None, subject, "open to VM owners" if target.owners else "closed to VM owners"):
+            target.save(update_fields=["owners"])
+        return redirect("vmbackups:target", target.id)
     if request.method == "POST" and "import" in request.POST:
         try:
             op = jobs.submit("backup.import", request.user, {"target": target.pk}, request.POST.get("submission_key", ""))
@@ -123,10 +141,14 @@ def target(request, target_id):
 
 
 @require_POST
-@superuser_only
+@login_required
 def create(request, instance_id):
     """Back up now, from the VM's Backups tab: a backup.create job."""
     instance = get_object_or_404(Instance, pk=instance_id)
+    if not request.user.is_superuser:  # before the form is read: the job checks again
+        if not request.user.has_perm("instances.backup_instances"):
+            raise PermissionDenied
+        get_instance(request.user, instance.pk, perm_type="change")
     page = reverse("instances:instance", args=[instance.pk]) + "#backups"
     raw = {"instance": instance.pk, "target": request.POST.get("target", ""), "frozen": request.POST.get("frozen", "")}
     try:
@@ -160,7 +182,7 @@ def index(request):
 
 
 @require_POST
-@superuser_only
+@login_required
 def delete(request, uuid):
     backup = get_object_or_404(Backup, uuid=uuid)
     try:
@@ -176,13 +198,23 @@ def delete(request, uuid):
     return redirect(same_origin_referer(request, reverse("vmbackups:index")))
 
 
-@superuser_only
+@login_required
 def restore(request, uuid):
-    """Restore a ready backup as a new VM: a backup.restore job, followed on its page."""
-    backup = get_object_or_404(Backup.objects.select_related("target"), uuid=uuid, state=Backup.READY)
-    form = RestoreForm(request.POST or None, backup=backup)
+    """Restore a ready backup as a new VM: a backup.restore job, followed on
+    its page. A VM owner's goes to the VM's compute and its first disk's pool."""
+    backup = get_object_or_404(Backup.objects.select_related("target", "instance__compute"), uuid=uuid,
+                               state=Backup.READY)
+    _may_restore(request.user, backup)
+    place = None
+    if not request.user.is_superuser:
+        try:
+            place = {"compute": backup.instance.compute, "pool": _vm_pool(backup.instance)}
+        except (libvirtError, OperationError) as err:
+            messages.error(request, error_text(request, err))
+            return redirect(reverse("instances:instance", args=[backup.instance_id]) + "#backups")
+    form = RestoreForm(request.POST or None, backup=backup, place=place)
     if form.is_valid():
-        data = form.cleaned_data
+        data = {**form.cleaned_data, **(place or {})}
         raw = {"backup": str(backup.uuid), "compute": data["compute"].pk, "pool": data["pool"], "name": data["name"],
                "connect": data["connect"], "start": data["start"]}
         try:
@@ -193,7 +225,7 @@ def restore(request, uuid):
             form.add_error(None, error_text(request, err))
         else:
             return redirect("operations:job", op.pk)
-    return render(request, "vmbackups/restore.html", {"backup": backup, "form": form})
+    return render(request, "vmbackups/restore.html", {"backup": backup, "form": form, "place": place})
 
 
 def _submit(request, kind, raw):
@@ -207,17 +239,18 @@ def _submit(request, kind, raw):
     return None
 
 
-@superuser_only
+@login_required
 def restore_over(request, uuid):
     """Restore a ready backup over its own shut-off VM, after the page shows
     which volumes it makes: a backup.restore_over job, followed on its page."""
     backup = get_object_or_404(Backup.objects.select_related("target", "instance__compute"), uuid=uuid,
                                state=Backup.READY, instance__isnull=False)
+    _may_restore(request.user, backup)
     if request.method == "POST" and (op := _submit(request, "backup.restore_over", {"backup": str(backup.uuid)})):
         return redirect("operations:job", op.pk)
     over, problem = None, None
     try:
-        over = _over_plan(backup, _proxy(backup.instance))
+        over = _over_plan(backup, _proxy(backup.instance), owner=not request.user.is_superuser)
     except (OperationError, libvirtError) as err:
         problem = error_text(request, err)
     disks = [{"dev": dev, "old": over["old"][dev], "pool": pool, "name": name}

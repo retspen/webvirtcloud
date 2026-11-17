@@ -563,9 +563,40 @@ class BackupTabTests(PageControls, TransactionTestCase):
             self.assertIn("ctl-vm has TPM state", page.xpath("string(//div[@id='backups'])"))
             self.assertFalse(page.xpath("//div[@id='backups']//form[contains(@action, '/create/')]"))
 
-    def test_owners_have_no_backups_tab(self):
+    def test_owners_without_the_backup_permission_have_no_backups_tab(self):
         self.controls(self.user("tab-owner", owner={"is_change": True}))
         self.assertFalse(lxml_html.fromstring(self.last_page).xpath("//*[@id='backups']"))
+        self.controls(self.user("tab-viewer", perms=("backup_instances",), owner={"is_change": False}))
+        self.assertFalse(lxml_html.fromstring(self.last_page).xpath("//*[@id='backups']"))
+
+    def test_an_owner_sees_targets_open_to_owners_and_deletes_only_their_own(self):
+        import datetime
+
+        from vmbackups.models import BackupPolicy
+
+        owner = self.user("tab-owner2", perms=("backup_instances",), owner={"is_change": True})
+        closed = BackupTarget.objects.create(name="closed")
+        opened = BackupTarget.objects.create(name="opened", owners=True)
+        for target in (closed, opened):
+            BackupTargetPool.objects.create(target=target, compute=self.compute, pool=target.name, pool_uuid="u")
+        policy = BackupPolicy.objects.create(name="nightly", target=opened, time=datetime.time(2), keep=2)
+        policy.instances.add(self.instance)
+
+        def backup(target, **fields):
+            return Backup.objects.create(target=target, instance=self.instance, vm_uuid=self.instance.uuid,
+                                         vm_name="ctl-vm", compute_name="ctl-compute", state=Backup.READY, **fields)
+
+        hidden, mine, scheduled = backup(closed), backup(opened, taken_by=owner), backup(opened, policy=policy)
+        with patch("vmbackups.utils.wvmBackup"):
+            self.controls(owner)
+        tab = lxml_html.fromstring(self.last_page).xpath("//div[@id='backups']")[0]
+        self.assertEqual(tab.xpath(".//select[@id='backup-target']/option/text()"), ["opened"])
+        self.assertNotIn("nightly", tab.text_content())  # schedules are the administrators'
+        actions = tab.xpath(".//form[contains(@action, '/delete/')]/@action")
+        self.assertEqual(actions, [f"/backups/{mine.uuid}/delete/"])
+        self.assertTrue(tab.xpath(f".//a[@href='/backups/{scheduled.uuid}/restore-over/']"))
+        self.assertFalse(tab.xpath(".//a[contains(@href, '/restore-disk/')]"))
+        self.assertNotIn(str(hidden.uuid), lxml_html.tostring(tab).decode())
 
 
 class BackupApiTests(TransactionTestCase):

@@ -23,7 +23,8 @@
                     </tbody>
                 </table>
                 <ul>
-                    <li>{% trans "The old volumes stay in their pools until you delete them." %}</li>
+                    {% if user.is_superuser %}<li>{% trans "The old volumes stay in their pools until you delete them." %}</li>
+                    {% else %}<li>{% trans "The disks the VM runs from now are deleted once it is switched to the new ones." %}</li>{% endif %}
                     {% if over.nvram %}<li>{% trans "The UEFI variables return to the backup's." %}</li>{% endif %}
                     {% if over.tpm %}<li>{% trans "The TPM state returns to the backup's." %}</li>{% endif %}
                 </ul>

@@ -10,7 +10,12 @@
 
 {% block content %}
     <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-        <span class="text-body-secondary me-auto">{% blocktrans count counter=backup_count %}{{ counter }} backup.{% plural %}{{ counter }} backups.{% endblocktrans %}</span>
+        <span class="text-body-secondary me-auto">{% blocktrans count counter=backup_count %}{{ counter }} backup.{% plural %}{{ counter }} backups.{% endblocktrans %}
+            {% if target.owners %}{% trans "VM owners with the backup permission may use it." %}{% else %}{% trans "Only superusers use it." %}{% endif %}</span>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" name="owners" value="{% if target.owners %}0{% else %}1{% endif %}" class="btn btn-sm btn-outline-secondary">{% if target.owners %}{% trans "Close to VM owners" %}{% else %}{% trans "Open to VM owners" %}{% endif %}</button>
+        </form>
         {% if pools %}
         <form method="post">
             {% csrf_token %}{% submission_key %}

@@ -388,7 +388,9 @@ def _instance_page(request, pk, instance, compute):
         migrate_refusal = None
 
     # superusers back VMs up; not a template, which is cloned
-    backups = vm_tab(instance) if request.user.is_superuser and not instance.is_template else None
+    # superusers, and owners with the backup permission who may change the VM
+    may_back_up = request.user.is_superuser or (can_change and request.user.has_perm("instances.backup_instances"))
+    backups = vm_tab(instance, request.user) if may_back_up and not instance.is_template else None
 
     return render(request, "instance.html", {
         "instance": instance,

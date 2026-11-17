@@ -41,19 +41,26 @@ def refuse_target_pool(compute, pool):
         )
 
 
-def vm_tab(instance):
+def vm_tab(instance, user):
     """The VM page's Backups tab: the VM's backups, the targets of its host,
-    and why it cannot be backed up, if it cannot."""
-    targets = list(BackupTarget.objects.filter(pools__compute=instance.compute).order_by("name"))
+    and why it cannot be backed up, if it cannot. A VM owner sees only
+    targets open to VM owners, and no schedule."""
+    owner = not user.is_superuser
+    targets = BackupTarget.objects.filter(pools__compute=instance.compute)
+    rows = instance.backups.select_related("target", "operation")
+    if owner:
+        targets, rows = targets.filter(owners=True), rows.filter(target__owners=True)
+    targets = list(targets.order_by("name"))
     problem = None
     if not targets:
-        problem = gettext("No backup target has a storage pool on this VM's host.")
+        problem = (gettext("No backup target open to VM owners has a storage pool on this VM's host.") if owner
+                   else gettext("No backup target has a storage pool on this VM's host."))
     else:
         c = instance.compute
         try:
             wvmBackup(c.hostname, c.login, c.password, c.type, instance.name, uuid=instance.uuid).backup_plan()
         except libvirtError as err:
             problem = str(err)
-    schedules = BackupPolicy.objects.filter(Q(instances=instance) | Q(compute=instance.compute_id)).distinct()
-    return {"rows": instance.backups.select_related("target", "operation"), "targets": targets, "problem": problem,
-            "schedules": schedules.order_by("name")}
+    schedules = [] if owner else BackupPolicy.objects.filter(
+        Q(instances=instance) | Q(compute=instance.compute_id)).distinct().order_by("name")
+    return {"rows": rows, "targets": targets, "problem": problem, "schedules": schedules}

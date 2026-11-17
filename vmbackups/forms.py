@@ -41,10 +41,12 @@ class RestoreForm(forms.Form):
                                              "connected beside the VM, they clash."))
     start = forms.BooleanField(label=_("Start after restore"), required=False)
 
-    def __init__(self, *args, backup, **kwargs):
+    def __init__(self, *args, backup, place=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["compute"].queryset = Compute.objects.filter(backuptargetpool__target=backup.target).order_by("name")
         self.fields["name"].initial = f"{backup.vm_name}-restored"
+        if place:  # a VM owner's: the VM's compute and pool, shown on the page
+            del self.fields["compute"], self.fields["pool"]
 
 
 class RestoreDiskForm(forms.Form):
