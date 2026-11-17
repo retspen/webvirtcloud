@@ -3,7 +3,7 @@
 import hashlib
 import json
 import time
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
@@ -20,6 +20,7 @@ from operations.models import Claim, Operation
 from operations.utils import safe_text, say
 from vrtManager import util
 from vrtManager.backup import backup_file_names, check_target_space, put_file, remove_files, target_pool, wvmBackup
+from vrtManager.connection import wvmConnect
 from vrtManager.instance import LIVE_CLONE_MIN_LIBVIRT
 
 from .models import Backup, BackupFile, BackupTarget
@@ -407,3 +408,73 @@ class CreateBackup(Kind):
         else:
             action = f"back up to {op.intent['target']}"
         return _log(op, state, action)
+
+
+def _target_pool(target):
+    """The target's pool through the first of its computes that reaches it."""
+    for row in target.pools.select_related("compute").order_by("compute__name"):
+        c = row.compute
+        try:
+            return target_pool(wvmConnect(c.hostname, c.login, c.password, c.type), row.pool, row.pool_uuid)
+        except libvirtError:
+            continue
+    raise util.OperationError(_("No compute of backup target %(target)s reaches its storage pool"), target=target.name)
+
+
+def _backup(params):
+    return Backup.objects.select_related("target").get(uuid=params["backup"])
+
+
+@register
+class DeleteBackup(Kind):
+    """The manifest goes first, so the target no longer holds a complete
+    backup; then the other files of the backup, then its row."""
+
+    name = "backup.delete"
+    label = _("Delete backup")
+
+    def normalize(self, raw):
+        return {"backup": str(UUID(str(raw["backup"])))}
+
+    def plan(self, user, params):
+        _superuser(user)
+        backup = _backup(params)
+        if backup.state == Backup.CREATING:
+            raise util.OperationError(_("This backup is being made; cancel its job to stop it"))
+        return Plan(
+            claims={claims.backup_key(backup.uuid): Claim.EXCLUSIVE,
+                    claims.backup_target_key(backup.target_id): Claim.EXCLUSIVE},
+            resource=claims.backup_key(backup.uuid),
+            label=f"{backup.target.name}/{backup.vm_name}",
+            intent={"compute": backup.compute_name, "vm": backup.vm_name, "uuid": backup.vm_uuid,
+                    "time": timezone.localtime(backup.created_at).strftime("%Y-%m-%d %H:%M")},
+        )
+
+    def run(self, op, ctx):
+        _superuser(op.user)
+        backup = _backup(op.params)
+        pool = _target_pool(backup.target)
+        ctx.record_intent(deleting=True)
+        return self._delete(backup, pool)
+
+    @staticmethod
+    def _delete(backup, pool):
+        Backup.objects.filter(pk=backup.pk).update(state=Backup.DELETING)
+        # another compute may have written the files: this one's pool lists them after a refresh
+        pool.refresh(0)
+        manifest = f"{backup.prefix}-manifest.json"
+        remove_files(pool, [manifest])
+        remove_files(pool, [n for n in pool.listVolumes() if n.startswith(backup.prefix + "-") and n != manifest])
+        backup.delete()
+        return {}
+
+    def reconcile(self, op):
+        backup = Backup.objects.select_related("target").filter(uuid=op.params["backup"]).first()
+        if backup is None:
+            return Outcome(Operation.SUCCEEDED)
+        return Outcome(Operation.SUCCEEDED, result=self._delete(backup, _target_pool(backup.target)))
+
+    def log_entry(self, op, state):
+        backup = f"Backup {op.intent['time']} of {op.intent['vm']}"
+        message = f"{backup} deleted" if state == Operation.SUCCEEDED else f"{backup}: delete ({state})"
+        return op.intent["compute"], op.intent["vm"], op.intent["uuid"], message

@@ -9,11 +9,17 @@ from operations.api.serializers import OperationSerializer
 from webvirtcloud.serializers import ErrorSerializer
 
 from .models import Backup
-from .serializers import BackupSerializer, CreateBackupSerializer
+from .serializers import BackupSerializer, CreateBackupSerializer, SubmissionSerializer
+
+
+def _accepted(request, op):
+    return Response(OperationSerializer(op, context={"request": request}).data, status=status.HTTP_202_ACCEPTED,
+                    headers={"Location": reverse("operation-detail", args=[op.pk])})
 
 
 class BackupViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
-    """VM backups: list, read, and back a VM up (a job, answered 202)."""
+    """VM backups: list, read, back a VM up and delete a backup (jobs,
+    answered 202)."""
 
     permission_classes = [IsSuperUser]
     serializer_class = BackupSerializer
@@ -27,6 +33,12 @@ class BackupViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.G
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         data = serializer.validated_data
         raw = {"instance": data["instance"].pk, "target": data["target"].pk, "frozen": data["frozen"]}
-        op = jobs.submit("backup.create", request.user, raw, data["submission_key"])
-        return Response(OperationSerializer(op, context={"request": request}).data, status=status.HTTP_202_ACCEPTED,
-                        headers={"Location": reverse("operation-detail", args=[op.pk])})
+        return _accepted(request, jobs.submit("backup.create", request.user, raw, data["submission_key"]))
+
+    @extend_schema(request=SubmissionSerializer, responses={202: OperationSerializer, 409: ErrorSerializer})
+    def destroy(self, request, uuid=None):
+        backup = self.get_object()
+        serializer = SubmissionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        key = serializer.validated_data["submission_key"]
+        return _accepted(request, jobs.submit("backup.delete", request.user, {"backup": str(backup.uuid)}, key))

@@ -13,13 +13,13 @@ from instances.models import Instance
 from logs.audit import audit
 from operations import claims, jobs
 from operations.utils import busy_message
-from webvirtcloud.middleware import error_text
+from webvirtcloud.middleware import error_text, same_origin_referer
 from vrtManager.backup import pool_space, target_pool
 from vrtManager.connection import wvmConnect
 from vrtManager.util import OperationError
 
 from .forms import TargetForm, TargetPoolForm
-from .models import BackupTarget
+from .models import Backup, BackupTarget
 from .utils import inside_vm_pool
 
 
@@ -125,3 +125,37 @@ def create(request, instance_id):
     else:
         jobs.remember_job(request, op)
     return redirect(page)
+
+
+@superuser_only
+def index(request):
+    """Every backup, newest first; filtered by VM name, target and state."""
+    rows = Backup.objects.select_related("target", "instance")
+    vm, target, state = request.GET.get("vm", "").strip(), request.GET.get("target", ""), request.GET.get("state", "")
+    if vm:
+        rows = rows.filter(vm_name__icontains=vm)
+    if target.isdigit():
+        rows = rows.filter(target_id=int(target))
+    if state in dict(Backup.STATES):
+        rows = rows.filter(state=state)
+    return render(request, "vmbackups/index.html", {
+        "rows": rows, "targets": BackupTarget.objects.order_by("name"),
+        "vm": vm, "target": target, "state": state,
+    })
+
+
+@require_POST
+@superuser_only
+def delete(request, uuid):
+    backup = get_object_or_404(Backup, uuid=uuid)
+    try:
+        op = jobs.submit("backup.delete", request.user, {"backup": str(backup.uuid)},
+                         request.POST.get("submission_key", ""))
+    except claims.Busy as busy:
+        messages.error(request, busy_message(busy, request.user))
+    except (jobs.SubmissionConflict, libvirtError) as err:
+        messages.error(request, error_text(request, err))
+    else:
+        # the job's page follows it: the pages listing backups show no backup's job
+        return redirect("operations:job", op.pk)
+    return redirect(same_origin_referer(request, reverse("vmbackups:index")))

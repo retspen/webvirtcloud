@@ -33,22 +33,17 @@
             <div class="table-responsive mt-3">
                 <table class="table table-sm align-middle mb-0">
                     <thead>
-                        <tr><th>{% trans "Time" %}</th><th>{% trans "Target" %}</th><th>{% trans "Consistency" %}</th><th class="text-end">{% trans "Size" %}</th><th>{% trans "State" %}</th></tr>
+                        <tr><th>{% trans "Time" %}</th><th>{% trans "Target" %}</th><th>{% trans "Consistency" %}</th><th class="text-end">{% trans "Size" %}</th><th>{% trans "State" %}</th><th></th></tr>
                     </thead>
                     <tbody>
                     {% for backup in backups.rows %}
                         <tr>
                             <td class="text-nowrap">{{ backup.created_at|date:"Y-m-d H:i" }}</td>
                             <td>{{ backup.target.name }}</td>
-                            <td>{{ backup.get_consistency_display }}</td>
+                            <td>{% include "vmbackups/consistency.html" %}</td>
                             <td class="text-end text-nowrap">{% if backup.size %}{{ backup.size|filesizeformat }}{% else %}–{% endif %}</td>
-                            <td>
-                                {% if backup.state == "ready" %}<span class="badge text-bg-success">{% trans "Ready" %}</span>
-                                {% elif backup.state == "creating" %}<span class="badge text-bg-info">{% trans "Creating" %}</span>
-                                {% elif backup.state == "deleting" %}<span class="badge text-bg-warning">{% trans "Deleting" %}</span>
-                                {% else %}<span class="badge text-bg-danger">{% trans "Failed" %}</span>{% endif %}
-                                {% if backup.operation_id %}<a class="small ms-1" href="{% url 'operations:job' backup.operation_id %}">{% trans "Job" %}</a>{% endif %}
-                            </td>
+                            <td>{% include "vmbackups/state.html" %}</td>
+                            <td class="text-end">{% include "vmbackups/delete_form.html" %}</td>
                         </tr>
                     {% endfor %}
                     </tbody>

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load bootstrap_icons %}
+{% load operations %}
+
+{% block title %}{% trans "Backups" %}{% endblock %}
+
+{% block page_heading %}{% trans "Backups" %}{% endblock page_heading %}
+
+{% block page_heading_extra %}<a class="btn btn-outline-primary btn-sm" href="{% url 'vmbackups:targets' %}">{% bs_icon 'hdd-network' %} {% trans "Backup targets" %}</a>{% endblock page_heading_extra %}
+
+{% block content %}
+    <form method="get" class="row g-2 mb-3" aria-label="{% trans "Filter" %}">
+        <div class="col-12 col-md">
+            <label class="visually-hidden" for="filter-vm">{% trans "VM" %}</label>
+            <input type="search" class="form-control" id="filter-vm" name="vm" value="{{ vm }}" placeholder="{% trans "VM name" %}">
+        </div>
+        <div class="col-6 col-md-auto">
+            <label class="visually-hidden" for="filter-target">{% trans "Target" %}</label>
+            <select class="form-select" id="filter-target" name="target">
+                <option value="">{% trans "All targets" %}</option>
+                {% for t in targets %}<option value="{{ t.id }}"{% if target == t.id|stringformat:"d" %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-6 col-md-auto">
+            <label class="visually-hidden" for="filter-state">{% trans "State" %}</label>
+            <select class="form-select" id="filter-state" name="state">
+                <option value="">{% trans "All states" %}</option>
+                <option value="ready"{% if state == "ready" %} selected{% endif %}>{% trans "Ready" %}</option>
+                <option value="creating"{% if state == "creating" %} selected{% endif %}>{% trans "Creating" %}</option>
+                <option value="failed"{% if state == "failed" %} selected{% endif %}>{% trans "Failed" %}</option>
+                <option value="deleting"{% if state == "deleting" %} selected{% endif %}>{% trans "Deleting" %}</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-auto d-grid">
+            <button type="submit" class="btn btn-outline-secondary">{% bs_icon 'filter' %} {% trans "Filter" %}</button>
+        </div>
+    </form>
+
+    {% if rows %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" id="backups">
+            <thead>
+                <tr><th>{% trans "Time" %}</th><th>{% trans "VM" %}</th><th>{% trans "Target" %}</th><th>{% trans "Consistency" %}</th>
+                    <th class="text-end">{% trans "Size" %}</th><th>{% trans "State" %}</th><th></th></tr>
+            </thead>
+            <tbody>
+            {% for backup in rows %}
+                <tr>
+                    <td class="text-nowrap">{{ backup.created_at|date:"Y-m-d H:i" }}</td>
+                    <td>
+                        {% if backup.instance %}<a href="{% url 'instances:instance' backup.instance.id %}">{{ backup.vm_name }}</a>
+                        {% else %}{{ backup.vm_name }} <span class="badge text-bg-secondary">{% trans "removed" %}</span>{% endif %}
+                        <div class="small text-body-secondary">{{ backup.compute_name }}</div>
+                    </td>
+                    <td>{{ backup.target.name }}</td>
+                    <td>{% include "vmbackups/consistency.html" %}</td>
+                    <td class="text-end text-nowrap">{% if backup.size %}{{ backup.size|filesizeformat }}{% else %}–{% endif %}</td>
+                    <td>{% include "vmbackups/state.html" %}</td>
+                    <td class="text-end">{% include "vmbackups/delete_form.html" %}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% elif vm or target or state %}
+        <div class="alert alert-info">{% trans "No backup matches the filter." %}</div>
+    {% else %}
+        <div class="alert alert-info">{% trans "No backup yet. Back a VM up from its Backups tab." %}</div>
+    {% endif %}
+{% endblock %}

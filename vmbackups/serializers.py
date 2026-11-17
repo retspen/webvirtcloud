@@ -27,3 +27,7 @@ class CreateBackupSerializer(serializers.Serializer):
     target = serializers.PrimaryKeyRelatedField(queryset=BackupTarget.objects.all())
     frozen = serializers.BooleanField(default=False)
     submission_key = serializers.CharField(write_only=True)
+
+
+class SubmissionSerializer(serializers.Serializer):
+    submission_key = serializers.CharField(write_only=True)

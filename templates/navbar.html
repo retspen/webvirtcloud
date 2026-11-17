@@ -18,7 +18,7 @@
             <a class="nav-link" href="{% url 'computes' %}">{% bs_icon 'pc-display' %} {% trans "Computes" %}</a>
         </li>
         <li class="nav-item {% class_active request '^/backups' %}">
-            <a class="nav-link" href="{% url 'vmbackups:targets' %}">{% bs_icon 'archive' %} {% trans "Backups" %}</a>
+            <a class="nav-link" href="{% url 'vmbackups:index' %}">{% bs_icon 'archive' %} {% trans "Backups" %}</a>
         </li>
         {% endif %}
       </ul>

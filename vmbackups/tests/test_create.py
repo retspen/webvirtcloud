@@ -400,7 +400,7 @@ class BackupTabTests(PageControls, TransactionTestCase):
             self.controls(admin)
             page = lxml_html.fromstring(self.last_page)
             self.assertIn("ctl-vm has TPM state", page.xpath("string(//div[@id='backups'])"))
-            self.assertFalse(page.xpath("//div[@id='backups']//form"))
+            self.assertFalse(page.xpath("//div[@id='backups']//form[contains(@action, '/create/')]"))
 
     def test_owners_have_no_backups_tab(self):
         self.controls(self.user("tab-owner", owner={"is_change": True}))

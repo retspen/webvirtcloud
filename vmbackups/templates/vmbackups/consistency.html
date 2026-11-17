@@ -1,0 +1,1 @@
+{% load i18n %}{% if backup.consistency == "offline" %}{% trans "Shut off" %}{% elif backup.consistency == "frozen" %}{% trans "Frozen" %}{% elif backup.consistency == "crash" %}{% trans "Crash-consistent" %}{% else %}–{% endif %}
