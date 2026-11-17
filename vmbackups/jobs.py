@@ -7,7 +7,7 @@ import re
 import time
 from uuid import UUID, uuid4
 
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Sum
 from django.http import Http404
 from django.urls import reverse
@@ -82,9 +82,13 @@ def _backup_quota(user, needed):
         return
     used = (Backup.objects.filter(taken_by=user, policy__isnull=True, state__in=Backup.LIVING)
             .aggregate(total=Sum("size"))["total"] or 0)
+    if limit == 0:
+        raise util.OperationError(_("You have no backup quota; an administrator sets it with your user's quota"))
     if used + needed > limit * 1024**3:
-        raise util.OperationError(_("The backup needs %(needed).1f GiB; %(used).1f GiB of your %(limit)d GiB backup "
-                                    "quota is used"), needed=needed / 1024**3, used=used / 1024**3, limit=limit)
+        # in GiB to one decimal, but never 0.0 for a small disk
+        gib = lambda size: max(round(size / 1024**3, 1), 0.1) if size else 0
+        raise util.OperationError(_("The backup needs about %(needed)s GiB; %(used)s GiB of your %(limit)d GiB backup "
+                                    "quota is used"), needed=gib(needed), used=gib(used), limit=limit)
 
 
 def _vm_pool(instance):
@@ -431,6 +435,8 @@ class CreateBackup(Kind):
             raise util.OperationError(_("libvirt has no result of the copy"))  # recovery decides
         if not result[0]:
             _discard(op, pool)
+            if thaw_error:  # the guest is still frozen: recovery thaws it first, a cancelled job would not
+                raise util.OperationError(THAW_FAILED, error=thaw_error, vm=op.resource_label.rpartition("/")[2])
             op.refresh_from_db(fields=["cancel_requested"])
             if op.cancel_requested:
                 raise Cancelled
@@ -844,9 +850,13 @@ class RestoreBackup(Kind):
         paths = {}
         for disk in disks:
             ctx.record_intent(copying=disk.dev)
-            paths[disk.dev] = storage.clone_volume(tpool.storageVolLookupByName(disk.volume), volumes[disk.dev],
-                                                   vol_fmt=disk.format, disk_owner_uid=_owner()[0],
-                                                   disk_owner_gid=_owner()[1])
+            try:
+                paths[disk.dev] = storage.clone_volume(tpool.storageVolLookupByName(disk.volume), volumes[disk.dev],
+                                                       vol_fmt=disk.format, disk_owner_uid=_owner()[0],
+                                                       disk_owner_gid=_owner()[1])
+            except libvirtError:  # libvirt answered: the copy failed; its claimed name goes with the copies
+                ctx.record_intent(copied=[*op.intent.get("copied", []), disk.dev], copying=None)
+                raise
             ctx.record_intent(copied=[*op.intent.get("copied", []), disk.dev], copying=None)
         if nvram and nvram_file:
             data = get_file(conn, tpool, nvram_file.volume)
@@ -888,9 +898,17 @@ class RestoreBackup(Kind):
         except libvirtError as err:
             if err.get_error_code() != VIR_ERR_NO_DOMAIN:
                 raise  # unreachable: recovery waits and retries
-        else:  # defined last: the restore is done
+        else:  # defined last: the restore is done, but for the start it was asked for
             record_vm(op, owner=True)
-            return Outcome(Operation.SUCCEEDED, result={"open": _vm_page(op)})
+            result = {"open": _vm_page(op)}
+            dom = conn.wvm.lookupByUUIDString(op.intent["uuid"])
+            if op.params["start"] and not dom.isActive():
+                try:
+                    compute.refuse_start()
+                    dom.create()
+                except (libvirtError, util.OperationError) as err:
+                    result["warning"] = say(_("The VM was restored; it did not start: %(error)s"), error=err)
+            return Outcome(Operation.SUCCEEDED, result=result)
         if op.intent.get("copying"):  # libvirt's answer to that copy is unknown
             return Outcome(Operation.UNCERTAIN, error=say(_(
                 "A disk was being copied when the job stopped; check this volume, then resolve this job: %(volumes)s"),
@@ -1281,7 +1299,7 @@ class ImportBackups(Kind):
                 fields = {"vm_uuid": vm["uuid"], "vm_name": vm["name"], "compute_name": manifest["compute"],
                           "consistency": manifest["consistency"], "parent": parent,
                           "checkpoint": manifest.get("checkpoint") or ""}
-            except (ValueError, KeyError, TypeError, util.OperationError):
+            except (ValueError, KeyError, TypeError, ValidationError, util.OperationError):
                 # cut short, not a manifest of the panel, or a file missing or changed: the others are still read
                 incomplete.append(name)
                 continue

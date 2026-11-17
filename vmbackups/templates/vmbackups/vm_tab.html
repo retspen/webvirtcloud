@@ -39,17 +39,17 @@
             <div class="table-responsive mt-3">
                 <table class="table table-sm align-middle mb-0">
                     <thead>
-                        <tr><th>{% trans "Time" %}</th><th>{% trans "Target" %}</th><th>{% trans "Consistency" %}</th><th class="text-end">{% trans "Size" %}</th><th>{% trans "State" %}</th><th></th></tr>
+                        <tr><th>{% trans "Time" %}</th><th class="d-none d-md-table-cell">{% trans "Target" %}</th><th class="d-none d-sm-table-cell">{% trans "Consistency" %}</th><th class="text-end d-none d-sm-table-cell">{% trans "Size" %}</th><th>{% trans "State" %}</th><th></th></tr>
                     </thead>
                     <tbody>
                     {% for backup in backups.rows %}
                         <tr>
                             <td class="text-nowrap">{{ backup.created_at|date:"Y-m-d H:i" }}</td>
-                            <td>{{ backup.target.name }}</td>
-                            <td>{% include "vmbackups/consistency.html" %}</td>
-                            <td class="text-end text-nowrap">{% if backup.size %}{{ backup.size|filesizeformat }}{% else %}–{% endif %}</td>
+                            <td class="d-none d-md-table-cell">{{ backup.target.name }}</td>
+                            <td class="d-none d-sm-table-cell">{% include "vmbackups/consistency.html" %}</td>
+                            <td class="text-end text-nowrap d-none d-sm-table-cell">{% if backup.size %}{{ backup.size|filesizeformat }}{% else %}–{% endif %}</td>
                             <td>{% include "vmbackups/state.html" with pending_deletes=backups.pending_deletes %}</td>
-                            <td class="text-end text-nowrap">{% include "vmbackups/delete_form.html" with pending_deletes=backups.pending_deletes %}</td>
+                            <td class="text-end">{% include "vmbackups/delete_form.html" with pending_deletes=backups.pending_deletes %}</td>
                         </tr>
                     {% endfor %}
                     </tbody>

@@ -44,24 +44,26 @@
     <div class="table-responsive">
         <table class="table table-hover align-middle" id="backups">
             <thead>
-                <tr><th>{% trans "Time" %}</th><th>{% trans "VM" %}</th><th>{% trans "Target" %}</th><th>{% trans "Consistency" %}</th><th>{% trans "Schedule" %}</th>
-                    <th class="text-end">{% trans "Size" %}</th><th>{% trans "State" %}</th><th></th></tr>
+                {# on a phone: time, VM, state and actions; the rest from wider screens #}
+                <tr><th>{% trans "Time" %}</th><th>{% trans "VM" %}</th>
+                    <th class="d-none d-md-table-cell">{% trans "Consistency" %}</th>
+                    <th class="text-end d-none d-sm-table-cell">{% trans "Size" %}</th><th>{% trans "State" %}</th><th></th></tr>
             </thead>
             <tbody>
             {% for backup in rows %}
                 <tr>
-                    <td class="text-nowrap">{{ backup.created_at|date:"Y-m-d H:i" }}</td>
-                    <td class="text-nowrap">
-                        {% if backup.instance %}<a href="{% url 'instances:instance' backup.instance.id %}">{{ backup.vm_name }}</a>
-                        {% else %}{{ backup.vm_name }} <span class="badge text-bg-secondary">{% trans "removed" %}</span>{% endif %}
-                        <div class="small text-body-secondary">{{ backup.compute_name }}</div>
+                    {# date and time wrap apart on a phone #}
+                    <td class="text-nowrap">{{ backup.created_at|date:"Y-m-d" }}<br class="d-sm-none"><span class="d-none d-sm-inline"> </span>{{ backup.created_at|date:"H:i" }}
+                        <div class="small text-body-secondary text-nowrap" title="{% trans "Target" %}">{{ backup.target.name }}</div></td>
+                    <td style="max-width: min(12rem, 30vw);">{# a long name is cut, whole on hover #}
+                        {% if backup.instance %}<a class="d-inline-block text-truncate mw-100 align-bottom" title="{{ backup.vm_name }}" href="{% url 'instances:instance' backup.instance.id %}">{{ backup.vm_name }}</a>
+                        {% else %}<span class="d-inline-block text-truncate mw-100 align-bottom" title="{{ backup.vm_name }}">{{ backup.vm_name }}</span> <span class="badge text-bg-secondary">{% trans "removed" %}</span>{% endif %}
+                        <div class="small text-body-secondary text-truncate">{{ backup.compute_name }}{% if backup.policy %}, <a href="{% url 'vmbackups:policy' backup.policy_id %}" title="{% trans "Schedule" %}">{{ backup.policy.name }}</a>{% endif %}</div>
                     </td>
-                    <td class="text-nowrap">{{ backup.target.name }}</td>
-                    <td>{% include "vmbackups/consistency.html" %}</td>
-                    <td>{% if backup.policy %}<a href="{% url 'vmbackups:policy' backup.policy_id %}">{{ backup.policy.name }}</a>{% else %}<span class="text-body-secondary">{% trans "By hand" %}</span>{% endif %}</td>
-                    <td class="text-end text-nowrap">{% if backup.size %}{{ backup.size|filesizeformat }}{% else %}–{% endif %}</td>
+                    <td class="d-none d-md-table-cell">{% include "vmbackups/consistency.html" %}</td>
+                    <td class="text-end text-nowrap d-none d-sm-table-cell">{% if backup.size %}{{ backup.size|filesizeformat }}{% else %}–{% endif %}</td>
                     <td>{% include "vmbackups/state.html" %}</td>
-                    <td class="text-end text-nowrap">{% include "vmbackups/delete_form.html" %}</td>
+                    <td class="text-end">{% include "vmbackups/delete_form.html" %}</td>
                 </tr>
             {% endfor %}
             </tbody>

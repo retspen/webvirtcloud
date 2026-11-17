@@ -133,7 +133,17 @@ class OwnerTests(TransactionTestCase):
 
     def test_no_quota_means_none(self):
         UserAttributes.objects.filter(user=self.owner).update(max_backup_size=0)
-        with self.assertRaisesMessage(OperationError, "backup quota"):
+        with self.assertRaisesMessage(OperationError, "You have no backup quota"):
+            self.back_up()
+
+    def test_the_quota_refusal_names_sizes_a_person_reads(self):
+        self.taken(9)
+        with self.assertRaisesMessage(OperationError, "The backup needs about 4.0 GiB; 9.0 GiB of your 10 GiB"):
+            self.back_up()
+        self.proxy.backup_plan.return_value["disks"][0]["allocation"] = 300  # a nearly empty disk: not 0.0
+        Backup.objects.all().delete()
+        self.taken(10)
+        with self.assertRaisesMessage(OperationError, "about 0.1 GiB"):
             self.back_up()
 
     # deleting

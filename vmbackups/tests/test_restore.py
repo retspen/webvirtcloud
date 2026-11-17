@@ -291,6 +291,23 @@ class RestoreTests(TransactionTestCase):
         self.backup.refresh_from_db()
         self.assertEqual(RestoreForm(backup=self.backup).fields["compute"].initial, self.compute)
 
+    def test_a_copy_libvirt_refused_fails_and_removes_the_copies(self):
+        self.storage.clone_volume.side_effect = libvirt.libvirtError("No space left on device")
+        op = self.submit()
+        with self.assertRaises(libvirt.libvirtError):
+            self.run_job(op)
+        op.refresh_from_db()
+        self.assertEqual(RestoreBackup().reconcile(op).state, Operation.FAILED)  # not uncertain: libvirt answered
+        self.assertIn("vm1-restored-vda.qcow2", self.removed)
+
+    def test_recovery_starts_a_restored_vm_it_was_asked_to_start(self):
+        op = self.submit(start="on")
+        self.conn.wvm.lookupByUUIDString.side_effect = None  # defined before the worker stopped, not started
+        dom = self.conn.wvm.lookupByUUIDString.return_value
+        dom.isActive.return_value = 0
+        self.assertEqual(RestoreBackup().reconcile(op).state, Operation.SUCCEEDED)
+        dom.create.assert_called_once_with()
+
     def test_the_nvram_file_is_qemus(self):
         self.run_job(self.submit())
         self.assertEqual(self.conn.upload_volume.call_args.kwargs, {"owner": _owner(), "mode": "0600"})

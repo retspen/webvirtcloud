@@ -227,6 +227,23 @@ class CreateBackupTests(TransactionTestCase):
         self.proxy.fs_thaw.side_effect = None
         self.assertEqual(CreateBackup().reconcile(op).state, Operation.SUCCEEDED)
 
+    def test_a_cancelled_backup_of_a_guest_still_frozen_is_left_to_recovery(self):
+        # the copy was aborted (cancel) while the thaw kept failing: recovery must thaw it, a cancel would not
+        self.proxy.get_status.return_value = libvirt.VIR_DOMAIN_RUNNING
+        self.proxy.fs_thaw.side_effect = libvirt_error("thaw failed")
+        self.proxy.backup_result.return_value = (False, "operation aborted")
+        op = self.submit(frozen=True)
+        # the cancel comes while the copy runs
+        self.proxy.begin_clone_backup.side_effect = lambda *a, **kw: Operation.objects.filter(pk=op.pk).update(
+            cancel_requested=True)
+        with self.assertRaises(OperationError):  # not Cancelled: the worker ends a cancelled job without recovery
+            self.run_job(op)
+        op.refresh_from_db()
+        with self.assertRaises(libvirt.libvirtError):  # recovery thaws first, and tries again
+            CreateBackup().reconcile(op)
+        self.proxy.fs_thaw.side_effect = None
+        self.assertEqual(CreateBackup().reconcile(op).state, Operation.CANCELLED)
+
     def test_an_optional_freeze_that_failed_is_thawed_until_it_works(self):
         # a freeze that failed part way may have frozen some file systems: the guest counts as frozen
         self.proxy.get_status.return_value = libvirt.VIR_DOMAIN_RUNNING
@@ -562,6 +579,21 @@ class BackupTabTests(PageControls, TransactionTestCase):
             page = lxml_html.fromstring(self.last_page)
             self.assertIn("ctl-vm has TPM state", page.xpath("string(//div[@id='backups'])"))
             self.assertFalse(page.xpath("//div[@id='backups']//form[contains(@action, '/create/')]"))
+
+    def test_an_owner_gets_no_link_to_a_job_they_cannot_open(self):
+        owner = self.user("tab-owner3", perms=("backup_instances",), owner={"is_change": True})
+        target = BackupTarget.objects.create(name="opened2", owners=True)
+        BackupTargetPool.objects.create(target=target, compute=self.compute, pool="p", pool_uuid="u")
+        admin = get_user_model().objects.create_superuser("tab-admin3", "c@example.com", "x")
+        from operations.models import Operation as Op
+
+        theirs = Op.objects.create(kind="backup.create", user=admin, state=Op.FAILED, params={}, intent={})
+        Backup.objects.create(target=target, instance=self.instance, vm_uuid=self.instance.uuid, vm_name="ctl-vm",
+                              compute_name="ctl-compute", state=Backup.FAILED, operation=theirs)
+        with patch("vmbackups.utils.wvmBackup"):
+            self.controls(owner)
+        tab = lxml_html.fromstring(self.last_page).xpath("//div[@id='backups']")[0]
+        self.assertFalse(tab.xpath(".//a[contains(@href, '/jobs/')]"))
 
     def test_owners_without_the_backup_permission_have_no_backups_tab(self):
         self.controls(self.user("tab-owner", owner={"is_change": True}))

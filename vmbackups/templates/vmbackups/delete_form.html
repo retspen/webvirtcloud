@@ -1,7 +1,7 @@
-{% load i18n %}{% load operations %}{% load bootstrap_icons %}{% if backup.state != "deleting" and backup.uuid|stringformat:"s" not in pending_deletes %}<div class="d-inline-flex gap-1 justify-content-end">{% if backup.state == "ready" %}<div class="btn-group">
+{% load i18n %}{% load operations %}{% load bootstrap_icons %}{% if backup.uuid|stringformat:"s" not in pending_deletes %}<div class="d-inline-flex flex-wrap gap-1 justify-content-end">{% if backup.state == "ready" %}<div class="btn-group">
     {# fixed: the menu would be cut off by the table's scrolling box #}
     <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"
-            data-bs-popper-config='{"strategy": "fixed"}'>{% trans "Restore" %}</button>
+            data-bs-popper-config='{"strategy": "fixed"}' aria-label="{% trans "Restore" %}">{% bs_icon 'arrow-clockwise' %}<span class="d-none d-sm-inline"> {% trans "Restore" %}</span></button>
     <ul class="dropdown-menu dropdown-menu-end shadow">
         <li><a class="dropdown-item" href="{% url 'vmbackups:restore' backup.uuid %}">{% trans "As a new VM" %}</a></li>
         {% if backup.instance_id %}<li><a class="dropdown-item" href="{% url 'vmbackups:restore_over' backup.uuid %}">{% trans "Over the VM" %}</a></li>{% endif %}

@@ -122,6 +122,14 @@ class ImportTests(TransactionTestCase):
         self.assertGreaterEqual(self.read()["added"], 1)
         self.assertTrue(Backup.objects.filter(uuid=self.b).exists())
 
+    def test_a_manifest_with_a_bad_uuid_does_not_stop_the_others(self):
+        bad = manifest(self.a)
+        bad["backup"] = "not-a-uuid"
+        self.files[f"wvc-{self.a}-manifest.json"] = json.dumps(bad).encode()
+        result = self.read()
+        self.assertEqual(result["added"], 1)
+        self.assertIn(f"wvc-{self.a}-manifest.json", result["warning"][0]["values"]["names"])
+
     def test_an_incremental_backup_without_its_base_is_incomplete(self):
         lonely = manifest(self.a)
         lonely["parent"] = str(uuid4())

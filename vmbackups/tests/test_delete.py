@@ -109,6 +109,15 @@ class DeleteBackupTests(TransactionTestCase):
             self.run_job(op)
         self.assertEqual(self.removed, [])
 
+    def test_a_deletion_that_did_not_end_can_be_asked_again(self):
+        # its job ended uncertain and was resolved: the backup stays deleting, and the page offers Delete again
+        Backup.objects.filter(pk=self.backup.pk).update(state=Backup.DELETING)
+        self.client.force_login(self.admin)
+        page = lxml_html.fromstring(self.client.get(reverse("vmbackups:index")).content)
+        self.assertTrue(page.xpath("//table[@id='backups']//button[@data-confirm]"))
+        self.run_job(self.submit())
+        self.assertFalse(Backup.objects.exists())
+
     def test_a_target_no_compute_reaches_is_refused(self):
         op = self.submit()
         with patch("vmbackups.jobs.target_pool", side_effect=OperationError("Storage pool %(pool)s is gone", pool="b1")):
