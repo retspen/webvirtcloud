@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 14:03+0000\n"
+"POT-Creation-Date: 2026-11-17 14:05+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -2466,7 +2466,7 @@ msgstr "hiçbiri"
 #: networks/templates/network.html:337 networks/templates/network.html:379
 #: networks/templates/network.html:406 networks/templates/network.html:445
 #: nwfilters/templates/nwfilter.html:157 templates/common/form.html:28
-#: vmbackups/templates/vmbackups/policy_form.html:18
+#: vmbackups/templates/vmbackups/policy_form.html:19
 msgid "Save"
 msgstr "Kaydet"
 
@@ -9793,24 +9793,36 @@ msgstr "Her gün saat"
 msgid "Backups to keep of each VM"
 msgstr "Her sanal makineden tutulacak yedek sayısı"
 
-#: vmbackups/forms.py:77 vmbackups/templates/vmbackups/vm_tab.html:21
+#: vmbackups/forms.py:77
+msgid "A full backup every N backups"
+msgstr "Her N yedekte bir tam yedek"
+
+#: vmbackups/forms.py:78 vmbackups/templates/vmbackups/vm_tab.html:21
 msgid "Require frozen file systems"
 msgstr "Dosya sistemlerinin dondurulmasını zorunlu kıl"
 
-#: vmbackups/forms.py:77 vmbackups/templates/vmbackups/policies.html:27
+#: vmbackups/forms.py:78 vmbackups/templates/vmbackups/policies.html:27
 msgid "Enabled"
 msgstr "Etkin"
 
-#: vmbackups/forms.py:93
+#: vmbackups/forms.py:90
+msgid ""
+"1: every backup is full. Above 1, the backups between copy only what changed "
+"(running VMs with qcow2 disks)."
+msgstr ""
+"1: her yedek tamdır. 1'den büyükse aradaki yedekler yalnızca değişenleri "
+"kopyalar (qcow2 diskli, çalışan VM'ler)."
+
+#: vmbackups/forms.py:97
 msgid "Choose a compute or VMs, not both"
 msgstr "Bir sunucu ya da sanal makineler seçin, ikisini birden değil"
 
-#: vmbackups/forms.py:98 vmbackups/jobs.py:58
+#: vmbackups/forms.py:102 vmbackups/jobs.py:58
 #, python-format
 msgid "Backup target %(target)s has no storage pool on %(compute)s"
 msgstr "%(target)s yedek hedefinin %(compute)s üzerinde depolama havuzu yok"
 
-#: vmbackups/forms.py:105
+#: vmbackups/forms.py:109
 msgid "Keep one backup at least"
 msgstr "En az bir yedek tutun"
 
@@ -10143,6 +10155,14 @@ msgstr "Dondurulmuş"
 msgid "Crash-consistent"
 msgstr "Çökme tutarlı"
 
+#: vmbackups/templates/vmbackups/consistency.html:1
+msgid "Copies only what changed since the backup it builds on"
+msgstr "Yalnızca dayandığı yedekten sonra değişenleri kopyalar"
+
+#: vmbackups/templates/vmbackups/consistency.html:1
+msgid "Incremental"
+msgstr "Artımlı"
+
 #: vmbackups/templates/vmbackups/delete_form.html:4
 #: vmbackups/templates/vmbackups/restore.html:9
 #: vmbackups/templates/vmbackups/restore.html:18
@@ -10310,15 +10330,17 @@ msgstr "Henüz çalışma yok."
 msgid "Time zone: %(time_zone)s"
 msgstr "Saat dilimi: %(time_zone)s"
 
-#: vmbackups/templates/vmbackups/policy_form.html:17
+#: vmbackups/templates/vmbackups/policy_form.html:18
 msgid ""
 "Each VM is backed up once a day, starting at the time; a VM that has not "
 "started within 6 hours waits for the next day. Older backups of each VM "
-"beyond the number kept are deleted; backups taken by hand are not."
+"beyond the number kept are deleted, a chain of incremental backups once all "
+"of it is beyond; backups taken by hand are not."
 msgstr ""
-"Her sanal makine günde bir kez, bu saatten başlayarak yedeklenir; 6 saat "
-"içinde başlamayan bir sanal makine ertesi günü bekler. Her sanal makinenin "
-"tutulan sayıyı aşan eski yedekleri silinir; elle alınan yedekler silinmez."
+"Her VM günde bir kez, belirtilen saatte başlayarak yedeklenir; 6 saat içinde "
+"başlamayan VM ertesi günü bekler. Her VM'in tutulan sayının dışında kalan "
+"eski yedekleri silinir; artımlı yedek zinciri ise tamamı bu sayının dışına "
+"çıkınca silinir. Elle alınan yedekler silinmez."
 
 #: vmbackups/templates/vmbackups/restore.html:12
 #, python-format

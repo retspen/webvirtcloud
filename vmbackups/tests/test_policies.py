@@ -27,7 +27,8 @@ class PolicyPageTests(TestCase):
         BackupTargetPool.objects.create(target=self.target, compute=self.c1, pool="b1", pool_uuid="u")
 
     def post(self, **fields):
-        data = {"name": "nightly", "target": self.target.pk, "time": "02:00", "keep": "7", "enabled": "on", **fields}
+        data = {"name": "nightly", "target": self.target.pk, "time": "02:00", "keep": "7", "full_every": "1", "enabled": "on",
+                **fields}
         return self.client.post(reverse("vmbackups:policies"), data)
 
     def test_a_schedule_of_chosen_vms(self):
@@ -57,9 +58,12 @@ class PolicyPageTests(TestCase):
         self.assertContains(response, "has no storage pool on h2")
         self.assertFalse(BackupPolicy.objects.exists())
 
-    def test_keep_at_least_one(self):
+    def test_keep_and_full_every_at_least_one(self):
         self.assertEqual(self.post(instances=[self.vm1.pk], keep="0").status_code, 200)
+        self.assertEqual(self.post(instances=[self.vm1.pk], full_every="0").status_code, 200)
         self.assertFalse(BackupPolicy.objects.exists())
+        self.post(instances=[self.vm1.pk], full_every="7")
+        self.assertEqual(BackupPolicy.objects.get().full_every, 7)
 
     def schedule(self):
         policy = BackupPolicy.objects.create(name="nightly", target=self.target, time=datetime.time(2), keep=7,
@@ -74,7 +78,7 @@ class PolicyPageTests(TestCase):
         url = reverse("vmbackups:policy", args=[policy.pk])
         page = self.client.get(url)
         self.assertContains(page, "The host was in maintenance")
-        self.client.post(url, {"name": "nightly", "target": self.target.pk, "time": "03:30", "keep": "3",
+        self.client.post(url, {"name": "nightly", "target": self.target.pk, "time": "03:30", "keep": "3", "full_every": "1",
                                "instances": [self.vm1.pk]})
         policy.refresh_from_db()
         self.assertEqual((policy.time, policy.keep, policy.enabled), (datetime.time(3, 30), 3, False))
@@ -99,6 +103,11 @@ class PolicyPageTests(TestCase):
         self.assertIn("nightly", row)
         self.assertIn("Missing", row)
         self.assertFalse(index.xpath("//a[contains(@href, '/restore/')]"))  # a missing backup is not restored
+        self.assertNotIn("Incremental", row)
+        Backup.objects.create(target=self.target, instance=self.vm1, vm_uuid=self.vm1.uuid, vm_name="vm1",
+                              compute_name="h1", state=Backup.READY, policy=policy, parent=Backup.objects.get())
+        index = lxml_html.fromstring(self.client.get(reverse("vmbackups:index")).content)
+        self.assertIn("Incremental", " ".join(index.xpath("//table[@id='backups']/tbody/tr/td//text()")))
 
     def test_a_target_with_a_schedule_is_not_deleted(self):
         self.schedule()

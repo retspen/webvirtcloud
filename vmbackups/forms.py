@@ -71,9 +71,10 @@ class PolicyForm(forms.ModelForm):
 
     class Meta:
         model = BackupPolicy
-        fields = ["name", "target", "compute", "instances", "time", "keep", "frozen", "enabled"]
+        fields = ["name", "target", "compute", "instances", "time", "keep", "full_every", "frozen", "enabled"]
         labels = {"name": _("Name"), "target": _("Backup target"), "compute": _("Every VM of a compute"),
                   "instances": _("Or these VMs"), "time": _("Daily at"), "keep": _("Backups to keep of each VM"),
+                  "full_every": _("A full backup every N backups"),
                   "frozen": _("Require frozen file systems"), "enabled": _("Enabled")}
         widgets = {"time": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
                    "instances": forms.SelectMultiple(attrs={"data-searchable": "1"})}
@@ -83,8 +84,11 @@ class PolicyForm(forms.ModelForm):
         self.fields["instances"].queryset = Instance.objects.filter(is_template=False).select_related("compute").order_by(
             "name")
         self.fields["instances"].label_from_instance = lambda vm: f"{vm.name} ({vm.compute.name})"
-        self.fields["keep"].validators.append(_min_one)
-        self.fields["keep"].widget.attrs["min"] = 1
+        for name in ("keep", "full_every"):
+            self.fields[name].validators.append(_min_one)
+            self.fields[name].widget.attrs["min"] = 1
+        self.fields["full_every"].help_text = _("1: every backup is full. Above 1, the backups between copy only what "
+                                                "changed (running VMs with qcow2 disks).")
 
     def clean(self):
         data = super().clean()
