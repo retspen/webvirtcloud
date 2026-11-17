@@ -258,7 +258,7 @@ def restore_definition(definition, *, name, uuid, macs, disks, nvram, connect):
 
 def check_restore_host(conn, definition):
     """Refuses a host that cannot run the backup's definition: its emulator,
-    machine type and firmware, the networks, bridges and network filters
+    machine type, firmware and TPM, the networks, bridges and network filters
     its NICs name."""
     tree = etree.fromstring(definition)
     emulator = tree.findtext("devices/emulator")
@@ -272,6 +272,13 @@ def check_restore_host(conn, definition):
     loader = (tree.findtext("os/loader") or "").strip()
     if loader and loader not in caps.xpath("os/loader/value/text()"):
         raise OperationError(gettext_noop("This host has no firmware %(loader)s"), loader=loader)
+    if (tpm := tree.find("devices/tpm")) is not None:
+        offered = "devices/tpm[@supported='yes']/enum[@name='{}']/value/text()"
+        if ("emulator" not in caps.xpath(offered.format("backendModel"))
+                or "2.0" not in caps.xpath(offered.format("backendVersion"))
+                or tpm.get("model") not in caps.xpath(offered.format("model"))):
+            raise OperationError(gettext_noop("This host offers no TPM 2.0 %(model)s: install swtpm on it"),
+                                 model=tpm.get("model"))
     for network in sorted(set(tree.xpath("devices/interface[@type='network']/source/@network")) - set(conn.get_networks())):
         raise OperationError(gettext_noop("This host has no network %(name)s"), name=network)
     for bridge in sorted(set(tree.xpath("devices/interface[@type='bridge']/source/@bridge")) - set(conn.get_ifaces())):

@@ -209,6 +209,61 @@ class RestoreTests(TransactionTestCase):
         self.assertIn("vm1-restored-vda.qcow2", outcome.error[0]["values"]["volumes"])
         self.assertEqual(self.removed, [])
 
+    def with_tpm(self, name="tpm2-00.permall"):
+        volume = f"{self.backup.prefix}-tpm-{name}"
+        self.files[volume] = b"state"
+        BackupFile.objects.create(backup=self.backup, role=BackupFile.TPM, dev=name, volume=volume, size=5,
+                                  sha256=hashlib.sha256(b"state").hexdigest())
+        self.tpm_pool = MagicMock()
+        self.tpm_pool.listVolumes.return_value = [name]
+        self.conn._tpm_pool.side_effect = lambda uuid, build=False: contextlib.nullcontext(self.tpm_pool)
+
+    def test_the_tpm_state_goes_to_the_new_vms_directory_before_it_is_defined(self):
+        self.with_tpm()
+        self.conn.upload_volume.side_effect = lambda *a, **kw: self.conn.wvm.defineXML.assert_not_called()
+        op = self.submit()
+        self.run_job(op)
+        self.assertTrue(op.intent["tpm"])
+        self.conn._tpm_pool.assert_called_once_with(op.intent["uuid"], build=True)
+        # root's: libvirt makes the state directory swtpm's when the VM starts
+        self.conn.upload_volume.assert_called_with(self.tpm_pool, "tpm2-00.permall", b"state", owner=(0, 0), mode="0600")
+        self.conn.wvm.defineXML.assert_called_once()
+
+    def refused_tpm_name(self, name):
+        self.with_tpm(name)
+        with self.assertRaisesMessage(OperationError, name):
+            self.run_job(self.submit())
+        self.storage.clone_volume.assert_not_called()
+        self.conn._tpm_pool.assert_not_called()
+
+    def test_a_tpm_file_name_that_is_a_path_is_refused_before_anything_is_made(self):
+        self.refused_tpm_name("../../qemu/nvram/x")
+
+    def test_a_hidden_tpm_file_name_is_refused(self):
+        self.refused_tpm_name(".lock")
+
+    def test_recovery_removes_the_tpm_files_of_a_vm_not_defined(self):
+        self.with_tpm()
+        self.conn.wvm.defineXML.side_effect = RuntimeError("worker gone")
+        op = self.submit()
+        with self.assertRaises(RuntimeError):
+            self.run_job(op)
+        op.refresh_from_db()
+        self.conn._tpm_pool.reset_mock()
+        self.assertEqual(RestoreBackup().reconcile(op).state, Operation.FAILED)
+        self.conn._tpm_pool.assert_called_once_with(op.intent["uuid"])
+        self.assertIn("tpm2-00.permall", self.removed)
+
+    def test_recovery_before_the_tpm_directory_was_made(self):
+        self.with_tpm()
+        self.conn._tpm_pool.side_effect = lambda uuid, build=False: contextlib.nullcontext(None)
+        self.conn.upload_volume.side_effect = RuntimeError("worker gone")  # the NVRAM file's
+        op = self.submit()
+        with self.assertRaises(RuntimeError):
+            self.run_job(op)
+        op.refresh_from_db()
+        self.assertEqual(RestoreBackup().reconcile(op).state, Operation.FAILED)
+
     def test_the_nvram_file_is_qemus(self):
         self.run_job(self.submit())
         self.assertEqual(self.conn.upload_volume.call_args.kwargs, {"owner": _owner(), "mode": "0600"})

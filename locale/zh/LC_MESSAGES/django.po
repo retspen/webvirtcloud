@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 10:54+0000\n"
+"POT-Creation-Date: 2026-11-17 10:55+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -3288,7 +3288,7 @@ msgid "Clone VM"
 msgstr "克隆虚拟机"
 
 #: instances/jobs.py:656 instances/jobs.py:663 instances/jobs.py:1005
-#: vmbackups/jobs.py:243 vmbackups/jobs.py:652
+#: vmbackups/jobs.py:243 vmbackups/jobs.py:657
 msgid "Copying disks"
 msgstr "正在复制磁盘"
 
@@ -3358,12 +3358,12 @@ msgstr "镜像已存在。请检查卷或更改虚拟机名称"
 msgid "Each network card needs a network"
 msgstr "每个网卡都需要一个网络"
 
-#: instances/jobs.py:868 vrtManager/backup.py:276 vrtManager/instance.py:2871
+#: instances/jobs.py:868 vrtManager/backup.py:283 vrtManager/instance.py:2871
 #, python-format
 msgid "This host has no network %(name)s"
 msgstr "此主机没有网络 %(name)s"
 
-#: instances/jobs.py:870 vrtManager/backup.py:280 vrtManager/instance.py:2873
+#: instances/jobs.py:870 vrtManager/backup.py:287 vrtManager/instance.py:2873
 #, python-format
 msgid "This host has no network filter %(name)s"
 msgstr "此主机没有网络过滤器 %(name)s"
@@ -9356,68 +9356,73 @@ msgstr "目标中缺少备份文件 %(name)s"
 msgid "The backup's file %(name)s differs from the one written"
 msgstr "备份文件 %(name)s 与写入的不同"
 
-#: vmbackups/jobs.py:580 vmbackups/templates/vmbackups/restore.html:7
+#: vmbackups/jobs.py:581 vmbackups/templates/vmbackups/restore.html:7
 msgid "Restore backup"
 msgstr "恢复备份"
 
-#: vmbackups/jobs.py:593
+#: vmbackups/jobs.py:594
 msgid "Only a ready backup is restored"
 msgstr "只能恢复就绪的备份"
 
-#: vmbackups/jobs.py:623
+#: vmbackups/jobs.py:624
 #, python-format
 msgid "A VM named %(name)s exists on %(compute)s"
 msgstr "%(compute)s 上已存在名为 %(name)s 的虚拟机"
 
-#: vmbackups/jobs.py:631
+#: vmbackups/jobs.py:632
 #, python-format
 msgid "This host has no active directory storage pool %(pool)s"
 msgstr "此主机没有名为 %(pool)s 的活动目录存储池"
 
 #: vmbackups/jobs.py:648
 #, python-format
+msgid "The backup's TPM state file %(name)s is not a plain file name"
+msgstr "备份的 TPM 状态文件 %(name)s 不是普通文件名"
+
+#: vmbackups/jobs.py:653
+#, python-format
 msgid "The NVRAM file %(path)s exists already"
 msgstr "NVRAM 文件 %(path)s 已存在"
 
-#: vmbackups/jobs.py:679
+#: vmbackups/jobs.py:689
 #, python-format
 msgid "The VM was restored; it did not start: %(error)s"
 msgstr "虚拟机已恢复；但未能启动：%(error)s"
 
-#: vmbackups/jobs.py:701
+#: vmbackups/jobs.py:711
 #, python-format
 msgid ""
 "A disk was being copied when the job stopped; check this volume, then resolve"
 " this job: %(volumes)s"
 msgstr "作业停止时正在复制磁盘；请检查此卷，然后解决此作业：%(volumes)s"
 
-#: vmbackups/jobs.py:706
+#: vmbackups/jobs.py:716
 #, python-format
 msgid ""
 "Storage pool %(pool)s is not active; the restore's copies in it are removed "
 "when it is"
 msgstr "存储池 %(pool)s 未激活；其中恢复的副本将在其激活后删除"
 
-#: vmbackups/jobs.py:715
+#: vmbackups/jobs.py:730
 msgid "The VM was not defined; its copies were removed"
 msgstr "虚拟机未定义；其副本已删除"
 
-#: vmbackups/jobs.py:734 vmbackups/templates/vmbackups/target.html:18
+#: vmbackups/jobs.py:749 vmbackups/templates/vmbackups/target.html:18
 msgid "Read backups from target"
 msgstr "从目标读取备份"
 
-#: vmbackups/jobs.py:782
+#: vmbackups/jobs.py:797
 #, python-format
 msgid ""
 "Not read, as a file of the backup is missing, changed or unreadable: "
 "%(names)s"
 msgstr "由于备份的某个文件缺失、已更改或无法读取，未读取：%(names)s"
 
-#: vmbackups/jobs.py:798
+#: vmbackups/jobs.py:813
 msgid "Check backup target"
 msgstr "检查备份目标"
 
-#: vmbackups/jobs.py:825
+#: vmbackups/jobs.py:840
 #, python-format
 msgid "Files of these backups are missing from the target: %(backups)s"
 msgstr "以下备份的文件在目标中缺失：%(backups)s"
@@ -9852,7 +9857,12 @@ msgstr "此主机无法以机器类型 %(machine)s 运行虚拟机的模拟器 %
 msgid "This host has no firmware %(loader)s"
 msgstr "此主机没有固件 %(loader)s"
 
-#: vrtManager/backup.py:278
+#: vrtManager/backup.py:280
+#, python-format
+msgid "This host offers no TPM 2.0 %(model)s: install swtpm on it"
+msgstr "此主机不提供 TPM 2.0 %(model)s：请在其上安装 swtpm"
+
+#: vrtManager/backup.py:285
 #, python-format
 msgid "This host has no bridge %(name)s"
 msgstr "此主机没有网桥 %(name)s"

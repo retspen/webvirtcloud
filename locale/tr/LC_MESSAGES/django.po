@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 10:54+0000\n"
+"POT-Creation-Date: 2026-11-17 10:55+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -3458,7 +3458,7 @@ msgid "Clone VM"
 msgstr "Sanal makineyi klonla"
 
 #: instances/jobs.py:656 instances/jobs.py:663 instances/jobs.py:1005
-#: vmbackups/jobs.py:243 vmbackups/jobs.py:652
+#: vmbackups/jobs.py:243 vmbackups/jobs.py:657
 msgid "Copying disks"
 msgstr "Diskler kopyalanıyor"
 
@@ -3542,12 +3542,12 @@ msgstr ""
 msgid "Each network card needs a network"
 msgstr "Her ağ kartının bir ağı olmalı"
 
-#: instances/jobs.py:868 vrtManager/backup.py:276 vrtManager/instance.py:2871
+#: instances/jobs.py:868 vrtManager/backup.py:283 vrtManager/instance.py:2871
 #, python-format
 msgid "This host has no network %(name)s"
 msgstr "Bu sunucuda %(name)s ağı yok"
 
-#: instances/jobs.py:870 vrtManager/backup.py:280 vrtManager/instance.py:2873
+#: instances/jobs.py:870 vrtManager/backup.py:287 vrtManager/instance.py:2873
 #, python-format
 msgid "This host has no network filter %(name)s"
 msgstr "Bu sunucuda %(name)s ağ filtresi yok"
@@ -9928,35 +9928,40 @@ msgstr "Yedeğin %(name)s dosyası hedefte yok"
 msgid "The backup's file %(name)s differs from the one written"
 msgstr "Yedeğin %(name)s dosyası yazılandan farklı"
 
-#: vmbackups/jobs.py:580 vmbackups/templates/vmbackups/restore.html:7
+#: vmbackups/jobs.py:581 vmbackups/templates/vmbackups/restore.html:7
 msgid "Restore backup"
 msgstr "Yedeği geri yükle"
 
-#: vmbackups/jobs.py:593
+#: vmbackups/jobs.py:594
 msgid "Only a ready backup is restored"
 msgstr "Yalnızca hazır bir yedek geri yüklenir"
 
-#: vmbackups/jobs.py:623
+#: vmbackups/jobs.py:624
 #, python-format
 msgid "A VM named %(name)s exists on %(compute)s"
 msgstr "%(compute)s üzerinde %(name)s adlı bir sanal makine var"
 
-#: vmbackups/jobs.py:631
+#: vmbackups/jobs.py:632
 #, python-format
 msgid "This host has no active directory storage pool %(pool)s"
 msgstr "Bu sunucuda %(pool)s adlı etkin bir dizin depolama havuzu yok"
 
 #: vmbackups/jobs.py:648
 #, python-format
+msgid "The backup's TPM state file %(name)s is not a plain file name"
+msgstr "Yedeğin TPM durum dosyası %(name)s düz bir dosya adı değil"
+
+#: vmbackups/jobs.py:653
+#, python-format
 msgid "The NVRAM file %(path)s exists already"
 msgstr "%(path)s NVRAM dosyası zaten var"
 
-#: vmbackups/jobs.py:679
+#: vmbackups/jobs.py:689
 #, python-format
 msgid "The VM was restored; it did not start: %(error)s"
 msgstr "Sanal makine geri yüklendi; başlamadı: %(error)s"
 
-#: vmbackups/jobs.py:701
+#: vmbackups/jobs.py:711
 #, python-format
 msgid ""
 "A disk was being copied when the job stopped; check this volume, then resolve"
@@ -9965,7 +9970,7 @@ msgstr ""
 "İş durduğunda bir disk kopyalanıyordu; bu birimi kontrol edin, sonra bu işi "
 "çözün: %(volumes)s"
 
-#: vmbackups/jobs.py:706
+#: vmbackups/jobs.py:716
 #, python-format
 msgid ""
 "Storage pool %(pool)s is not active; the restore's copies in it are removed "
@@ -9974,15 +9979,15 @@ msgstr ""
 "%(pool)s depolama havuzu etkin değil; geri yüklemenin içindeki kopyaları "
 "havuz etkin olunca kaldırılır"
 
-#: vmbackups/jobs.py:715
+#: vmbackups/jobs.py:730
 msgid "The VM was not defined; its copies were removed"
 msgstr "Sanal makine tanımlanmadı; kopyaları kaldırıldı"
 
-#: vmbackups/jobs.py:734 vmbackups/templates/vmbackups/target.html:18
+#: vmbackups/jobs.py:749 vmbackups/templates/vmbackups/target.html:18
 msgid "Read backups from target"
 msgstr "Yedekleri hedeften oku"
 
-#: vmbackups/jobs.py:782
+#: vmbackups/jobs.py:797
 #, python-format
 msgid ""
 "Not read, as a file of the backup is missing, changed or unreadable: "
@@ -9991,11 +9996,11 @@ msgstr ""
 "Yedeğin bir dosyası eksik, değişmiş ya da okunamaz olduğu için okunmadı: "
 "%(names)s"
 
-#: vmbackups/jobs.py:798
+#: vmbackups/jobs.py:813
 msgid "Check backup target"
 msgstr "Yedek hedefini denetle"
 
-#: vmbackups/jobs.py:825
+#: vmbackups/jobs.py:840
 #, python-format
 msgid "Files of these backups are missing from the target: %(backups)s"
 msgstr "Şu yedeklerin dosyaları hedefte yok: %(backups)s"
@@ -10471,7 +10476,12 @@ msgstr ""
 msgid "This host has no firmware %(loader)s"
 msgstr "Bu sunucuda %(loader)s firmware'i yok"
 
-#: vrtManager/backup.py:278
+#: vrtManager/backup.py:280
+#, python-format
+msgid "This host offers no TPM 2.0 %(model)s: install swtpm on it"
+msgstr "Bu ana makine TPM 2.0 %(model)s sunmuyor: üzerine swtpm kurun"
+
+#: vrtManager/backup.py:285
 #, python-format
 msgid "This host has no bridge %(name)s"
 msgstr "Bu sunucuda %(name)s köprüsü yok"

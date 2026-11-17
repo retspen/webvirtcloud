@@ -350,14 +350,14 @@ class RestoreHostTestCase(unittest.TestCase):
             "<domainCapabilities><os><loader><value>/usr/share/edk2/ovmf/OVMF_CODE.fd</value></loader></os></domainCapabilities>")
         return conn
 
-    def check(self, conn, *texts):
+    def check(self, conn, *texts, definition=SOURCE):
         from vrtManager.backup import check_restore_host
 
         if not texts:
-            check_restore_host(conn, SOURCE)
+            check_restore_host(conn, definition)
             return
         with self.assertRaises(util.OperationError) as caught:
-            check_restore_host(conn, SOURCE)
+            check_restore_host(conn, definition)
         for text in texts:
             self.assertIn(text, str(caught.exception))
 
@@ -390,3 +390,25 @@ class RestoreHostTestCase(unittest.TestCase):
         conn = self.conn()
         conn.wvm.getDomainCapabilities.return_value = "<domainCapabilities><os><loader/></os></domainCapabilities>"
         self.check(conn, "OVMF_CODE.fd")
+
+    def test_a_tpm_needs_the_host_to_offer_its_model_with_swtpm(self):
+        conn = self.conn()
+        self.check(conn)  # no TPM in the definition
+        with_tpm = SOURCE.replace("<devices>", "<devices>" + TPM)
+        self.check(conn, "TPM 2.0 tpm-crb", "swtpm", definition=with_tpm)
+
+        def offers(models, backends="<value>emulator</value>", versions="<value>2.0</value>"):
+            conn.wvm.getDomainCapabilities.return_value = (
+                "<domainCapabilities><os><loader><value>/usr/share/edk2/ovmf/OVMF_CODE.fd</value></loader></os>"
+                f"<devices><tpm supported='yes'><enum name='model'>{models}</enum>"
+                f"<enum name='backendModel'>{backends}</enum><enum name='backendVersion'>{versions}</enum>"
+                "</tpm></devices></domainCapabilities>")
+
+        offers("<value>tpm-tis</value>")
+        self.check(conn, "tpm-crb", definition=with_tpm)
+        offers("<value>tpm-crb</value>", backends="<value>passthrough</value>")
+        self.check(conn, "swtpm", definition=with_tpm)
+        offers("<value>tpm-crb</value>", versions="<value>1.2</value>")
+        self.check(conn, "swtpm", definition=with_tpm)
+        offers("<value>tpm-tis</value><value>tpm-crb</value>")
+        self.check(conn, definition=with_tpm)

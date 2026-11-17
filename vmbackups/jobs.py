@@ -574,7 +574,8 @@ def _check_files(conn, pool, files):
 class RestoreBackup(Kind):
     """A ready backup made a new VM on a compute that has the target's pool:
     its disks copied from the target into one of the compute's pools, its
-    NVRAM file into libvirt's directory, then the VM defined, last."""
+    NVRAM file and TPM state into libvirt's directories, then the VM
+    defined, last."""
 
     name = "backup.restore"
     label = _("Restore backup")
@@ -641,6 +642,10 @@ class RestoreBackup(Kind):
         # the VM's own file in libvirt's directory; libvirt makes it from the template when none was kept
         nvram = os.path.join(NVRAM_DIR, p["name"] + "_VARS" + os.path.splitext(old_nvram)[1]) if old_nvram else None
         macs = [get_random_mac_address() for _nic in tree.findall("devices/interface")]
+        tpm_files = list(backup.files.filter(role=BackupFile.TPM).order_by("dev"))
+        for f in tpm_files:  # a manifest read from a target names them: a file of the VM's directory only
+            if not f.dev or "/" in f.dev or f.dev.startswith("."):
+                raise util.OperationError(_("The backup's TPM state file %(name)s is not a plain file name"), name=f.dev)
         if nvram:
             # a file of that name may be a removed VM's kept one, or another VM's: never taken, never removed
             with conn._nvram_pool() as nvram_pool:
@@ -648,7 +653,7 @@ class RestoreBackup(Kind):
                     raise util.OperationError(_("The NVRAM file %(path)s exists already"), path=nvram)
 
         # what the VM is made of, before anything is made: recovery finds and removes it by these
-        ctx.record_intent(nvram=nvram, macs=macs)
+        ctx.record_intent(nvram=nvram, macs=macs, tpm=bool(tpm_files))
         ctx.set_phase(_("Copying disks"))
         storage = wvmStorage(compute.hostname, compute.login, compute.password, compute.type, p["pool"])
         paths = {}
@@ -663,6 +668,11 @@ class RestoreBackup(Kind):
             with conn._nvram_pool() as nvram_pool:
                 # QEMU's, as the clone's copy: qemu may run without libvirt changing a file's owner
                 conn.upload_volume(nvram_pool, os.path.basename(nvram), data, owner=_owner(), mode="0600")
+        if tpm_files:
+            with conn._tpm_pool(op.intent["uuid"], build=True) as tpm_pool:
+                for f in tpm_files:
+                    # root's: libvirt makes the state directory swtpm's when the VM starts
+                    conn.upload_volume(tpm_pool, f.dev, get_file(conn, tpool, f.volume), owner=(0, 0), mode="0600")
 
         compute.refuse_new_vms()  # again: the host may have gone in maintenance while the disks were copied
         xml = restore_definition(definition, name=p["name"], uuid=op.intent["uuid"], macs=macs,
@@ -711,6 +721,11 @@ class RestoreBackup(Kind):
         if nvram := op.intent.get("nvram"):
             with conn._nvram_pool() as nvram_pool:
                 remove_files(nvram_pool, [os.path.basename(nvram)])
+        if op.intent.get("tpm"):
+            # the new UUID's directory: only this job wrote in it (its empty directories stay)
+            with conn._tpm_pool(op.intent["uuid"]) as tpm_pool:
+                if tpm_pool is not None:
+                    remove_files(tpm_pool, tpm_pool.listVolumes())
         ended = Operation.CANCELLED if op.cancel_requested else Operation.FAILED
         return Outcome(ended, error=say(_("The VM was not defined; its copies were removed")))
 
