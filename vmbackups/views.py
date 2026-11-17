@@ -6,6 +6,7 @@ from django.conf import settings
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import gettext_noop
@@ -25,7 +26,7 @@ from vrtManager.util import OperationError
 from .forms import PolicyForm, RestoreDiskForm, RestoreForm, TargetForm, TargetPoolForm
 from .jobs import _over_plan, _proxy, _vm_pool
 from .models import Backup, BackupPolicy, BackupTarget
-from .utils import inside_vm_pool
+from .utils import inside_vm_pool, pending_deletes
 
 
 def _may_restore(user, backup):
@@ -177,24 +178,25 @@ def index(request):
         rows = rows.filter(state=state)
     return render(request, "vmbackups/index.html", {
         "rows": rows, "targets": BackupTarget.objects.order_by("name"),
-        "vm": vm, "target": target, "state": state,
+        "vm": vm, "target": target, "state": state, "pending_deletes": pending_deletes(),
     })
 
 
 @require_POST
 @login_required
 def delete(request, uuid):
+    """Delete a backup: a backup.delete job. The page it was asked from shows
+    the backup as being deleted until it is gone."""
     backup = get_object_or_404(Backup, uuid=uuid)
     try:
-        op = jobs.submit("backup.delete", request.user, {"backup": str(backup.uuid)},
-                         request.POST.get("submission_key", ""))
+        jobs.submit("backup.delete", request.user, {"backup": str(backup.uuid)}, request.POST.get("submission_key", ""))
     except claims.Busy as busy:
         messages.error(request, busy_message(busy, request.user))
     except (jobs.SubmissionConflict, libvirtError) as err:
         messages.error(request, error_text(request, err))
     else:
-        # the job's page follows it: the pages listing backups show no backup's job
-        return redirect("operations:job", op.pk)
+        messages.success(request, _("The backup of %(vm)s taken %(time)s is being deleted.") % {
+            "vm": backup.vm_name, "time": timezone.localtime(backup.created_at).strftime("%Y-%m-%d %H:%M")})
     return redirect(same_origin_referer(request, reverse("vmbackups:index")))
 
 

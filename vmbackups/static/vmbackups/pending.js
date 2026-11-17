@@ -1,0 +1,17 @@
+// A backup being made or deleted: the page reads it again until it is done,
+// while the backups are in view (the VM page's Backups tab, the Backups page)
+// and nothing is open on them (a menu, a dialog).
+(function () {
+    if (!document.querySelector("[data-backup-pending]")) return;
+    var check = function () {
+        var pane = document.getElementById("backups");
+        var hidden = pane && pane.classList.contains("tab-pane") && !pane.classList.contains("active");
+        var busy = document.querySelector(".dropdown-menu.show, .modal.show");
+        if (hidden || busy || document.hidden) {
+            setTimeout(check, 4000);
+        } else {
+            location.reload();
+        }
+    };
+    setTimeout(check, 4000);
+})();

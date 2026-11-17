@@ -14,7 +14,7 @@
         <table class="table table-hover align-middle">
             <thead>
                 <tr><th>{% trans "Name" %}</th><th>{% trans "VMs" %}</th><th>{% trans "Target" %}</th><th>{% trans "Daily at" %}</th>
-                    <th class="text-end">{% trans "Backups kept" %}</th><th>{% trans "State" %}</th></tr>
+                    <th class="text-end">{% trans "Backups kept" %}</th><th>{% trans "Full backup" %}</th><th>{% trans "State" %}</th></tr>
             </thead>
             <tbody>
             {% for policy in policies %}
@@ -24,6 +24,7 @@
                     <td>{{ policy.target.name }}</td>
                     <td>{{ policy.time|time:"H:i" }}</td>
                     <td class="text-end">{{ policy.keep }}</td>
+                    <td>{% if policy.full_every == 1 %}{% trans "Every backup" %}{% else %}{% blocktrans with n=policy.full_every %}Every {{ n }} backups{% endblocktrans %}{% endif %}</td>
                     <td>{% if policy.enabled %}<span class="badge text-bg-success">{% trans "Enabled" %}</span>{% else %}<span class="badge text-bg-secondary">{% trans "Disabled" %}</span>{% endif %}</td>
                 </tr>
             {% endfor %}

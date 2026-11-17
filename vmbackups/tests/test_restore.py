@@ -283,6 +283,14 @@ class RestoreTests(TransactionTestCase):
         with self.assertRaisesMessage(OperationError, "builds on a backup that is gone"):
             self.run_job(self.submit())
 
+    def test_the_restore_form_starts_on_the_vms_host(self):
+        from vmbackups.forms import RestoreForm
+
+        vm = Instance.objects.create(compute=self.compute, name="vm1", uuid=self.backup.vm_uuid)
+        Backup.objects.filter(pk=self.backup.pk).update(instance=vm)
+        self.backup.refresh_from_db()
+        self.assertEqual(RestoreForm(backup=self.backup).fields["compute"].initial, self.compute)
+
     def test_the_nvram_file_is_qemus(self):
         self.run_job(self.submit())
         self.assertEqual(self.conn.upload_volume.call_args.kwargs, {"owner": _owner(), "mode": "0600"})

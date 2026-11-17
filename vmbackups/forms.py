@@ -45,6 +45,8 @@ class RestoreForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields["compute"].queryset = Compute.objects.filter(backuptargetpool__target=backup.target).order_by("name")
         self.fields["name"].initial = f"{backup.vm_name}-restored"
+        if backup.instance_id:  # the VM's host, when it has the target's pool
+            self.fields["compute"].initial = self.fields["compute"].queryset.filter(instance=backup.instance_id).first()
         if place:  # a VM owner's: the VM's compute and pool, shown on the page
             del self.fields["compute"], self.fields["pool"]
 
@@ -75,7 +77,7 @@ class PolicyForm(forms.ModelForm):
         model = BackupPolicy
         fields = ["name", "target", "compute", "instances", "time", "keep", "full_every", "frozen", "enabled"]
         labels = {"name": _("Name"), "target": _("Backup target"), "compute": _("Every VM of a compute"),
-                  "instances": _("Or these VMs"), "time": _("Daily at"), "keep": _("Backups to keep of each VM"),
+                  "instances": _("Or these VMs"), "time": _("Daily at"), "keep": _("Backups kept per VM"),
                   "full_every": _("A full backup every N backups"),
                   "frozen": _("Require frozen file systems"), "enabled": _("Enabled")}
         widgets = {"time": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),

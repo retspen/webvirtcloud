@@ -133,11 +133,16 @@ class DeleteBackupTests(TransactionTestCase):
     def test_the_page_deletes_and_goes_back(self):
         self.client.force_login(self.admin)
         url = reverse("vmbackups:delete", args=[self.backup.uuid])
-        response = self.client.post(url, {"submission_key": "key-page-del1"}, HTTP_REFERER="http://testserver/backups/")
-        op = Operation.objects.get()
-        self.assertEqual(op.kind, "backup.delete")
-        # the job's own page: neither the Backups page nor the VM page shows a backup's job
-        self.assertRedirects(response, reverse("operations:job", args=[op.pk]), fetch_redirect_response=False)
+        response = self.client.post(url, {"submission_key": "key-page-del1"}, HTTP_REFERER="http://testserver/backups/",
+                                    follow=True)
+        self.assertEqual(Operation.objects.get().kind, "backup.delete")
+        # the page it was asked from, saying which backup goes, and the row as being deleted
+        self.assertEqual(response.redirect_chain[0][0], "http://testserver/backups/")
+        self.assertContains(response, f"The backup of vm1 taken {self.backup.created_at:%Y-%m-%d} ")
+        page = lxml_html.fromstring(response.content)
+        row = page.xpath("//table[@id='backups']/tbody/tr")[0]
+        self.assertTrue(row.xpath(".//*[@data-backup-pending]"))
+        self.assertFalse(row.xpath(".//button[@data-confirm]"))  # nothing more to ask of it
 
 
 class IndexTests(TransactionTestCase):

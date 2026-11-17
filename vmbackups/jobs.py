@@ -624,7 +624,7 @@ class DeleteBackup(Kind):
         return Plan(
             claims={claims.backup_key(backup.uuid): Claim.EXCLUSIVE, **_target_claims(backup.target)},
             resource=claims.backup_key(backup.uuid),
-            label=f"{backup.target.name}/{backup.vm_name}",
+            label=f"{backup.vm_name} {timezone.localtime(backup.created_at):%Y-%m-%d %H:%M}",
             intent={"compute": backup.compute_name, "vm": backup.vm_name, "uuid": backup.vm_uuid,
                     "time": timezone.localtime(backup.created_at).strftime("%Y-%m-%d %H:%M")},
         )

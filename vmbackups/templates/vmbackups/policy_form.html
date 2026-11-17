@@ -9,9 +9,11 @@
         <div class="col-md-7">{% bootstrap_field form.instances %}</div>
     </div>
     <div class="row g-2">
-        <div class="col-md-4">{% blocktrans asvar zone_help %}Time zone: {{ time_zone }}{% endblocktrans %}{% bootstrap_field form.time help_text=zone_help %}</div>
-        <div class="col-md-4">{% bootstrap_field form.keep %}</div>
-        <div class="col-md-4">{% bootstrap_field form.full_every %}</div>
+        <div class="col-sm-6">{% blocktrans asvar zone_help %}Time zone: {{ time_zone }}{% endblocktrans %}{% bootstrap_field form.time help_text=zone_help %}</div>
+        <div class="col-sm-6">{% bootstrap_field form.keep %}</div>
+    </div>
+    <div class="row g-2">
+        <div class="col-sm-6">{% bootstrap_field form.full_every %}</div>
     </div>
     {% bootstrap_field form.frozen %}
     {% bootstrap_field form.enabled %}

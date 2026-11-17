@@ -1,6 +1,7 @@
 {% load i18n %}
 {% load operations %}
 {% load bootstrap_icons %}
+{% load static %}
 <div class="tab-pane" id="backups" role="tabpanel">
     <div class="card">
         <div class="card-body">
@@ -47,8 +48,8 @@
                             <td>{{ backup.target.name }}</td>
                             <td>{% include "vmbackups/consistency.html" %}</td>
                             <td class="text-end text-nowrap">{% if backup.size %}{{ backup.size|filesizeformat }}{% else %}–{% endif %}</td>
-                            <td>{% include "vmbackups/state.html" %}</td>
-                            <td class="text-end">{% include "vmbackups/delete_form.html" %}</td>
+                            <td>{% include "vmbackups/state.html" with pending_deletes=backups.pending_deletes %}</td>
+                            <td class="text-end text-nowrap">{% include "vmbackups/delete_form.html" with pending_deletes=backups.pending_deletes %}</td>
                         </tr>
                     {% endfor %}
                     </tbody>
@@ -60,3 +61,4 @@
         </div>
     </div>
 </div>
+<script src="{% static 'vmbackups/pending.js' %}"></script>

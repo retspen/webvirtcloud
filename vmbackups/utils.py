@@ -41,6 +41,15 @@ def refuse_target_pool(compute, pool):
         )
 
 
+def pending_deletes():
+    """The UUIDs of the backups a deletion job was asked for and has not
+    finished: shown as being deleted before the job marks them."""
+    from operations.models import Operation
+
+    ops = Operation.objects.filter(kind="backup.delete", state__in=Operation.ACTIVE).values_list("params", flat=True)
+    return {params["backup"] for params in ops}
+
+
 def vm_tab(instance, user):
     """The VM page's Backups tab: the VM's backups, the targets of its host,
     and why it cannot be backed up, if it cannot. A VM owner sees only
@@ -63,4 +72,5 @@ def vm_tab(instance, user):
             problem = str(err)
     schedules = [] if owner else BackupPolicy.objects.filter(
         Q(instances=instance) | Q(compute=instance.compute_id)).distinct().order_by("name")
-    return {"rows": rows, "targets": targets, "problem": problem, "schedules": schedules}
+    return {"rows": rows, "targets": targets, "problem": problem, "schedules": schedules,
+            "pending_deletes": pending_deletes()}

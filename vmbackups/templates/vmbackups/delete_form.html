@@ -1,4 +1,4 @@
-{% load i18n %}{% load operations %}{% load bootstrap_icons %}{% if backup.state == "ready" %}<div class="btn-group me-1">
+{% load i18n %}{% load operations %}{% load bootstrap_icons %}{% if backup.state != "deleting" and backup.uuid|stringformat:"s" not in pending_deletes %}<div class="d-inline-flex gap-1 justify-content-end">{% if backup.state == "ready" %}<div class="btn-group">
     {# fixed: the menu would be cut off by the table's scrolling box #}
     <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"
             data-bs-popper-config='{"strategy": "fixed"}'>{% trans "Restore" %}</button>
@@ -8,5 +8,5 @@
         {% if user.is_superuser %}<li><a class="dropdown-item" href="{% url 'vmbackups:restore_disk' backup.uuid %}">{% trans "One disk" %}</a></li>{% endif %}
     </ul>
 </div>{% endif %}{% if backup.state != "creating" %}{% if user.is_superuser or backup.taken_by_id == user.id and not backup.policy_id %}<form method="post" action="{% url 'vmbackups:delete' backup.uuid %}" class="d-inline">{% csrf_token %}{% submission_key %}
-<button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans "Delete" %}" title="{% trans "Delete" %}"
-        data-confirm="{% blocktrans with time=backup.created_at|date:"Y-m-d H:i" vm=backup.vm_name %}Delete the backup of {{ vm }} taken {{ time }}? Its files are removed from the target.{% endblocktrans %}">{% bs_icon 'trash' %}</button></form>{% endif %}{% endif %}
+<button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans "Delete backup" %}" title="{% trans "Delete backup" %}"
+        data-confirm="{% blocktrans with time=backup.created_at|date:"Y-m-d H:i" vm=backup.vm_name target=backup.target.name %}Delete the backup of {{ vm }} taken {{ time }}? Its files are removed from {{ target }}; this cannot be undone.{% endblocktrans %}">{% bs_icon 'trash' %}</button></form>{% endif %}{% endif %}</div>{% endif %}
