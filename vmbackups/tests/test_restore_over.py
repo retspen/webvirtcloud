@@ -165,6 +165,11 @@ class RestoreOverTests(TransactionTestCase):
         self.assertTrue(op.intent["switching"])
         self.assertNotIn("/pool/vm1.qcow2", self.removed)  # the old volume stays
 
+    def test_the_chain_ends(self):
+        self.run_job(self.submit())
+        # its disks are replaced: their bitmaps are not the VM's any more
+        self.proxy.drop_checkpoint_metadata.assert_called_once_with()
+
     def test_the_tpm_state_is_replaced(self):
         self.with_tpm()
         self.run_job(self.submit())

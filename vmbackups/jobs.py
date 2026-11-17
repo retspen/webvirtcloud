@@ -525,7 +525,7 @@ def _beyond_keep(backup, policy_id):
     VM's ready backups beyond what it keeps (keep raised, or a newer one gone,
     since the deletion was queued)."""
     policy = BackupPolicy.objects.filter(pk=policy_id).first()
-    if policy is None or backup.policy_id != policy.pk or backup.instance_id is None:
+    if policy is None or backup.policy_id != policy.pk or backup.instance_id is None or backup.depended_on():
         return False
     ready = list(Backup.objects.filter(policy=policy, instance_id=backup.instance_id, state=Backup.READY)
                  .order_by("-created_at").values_list("pk", flat=True))
@@ -550,6 +550,8 @@ class DeleteBackup(Kind):
         backup = _backup(params)
         if backup.state == Backup.CREATING:
             raise util.OperationError(_("This backup is being made; cancel its job to stop it"))
+        if backup.depended_on():
+            raise util.OperationError(_("Later backups depend on this one; delete them first"))
         return Plan(
             claims={claims.backup_key(backup.uuid): Claim.EXCLUSIVE, **_target_claims(backup.target)},
             resource=claims.backup_key(backup.uuid),
@@ -563,6 +565,8 @@ class DeleteBackup(Kind):
         backup = _backup(op.params)
         if op.params.get("retention") and not _beyond_keep(backup, op.params["retention"]):
             raise util.OperationError(_("The backup is no longer beyond what its schedule keeps; it is kept"))
+        if backup.depended_on():  # made since the deletion was queued: the target claim now holds it off
+            raise util.OperationError(_("Later backups depend on this one; delete them first"))
         _conn, pool = _target_pool(backup.target)
         ctx.record_intent(deleting=True)
         return self._delete(backup, pool)
@@ -620,6 +624,22 @@ def _check_files(conn, pool, files):
                 raise util.OperationError(_("The backup's file %(name)s differs from the one written"), name=f["volume"])
         elif hashlib.sha256(get_file(conn, pool, f["volume"])).hexdigest() != f["sha256"]:
             raise util.OperationError(_("The backup's file %(name)s differs from the one written"), name=f["volume"])
+
+
+def _base_files(backup, dev=None):
+    """The disk files of the backups an incremental backup builds on (of
+    the disk dev only, when given), checked as its own before a restore
+    copies the chain flat. Refuses a chain whose base's row is gone."""
+    files = []
+    while True:
+        if backup.parent_id is None:
+            if backup.manifest.get("parent"):
+                raise util.OperationError(_("The backup taken %(time)s builds on a backup that is gone"),
+                                          time=timezone.localtime(backup.created_at).strftime("%Y-%m-%d %H:%M"))
+            return files
+        backup = backup.parent
+        disks = backup.files.filter(role=BackupFile.DISK, **({"dev": dev} if dev else {}))
+        files += disks.values("role", "volume", "capacity", "sha256")
 
 
 def _tpm_files(backup):
@@ -686,7 +706,7 @@ class RestoreBackup(Kind):
             raise util.OperationError(_("A VM named %(name)s exists on %(compute)s"), name=p["name"], compute=compute.name)
         row = _target_row(backup.target, compute)
         tpool = target_pool(conn, row.pool, row.pool_uuid)
-        _check_files(conn, tpool, backup.files.values("role", "volume", "capacity", "sha256"))
+        _check_files(conn, tpool, [*backup.files.values("role", "volume", "capacity", "sha256"), *_base_files(backup)])
         definition = get_file(conn, tpool, backup.files.get(role=BackupFile.DOMAIN).volume).decode()
         check_restore_host(conn, definition)
         pools = conn.file_pools()
@@ -866,7 +886,7 @@ class RestoreOver(Kind):
             raise util.OperationError(_("The VM's disks changed after the job was queued"))
         row = _target_row(backup.target, instance.compute)
         tpool = target_pool(proxy, row.pool, row.pool_uuid)
-        _check_files(proxy, tpool, backup.files.values("role", "volume", "capacity", "sha256"))
+        _check_files(proxy, tpool, [*backup.files.values("role", "volume", "capacity", "sha256"), *_base_files(backup)])
         _tpm_files(backup)
         disks = {f.dev: f for f in backup.files.filter(role=BackupFile.DISK)}
         pools = proxy.file_pools()
@@ -907,6 +927,8 @@ class RestoreOver(Kind):
         over = op.intent["over"]
         # a host booting mid-switch starts nothing: the old disks with the backup's NVRAM and TPM would not match
         proxy.instance.setAutostart(0)
+        # the disks are replaced: their bitmaps are not the VM's any more, the next scheduled backup is full
+        proxy.drop_checkpoint_metadata()
         if over["nvram"]:
             nvram = backup.files.filter(role=BackupFile.NVRAM).first()
             with proxy._nvram_pool() as nvram_pool:
@@ -1024,7 +1046,8 @@ class RestoreDisk(Kind):
         conn = _connect(compute)
         row = _target_row(backup.target, compute)
         tpool = target_pool(conn, row.pool, row.pool_uuid)
-        _check_files(conn, tpool, [{"role": disk.role, "volume": disk.volume, "capacity": disk.capacity, "sha256": ""}])
+        _check_files(conn, tpool, [{"role": disk.role, "volume": disk.volume, "capacity": disk.capacity, "sha256": ""},
+                                   *_base_files(backup, disk.dev)])
         pools = conn.file_pools()
         if p["pool"] not in pools:
             raise util.OperationError(_("This host has no active directory storage pool %(pool)s"), pool=p["pool"])
@@ -1098,15 +1121,27 @@ class ImportBackups(Kind):
         _superuser(op.user)
         target = BackupTarget.objects.get(pk=op.params["target"])
         conn, pool = _target_pool(target)
-        added, incomplete = 0, []
+        added, incomplete, manifests = 0, [], []
         for name in manifest_names(pool):
             data = get_file(conn, pool, name)
+            try:
+                manifests.append((parse_datetime(json.loads(data)["created_at"]), name, data))
+            except (ValueError, KeyError, TypeError):
+                manifests.append((None, name, data))  # passed over below
+        # oldest first: an incremental backup's base is read before it
+        manifests.sort(key=lambda m: m[0].timestamp() if m[0] else 0)
+        for _created_at, name, data in manifests:
             try:
                 manifest = json.loads(data)
                 if manifest["format"] != MANIFEST_FORMAT:
                     raise ValueError(manifest["format"])
                 if Backup.objects.filter(uuid=manifest["backup"]).exists():
                     continue
+                parent = None
+                if manifest.get("parent"):
+                    parent = Backup.objects.filter(uuid=manifest["parent"]).first()
+                    if parent is None:  # its base was not read: it cannot be restored
+                        raise ValueError(manifest["parent"])
                 _check_files(conn, pool, manifest["files"])
                 files = [{k: f[k] for k in ("role", "dev", "volume", "format", "capacity", "size", "sha256")}
                          for f in manifest["files"]]
@@ -1114,7 +1149,8 @@ class ImportBackups(Kind):
                 if created_at is None:
                     raise ValueError(manifest["created_at"])
                 fields = {"vm_uuid": vm["uuid"], "vm_name": vm["name"], "compute_name": manifest["compute"],
-                          "consistency": manifest["consistency"]}
+                          "consistency": manifest["consistency"], "parent": parent,
+                          "checkpoint": manifest.get("checkpoint") or ""}
             except (ValueError, KeyError, TypeError, util.OperationError):
                 # cut short, not a manifest of the panel, or a file missing or changed: the others are still read
                 incomplete.append(name)
@@ -1167,7 +1203,11 @@ class CheckTarget(Kind):
         missing = []
         for backup in target.backups.filter(state__in=(Backup.READY, Backup.MISSING)).prefetch_related("files"):
             needed = {f.volume for f in backup.files.all()} | {f"{backup.prefix}-manifest.json"}
-            state = Backup.READY if needed <= present else Backup.MISSING
+            try:
+                needed |= {f["volume"] for f in _base_files(backup)}  # a restore copies the chain flat
+                state = Backup.READY if needed <= present else Backup.MISSING
+            except util.OperationError:  # its base's row is gone
+                state = Backup.MISSING
             if state == Backup.MISSING:
                 missing.append(f"{backup.vm_name} {timezone.localtime(backup.created_at):%Y-%m-%d %H:%M}")
             # only from the state read: a deletion begun meanwhile is left alone

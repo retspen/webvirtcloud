@@ -264,6 +264,25 @@ class RestoreTests(TransactionTestCase):
         op.refresh_from_db()
         self.assertEqual(RestoreBackup().reconcile(op).state, Operation.FAILED)
 
+    def test_an_incremental_backup_needs_its_whole_chain(self):
+        base = Backup.objects.create(target=self.target, vm_uuid=self.backup.vm_uuid, vm_name="vm1", compute_name="h1",
+                                     state=Backup.READY)
+        BackupFile.objects.create(backup=base, role=BackupFile.DISK, dev="vda", volume=f"{base.prefix}-vda.qcow2",
+                                  format="qcow2", capacity=GIB)
+        Backup.objects.filter(pk=self.backup.pk).update(parent=base)
+        seen = []
+        self.tpool.storageVolLookupByName.side_effect = lambda name: (
+            seen.append(name), (_ for _ in ()).throw(error(libvirt.VIR_ERR_NO_STORAGE_VOL))
+            if name == f"{base.prefix}-vda.qcow2" else MagicMock(info=MagicMock(return_value=[0, GIB, GIB])))[1]
+        with self.assertRaisesMessage(OperationError, f"{base.prefix}-vda.qcow2"):
+            self.run_job(self.submit())
+        self.storage.clone_volume.assert_not_called()
+
+    def test_a_chain_whose_base_is_gone_is_refused(self):
+        Backup.objects.filter(pk=self.backup.pk).update(manifest={"parent": str(uuid4())})
+        with self.assertRaisesMessage(OperationError, "builds on a backup that is gone"):
+            self.run_job(self.submit())
+
     def test_the_nvram_file_is_qemus(self):
         self.run_job(self.submit())
         self.assertEqual(self.conn.upload_volume.call_args.kwargs, {"owner": _owner(), "mode": "0600"})

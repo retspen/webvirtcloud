@@ -140,7 +140,8 @@ def _attempt_key(base):
 
 
 def retain():
-    """Each schedule's ready backups of a VM beyond keep, oldest first: one
+    """Each schedule's ready backups of a VM beyond keep that no backup
+    builds on, oldest first: one
     deletion a target at a time (its claim admits one), the rest at the next
     passes. Backups by hand and those of removed VMs are left alone."""
     tried = set()
@@ -153,12 +154,14 @@ def retain():
         for backup in ready:
             groups.setdefault(backup.instance_id, []).append(backup)
         for rows in groups.values():
-            if len(rows) > policy.keep:
+            # a chain goes when all of it is beyond keep, newest first: only a backup nothing builds on is deleted
+            beyond = [b for b in rows[policy.keep:] if not b.depended_on()]
+            if beyond:
                 tried.add(policy.target_id)
-                if (key := _attempt_key(f"rt-{rows[-1].uuid.hex}")) is None:
+                if (key := _attempt_key(f"rt-{beyond[-1].uuid.hex}")) is None:
                     break
                 try:
-                    jobs.submit("backup.delete", policy.owner, {"backup": str(rows[-1].uuid), "retention": policy.pk},
+                    jobs.submit("backup.delete", policy.owner, {"backup": str(beyond[-1].uuid), "retention": policy.pk},
                                 key)
                 except Exception as err:  # busy, or refused: the next pass looks again
                     logger.info("schedule %s: retention waits: %s", policy.name, safe_text(err))

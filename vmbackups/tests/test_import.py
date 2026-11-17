@@ -100,6 +100,34 @@ class ImportTests(TransactionTestCase):
         self.assertEqual(self.read(), {"added": 0})
         self.assertEqual(Backup.objects.count(), 2)
 
+    def test_a_chain_is_read_base_first_and_linked(self):
+        base, top = sorted((self.a, self.b), reverse=True)  # the base's manifest is listed last
+        older = manifest(base)
+        older["created_at"] = "2026-10-31T10:00:00+00:00"
+        older["checkpoint"] = f"wvc-{base}"
+        newer = manifest(top)
+        newer["parent"] = base
+        self.files[f"wvc-{base}-manifest.json"] = json.dumps(older).encode()
+        self.files[f"wvc-{top}-manifest.json"] = json.dumps(newer).encode()
+        self.assertEqual(self.read(), {"added": 2})
+        self.assertEqual(Backup.objects.get(uuid=top).parent, Backup.objects.get(uuid=base))
+        self.assertEqual(Backup.objects.get(uuid=base).checkpoint, f"wvc-{base}")
+
+    def test_a_time_without_a_zone_does_not_stop_the_others(self):
+        odd = manifest(self.a)
+        odd["created_at"] = "2026-11-01T10:00:00"
+        self.files[f"wvc-{self.a}-manifest.json"] = json.dumps(odd).encode()
+        self.assertGreaterEqual(self.read()["added"], 1)
+        self.assertTrue(Backup.objects.filter(uuid=self.b).exists())
+
+    def test_an_incremental_backup_without_its_base_is_incomplete(self):
+        lonely = manifest(self.a)
+        lonely["parent"] = str(uuid4())
+        self.files[f"wvc-{self.a}-manifest.json"] = json.dumps(lonely).encode()
+        result = self.read()
+        self.assertEqual(result["added"], 1)
+        self.assertIn(f"wvc-{self.a}-manifest.json", result["warning"][0]["values"]["names"])
+
     def test_a_manifest_with_a_missing_file_is_incomplete(self):
         del self.files[f"wvc-{self.b}-vda.qcow2"]
         self.files[f"wvc-{self.a}-domain.xml"] = b"<domain/>"  # changed since it was written

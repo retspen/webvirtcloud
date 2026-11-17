@@ -85,6 +85,23 @@ class DeleteBackupTests(TransactionTestCase):
         with self.assertRaisesMessage(OperationError, "being made"):
             self.submit()
 
+    def test_a_backup_others_build_on_is_refused_until_they_go(self):
+        child = Backup.objects.create(target=self.target, instance=self.vm, vm_uuid=self.vm.uuid, vm_name="vm1",
+                                      compute_name="h1", state=Backup.READY, parent=self.backup)
+        with self.assertRaisesMessage(OperationError, "depend on this one"):
+            self.submit()
+        Backup.objects.filter(pk=child.pk).update(state=Backup.FAILED)  # a failed one holds nothing
+        self.run_job(self.submit())
+        self.assertFalse(Backup.objects.filter(pk=self.backup.pk).exists())
+
+    def test_a_base_made_after_the_deletion_was_queued_is_kept(self):
+        op = self.submit()
+        Backup.objects.create(target=self.target, instance=self.vm, vm_uuid=self.vm.uuid, vm_name="vm1",
+                              compute_name="h1", state=Backup.READY, parent=self.backup)
+        with self.assertRaisesMessage(OperationError, "depend on this one"):
+            self.run_job(op)
+        self.assertEqual(self.removed, [])
+
     def test_a_target_no_compute_reaches_is_refused(self):
         op = self.submit()
         with patch("vmbackups.jobs.target_pool", side_effect=OperationError("Storage pool %(pool)s is gone", pool="b1")):

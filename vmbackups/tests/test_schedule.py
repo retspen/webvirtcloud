@@ -363,6 +363,28 @@ class ScheduleTests(TransactionTestCase):
         schedule.retain()
         self.assertEqual(self.deletes()[-1].params["backup"], str(older.uuid))
 
+    def chained(self, *backups):
+        for parent, child in zip(backups, backups[1:]):
+            Backup.objects.filter(pk=child.pk).update(parent=parent)
+
+    def test_retention_deletes_a_chain_only_when_all_of_it_is_beyond_keep(self):
+        # keep 2: a full, two incrementals on it, then a new full
+        full, inc1, inc2, _new = self.backups(*[Backup.READY] * 4)
+        self.chained(full, inc1, inc2)
+        schedule.retain()  # inc2 is kept, and inc1 and full are its base
+        self.assertEqual(self.deletes(), [])
+        (newest,) = self.backups(Backup.READY)  # one more: inc2 is beyond keep too, and a leaf
+        Backup.objects.filter(pk=newest.pk).update(created_at=at(2026, 11, 20))
+        schedule.retain()
+        self.assertEqual(self.deletes()[-1].params["backup"], str(inc2.uuid))  # newest first: each one a leaf
+
+    def test_a_failed_incremental_does_not_pin_its_base(self):
+        oldest, _a, _b = self.backups(*[Backup.READY] * 3)
+        (failed,) = self.backups(Backup.FAILED)
+        Backup.objects.filter(pk=failed.pk).update(parent=oldest)
+        schedule.retain()
+        self.assertEqual(self.deletes()[-1].params["backup"], str(oldest.uuid))
+
     def test_a_failed_deletion_is_tried_again_an_hour_later(self):
         oldest, *_rest = self.backups(*[Backup.READY] * 3)
         schedule.retain()
@@ -450,6 +472,14 @@ class ScheduleTests(TransactionTestCase):
         Operation.objects.all().delete()
         self.run_check([*present, f"{gone.prefix}-manifest.json"])
         self.assertEqual(Backup.objects.get(pk=gone.pk).state, Backup.READY)
+
+    def test_an_incremental_backup_whose_base_file_is_gone_is_missing(self):
+        base, top = self.backups(Backup.READY, Backup.READY)
+        Backup.objects.filter(pk=top.pk).update(parent=base)
+        for b in (base, top):
+            BackupFile.objects.create(backup=b, role=BackupFile.DISK, dev="vda", volume=f"{b.prefix}-vda.qcow2")
+        self.run_check([f"{base.prefix}-manifest.json", f"{top.prefix}-vda.qcow2", f"{top.prefix}-manifest.json"])
+        self.assertEqual(Backup.objects.get(pk=top.pk).state, Backup.MISSING)
 
     def test_a_check_that_reaches_no_pool_marks_nothing(self):
         (backup,) = self.backups(Backup.READY)

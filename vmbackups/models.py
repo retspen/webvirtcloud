@@ -112,6 +112,10 @@ class Backup(models.Model):
     class Meta:
         ordering = ["-created_at"]
 
+    def depended_on(self):
+        """Whether a backup builds on this one: a failed one holds nothing."""
+        return self.children.filter(state__in=(self.CREATING, self.READY, self.MISSING, self.DELETING)).exists()
+
     @property
     def prefix(self):
         """Every file of the backup in the target is named from its UUID only."""
