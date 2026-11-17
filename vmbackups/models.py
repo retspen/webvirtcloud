@@ -115,12 +115,12 @@ class Backup(models.Model):
 
 
 class BackupFile(models.Model):
-    DISK, NVRAM, DOMAIN, MANIFEST = "disk", "nvram", "domain", "manifest"
-    ROLES = [(DISK, "disk"), (NVRAM, "nvram"), (DOMAIN, "domain"), (MANIFEST, "manifest")]
+    DISK, NVRAM, TPM, DOMAIN, MANIFEST = "disk", "nvram", "tpm", "domain", "manifest"
+    ROLES = [(DISK, "disk"), (NVRAM, "nvram"), (TPM, "tpm"), (DOMAIN, "domain"), (MANIFEST, "manifest")]
 
     backup = models.ForeignKey(Backup, on_delete=models.CASCADE, related_name="files")
     role = models.CharField(max_length=16, choices=ROLES)
-    dev = models.CharField(max_length=32, blank=True)
+    dev = models.CharField(max_length=32, blank=True)  # a disk's target, a TPM state file's name
     volume = models.CharField(max_length=255)
     format = models.CharField(max_length=16, blank=True)
     capacity = models.BigIntegerField(default=0)

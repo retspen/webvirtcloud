@@ -54,14 +54,19 @@ class wvmBackup(wvmInstance):
     def backup_plan(self):
         """What a backup of the VM copies, from its persistent definition:
         {"definition", "disks": [{dev, path, pool, format, capacity}],
-        "nvram": path or None, "left_out": [{dev, why}]}. Refuses, naming
+        "nvram": path or None, "tpm": whether it has a TPM (shut off: its
+        state is read by the job), "left_out": [{dev, why}]}. Refuses, naming
         why, a VM whose backup could not be restored as it is."""
         tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
         name = self.instance.name()
         if self.instance.hasManagedSaveImage(0):
             raise OperationError(gettext_noop("%(vm)s has a saved state; start it or remove the saved state first"), vm=name)
-        if tree.find("devices/tpm") is not None:
-            raise OperationError(gettext_noop("%(vm)s has TPM state; TPM backups come later"), vm=name)
+        tpm = self.get_tpm()
+        if tpm == "custom":
+            raise OperationError(gettext_noop("%(vm)s has a TPM of its own settings (encryption, a state path or "
+                                              "another backend); it cannot be backed up"), vm=name)
+        if tpm and self.instance.state()[0] != libvirt.VIR_DOMAIN_SHUTOFF:
+            raise OperationError(gettext_noop("%(vm)s has TPM state; shut it down to back it up"), vm=name)
         if tree.find("devices/filesystem") is not None:
             raise OperationError(gettext_noop("%(vm)s shares a host directory (filesystem); it cannot be backed up"), vm=name)
         if tree.xpath("os/kernel|os/initrd|os/dtb"):
@@ -112,7 +117,8 @@ class wvmBackup(wvmInstance):
         if nvram and os.path.dirname(nvram) != NVRAM_DIR:
             raise OperationError(gettext_noop("The NVRAM file %(path)s is not in libvirt's NVRAM directory %(dir)s and cannot be copied"),
                           path=nvram, dir=NVRAM_DIR)
-        return {"definition": etree.tostring(tree).decode(), "disks": disks, "nvram": nvram, "left_out": left_out}
+        return {"definition": etree.tostring(tree).decode(), "disks": disks, "nvram": nvram, "tpm": bool(tpm),
+                "left_out": left_out}
 
     def copy_disk_offline(self, disk, pool, name, owner_uid, owner_gid):
         """A shut-off VM's disk copied into the target pool, flat, in its
@@ -140,6 +146,15 @@ class wvmBackup(wvmInstance):
             vol = self._find_volume(pool, os.path.basename(path))
             return None if vol is None else self.download_volume(vol)
 
+    def read_tpm(self):
+        """The shut-off VM's TPM state files: {name: bytes}, {} when it never
+        started. swtpm's .lock is not state."""
+        with self._tpm_pool(self.instance.UUIDString()) as pool:
+            if pool is None:
+                return {}
+            return {name: self.download_volume(pool.storageVolLookupByName(name))
+                    for name in sorted(pool.listVolumes()) if not name.startswith(".")}
+
 
 def backup_file_names(uuid, disks, nvram):
     """The names of a backup's files in the target pool, from its UUID only."""
@@ -147,6 +162,7 @@ def backup_file_names(uuid, disks, nvram):
     return {
         "disks": {d["dev"]: f"{prefix}-{d['dev']}.{'qcow2' if d['format'] == 'qcow2' else 'raw'}" for d in disks},
         "nvram": f"{prefix}-nvram.fd" if nvram else None,
+        "tpm": f"{prefix}-tpm-",  # and the state file's name
         "domain": f"{prefix}-domain.xml",
         "manifest": f"{prefix}-manifest.json",
     }
@@ -166,12 +182,12 @@ def check_target_space(pool, disks, free_percent, free_min_gib):
             pool=pool.name(), free=free / 1024**3, size=needed / 1024**3, percent=free_percent, minimum=free_min_gib)
 
 
-def put_file(conn, pool, name, data, owner):
+def put_file(conn, pool, name, data, owner, mode="0644"):
     """Writes a small file of a backup into the target pool as owner (uid,
-    gid), replacing one of that name, and reads it back. Returns its
-    SHA-256."""
+    gid) with mode, replacing one of that name, and reads it back. Returns
+    its SHA-256."""
     remove_files(pool, [name])
-    vol = conn.upload_volume(pool, name, data, owner=owner)
+    vol = conn.upload_volume(pool, name, data, owner=owner, mode=mode)
     if conn.download_volume(vol) != data:
         vol.delete(0)
         raise OperationError(gettext_noop("The file %(name)s read back from the backup target differs from the one written"), name=name)

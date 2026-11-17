@@ -1,5 +1,6 @@
 from django.utils.translation import gettext_noop
 import contextlib
+import errno
 import io
 import logging
 import os
@@ -188,6 +189,8 @@ request_finished.connect(_request_finished, dispatch_uid="vrtManager.connection.
 
 # libvirt's per-host directory of the VMs' UEFI variables (NVRAM)
 NVRAM_DIR = "/var/lib/libvirt/qemu/nvram"
+# libvirt's per-host directory of the emulated TPMs' state: <vm uuid>/tpm2/
+SWTPM_DIR = "/var/lib/libvirt/swtpm"
 # the files and devices of a definition's disks that may grow from others; a
 # raw one does not
 UNREAD_DISKS = etree.XPath("devices/disk[@device='disk'][not(driver/@type='raw')]/source/@file|"
@@ -1069,6 +1072,35 @@ class wvmConnect(object):
             yield pool
         finally:
             # a transient pool left by a failed destroy goes with libvirtd's next restart
+            with contextlib.suppress(libvirtError):
+                pool.destroy()
+
+    @contextlib.contextmanager
+    def _tpm_pool(self, vm_uuid, build=False):
+        """An active, refreshed pool on the TPM 2.0 state directory of the VM
+        vm_uuid, destroyed after; None when the directory does not exist (the
+        VM never started) and build is false; build makes it. Used only by
+        the worker's jobs that hold the VM: the pool a stopped worker left on
+        the directory is taken, as libvirt refuses a second one."""
+        path = f"{SWTPM_DIR}/{vm_uuid}/tpm2"
+        pool = self.pool_at(path)
+        if pool is not None:
+            pool.refresh(0)
+        else:
+            try:
+                pool = self.wvm.storagePoolCreateXML(
+                    f"<pool type='dir'><name>webvirtcloud-tpm-{uuid.uuid4().hex[:8]}</name>"
+                    f"<target><path>{path}</path></target></pool>",
+                    libvirt.VIR_STORAGE_POOL_CREATE_WITH_BUILD if build else 0,
+                )
+            except libvirtError as err:
+                if build or err.get_error_code() != libvirt.VIR_ERR_SYSTEM_ERROR or err.get_int1() != errno.ENOENT:
+                    raise
+                yield None
+                return
+        try:
+            yield pool
+        finally:
             with contextlib.suppress(libvirtError):
                 pool.destroy()
 

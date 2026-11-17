@@ -2,6 +2,7 @@
 names and space, and the small files' upload read back."""
 
 import unittest
+from contextlib import nullcontext
 from unittest.mock import MagicMock
 
 import libvirt
@@ -13,6 +14,7 @@ from vrtManager.instance import PERSISTENT_XML
 GIB = 1024**3
 QCOW = "<disk type='file' device='disk'><driver name='qemu' type='qcow2'/><source file='/pool/a.qcow2'/><target dev='vda'/></disk>"
 RAW = "<disk type='file' device='disk'><driver name='qemu' type='raw'/><source file='/pool/b.img'/><target dev='vdb'/></disk>"
+TPM = "<tpm model='tpm-crb'><backend type='emulator' version='2.0'/></tpm>"
 CDROM = "<disk type='file' device='cdrom'><source file='/iso/x.iso'/><target dev='sda'/></disk>"
 
 
@@ -34,6 +36,7 @@ def proxy(xml=None, live=None, state=libvirt.VIR_DOMAIN_SHUTOFF, managed_save=Fa
     p.wvm = MagicMock()
     p.instance = MagicMock()
     p.instance.name.return_value = "vm1"
+    p.instance.UUIDString.return_value = "u"
     p.instance.state.return_value = [state, 0]
     p.instance.hasManagedSaveImage.return_value = managed_save
     persistent = xml or domain()
@@ -103,7 +106,12 @@ class BackupPlanTestCase(unittest.TestCase):
             "host device": (QCOW + "<hostdev mode='subsystem' type='pci'/>", ("host device",)),
             "host device NIC": (QCOW + "<interface type='hostdev'><mac address='52:54:00:00:00:09'/></interface>",
                                 ("host device",)),
-            "tpm": (QCOW + "<tpm model='tpm-crb'><backend type='emulator'/></tpm>", ("vm1", "TPM")),
+            "encrypted tpm": (QCOW + "<tpm model='tpm-crb'><backend type='emulator' version='2.0'>"
+                              "<encryption secret='33333333-3333-4333-8333-333333333333'/></backend></tpm>", ("vm1", "TPM")),
+            "tpm state path": (QCOW + "<tpm model='tpm-crb'><backend type='emulator' version='2.0'>"
+                               "<source type='dir' path='/srv/tpm'/></backend></tpm>", ("vm1", "TPM")),
+            "host tpm": (QCOW + "<tpm model='tpm-tis'><backend type='passthrough'><device path='/dev/tpm0'/></backend></tpm>",
+                         ("vm1", "TPM")),
         }
         for name, (devices, texts) in cases.items():
             with self.subTest(name):
@@ -111,6 +119,33 @@ class BackupPlanTestCase(unittest.TestCase):
         for tag in ("kernel", "initrd", "dtb"):
             with self.subTest(tag):
                 self.refused(proxy(domain(os_extra=f"<{tag}>/boot/x</{tag}>")), "kernel")
+
+    def test_a_shut_off_vms_tpm_is_backed_up_and_its_state_read_by_the_job(self):
+        p = proxy(domain(QCOW + TPM))
+        p._tpm_pool = MagicMock()
+        self.assertTrue(p.backup_plan()["tpm"])
+        p._tpm_pool.assert_not_called()  # the plan runs in pages too: only the worker reads the state
+        self.assertFalse(proxy(domain(QCOW)).backup_plan()["tpm"])
+
+    def test_the_tpm_state_files_are_read_without_swtpms_lock(self):
+        p = proxy(domain(QCOW + TPM))
+        state = MagicMock()
+        state.listVolumes.return_value = [".lock", "tpm2-00.permall"]
+        p._tpm_pool = MagicMock(return_value=nullcontext(state))
+        p.download_volume = MagicMock(return_value=b"state")
+        self.assertEqual(p.read_tpm(), {"tpm2-00.permall": b"state"})
+        p._tpm_pool.assert_called_once_with("u")
+        state.storageVolLookupByName.assert_called_once_with("tpm2-00.permall")
+
+    def test_a_tpm_that_never_started_has_no_files(self):
+        p = proxy(domain(QCOW + TPM))
+        p._tpm_pool = MagicMock(return_value=nullcontext(None))
+        self.assertEqual(p.read_tpm(), {})
+
+    def test_a_running_or_paused_vm_with_a_tpm_is_refused(self):
+        for state in (libvirt.VIR_DOMAIN_RUNNING, libvirt.VIR_DOMAIN_PAUSED):
+            with self.subTest(state):
+                self.refused(proxy(domain(QCOW + TPM), state=state), "vm1", "TPM", "shut it down")
 
     def test_a_saved_state_is_refused(self):
         self.refused(proxy(managed_save=True), "saved state")
@@ -145,6 +180,7 @@ class FilesTestCase(unittest.TestCase):
             {
                 "disks": {"vda": f"wvc-{uuid}-vda.qcow2", "vdb": f"wvc-{uuid}-vdb.raw"},
                 "nvram": f"wvc-{uuid}-nvram.fd",
+                "tpm": f"wvc-{uuid}-tpm-",
                 "domain": f"wvc-{uuid}-domain.xml",
                 "manifest": f"wvc-{uuid}-manifest.json",
             },
@@ -181,7 +217,42 @@ class FilesTestCase(unittest.TestCase):
         )
         old.delete.assert_called_once_with(0)
         # written as QEMU's user: an NFS export that squashes root refuses root's files
-        conn.upload_volume.assert_called_once_with(pool, "wvc-x-domain.xml", b"data", owner=(107, 108))
+        conn.upload_volume.assert_called_once_with(pool, "wvc-x-domain.xml", b"data", owner=(107, 108), mode="0644")
+
+    def test_a_tpm_directory_that_does_not_exist_gives_no_pool(self):
+        import errno
+
+        from vrtManager.connection import wvmConnect
+
+        conn = wvmConnect.__new__(wvmConnect)
+        conn.wvm = MagicMock()
+        missing = libvirt.libvirtError("cannot open directory")
+        missing.err = (libvirt.VIR_ERR_SYSTEM_ERROR, 0, "", 2, None, None, None, errno.ENOENT, -1)
+        conn.wvm.storagePoolCreateXML.side_effect = missing
+        conn.wvm.listAllStoragePools.return_value = []
+        with conn._tpm_pool("u") as pool:
+            self.assertIsNone(pool)
+        self.assertIn("/var/lib/libvirt/swtpm/u/tpm2", conn.wvm.storagePoolCreateXML.call_args.args[0])
+        conn.wvm.listAllStoragePools.return_value = []
+        with self.assertRaises(libvirt.libvirtError), conn._tpm_pool("u", build=True):
+            pass
+        missing.err = (libvirt.VIR_ERR_SYSTEM_ERROR, 0, "", 2, None, None, None, errno.EACCES, -1)
+        with self.assertRaises(libvirt.libvirtError), conn._tpm_pool("u"):
+            pass
+
+    def test_a_tpm_pool_a_stopped_worker_left_is_taken_and_destroyed(self):
+        from vrtManager.connection import wvmConnect
+
+        conn = wvmConnect.__new__(wvmConnect)
+        conn.wvm = MagicMock()
+        left = MagicMock()
+        left.XMLDesc.return_value = "<pool><target><path>/var/lib/libvirt/swtpm/u/tpm2</path></target></pool>"
+        conn.wvm.listAllStoragePools.return_value = [left]
+        with conn._tpm_pool("u") as pool:
+            self.assertIs(pool, left)
+        conn.wvm.storagePoolCreateXML.assert_not_called()
+        left.refresh.assert_called_once_with(0)
+        left.destroy.assert_called_once_with()
 
     def test_upload_volume_sets_the_owner(self):
         from lxml import etree

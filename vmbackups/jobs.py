@@ -141,6 +141,12 @@ def _publish(op, proxy, pool):
     if nvram is not None:
         files.append({"role": BackupFile.NVRAM, "dev": "", "volume": names["nvram"], "format": "raw",
                       "capacity": len(nvram), "size": len(nvram), "sha256": put_file(proxy, pool, names["nvram"], nvram, _owner())})
+    # a shut-off VM's (a running one with a TPM is refused); a secret: no other user reads it
+    tpm = proxy.read_tpm() if plan["tpm"] else None
+    for name, data in (tpm or {}).items():
+        files.append({"role": BackupFile.TPM, "dev": name, "volume": names["tpm"] + name, "format": "raw",
+                      "capacity": len(data), "size": len(data),
+                      "sha256": put_file(proxy, pool, names["tpm"] + name, data, _owner(), mode="0600")})
     definition = plan["definition"].encode()
     files.append({"role": BackupFile.DOMAIN, "dev": "", "volume": names["domain"], "format": "", "capacity": len(definition),
                   "size": len(definition), "sha256": put_file(proxy, pool, names["domain"], definition, _owner())})
@@ -152,6 +158,7 @@ def _publish(op, proxy, pool):
         "created_at": backup.created_at.isoformat(),
         "consistency": op.intent["consistency"],
         "nvram": "copied" if nvram is not None else ("never written" if plan["nvram"] else "none"),
+        "tpm": "copied" if tpm else ("never written" if tpm == {} else "none"),
         "files": files,
         "left_out": plan["left_out"],
         "libvirt": proxy.wvm.getLibVersion(),
@@ -173,7 +180,9 @@ def _publish(op, proxy, pool):
 
 def _discard(op, pool):
     """The job's files removed, its row failed."""
-    remove_files(pool, _all_names(op.intent["names"]))
+    pool.refresh(0)  # the TPM state files are named by what the VM had
+    names = op.intent["names"]
+    remove_files(pool, [*_all_names(names), *(n for n in pool.listVolumes() if n.startswith(names["tpm"]))])
     Backup.objects.filter(uuid=op.intent["backup"]).update(state=Backup.FAILED, finished_at=timezone.now())
 
 

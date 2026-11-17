@@ -31,11 +31,12 @@ def libvirt_error(text="x"):
     return libvirt.libvirtError(text)
 
 
-def plan(nvram=None):
+def plan(nvram=None, tpm=False):
     return {
         "definition": "<domain><name>vm1</name></domain>",
         "disks": [{"dev": "vda", "path": "/pool/a.qcow2", "pool": "default", "format": "qcow2", "capacity": GIB}],
         "nvram": nvram,
+        "tpm": tpm,
         "left_out": [{"dev": "sda", "why": "CD-ROM: not copied"}],
     }
 
@@ -53,6 +54,7 @@ def proxy(status=libvirt.VIR_DOMAIN_SHUTOFF, nvram=None):
     p.backup_progress.return_value = None
     p.backup_result.return_value = (True, "")
     p.read_nvram.return_value = b"vars"
+    p.read_tpm.return_value = {"tpm2-00.permall": b"state"}
     return p
 
 
@@ -75,11 +77,12 @@ class CreateBackupTests(TransactionTestCase):
         self.proxy = proxy()
         self.pool = target_pool()
         self.written = []
+        self.modes = {}
         self.removed = []
         for name, value in (
             ("vmbackups.jobs.wvmBackup", MagicMock(return_value=self.proxy)),
             ("vmbackups.jobs.target_pool", MagicMock(return_value=self.pool)),
-            ("vmbackups.jobs.put_file", MagicMock(side_effect=lambda conn, pool, n, data, owner: self.written.append(n) or "sha")),
+            ("vmbackups.jobs.put_file", MagicMock(side_effect=self.put_file)),
             ("vmbackups.jobs.remove_files", MagicMock(side_effect=lambda pool, names: self.removed.extend(names))),
             ("vmbackups.jobs.NVRAM_WAIT", 0),
             ("vmbackups.jobs.PROGRESS_EVERY", 0),
@@ -87,6 +90,15 @@ class CreateBackupTests(TransactionTestCase):
             patcher = patch(name, value)
             patcher.start()
             self.addCleanup(patcher.stop)
+
+    fail_on = None
+
+    def put_file(self, conn, pool, name, data, owner, mode="0644"):
+        if self.fail_on and name.endswith(self.fail_on):
+            raise libvirt_error("No space left on device")
+        self.written.append(name)
+        self.modes[name] = mode
+        return "sha"
 
     def submit(self, frozen=False):
         op = jobs.submit("backup.create", self.admin, {"instance": self.vm.pk, "target": self.target.pk, "frozen": frozen},
@@ -123,6 +135,37 @@ class CreateBackupTests(TransactionTestCase):
         self.assertEqual((files["disk"].dev, files["disk"].capacity, files["disk"].size), ("vda", GIB, GIB // 2))
         self.assertEqual(backup.manifest["left_out"], plan()["left_out"])
         self.assertEqual(backup.manifest["consistency"], "offline")
+        self.assertEqual(backup.manifest["tpm"], "none")
+
+    def test_a_shut_off_vms_tpm_state_is_kept(self):
+        self.proxy.backup_plan.return_value = plan(tpm=True)
+        op = self.submit()
+        self.run_job(op)
+        prefix = f"wvc-{op.intent['backup']}"
+        self.assertEqual(self.written, [f"{prefix}-tpm-tpm2-00.permall", f"{prefix}-domain.xml", f"{prefix}-manifest.json"])
+        self.assertEqual(self.modes[f"{prefix}-tpm-tpm2-00.permall"], "0600")  # a secret
+        tpm = self.backup(op).files.get(role=BackupFile.TPM)
+        self.assertEqual((tpm.dev, tpm.volume, tpm.size, tpm.sha256), ("tpm2-00.permall", f"{prefix}-tpm-tpm2-00.permall", 5, "sha"))
+        self.assertEqual(self.backup(op).manifest["tpm"], "copied")
+
+    def test_a_tpm_that_never_started_is_said_so(self):
+        self.proxy.backup_plan.return_value = plan(tpm=True)
+        self.proxy.read_tpm.return_value = {}
+        op = self.submit()
+        self.run_job(op)
+        self.assertEqual(self.backup(op).manifest["tpm"], "never written")
+        self.assertFalse(self.backup(op).files.filter(role=BackupFile.TPM).exists())
+
+    def test_a_failed_backup_removes_the_tpm_files_it_wrote(self):
+        self.proxy.backup_plan.return_value = plan(tpm=True)
+        op = self.submit()
+        prefix = f"wvc-{op.intent['backup']}"
+        self.pool.listVolumes.return_value = [f"{prefix}-tpm-tpm2-00.permall", "wvc-00000000-0000-4000-8000-000000000009-tpm-x"]
+        self.fail_on = "-domain.xml"  # once the TPM file is written
+        op = self.interrupted(op)
+        self.assertEqual(CreateBackup().reconcile(op).state, Operation.FAILED)
+        self.assertIn(f"{prefix}-tpm-tpm2-00.permall", self.removed)
+        self.assertNotIn("wvc-00000000-0000-4000-8000-000000000009-tpm-x", self.removed)
 
     def test_a_running_vm_is_frozen_backed_up_and_thawed(self):
         self.proxy.get_status.return_value = libvirt.VIR_DOMAIN_RUNNING
