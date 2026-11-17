@@ -33,7 +33,7 @@ from vrtManager.instance import wvmInstance
 from vrtManager.storage import wvmStorage
 from vrtManager.instance import LIVE_CLONE_MIN_LIBVIRT
 
-from .models import Backup, BackupFile, BackupTarget
+from .models import Backup, BackupFile, BackupPolicy, BackupTarget
 
 MANIFEST_FORMAT = 1
 NVRAM_READS = 3  # a running VM's NVRAM read after its backup, until it is the one read before
@@ -189,7 +189,9 @@ class CreateBackup(Kind):
 
     def normalize(self, raw):
         return {"instance": int(raw["instance"]), "target": int(raw["target"]),
-                "frozen": str(raw.get("frozen", "")).lower() in ("1", "true", "on")}
+                "frozen": str(raw.get("frozen", "")).lower() in ("1", "true", "on"),
+                # the schedule that asked for it, if one did
+                "policy": int(raw["policy"]) if raw.get("policy") else None}
 
     def plan(self, user, params):
         _superuser(user)
@@ -216,8 +218,10 @@ class CreateBackup(Kind):
         names = backup_file_names(op.intent["backup"], plan["disks"], bool(plan["nvram"]))
         ctx.record_intent(live=live, plan=plan, names=names, pool=row.pool, pool_uuid=row.pool_uuid,
                           consistency=Backup.OFFLINE if not live else Backup.CRASH)
+        # a schedule deleted since the job was queued: the backup is kept, without it
+        policy = BackupPolicy.objects.filter(pk=op.params.get("policy")).first() if op.params.get("policy") else None
         Backup.objects.create(uuid=op.intent["backup"], target=target, instance=instance, vm_uuid=instance.uuid,
-                              vm_name=instance.name, compute_name=instance.compute.name, operation=op)
+                              vm_name=instance.name, compute_name=instance.compute.name, operation=op, policy=policy)
         ctx.set_phase(_("Copying disks"))
         if live:
             return self._run_live(op, ctx, proxy, pool, status)

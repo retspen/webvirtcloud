@@ -36,6 +36,7 @@ MAX_SLOTS = 16
 PROGRESS_THREADS = 2
 CONTROL_THREADS = 4
 HOUSEKEEPING_EVERY = 600.0
+PERIODIC_EVERY = 60.0  # the apps' periodic tasks (jobs.register_periodic): backup schedules
 
 BACKOFF = (30, 60, 120, 300, 600)
 WATCH_EVERY = 15
@@ -110,8 +111,11 @@ class Worker:
         self.control = ThreadPoolExecutor(CONTROL_THREADS, thread_name_prefix="wvc-control")
         self.progress_pool = ThreadPoolExecutor(PROGRESS_THREADS, thread_name_prefix="wvc-progress")
         self.recovery = Scheduler(self)
-        self._last = {"heartbeat": 0.0, "progress": 0.0, "housekeeping": 0.0}
+        self._last = {"heartbeat": 0.0, "progress": 0.0, "housekeeping": 0.0, "periodic": 0.0}
         self.housekeeping = None  # the future of the last housekeeping pass
+        # a thread of their own: a pass stuck on a host takes no thread recovery or a cancel needs
+        self.periodic_pool = ThreadPoolExecutor(1, thread_name_prefix="wvc-periodic")
+        self.periodic = None  # the future of the last pass
 
     # -- process ------------------------------------------------------------
 
@@ -198,6 +202,10 @@ class Worker:
             # one pass at a time: a pass stuck on a host (an upload's cleanup) holds one control thread, not all
             if self.housekeeping is None or self.housekeeping.done():
                 self.housekeeping = self.control.submit(_guarded, housekeeping)
+        if now - self._last["periodic"] >= PERIODIC_EVERY:
+            self._last["periodic"] = now
+            if self.periodic is None or self.periodic.done():
+                self.periodic = self.periodic_pool.submit(_guarded, periodic)
 
     def _mine(self, pks):
         """This worker's active jobs among pks; used only inside fenced."""
@@ -404,6 +412,12 @@ def housekeeping():
             jobs.get_kind(op.kind).expire(op)
         except Exception as err:
             logger.error("expiring job %s failed: %s", op.pk, utils.safe_text(err))
+
+
+def periodic():
+    """The apps' periodic tasks, each guarded: one failing stops none of the others."""
+    for task in list(jobs.PERIODIC):
+        _guarded(task)
 
 
 class Scheduler:

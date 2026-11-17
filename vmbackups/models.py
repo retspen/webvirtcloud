@@ -1,5 +1,6 @@
 import uuid
 
+from django.conf import settings
 from django.db import models
 
 from computes.models import Compute
@@ -12,6 +13,7 @@ class BackupTarget(models.Model):
 
     name = models.CharField(max_length=64, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    checked_at = models.DateTimeField(null=True)  # its last target check that ended
 
     def __str__(self):
         return self.name
@@ -34,9 +36,56 @@ class BackupTargetPool(models.Model):
         constraints = [models.UniqueConstraint(fields=["target", "compute"], name="one_pool_per_target_and_compute")]
 
 
+class BackupPolicy(models.Model):
+    """A schedule: its VMs (those chosen, or every VM of a compute) backed
+    up into its target once a day at its time, the newest keep of each VM
+    kept. Its jobs run as its owner, a superuser."""
+
+    name = models.CharField(max_length=64, unique=True)
+    target = models.ForeignKey(BackupTarget, on_delete=models.PROTECT, related_name="policies")
+    compute = models.ForeignKey(Compute, on_delete=models.CASCADE, null=True, blank=True)
+    instances = models.ManyToManyField(Instance, blank=True, related_name="backup_policies")
+    time = models.TimeField()  # in the panel's time zone
+    keep = models.PositiveSmallIntegerField()
+    frozen = models.BooleanField(default=False)
+    enabled = models.BooleanField(default=True)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.CheckConstraint(condition=models.Q(keep__gte=1), name="policy_keeps_one")]
+
+    def __str__(self):
+        return self.name
+
+    def vms(self):
+        """Its VMs now: a compute's are those it has at this moment, templates left out."""
+        if self.compute_id:
+            return Instance.objects.filter(compute_id=self.compute_id, is_template=False).order_by("name")
+        return self.instances.select_related("compute").order_by("name")
+
+
+class BackupRun(models.Model):
+    """A schedule's backup of one VM on one day: what it submitted, or why not."""
+
+    SUBMITTED, SKIPPED, FAILED = "submitted", "skipped", "failed"
+    STATES = [(SUBMITTED, "submitted"), (SKIPPED, "skipped"), (FAILED, "failed")]
+
+    policy = models.ForeignKey(BackupPolicy, on_delete=models.CASCADE, related_name="runs")
+    instance = models.ForeignKey(Instance, on_delete=models.CASCADE, related_name="backup_runs")
+    day = models.DateField()  # the local day of the schedule's time
+    state = models.CharField(max_length=16, choices=STATES)
+    operation = models.ForeignKey(Operation, on_delete=models.SET_NULL, null=True)
+    note = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["policy", "instance", "day"], name="one_run_per_day")]
+
+
 class Backup(models.Model):
-    CREATING, READY, FAILED, DELETING = "creating", "ready", "failed", "deleting"
-    STATES = [(CREATING, "creating"), (READY, "ready"), (FAILED, "failed"), (DELETING, "deleting")]
+    CREATING, READY, FAILED, DELETING, MISSING = "creating", "ready", "failed", "deleting", "missing"
+    STATES = [(CREATING, "creating"), (READY, "ready"), (FAILED, "failed"), (DELETING, "deleting"), (MISSING, "missing")]
     OFFLINE, FROZEN, CRASH = "offline", "frozen", "crash"
     CONSISTENCIES = [(OFFLINE, "offline"), (FROZEN, "frozen"), (CRASH, "crash-consistent")]
 
@@ -54,6 +103,7 @@ class Backup(models.Model):
     size = models.BigIntegerField(default=0)  # bytes in the target
     manifest = models.JSONField(default=dict)
     operation = models.ForeignKey(Operation, on_delete=models.SET_NULL, null=True)
+    policy = models.ForeignKey(BackupPolicy, on_delete=models.SET_NULL, null=True, related_name="backups")
 
     class Meta:
         ordering = ["-created_at"]

@@ -70,6 +70,16 @@ def register(cls):
     return cls
 
 
+PERIODIC = []
+
+
+def register_periodic(fn):
+    """A task of an app (its jobs.py) that the worker runs about once a
+    minute, apart from the jobs: one pass of all such tasks at a time."""
+    PERIODIC.append(fn)
+    return fn
+
+
 class Kind:
     name = ""
     label = ""

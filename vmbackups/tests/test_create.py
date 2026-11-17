@@ -370,6 +370,30 @@ class CreateBackupTests(TransactionTestCase):
         op.refresh_from_db()
         self.assertEqual(CreateBackup().progress(op), (GIB, GIB))
 
+    def test_a_schedules_backup_is_linked_to_it_unless_it_was_deleted(self):
+        import datetime
+
+        from vmbackups.models import BackupPolicy
+
+        policy = BackupPolicy.objects.create(name="nightly", target=self.target, time=datetime.time(2), keep=2,
+                                             owner=self.admin)
+        op = jobs.submit("backup.create", self.admin, {"instance": self.vm.pk, "target": self.target.pk,
+                                                       "policy": policy.pk}, "key-policy-0001")
+        acquire(WORKER, "wvc-test")
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker=WORKER)
+        op.refresh_from_db()
+        self.run_job(op)
+        self.assertEqual(self.backup(op).policy, policy)
+        jobs.finish(op, jobs.Outcome(Operation.SUCCEEDED))
+        policy_pk = policy.pk
+        policy.delete()  # while the next one is queued
+        op = jobs.submit("backup.create", self.admin, {"instance": self.vm.pk, "target": self.target.pk,
+                                                       "policy": policy_pk}, "key-policy-0002")
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker=WORKER)
+        op.refresh_from_db()
+        self.run_job(op)
+        self.assertIsNone(self.backup(op).policy)
+
     def test_the_log_names_the_target_and_consistency(self):
         op = self.submit()
         self.run_job(op)
