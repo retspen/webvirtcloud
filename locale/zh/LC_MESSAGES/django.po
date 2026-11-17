@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-16 19:52+0000\n"
+"POT-Creation-Date: 2026-11-17 04:36+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -72,7 +72,8 @@ msgstr "无效的密钥"
 #: interfaces/templates/interface.html:119 networks/templates/network.html:145
 #: networks/templates/network.html:373 nwfilters/templates/nwfilters.html:29
 #: storages/templates/storage.html:123 virtsecrets/forms.py:34
-#: virtsecrets/forms.py:36
+#: virtsecrets/forms.py:36 vmbackups/forms.py:22
+#: vmbackups/templates/vmbackups/targets.html:17
 msgid "Name"
 msgstr "名称"
 
@@ -501,7 +502,7 @@ msgid "Signing in..."
 msgstr "正在登录…"
 
 #: accounts/templates/profile.html:6 accounts/templates/profile.html:8
-#: templates/navbar.html:50
+#: templates/navbar.html:53
 msgid "Profile"
 msgstr "个人资料"
 
@@ -532,6 +533,8 @@ msgstr "为用户添加密钥表单"
 #: instances/templates/create_flavors.html:20
 #: instances/templates/instances/boot_device.html:17
 #: networks/templates/network.html:134 nwfilters/templates/nwfilter.html:45
+#: vmbackups/templates/vmbackups/target.html:49
+#: vmbackups/templates/vmbackups/targets.html:40
 msgid "Add"
 msgstr "添加"
 
@@ -723,7 +726,7 @@ msgstr "权限"
 #: admin/forms.py:103 admin/templates/admin/group_list.html:6
 #: admin/templates/admin/group_list.html:8
 #: admin/templates/admin/group_list.html:24
-#: admin/templates/admin/user_form.html:124 templates/navbar.html:33
+#: admin/templates/admin/user_form.html:124 templates/navbar.html:36
 msgid "Groups"
 msgstr "用户组"
 
@@ -891,7 +894,7 @@ msgstr "没有与搜索匹配的用户组。"
 
 #: admin/templates/admin/logs.html:6 admin/templates/admin/logs.html:8
 #: admin/templates/admin/logs.html:19
-#: instances/templates/instances/stats_tab.html:20 templates/navbar.html:34
+#: instances/templates/instances/stats_tab.html:20 templates/navbar.html:37
 msgid "Logs"
 msgstr "日志"
 
@@ -959,7 +962,7 @@ msgstr "失败"
 
 #: admin/templates/admin/tombstone_list.html:6
 #: admin/templates/admin/tombstone_list.html:8
-#: admin/templates/admin/tombstone_list.html:19 templates/navbar.html:35
+#: admin/templates/admin/tombstone_list.html:19 templates/navbar.html:38
 msgid "Removed VMs"
 msgstr "已移除的虚拟机"
 
@@ -1084,7 +1087,7 @@ msgid "New user"
 msgstr "新建用户"
 
 #: admin/templates/admin/user_list.html:19 admin/views.py:179
-#: instances/templates/instances/settings_tab.html:79 templates/navbar.html:32
+#: instances/templates/instances/settings_tab.html:79 templates/navbar.html:35
 msgid "Users"
 msgstr "用户"
 
@@ -1714,7 +1717,7 @@ msgstr "设置分组"
 msgid "Appearance"
 msgstr "外观"
 
-#: appsettings/templates/appsettings.html:35 templates/navbar.html:48
+#: appsettings/templates/appsettings.html:35 templates/navbar.html:51
 msgid "Language"
 msgstr "语言"
 
@@ -3743,7 +3746,7 @@ msgstr "主机存储池中已有的卷。"
 #: instances/templates/create_instance_w2.html:137
 #: instances/templates/create_instance_w2.html:165
 #: instances/templates/instances/move_disk.html:16
-#: instances/templates/instances/settings_tab.html:223
+#: instances/templates/instances/settings_tab.html:223 vmbackups/forms.py:13
 msgid "Storage pool"
 msgstr "存储池"
 
@@ -3969,7 +3972,6 @@ msgid "Choose the host the VM runs on."
 msgstr "选择运行虚拟机的主机。"
 
 #: instances/templates/create_inst_block.html:22
-#| msgid "In maintenance"
 msgid "Maintenance"
 msgstr "维护"
 
@@ -4138,6 +4140,7 @@ msgstr "设备"
 #: instances/templates/instances/boot_device.html:14
 #: instances/templates/instances/settings_tab.html:685
 #: networks/templates/network.html:304
+#: vmbackups/templates/vmbackups/target.html:23
 msgid "Remove"
 msgstr "移除"
 
@@ -4319,7 +4322,7 @@ msgstr "调整大小"
 msgid "Snapshot"
 msgstr "快照"
 
-#: instances/templates/instance.html:102 templates/navbar.html:37
+#: instances/templates/instance.html:102 templates/navbar.html:40
 msgid "Settings"
 msgstr "设置"
 
@@ -8022,7 +8025,7 @@ msgstr "只能处理状态不确定的任务"
 #: operations/templates/operations/job.html:11
 #: operations/templates/operations/jobs.html:7
 #: operations/templates/operations/jobs.html:9
-#: operations/templates/operations/jobs.html:20 templates/navbar.html:24
+#: operations/templates/operations/jobs.html:20 templates/navbar.html:27
 msgid "Jobs"
 msgstr "任务"
 
@@ -8269,8 +8272,8 @@ msgstr "恢复在一小时内无法读取任务状态；请检查虚拟机，然
 msgid "The worker stopped before the job changed anything"
 msgstr "工作进程在任务做出任何更改之前停止"
 
-#: storages/api/viewsets.py:144 storages/api/viewsets.py:160
-#: storages/api/viewsets.py:196 storages/api/viewsets.py:218
+#: storages/api/viewsets.py:145 storages/api/viewsets.py:161
+#: storages/api/viewsets.py:197 storages/api/viewsets.py:220
 msgid "Pool is not active"
 msgstr "存储池未激活"
 
@@ -8814,36 +8817,36 @@ msgstr "最后一个分块与声明的文件大小不符"
 msgid "The partial upload is missing"
 msgstr "部分上传的文件不存在"
 
-#: storages/views.py:32
+#: storages/views.py:33
 msgid "No file chunk was submitted."
 msgstr "未提交文件分块。"
 
-#: storages/views.py:38
+#: storages/views.py:39
 msgid "Invalid chunk parameters."
 msgstr "分块参数无效。"
 
-#: storages/views.py:40
+#: storages/views.py:41
 msgid "Invalid chunk index or total chunks."
 msgstr "分块索引或分块总数无效。"
 
-#: storages/views.py:45
+#: storages/views.py:46
 msgid "Invalid file size."
 msgstr "文件大小无效。"
 
-#: storages/views.py:54
+#: storages/views.py:55
 msgid "Upload session is busy. Please retry."
 msgstr "上传会话繁忙，请重试。"
 
-#: storages/views.py:56
+#: storages/views.py:57
 msgid "ISO image already exists"
 msgstr "ISO 镜像已存在"
 
-#: storages/views.py:184
+#: storages/views.py:187
 #, python-format
 msgid "Volume: %(vol)s is deleted."
 msgstr "卷 %(vol)s 已删除。"
 
-#: storages/views.py:201
+#: storages/views.py:204
 #, python-format
 msgid "Image file %(name)s is created successfully"
 msgstr "镜像文件 %(name)s 创建成功"
@@ -8957,15 +8960,19 @@ msgstr "返回"
 msgid "Home"
 msgstr "首页"
 
-#: templates/navbar.html:28
+#: templates/navbar.html:21 vmbackups/templates/vmbackups/targets.html:17
+msgid "Backups"
+msgstr "备份"
+
+#: templates/navbar.html:31
 msgid "Administration"
 msgstr "管理"
 
-#: templates/navbar.html:36
+#: templates/navbar.html:39
 msgid "VM report (.xlsx)"
 msgstr "虚拟机报告 (.xlsx)"
 
-#: templates/navbar.html:54
+#: templates/navbar.html:57
 msgid "Log Out"
 msgstr "退出登录"
 
@@ -9142,6 +9149,110 @@ msgid ""
 "It replaces the old value at once; what a passphrase encrypted is not "
 "encrypted anew."
 msgstr "新值会立即替换旧值；之前用口令加密的内容不会重新加密。"
+
+#: vmbackups/forms.py:12
+msgid "Compute"
+msgstr "计算节点"
+
+#: vmbackups/forms.py:28
+msgid "A backup target with this name exists"
+msgstr "已存在同名的备份目标"
+
+#: vmbackups/templates/vmbackups/target.html:6
+#: vmbackups/templates/vmbackups/target.html:8
+#: vmbackups/templates/vmbackups/targets.html:6
+#: vmbackups/templates/vmbackups/targets.html:8
+msgid "Backup targets"
+msgstr "备份目标"
+
+#: vmbackups/templates/vmbackups/target.html:11
+#, python-format
+msgid "%(counter)s backup."
+msgid_plural "%(counter)s backups."
+msgstr[0] "%(counter)s 个备份。"
+
+#: vmbackups/templates/vmbackups/target.html:23
+msgid ""
+"Remove this storage pool from the target? The pool and its files stay on the "
+"host."
+msgstr "要从目标中移除此存储池吗？存储池及其文件仍保留在主机上。"
+
+#: vmbackups/templates/vmbackups/target.html:33
+#, python-format
+msgid ""
+"The target is inside storage pool %(pool)s: its backups are lost with that "
+"storage."
+msgstr "目标位于存储池 %(pool)s 内：该存储丢失时其备份也会丢失。"
+
+#: vmbackups/templates/vmbackups/target.html:43
+msgid "Add a compute's storage pool"
+msgstr "添加计算节点的存储池"
+
+#: vmbackups/templates/vmbackups/target.html:45
+msgid ""
+"The pool must be the same directory as the target's other pools, as an NFS "
+"share mounted on each host."
+msgstr "该存储池必须与目标的其他存储池是同一目录，例如挂载在每台主机上的 NFS 共享。"
+
+#: vmbackups/templates/vmbackups/target.html:58
+msgid "Delete this backup target? Its storage pools stay on the hosts."
+msgstr "要删除此备份目标吗？其存储池仍保留在主机上。"
+
+#: vmbackups/templates/vmbackups/target.html:58
+msgid "Delete target"
+msgstr "删除目标"
+
+#: vmbackups/templates/vmbackups/targets.html:11
+msgid ""
+"A backup target is a directory or NFS storage pool made on the hosts. Use "
+"storage apart from the VMs' disks: a target on the same storage is lost with "
+"it."
+msgstr "备份目标是在主机上创建的目录或 NFS 存储池。请使用与虚拟机磁盘分开的存储：位于同一存储上的目标会随之一起丢失。"
+
+#: vmbackups/templates/vmbackups/targets.html:17
+msgid "Storage pools"
+msgstr "存储池"
+
+#: vmbackups/templates/vmbackups/targets.html:31
+msgid "No backup target yet."
+msgstr "还没有备份目标。"
+
+#: vmbackups/templates/vmbackups/targets.html:35
+msgid "Add a backup target"
+msgstr "添加备份目标"
+
+#: vmbackups/utils.py:25
+#, python-format
+msgid ""
+"Volume %(volume)s belongs to a backup of %(vm)s; delete the backup on the "
+"Backups page"
+msgstr "卷 %(volume)s 属于 %(vm)s 的备份；请在备份页面删除该备份"
+
+#: vmbackups/utils.py:35
+#, python-format
+msgid ""
+"Storage pool %(pool)s is backup target %(target)s; remove it from the target "
+"first"
+msgstr "存储池 %(pool)s 是备份目标 %(target)s；请先将其从目标中移除"
+
+#: vmbackups/views.py:61 vmbackups/views.py:69
+#, python-format
+msgid "Backup target %(target)s has backups; delete them first"
+msgstr "备份目标 %(target)s 中有备份；请先删除它们"
+
+#: vmbackups/views.py:86
+#, python-format
+msgid ""
+"Storage pool %(pool)s of %(compute)s is not the same directory as storage "
+"pool %(other)s of %(other_compute)s"
+msgstr "%(compute)s 的存储池 %(pool)s 与 %(other_compute)s 的存储池 %(other)s 不是同一目录"
+
+#: vrtManager/backup.py:30
+#, python-format
+msgid ""
+"Storage pool %(pool)s is not an active directory or NFS pool of this host, or"
+" not the one the backup target registered"
+msgstr "存储池 %(pool)s 不是此主机上活动的目录或 NFS 存储池，或不是备份目标登记的那个存储池"
 
 #: vrtManager/connection.py:45
 msgid "Connection closed (error)"
@@ -10286,10 +10397,10 @@ msgstr "存储池 %(names)s"
 msgid "Secret %(uuid)s is used by %(named)s; remove it from them first"
 msgstr "机密 %(uuid)s 正被 %(named)s 使用；请先从中移除它"
 
-#: webvirtcloud/settings.py:319
+#: webvirtcloud/settings.py:320
 msgid "Localhost"
 msgstr "本机"
 
-#: webvirtcloud/settings.py:320
+#: webvirtcloud/settings.py:321
 msgid "All interfaces"
 msgstr "所有接口"

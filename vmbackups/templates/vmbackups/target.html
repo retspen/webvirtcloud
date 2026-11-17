@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load bootstrap_icons %}
+{% load django_bootstrap5 %}
+
+{% block title %}{{ target.name }} - {% trans "Backup targets" %}{% endblock %}
+
+{% block page_heading %}<a href="{% url 'vmbackups:targets' %}">{% trans "Backup targets" %}</a> / {{ target.name }}{% endblock page_heading %}
+
+{% block content %}
+    <p class="text-body-secondary">{% blocktrans count counter=backup_count %}{{ counter }} backup.{% plural %}{{ counter }} backups.{% endblocktrans %}</p>
+
+    <div class="row row-cols-1 row-cols-md-2 g-3 mb-4">
+    {% for item in pools %}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header d-flex flex-wrap align-items-center gap-2">
+                    <span class="fw-semibold me-auto text-break">{{ item.row.compute.name }}: {{ item.row.pool }}</span>
+                    {% if not backup_count %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" name="remove_pool" value="{{ item.row.id }}" class="btn btn-sm btn-outline-danger"
+                                data-confirm="{% trans "Remove this storage pool from the target? The pool and its files stay on the host." %}">{% trans "Remove" %}</button>
+                    </form>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if item.error %}
+                        <div class="text-danger small">{% bs_icon 'exclamation-triangle' %} {{ item.error }}</div>
+                    {% else %}
+                        {% include "computes/pool_bar.html" with pool=item.space hide_name=True %}
+                        {% if item.inside %}
+                            <div class="alert alert-warning small mt-2 mb-0">{% blocktrans with pool=item.inside %}The target is inside storage pool {{ pool }}: its backups are lost with that storage.{% endblocktrans %}</div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+
+    <div class="card mb-4" style="max-width: 40rem;">
+        <div class="card-header fw-semibold">{% trans "Add a compute's storage pool" %}</div>
+        <div class="card-body">
+            <p class="small text-body-secondary">{% trans "The pool must be the same directory as the target's other pools, as an NFS share mounted on each host." %}</p>
+            <form method="post">
+                {% csrf_token %}
+                {% bootstrap_form form %}
+                <button type="submit" name="add_pool" value="1" class="btn btn-primary">{% bs_icon 'plus' %} {% trans "Add" %}</button>
+            </form>
+        </div>
+    </div>
+
+    {% if not backup_count %}
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" name="delete" value="1" class="btn btn-outline-danger"
+                data-confirm="{% trans "Delete this backup target? Its storage pools stay on the hosts." %}">{% bs_icon 'trash' %} {% trans "Delete target" %}</button>
+    </form>
+    {% endif %}
+{% endblock %}

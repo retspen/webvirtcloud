@@ -23,6 +23,7 @@ from vrtManager.storage import wvmStorage, wvmStorages
 from storages.forms import AddStgPool, CloneImage, CreateVolumeForm
 from storages.jobs import is_iso
 from storages.upload import write_chunk
+from vmbackups.utils import refuse_backup_volume, refuse_target_pool
 from webvirtcloud.gunicorn_worker import request_progressed
 
 
@@ -154,6 +155,7 @@ def storage(request, compute_id, pool):
         if "delete" in request.POST:
             try:
                 with audit(request, compute, subject, "delete"):
+                    refuse_target_pool(compute, pool)
                     conn.delete()
             except OperationError as err:  # a VM names it for a disk
                 messages.error(request, str(err))
@@ -171,6 +173,7 @@ def storage(request, compute_id, pool):
             volname = request.POST.get("volname", "")
             try:
                 with audit(request, compute, subject, f"delete volume {volname}"):
+                    refuse_backup_volume(compute, pool, volname)
                     conn.check_unused_elsewhere(volname, lambda paths: paths_used_on_other_computes(compute, paths))
                     # no VM operation attaches it between the check and the delete
                     with libvirt_compute_lock(compute):

@@ -1,0 +1,101 @@
+from django.contrib import messages
+from django.db import transaction
+from django.db.models import Count
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_noop
+from libvirt import libvirtError
+
+from admin.decorators import superuser_only
+from logs.audit import audit
+from vrtManager.backup import pool_space, target_pool
+from vrtManager.connection import wvmConnect
+from vrtManager.util import OperationError
+
+from .forms import TargetForm, TargetPoolForm
+from .models import BackupTarget
+from .utils import inside_vm_pool
+
+
+def connect(compute):
+    return wvmConnect(compute.hostname, compute.login, compute.password, compute.type)
+
+
+@superuser_only
+def targets(request):
+    form = TargetForm(request.POST or None)
+    if form.is_valid():
+        data = form.cleaned_data
+        try:
+            with audit(request, data["compute"], f"Backup target {data['name']}", f"add with storage pool {data['pool']}"):
+                pool = target_pool(connect(data["compute"]), data["pool"])
+                with transaction.atomic():
+                    target = BackupTarget.objects.create(name=data["name"])
+                    target.pools.create(compute=data["compute"], pool=data["pool"], pool_uuid=pool.UUIDString())
+        except libvirtError as err:
+            form.add_error("pool", str(err))
+        else:
+            return redirect("vmbackups:target", target.id)
+    rows = BackupTarget.objects.annotate(backup_count=Count("backups")).prefetch_related("pools__compute").order_by("name")
+    return render(request, "vmbackups/targets.html", {"targets": rows, "form": form})
+
+
+def pool_state(row):
+    """A target's pool on its compute as the page shows it: its space and
+    whether another pool holds it, or why it cannot be read."""
+    try:
+        conn = connect(row.compute)
+        pool = target_pool(conn, row.pool, row.pool_uuid)
+        return {"row": row, "space": pool_space(pool), "inside": inside_vm_pool(conn, pool)}
+    except libvirtError as err:
+        return {"row": row, "error": str(err)}
+
+
+@superuser_only
+def target(request, target_id):
+    target = get_object_or_404(BackupTarget, pk=target_id)
+    subject = f"Backup target {target.name}"
+    form = TargetPoolForm(request.POST if "add_pool" in request.POST else None, target=target)
+    if request.method == "POST" and "delete" in request.POST:
+        if target.backups.exists():
+            messages.error(request, _("Backup target %(target)s has backups; delete them first") % {"target": target.name})
+            return redirect("vmbackups:target", target.id)
+        with audit(request, None, subject, "delete"):
+            target.delete()
+        return redirect("vmbackups:targets")
+    if request.method == "POST" and "remove_pool" in request.POST:
+        row = get_object_or_404(target.pools.select_related("compute"), pk=request.POST["remove_pool"])
+        if target.backups.exists():
+            messages.error(request, _("Backup target %(target)s has backups; delete them first") % {"target": target.name})
+        else:
+            with audit(request, row.compute, subject, f"remove storage pool {row.pool}"):
+                row.delete()
+        return redirect("vmbackups:target", target.id)
+    if form.is_valid():
+        compute, name = form.cleaned_data["compute"], form.cleaned_data["pool"]
+        try:
+            with audit(request, compute, subject, f"add storage pool {name}"):
+                pool = target_pool(connect(compute), name)
+                # a target is one directory: the new pool must be the one the others are
+                other = target.pools.select_related("compute").first()
+                if other and not wvmConnect.same_directory(
+                    target_pool(connect(other.compute), other.pool, other.pool_uuid), pool
+                ):
+                    raise OperationError(
+                        gettext_noop(
+                            "Storage pool %(pool)s of %(compute)s is not the same directory as "
+                            "storage pool %(other)s of %(other_compute)s"
+                        ),
+                        pool=name,
+                        compute=compute.name,
+                        other=other.pool,
+                        other_compute=other.compute.name,
+                    )
+                target.pools.create(compute=compute, pool=name, pool_uuid=pool.UUIDString())
+        except libvirtError as err:
+            form.add_error("pool", str(err))
+        else:
+            return redirect("vmbackups:target", target.id)
+    pools = [pool_state(row) for row in target.pools.select_related("compute").order_by("compute__name")]
+    return render(request, "vmbackups/target.html", {"target": target, "pools": pools, "form": form,
+                                                     "backup_count": target.backups.count()})

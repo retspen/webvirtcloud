@@ -35,6 +35,7 @@ urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),
     path("logs/", include("logs.urls")),
     path("jobs/", include("operations.urls")),
+    path("backups/", include("vmbackups.urls")),
     path('api/v1/', include("webvirtcloud.urls-api")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     re_path(r"^swagger\.(?P<format>json|yaml)$", SpectacularAPIView.as_view(), name="schema-json"),

@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-16 19:52+0000\n"
+"POT-Creation-Date: 2026-11-17 04:36+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -75,7 +75,8 @@ msgstr "Geçersiz anahtar"
 #: interfaces/templates/interface.html:119 networks/templates/network.html:145
 #: networks/templates/network.html:373 nwfilters/templates/nwfilters.html:29
 #: storages/templates/storage.html:123 virtsecrets/forms.py:34
-#: virtsecrets/forms.py:36
+#: virtsecrets/forms.py:36 vmbackups/forms.py:22
+#: vmbackups/templates/vmbackups/targets.html:17
 msgid "Name"
 msgstr "Ad"
 
@@ -508,7 +509,7 @@ msgid "Signing in..."
 msgstr "Oturum açılıyor..."
 
 #: accounts/templates/profile.html:6 accounts/templates/profile.html:8
-#: templates/navbar.html:50
+#: templates/navbar.html:53
 msgid "Profile"
 msgstr "Profil"
 
@@ -540,6 +541,8 @@ msgstr "Kullanıcıya anahtar ekleme formu"
 #: instances/templates/create_flavors.html:20
 #: instances/templates/instances/boot_device.html:17
 #: networks/templates/network.html:134 nwfilters/templates/nwfilter.html:45
+#: vmbackups/templates/vmbackups/target.html:49
+#: vmbackups/templates/vmbackups/targets.html:40
 msgid "Add"
 msgstr "Ekle"
 
@@ -743,7 +746,7 @@ msgstr "İzinler"
 #: admin/forms.py:103 admin/templates/admin/group_list.html:6
 #: admin/templates/admin/group_list.html:8
 #: admin/templates/admin/group_list.html:24
-#: admin/templates/admin/user_form.html:124 templates/navbar.html:33
+#: admin/templates/admin/user_form.html:124 templates/navbar.html:36
 msgid "Groups"
 msgstr "Gruplar"
 
@@ -916,7 +919,7 @@ msgstr "Aramayla eşleşen grup yok."
 
 #: admin/templates/admin/logs.html:6 admin/templates/admin/logs.html:8
 #: admin/templates/admin/logs.html:19
-#: instances/templates/instances/stats_tab.html:20 templates/navbar.html:34
+#: instances/templates/instances/stats_tab.html:20 templates/navbar.html:37
 msgid "Logs"
 msgstr "Loglar"
 
@@ -984,7 +987,7 @@ msgstr "Başarısız"
 
 #: admin/templates/admin/tombstone_list.html:6
 #: admin/templates/admin/tombstone_list.html:8
-#: admin/templates/admin/tombstone_list.html:19 templates/navbar.html:35
+#: admin/templates/admin/tombstone_list.html:19 templates/navbar.html:38
 msgid "Removed VMs"
 msgstr "Kaldırılan Sanal Makineler"
 
@@ -1115,7 +1118,7 @@ msgid "New user"
 msgstr "Yeni kullanıcı"
 
 #: admin/templates/admin/user_list.html:19 admin/views.py:179
-#: instances/templates/instances/settings_tab.html:79 templates/navbar.html:32
+#: instances/templates/instances/settings_tab.html:79 templates/navbar.html:35
 msgid "Users"
 msgstr "Kullanıcılar"
 
@@ -1776,7 +1779,7 @@ msgstr "Ayar grupları"
 msgid "Appearance"
 msgstr "Görünüm"
 
-#: appsettings/templates/appsettings.html:35 templates/navbar.html:48
+#: appsettings/templates/appsettings.html:35 templates/navbar.html:51
 msgid "Language"
 msgstr "Dil"
 
@@ -3942,7 +3945,7 @@ msgstr "Sunucunun bir havuzunda zaten bulunan bir birim."
 #: instances/templates/create_instance_w2.html:137
 #: instances/templates/create_instance_w2.html:165
 #: instances/templates/instances/move_disk.html:16
-#: instances/templates/instances/settings_tab.html:223
+#: instances/templates/instances/settings_tab.html:223 vmbackups/forms.py:13
 msgid "Storage pool"
 msgstr "Depolama havuzu"
 
@@ -4176,7 +4179,6 @@ msgid "Choose the host the VM runs on."
 msgstr "Sanal makinenin çalışacağı sunucuyu seçin."
 
 #: instances/templates/create_inst_block.html:22
-#| msgid "In maintenance"
 msgid "Maintenance"
 msgstr "Bakım"
 
@@ -4349,6 +4351,7 @@ msgstr "Aygıt"
 #: instances/templates/instances/boot_device.html:14
 #: instances/templates/instances/settings_tab.html:685
 #: networks/templates/network.html:304
+#: vmbackups/templates/vmbackups/target.html:23
 msgid "Remove"
 msgstr "Kaldır"
 
@@ -4534,7 +4537,7 @@ msgstr "Boyutlandır"
 msgid "Snapshot"
 msgstr "Anlık Görüntü"
 
-#: instances/templates/instance.html:102 templates/navbar.html:37
+#: instances/templates/instance.html:102 templates/navbar.html:40
 msgid "Settings"
 msgstr "Ayarlar"
 
@@ -8518,7 +8521,7 @@ msgstr "Yalnızca belirsiz bir iş çözülebilir"
 #: operations/templates/operations/job.html:11
 #: operations/templates/operations/jobs.html:7
 #: operations/templates/operations/jobs.html:9
-#: operations/templates/operations/jobs.html:20 templates/navbar.html:24
+#: operations/templates/operations/jobs.html:20 templates/navbar.html:27
 msgid "Jobs"
 msgstr "İşler"
 
@@ -8782,8 +8785,8 @@ msgstr ""
 msgid "The worker stopped before the job changed anything"
 msgstr "Worker, iş herhangi bir şeyi değiştirmeden önce durdu"
 
-#: storages/api/viewsets.py:144 storages/api/viewsets.py:160
-#: storages/api/viewsets.py:196 storages/api/viewsets.py:218
+#: storages/api/viewsets.py:145 storages/api/viewsets.py:161
+#: storages/api/viewsets.py:197 storages/api/viewsets.py:220
 msgid "Pool is not active"
 msgstr "Havuz etkin değil"
 
@@ -9345,36 +9348,36 @@ msgstr "Son parça bildirilen dosya boyutuyla eşleşmiyor"
 msgid "The partial upload is missing"
 msgstr "Kısmi yükleme bulunamadı"
 
-#: storages/views.py:32
+#: storages/views.py:33
 msgid "No file chunk was submitted."
 msgstr "Dosya parçası gönderilmedi."
 
-#: storages/views.py:38
+#: storages/views.py:39
 msgid "Invalid chunk parameters."
 msgstr "Geçersiz parça parametreleri."
 
-#: storages/views.py:40
+#: storages/views.py:41
 msgid "Invalid chunk index or total chunks."
 msgstr "Geçersiz parça dizini veya toplam parça sayısı."
 
-#: storages/views.py:45
+#: storages/views.py:46
 msgid "Invalid file size."
 msgstr "Geçersiz dosya boyutu."
 
-#: storages/views.py:54
+#: storages/views.py:55
 msgid "Upload session is busy. Please retry."
 msgstr "Yükleme oturumu meşgul. Lütfen yeniden deneyin."
 
-#: storages/views.py:56
+#: storages/views.py:57
 msgid "ISO image already exists"
 msgstr "ISO imajı zaten mevcut"
 
-#: storages/views.py:184
+#: storages/views.py:187
 #, python-format
 msgid "Volume: %(vol)s is deleted."
 msgstr "Birim: %(vol)s silindi."
 
-#: storages/views.py:201
+#: storages/views.py:204
 #, python-format
 msgid "Image file %(name)s is created successfully"
 msgstr "İmaj dosyası %(name)s başarıyla oluşturuldu"
@@ -9507,15 +9510,19 @@ msgstr "Geri"
 msgid "Home"
 msgstr "Ana sayfa"
 
-#: templates/navbar.html:28
+#: templates/navbar.html:21 vmbackups/templates/vmbackups/targets.html:17
+msgid "Backups"
+msgstr "Yedekler"
+
+#: templates/navbar.html:31
 msgid "Administration"
 msgstr "Yönetim"
 
-#: templates/navbar.html:36
+#: templates/navbar.html:39
 msgid "VM report (.xlsx)"
 msgstr "Sanal makine raporu (.xlsx)"
 
-#: templates/navbar.html:54
+#: templates/navbar.html:57
 msgid "Log Out"
 msgstr "Oturumu Kapat"
 
@@ -9697,6 +9704,125 @@ msgid ""
 msgstr ""
 "Eski değerin yerini hemen alır; bir parolanın şifrelediği veriler yeniden "
 "şifrelenmez."
+
+#: vmbackups/forms.py:12
+msgid "Compute"
+msgstr "Sunucu"
+
+#: vmbackups/forms.py:28
+msgid "A backup target with this name exists"
+msgstr "Bu adla bir yedek hedefi zaten var"
+
+#: vmbackups/templates/vmbackups/target.html:6
+#: vmbackups/templates/vmbackups/target.html:8
+#: vmbackups/templates/vmbackups/targets.html:6
+#: vmbackups/templates/vmbackups/targets.html:8
+msgid "Backup targets"
+msgstr "Yedek hedefleri"
+
+#: vmbackups/templates/vmbackups/target.html:11
+#, python-format
+msgid "%(counter)s backup."
+msgid_plural "%(counter)s backups."
+msgstr[0] "%(counter)s yedek."
+msgstr[1] "%(counter)s yedek."
+
+#: vmbackups/templates/vmbackups/target.html:23
+msgid ""
+"Remove this storage pool from the target? The pool and its files stay on the "
+"host."
+msgstr ""
+"Bu depolama havuzu hedeften çıkarılsın mı? Havuz ve dosyaları sunucuda kalır."
+
+#: vmbackups/templates/vmbackups/target.html:33
+#, python-format
+msgid ""
+"The target is inside storage pool %(pool)s: its backups are lost with that "
+"storage."
+msgstr ""
+"Hedef %(pool)s depolama havuzunun içinde: o depolama kaybolursa yedekler de "
+"kaybolur."
+
+#: vmbackups/templates/vmbackups/target.html:43
+msgid "Add a compute's storage pool"
+msgstr "Bir sunucunun depolama havuzunu ekle"
+
+#: vmbackups/templates/vmbackups/target.html:45
+msgid ""
+"The pool must be the same directory as the target's other pools, as an NFS "
+"share mounted on each host."
+msgstr ""
+"Havuz, hedefin diğer havuzlarıyla aynı dizin olmalıdır; örneğin her sunucuya "
+"bağlanmış bir NFS paylaşımı."
+
+#: vmbackups/templates/vmbackups/target.html:58
+msgid "Delete this backup target? Its storage pools stay on the hosts."
+msgstr "Bu yedek hedefi silinsin mi? Depolama havuzları sunucularda kalır."
+
+#: vmbackups/templates/vmbackups/target.html:58
+msgid "Delete target"
+msgstr "Hedefi sil"
+
+#: vmbackups/templates/vmbackups/targets.html:11
+msgid ""
+"A backup target is a directory or NFS storage pool made on the hosts. Use "
+"storage apart from the VMs' disks: a target on the same storage is lost with "
+"it."
+msgstr ""
+"Yedek hedefi, sunucularda oluşturulmuş bir dizin veya NFS depolama havuzudur."
+" Sanal makine disklerinden ayrı bir depolama kullanın: aynı depolamadaki bir "
+"hedef onunla birlikte kaybolur."
+
+#: vmbackups/templates/vmbackups/targets.html:17
+msgid "Storage pools"
+msgstr "Depolama havuzları"
+
+#: vmbackups/templates/vmbackups/targets.html:31
+msgid "No backup target yet."
+msgstr "Henüz yedek hedefi yok."
+
+#: vmbackups/templates/vmbackups/targets.html:35
+msgid "Add a backup target"
+msgstr "Yedek hedefi ekle"
+
+#: vmbackups/utils.py:25
+#, python-format
+msgid ""
+"Volume %(volume)s belongs to a backup of %(vm)s; delete the backup on the "
+"Backups page"
+msgstr ""
+"%(volume)s birimi %(vm)s yedeğine ait; yedeği Yedekler sayfasından silin"
+
+#: vmbackups/utils.py:35
+#, python-format
+msgid ""
+"Storage pool %(pool)s is backup target %(target)s; remove it from the target "
+"first"
+msgstr ""
+"%(pool)s depolama havuzu %(target)s yedek hedefidir; önce hedeften çıkarın"
+
+#: vmbackups/views.py:61 vmbackups/views.py:69
+#, python-format
+msgid "Backup target %(target)s has backups; delete them first"
+msgstr "%(target)s yedek hedefinde yedekler var; önce onları silin"
+
+#: vmbackups/views.py:86
+#, python-format
+msgid ""
+"Storage pool %(pool)s of %(compute)s is not the same directory as storage "
+"pool %(other)s of %(other_compute)s"
+msgstr ""
+"%(compute)s sunucusunun %(pool)s depolama havuzu, %(other_compute)s "
+"sunucusunun %(other)s depolama havuzuyla aynı dizin değil"
+
+#: vrtManager/backup.py:30
+#, python-format
+msgid ""
+"Storage pool %(pool)s is not an active directory or NFS pool of this host, or"
+" not the one the backup target registered"
+msgstr ""
+"%(pool)s depolama havuzu bu sunucuda etkin bir dizin veya NFS havuzu değil ya"
+" da yedek hedefinin kaydettiği havuz değil"
 
 #: vrtManager/connection.py:45
 msgid "Connection closed (error)"
@@ -10957,10 +11083,10 @@ msgid "Secret %(uuid)s is used by %(named)s; remove it from them first"
 msgstr ""
 "%(uuid)s parolası %(named)s tarafından kullanılıyor; önce onlardan kaldırın"
 
-#: webvirtcloud/settings.py:319
+#: webvirtcloud/settings.py:320
 msgid "Localhost"
 msgstr "Yerel sunucu"
 
-#: webvirtcloud/settings.py:320
+#: webvirtcloud/settings.py:321
 msgid "All interfaces"
 msgstr "Tüm arabirimler"
