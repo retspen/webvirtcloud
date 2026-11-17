@@ -215,6 +215,33 @@ def manifest_names(pool):
     return sorted(name for name in pool.listVolumes() if name.startswith("wvc-") and name.endswith("-manifest.json"))
 
 
+def set_disk_sources(tree, disks):
+    """Each disk of the definition tree a restored file (disks: {dev: (path,
+    format)}), with nothing of the old one's chain."""
+    for disk in tree.xpath("devices/disk[@device='disk']"):
+        path, disk_format = disks[disk.find("target").get("dev")]
+        disk.set("type", "file")
+        for old in disk.xpath("source|backingStore"):
+            disk.remove(old)
+        driver = disk.find("driver")
+        if driver is None:
+            driver = etree.SubElement(disk, "driver", name="qemu")
+        driver.set("type", disk_format)
+        source = etree.Element("source", file=path)
+        disk.insert(list(disk).index(driver) + 1, source)
+
+
+def restore_over_definition(definition, disks):
+    """The VM's own definition with its disks the restored files: the rest of
+    it (devices, MACs, NVRAM path) is the VM's current one, but for a new
+    generation ID, as the guest is rolled back."""
+    tree = etree.fromstring(definition)
+    set_disk_sources(tree, disks)
+    if (genid := tree.find("genid")) is not None:
+        genid.text = None  # libvirt makes a new one
+    return etree.tostring(tree).decode()
+
+
 def restore_definition(definition, *, name, uuid, macs, disks, nvram, connect):
     """A backup's kept definition made a new VM's: rewrite_for_new_vm's
     changes (macs: one per NIC, in order), its media ejected, a new generation ID, each disk's
@@ -231,17 +258,7 @@ def restore_definition(definition, *, name, uuid, macs, disks, nvram, connect):
         source.getparent().remove(source)
     if (genid := tree.find("genid")) is not None:
         genid.text = None  # libvirt makes a new one
-    for disk in tree.xpath("devices/disk[@device='disk']"):
-        path, disk_format = disks[disk.find("target").get("dev")]
-        disk.set("type", "file")
-        for old in disk.xpath("source|backingStore"):
-            disk.remove(old)
-        driver = disk.find("driver")
-        if driver is None:
-            driver = etree.SubElement(disk, "driver", name="qemu")
-        driver.set("type", disk_format)
-        source = etree.Element("source", file=path)
-        disk.insert(list(disk).index(driver) + 1, source)
+    set_disk_sources(tree, disks)
     if (element := tree.find("os/nvram")) is not None:
         if element.find("source") is not None:
             element.find("source").set("file", nvram)

@@ -340,6 +340,27 @@ class RestoreDefinitionTestCase(unittest.TestCase):
         self.assertEqual(self.restored(connect=True).xpath("devices/interface/link/@state"), ["up"])
 
 
+class RestoreOverDefinitionTestCase(unittest.TestCase):
+    def test_only_the_disks_sources_change(self):
+        from lxml import etree
+
+        from vrtManager.backup import restore_over_definition
+
+        tree = etree.fromstring(restore_over_definition(SOURCE, {"vda": ("/pool/vm1-vda-20261117-1140.qcow2", "qcow2"),
+                                                                 "vdb": ("/pool/vm1-vdb-20261117-1140.raw", "raw")}))
+        self.assertEqual(tree.xpath("devices/disk[@device='disk']/source/@file"),
+                         ["/pool/vm1-vda-20261117-1140.qcow2", "/pool/vm1-vdb-20261117-1140.raw"])
+        self.assertEqual(tree.xpath("devices/disk//backingStore"), [])
+        source = etree.fromstring(SOURCE)
+        for path in ("name", "uuid", "os/nvram", "title"):
+            self.assertEqual(tree.findtext(path), source.findtext(path))
+        self.assertEqual(tree.xpath("devices/interface/mac/@address"), source.xpath("devices/interface/mac/@address"))
+        self.assertEqual(len(tree.xpath("devices/disk[@device='cdrom']/source")), 2)  # the VM's media stay
+        # the guest sees it was rolled back: libvirt makes a new generation ID
+        self.assertEqual(tree.findtext("genid") or "", "")
+        self.assertIsNotNone(tree.find("genid"))
+
+
 class RestoreHostTestCase(unittest.TestCase):
     def conn(self):
         conn = MagicMock()

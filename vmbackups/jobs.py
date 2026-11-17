@@ -18,7 +18,7 @@ from libvirt import VIR_DOMAIN_PAUSED, VIR_DOMAIN_RUNNING, VIR_DOMAIN_SHUTOFF, V
 
 from appsettings.settings import app_settings
 from computes.models import Compute
-from instances.jobs import PAUSED_FROZEN, THAW_FAILED, _instance, _log, _snapshot_free_space, record_vm, vm_claims
+from instances.jobs import MOVED, PAUSED_FROZEN, THAW_FAILED, _instance, _log, _snapshot_free_space, record_vm, vm_claims
 from instances.utils import get_random_mac_address
 from instances.models import Instance
 from operations import claims
@@ -27,9 +27,10 @@ from operations.models import Claim, Operation
 from operations.utils import safe_text, say
 from vrtManager import util
 from vrtManager.backup import (backup_file_names, check_restore_host, check_target_space, get_file, manifest_names, put_file,
-                               remove_files, restore_definition, target_pool, volume_exists, wvmBackup)
+                               remove_files, restore_definition, restore_over_definition, target_pool, volume_exists,
+                               wvmBackup)
 from vrtManager.connection import NVRAM_DIR, wvmConnect
-from vrtManager.instance import wvmInstance
+from vrtManager.instance import PERSISTENT_XML, wvmInstance
 from vrtManager.storage import wvmStorage
 from vrtManager.instance import LIVE_CLONE_MIN_LIBVIRT
 
@@ -570,6 +571,16 @@ def _check_files(conn, pool, files):
             raise util.OperationError(_("The backup's file %(name)s differs from the one written"), name=f["volume"])
 
 
+def _tpm_files(backup):
+    """The backup's TPM state files; a manifest read from a target names
+    them: each is a file of the VM's state directory only."""
+    files = list(backup.files.filter(role=BackupFile.TPM).order_by("dev"))
+    for f in files:
+        if not f.dev or "/" in f.dev or f.dev.startswith("."):
+            raise util.OperationError(_("The backup's TPM state file %(name)s is not a plain file name"), name=f.dev)
+    return files
+
+
 @register
 class RestoreBackup(Kind):
     """A ready backup made a new VM on a compute that has the target's pool:
@@ -642,10 +653,7 @@ class RestoreBackup(Kind):
         # the VM's own file in libvirt's directory; libvirt makes it from the template when none was kept
         nvram = os.path.join(NVRAM_DIR, p["name"] + "_VARS" + os.path.splitext(old_nvram)[1]) if old_nvram else None
         macs = [get_random_mac_address() for _nic in tree.findall("devices/interface")]
-        tpm_files = list(backup.files.filter(role=BackupFile.TPM).order_by("dev"))
-        for f in tpm_files:  # a manifest read from a target names them: a file of the VM's directory only
-            if not f.dev or "/" in f.dev or f.dev.startswith("."):
-                raise util.OperationError(_("The backup's TPM state file %(name)s is not a plain file name"), name=f.dev)
+        tpm_files = _tpm_files(backup)
         if nvram:
             # a file of that name may be a removed VM's kept one, or another VM's: never taken, never removed
             with conn._nvram_pool() as nvram_pool:
@@ -731,6 +739,187 @@ class RestoreBackup(Kind):
 
     def log_entry(self, op, state):
         return _log(op, state, f"restored from the backup of {op.intent['from']} taken {op.intent['time']}")
+
+
+def _over_plan(backup, proxy):
+    """What a restore over the backup's VM makes: {"disks": {dev: [pool,
+    volume name]}, "nvram": the VM's NVRAM path or None, "tpm": bool}.
+    Refuses a VM that is not shut off, has snapshots, or whose disks, UEFI
+    firmware or TPM are not the backup's."""
+    if proxy.get_status() != VIR_DOMAIN_SHUTOFF:
+        raise util.OperationError(_("Shut the VM down to restore a backup over it"))
+    if proxy.instance.snapshotNum(0):
+        # their metadata names the disks that are replaced
+        raise util.OperationError(_("The VM has snapshots; delete them to restore a backup over it"))
+    plan = proxy.backup_plan()
+    files = {f.dev: f for f in backup.files.filter(role=BackupFile.DISK)}
+    now = {d["dev"]: d for d in plan["disks"]}
+    if set(now) != set(files):
+        raise util.OperationError(_("The VM's disks (%(now)s) are not the backup's (%(then)s); restore it as a new VM "
+                                    "or one disk"), now=", ".join(sorted(now)), then=", ".join(sorted(files)))
+    if bool(plan["nvram"]) != (backup.manifest.get("nvram", "none") != "none"):
+        raise util.OperationError(_("The VM's UEFI firmware changed since the backup; restore it as a new VM"))
+    if plan["tpm"] != (backup.manifest.get("tpm", "none") != "none"):
+        raise util.OperationError(_("The VM's TPM changed since the backup; restore it as a new VM"))
+    time = timezone.localtime(backup.created_at).strftime("%Y%m%d-%H%M")
+    return {"disks": {dev: [now[dev]["pool"], f"{proxy.instance.name()}-{dev}-{time}.{'qcow2' if f.format == 'qcow2' else 'raw'}"]
+                      for dev, f in files.items()},
+            "nvram": plan["nvram"], "tpm": plan["tpm"]}
+
+
+@register
+class RestoreOver(Kind):
+    """A ready backup restored over its own shut-off VM: its disks copied as
+    new volumes beside the VM's (kept until removed by hand), then the
+    switch: the NVRAM file and TPM state replaced and the VM's definition
+    pointed at the copies. The rest of the definition stays the VM's."""
+
+    name = "backup.restore_over"
+    label = _("Restore backup over the VM")
+    progress_bytes = True
+
+    def normalize(self, raw):
+        return {"backup": str(UUID(str(raw["backup"])))}
+
+    def plan(self, user, params):
+        _superuser(user)
+        backup = _backup(params)
+        if backup.state != Backup.READY:
+            raise util.OperationError(_("Only a ready backup is restored"))
+        instance = backup.instance
+        if instance is None:
+            raise util.OperationError(_("The backup's VM is no longer in the panel; restore it as a new VM"))
+        _target_row(backup.target, instance.compute)
+        over = _over_plan(backup, _proxy(instance))
+        keys = {claims.compute_key(instance.compute_id): Claim.SHARED, claims.instance_key(instance.uuid): Claim.EXCLUSIVE,
+                claims.backup_key(backup.uuid): Claim.SHARED, claims.backup_target_key(backup.target_id): Claim.EXCLUSIVE}
+        for pool, name in over["disks"].values():  # no other job makes a volume of these names meanwhile
+            keys[claims.volume_key(instance.compute_id, pool, name)] = Claim.EXCLUSIVE
+        return Plan(
+            claims=keys,
+            resource=claims.instance_key(instance.uuid),
+            label=f"{instance.compute.name}/{instance.name}",
+            intent={"compute": instance.compute_id, "uuid": instance.uuid, "over": over,
+                    "time": timezone.localtime(backup.created_at).strftime("%Y-%m-%d %H:%M")},
+        )
+
+    def run(self, op, ctx):
+        _superuser(op.user)
+        backup = _backup(op.params)
+        instance = _instance(backup.instance_id)
+        if instance.compute_id != op.intent["compute"]:
+            raise util.OperationError(MOVED)
+        proxy = _proxy(instance)
+        if _over_plan(backup, proxy) != op.intent["over"]:
+            raise util.OperationError(_("The VM's disks changed after the job was queued"))
+        row = _target_row(backup.target, instance.compute)
+        tpool = target_pool(proxy, row.pool, row.pool_uuid)
+        _check_files(proxy, tpool, backup.files.values("role", "volume", "capacity", "sha256"))
+        _tpm_files(backup)
+        disks = {f.dev: f for f in backup.files.filter(role=BackupFile.DISK)}
+        pools = proxy.file_pools()
+        for dev, (pool, name) in op.intent["over"]["disks"].items():
+            if pool not in pools:
+                raise util.OperationError(_("This host has no active directory storage pool %(pool)s"), pool=pool)
+            wvmInstance._refuse_taken(pools[pool][0], name)
+        for pool in {pool for pool, _name in op.intent["over"]["disks"].values()}:
+            check_target_space(pools[pool][0], [{"capacity": disks[dev].capacity} for dev, (p, _n) in
+                                                op.intent["over"]["disks"].items() if p == pool], **_free_space())
+
+        ctx.set_phase(_("Copying disks"))
+        c = instance.compute
+        paths = {}
+        for dev, (pool, name) in op.intent["over"]["disks"].items():
+            ctx.record_intent(copying=dev)
+            storage = wvmStorage(c.hostname, c.login, c.password, c.type, pool)
+            try:
+                paths[dev] = storage.clone_volume(tpool.storageVolLookupByName(disks[dev].volume), name,
+                                                  vol_fmt=disks[dev].format, disk_owner_uid=_owner()[0],
+                                                  disk_owner_gid=_owner()[1])
+            except libvirtError:  # libvirt answered: its claimed name is removed with the copies
+                ctx.record_intent(copied=[*op.intent.get("copied", []), dev], copying=None)
+                raise
+            ctx.record_intent(copied=[*op.intent.get("copied", []), dev], paths=paths, copying=None)
+
+        # the VM may have been started or saved outside the panel meanwhile: then it keeps its disks
+        if _over_plan(backup, proxy) != op.intent["over"]:
+            raise util.OperationError(_("The VM changed while its backup was copied; it keeps its disks"))
+        ctx.set_phase(_("Replacing the VM's disks"))
+        ctx.record_intent(switching=True, autostart=bool(proxy.instance.autostart()))
+        return self._switch(op, backup, proxy, tpool)
+
+    @staticmethod
+    def _switch(op, backup, proxy, tpool):
+        """The NVRAM file and TPM state replaced, the disks' sources set; runs
+        again in recovery until it is done."""
+        over = op.intent["over"]
+        # a host booting mid-switch starts nothing: the old disks with the backup's NVRAM and TPM would not match
+        proxy.instance.setAutostart(0)
+        if over["nvram"]:
+            nvram = backup.files.filter(role=BackupFile.NVRAM).first()
+            with proxy._nvram_pool() as nvram_pool:
+                remove_files(nvram_pool, [os.path.basename(over["nvram"])])
+                if nvram is not None:  # else never written: libvirt makes it from the template
+                    proxy.upload_volume(nvram_pool, os.path.basename(over["nvram"]), get_file(proxy, tpool, nvram.volume),
+                                        owner=_owner(), mode="0600")
+        if over["tpm"]:
+            files = _tpm_files(backup)
+            with proxy._tpm_pool(op.intent["uuid"], build=bool(files)) as tpm_pool:
+                if tpm_pool is not None:  # swtpm's .lock stays
+                    remove_files(tpm_pool, [n for n in tpm_pool.listVolumes() if not n.startswith(".")])
+                    for f in files:  # root's: libvirt makes them swtpm's when the VM starts
+                        proxy.upload_volume(tpm_pool, f.dev, get_file(proxy, tpool, f.volume), owner=(0, 0), mode="0600")
+        disks = {f.dev: (op.intent["paths"][f.dev], f.format) for f in backup.files.filter(role=BackupFile.DISK)}
+        proxy._defineXML(restore_over_definition(proxy._XMLDesc(PERSISTENT_XML), disks))
+        if op.intent["autostart"]:
+            proxy.instance.setAutostart(1)
+        return {"open": reverse("instances:instance", args=[backup.instance_id])}
+
+    def progress(self, op):
+        disks = Backup.objects.filter(uuid=op.params["backup"]).values_list("files__dev", "files__capacity", "files__role")
+        copied = set(op.intent.get("copied", []))
+        sizes = {dev: capacity for dev, capacity, role in disks if role == BackupFile.DISK}
+        return sum(c for dev, c in sizes.items() if dev in copied), sum(sizes.values())
+
+    def reconcile(self, op):
+        backup = _backup(op.params)
+        instance = Instance.objects.select_related("compute").get(pk=backup.instance_id)
+        if instance.compute_id != op.intent["compute"]:
+            return Outcome(Operation.UNCERTAIN, error=say(_(
+                "The VM moved to another compute; check its disks and the restore's copies, then resolve this job")))
+        proxy = _proxy(instance)
+        if op.intent.get("switching"):
+            current = etree.fromstring(proxy._XMLDesc(PERSISTENT_XML))
+            if {d.find("target").get("dev"): d.xpath("string(source/@file)")
+                    for d in current.xpath("devices/disk[@device='disk']")} == op.intent["paths"]:
+                # defined: the switch is done; the VM may have run since, its NVRAM and TPM are not replaced again
+                if op.intent["autostart"]:
+                    proxy.instance.setAutostart(1)
+                return Outcome(Operation.SUCCEEDED, result={"open": reverse("instances:instance", args=[instance.pk])})
+            if proxy.get_status() != VIR_DOMAIN_SHUTOFF or proxy.instance.hasManagedSaveImage(0):
+                return Outcome(Operation.UNCERTAIN, error=say(_(
+                    "The VM was started while its disks were being replaced; check its disks, then resolve this job")))
+            row = _target_row(backup.target, instance.compute)
+            return Outcome(Operation.SUCCEEDED,
+                           result=self._switch(op, backup, proxy, target_pool(proxy, row.pool, row.pool_uuid)))
+        volumes = {dev: name for dev, (_pool, name) in op.intent["over"]["disks"].items()}
+        if op.intent.get("copying"):  # libvirt's answer to that copy is unknown
+            return Outcome(Operation.UNCERTAIN, error=say(_(
+                "A disk was being copied when the job stopped; check this volume, then resolve this job: %(volumes)s"),
+                volumes=volumes[op.intent["copying"]]))
+        pools = proxy.file_pools()
+        for dev in op.intent.get("copied", []):
+            pool = op.intent["over"]["disks"][dev][0]
+            if pool not in pools:  # recovery waits: the copies are removed once it runs
+                raise util.OperationError(_("Storage pool %(pool)s is not active; the restore's copies in it are "
+                                            "removed when it is"), pool=pool)
+            pools[pool][0].refresh(0)
+            remove_files(pools[pool][0], [volumes[dev]])
+        ended = Operation.CANCELLED if op.cancel_requested else Operation.FAILED
+        return Outcome(ended, error=say(_("The VM keeps its disks; the restore's copies were removed")))
+
+    def log_entry(self, op, state):
+        return _log(op, state, f"restored over from its backup taken {op.intent['time']}")
 
 
 def _vm_page(op):
