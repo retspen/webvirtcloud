@@ -69,6 +69,16 @@ def target(request, target_id):
         with audit(request, None, subject, "delete"):
             target.delete()
         return redirect("vmbackups:targets")
+    if request.method == "POST" and "import" in request.POST:
+        try:
+            op = jobs.submit("backup.import", request.user, {"target": target.pk}, request.POST.get("submission_key", ""))
+        except claims.Busy as busy:
+            messages.error(request, busy_message(busy, request.user))
+        except (jobs.SubmissionConflict, libvirtError) as err:
+            messages.error(request, error_text(request, err))
+        else:
+            return redirect("operations:job", op.pk)
+        return redirect("vmbackups:target", target.id)
     if request.method == "POST" and "remove_pool" in request.POST:
         row = get_object_or_404(target.pools.select_related("compute"), pk=request.POST["remove_pool"])
         if target.backups.exists():

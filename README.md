@@ -50,6 +50,7 @@ WebVirtCloud and `virt-manager`/`virsh` can manage the same libvirt host **concu
 * Cloud-init datasource interface (OpenStack metadata compatible) and NoCloud seed media
 * REST API — OpenAPI 3.0 (Swagger & ReDoc), with API tokens
 * LDAP / Active Directory integration (optional)
+* VM backups, of a running or shut-off VM, into a storage pool of your choice; a backup is restored as a new VM
 * Daily backups of the panel, with an optional off-site copy (restic over SFTP)
 * English, Turkish and Simplified Chinese
 
@@ -58,7 +59,7 @@ WebVirtCloud and `virt-manager`/`virsh` can manage the same libvirt host **concu
 1. [Installation](#installation): [installer](#installer), [Docker](#docker), [manual](#manual-installation), [first login](#first-login)
 2. [Adding a Compute Node](#adding-a-compute-node)
 3. [Configuration](#configuration): [environment variables](#environment-variables), [HTTPS and reverse proxy](#https-and-reverse-proxy), [cloud-init datasource](#cloud-init-datasource), [LDAP](#ldap), [OTP](#two-factor-login-otp), [serial console](#serial-console)
-4. [Backups](#backups): [off-site copy](#off-site-copy)
+4. [Backups](#backups): [off-site copy](#off-site-copy), [VM backups](#vm-backups)
 5. [Updating](#updating): [Docker](#docker-1), [installer and manual](#installer-and-manual-installation), [restore and rollback](#restore-and-rollback), [moving to a new machine](#moving-to-a-new-machine), [behavior changes](#behavior-changes)
 6. [Usage](#usage): [users and permissions](#users-roles-and-permissions), [REST API](#rest-api), [screenshots](#screenshots)
 7. [Development](#development)
@@ -584,6 +585,27 @@ b=$(find /root/offsite-restore -type d -name 'webvirtcloud-backup-*' | sort | ta
 ```
 
 and follow [Moving to a new machine](#moving-to-a-new-machine) with that `b` (leave out its `b=` line).
+
+### VM backups
+
+Superusers back a VM up from its **Backups** tab into a backup target: a `dir` or `netfs` storage pool made on each host that sees it, added on **Backups → Backup targets** (another host's pool is accepted only when it is the same directory). A running VM keeps running: its disks are copied from one instant, with its file systems frozen for it when the guest agent answers; a shut-off VM's disks are copied as they are. A backup holds the disks, the VM's definition, its UEFI variables and a manifest. It is restored as a new VM, with its network disconnected unless asked, on a host that has the target's pool. After the panel's database is lost, add the target again and use **Read backups from target**.
+
+VMs with TPM state, host devices, shared host directories, or encrypted or non-file disks are not backed up; CD-ROMs are left out.
+
+The target must be:
+
+- on storage apart from the VMs' disks: a target on the same storage is lost with it;
+- writable by QEMU;
+- with NFS on SELinux hosts, allowed: `setsebool -P virt_use_nfs 1`.
+
+An NFS target, on each host:
+
+```bash
+virsh pool-define-as vmbackups netfs --source-host nfs.example.com --source-path /export/vmbackups --target /var/lib/libvirt/vmbackups
+virsh pool-build vmbackups && virsh pool-start vmbackups && virsh pool-autostart vmbackups
+```
+
+The panel does not copy VM backups off site: the target's storage does.
 
 ## Updating
 

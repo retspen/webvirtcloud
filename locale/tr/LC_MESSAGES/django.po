@@ -542,7 +542,7 @@ msgstr "Kullanıcıya anahtar ekleme formu"
 #: instances/templates/create_flavors.html:20
 #: instances/templates/instances/boot_device.html:17
 #: networks/templates/network.html:134 nwfilters/templates/nwfilter.html:45
-#: vmbackups/templates/vmbackups/target.html:49
+#: vmbackups/templates/vmbackups/target.html:59
 #: vmbackups/templates/vmbackups/targets.html:40
 msgid "Add"
 msgstr "Ekle"
@@ -3266,7 +3266,7 @@ msgstr ""
 msgid "The name of the virtual machine must not contain any special characters"
 msgstr "Sanal makine adı özel karakterler içeremez"
 
-#: instances/jobs.py:73 vmbackups/jobs.py:83
+#: instances/jobs.py:73 vmbackups/jobs.py:84
 msgid "The VM moved to another compute after the job was queued"
 msgstr "İş kuyruğa alındıktan sonra sanal makine başka bir sunucuya taşındı"
 
@@ -3287,17 +3287,17 @@ msgstr "Klonun adını boş adlar listesinden seçin"
 msgid "%(quota)s: cannot create '%(clone_name)s'."
 msgstr "%(quota)s: '%(clone_name)s' oluşturulamıyor."
 
-#: instances/jobs.py:206 instances/jobs.py:646 vmbackups/jobs.py:499
+#: instances/jobs.py:206 instances/jobs.py:646 vmbackups/jobs.py:502
 #, python-format
 msgid "Instance '%(clone_name)s' already exists!"
 msgstr "'%(clone_name)s' sanal makinesi zaten mevcut!"
 
-#: instances/jobs.py:208 vmbackups/jobs.py:501
+#: instances/jobs.py:208 vmbackups/jobs.py:504
 #, python-format
 msgid "Instance name '%(clone_name)s' is longer than 64 characters"
 msgstr "'%(clone_name)s' sanal makine adı 64 karakterden uzun"
 
-#: instances/jobs.py:211 vmbackups/jobs.py:503
+#: instances/jobs.py:211 vmbackups/jobs.py:506
 #, python-format
 msgid "Instance name '%(clone_name)s' contains invalid characters!"
 msgstr "Sanal makine adı '%(clone_name)s' geçersiz karakterler içermektedir!"
@@ -3454,11 +3454,11 @@ msgid "Clone VM"
 msgstr "Sanal makineyi klonla"
 
 #: instances/jobs.py:656 instances/jobs.py:663 instances/jobs.py:1005
-#: vmbackups/jobs.py:220 vmbackups/jobs.py:603
+#: vmbackups/jobs.py:221 vmbackups/jobs.py:606
 msgid "Copying disks"
 msgstr "Diskler kopyalanıyor"
 
-#: instances/jobs.py:715 vmbackups/jobs.py:296
+#: instances/jobs.py:715 vmbackups/jobs.py:297
 msgid "libvirt has no result of the copy"
 msgstr "libvirt'te kopyanın sonucu yok"
 
@@ -3471,7 +3471,7 @@ msgstr ""
 "Kopyalama başarısız oldu: %(error)s. Konuğun dosya sistemleri çözülemedi "
 "(%(thaw)s); şununla çözün: virsh domfsthaw %(vm)s"
 
-#: instances/jobs.py:729 instances/jobs.py:821 vmbackups/jobs.py:302
+#: instances/jobs.py:729 instances/jobs.py:821 vmbackups/jobs.py:303
 msgid "The copy failed"
 msgstr "Kopyalama başarısız oldu"
 
@@ -3493,11 +3493,11 @@ msgstr ""
 "Klonun bir birimi oluşturuluyordu; şu birimleri kontrol edin, sonra bu işi "
 "çözün: %(volumes)s"
 
-#: instances/jobs.py:801 vmbackups/jobs.py:339
+#: instances/jobs.py:801 vmbackups/jobs.py:340
 msgid "The job stopped before the copy started"
 msgstr "İş, kopyalama başlamadan durdu"
 
-#: instances/jobs.py:808 vmbackups/jobs.py:387
+#: instances/jobs.py:808 vmbackups/jobs.py:388
 msgid "libvirt is still copying the disks"
 msgstr "libvirt diskleri hâlâ kopyalıyor"
 
@@ -4359,7 +4359,7 @@ msgstr "Aygıt"
 #: instances/templates/instances/boot_device.html:14
 #: instances/templates/instances/settings_tab.html:685
 #: networks/templates/network.html:304
-#: vmbackups/templates/vmbackups/target.html:23
+#: vmbackups/templates/vmbackups/target.html:33
 msgid "Remove"
 msgstr "Kaldır"
 
@@ -9752,17 +9752,17 @@ msgstr ""
 msgid "Start after restore"
 msgstr "Geri yüklendikten sonra başlat"
 
-#: vmbackups/jobs.py:56
+#: vmbackups/jobs.py:57
 #, python-format
 msgid "Backup target %(target)s has no storage pool on %(compute)s"
 msgstr "%(target)s yedek hedefinin %(compute)s üzerinde depolama havuzu yok"
 
-#: vmbackups/jobs.py:66
+#: vmbackups/jobs.py:67
 msgid "The VM must be running, paused or shut off to be backed up"
 msgstr ""
 "Yedeklenmek için sanal makine çalışıyor, duraklatılmış ya da kapalı olmalı"
 
-#: vmbackups/jobs.py:70
+#: vmbackups/jobs.py:71
 msgid ""
 "A running VM's backup needs libvirt 11.10 or later; shut the VM down to back "
 "it up"
@@ -9770,35 +9770,35 @@ msgstr ""
 "Çalışan bir sanal makinenin yedeği libvirt 11.10 veya sonrasını gerektirir; "
 "yedeklemek için sanal makineyi kapatın"
 
-#: vmbackups/jobs.py:72
+#: vmbackups/jobs.py:73
 msgid "A paused VM's file systems cannot be frozen"
 msgstr "Duraklatılmış bir sanal makinenin dosya sistemleri dondurulamaz"
 
-#: vmbackups/jobs.py:74
+#: vmbackups/jobs.py:75
 msgid "The guest agent does not answer: the file systems cannot be frozen"
 msgstr "Konuk ajanı yanıt vermiyor: dosya sistemleri dondurulamaz"
 
-#: vmbackups/jobs.py:124
+#: vmbackups/jobs.py:125
 msgid ""
 "The VM's NVRAM file changed while it was backed up; back the VM up again"
 msgstr ""
 "Sanal makinenin NVRAM dosyası yedeklenirken değişti; sanal makineyi yeniden "
 "yedekleyin"
 
-#: vmbackups/jobs.py:185
+#: vmbackups/jobs.py:186
 msgid "Back up VM"
 msgstr "Sanal makineyi yedekle"
 
-#: vmbackups/jobs.py:236 vmbackups/jobs.py:303
+#: vmbackups/jobs.py:237 vmbackups/jobs.py:304
 msgid "Writing the backup's files"
 msgstr "Yedeğin dosyaları yazılıyor"
 
-#: vmbackups/jobs.py:315
+#: vmbackups/jobs.py:316
 msgid "The guest's file systems could not be thawed; trying again"
 msgstr ""
 "Konuğun dosya sistemlerinin dondurulması kaldırılamadı; yeniden deneniyor"
 
-#: vmbackups/jobs.py:364
+#: vmbackups/jobs.py:365
 #, python-format
 msgid ""
 "The VM is no longer on the compute the job ran on; check these volumes of the"
@@ -9807,7 +9807,7 @@ msgstr ""
 "Sanal makine artık işin çalıştığı sunucuda değil; yedek hedefindeki şu "
 "birimleri kontrol edin, sonra bu işi çözün: %(volumes)s"
 
-#: vmbackups/jobs.py:381
+#: vmbackups/jobs.py:382
 #, python-format
 msgid ""
 "A disk was being copied when the job stopped; check these volumes of the "
@@ -9816,7 +9816,7 @@ msgstr ""
 "İş durduğunda bir disk kopyalanıyordu; yedek hedefindeki şu birimleri kontrol"
 " edin, sonra bu işi çözün: %(volumes)s"
 
-#: vmbackups/jobs.py:391
+#: vmbackups/jobs.py:392
 #, python-format
 msgid ""
 "Another backup runs on the VM; check these volumes of the backup target, then"
@@ -9825,7 +9825,7 @@ msgstr ""
 "Sanal makinede başka bir yedekleme çalışıyor; yedek hedefindeki şu birimleri "
 "kontrol edin, sonra bu işi çözün: %(volumes)s"
 
-#: vmbackups/jobs.py:397
+#: vmbackups/jobs.py:398
 #, python-format
 msgid ""
 "libvirt has no result of the copy; check these volumes of the backup target, "
@@ -9834,68 +9834,68 @@ msgstr ""
 "libvirt'te kopyanın sonucu yok; yedek hedefindeki şu birimleri kontrol edin, "
 "sonra bu işi çözün: %(volumes)s"
 
-#: vmbackups/jobs.py:405
+#: vmbackups/jobs.py:406
 msgid "The job stopped before the copy ended"
 msgstr "İş, kopyalama bitmeden durdu"
 
-#: vmbackups/jobs.py:412
+#: vmbackups/jobs.py:413
 #, python-format
 msgid "The backup's files could not be written: %(error)s"
 msgstr "Yedeğin dosyaları yazılamadı: %(error)s"
 
-#: vmbackups/jobs.py:430
+#: vmbackups/jobs.py:433
 #, python-format
 msgid "No compute of backup target %(target)s reaches its storage pool"
 msgstr ""
 "%(target)s yedek hedefinin hiçbir sunucusu depolama havuzuna erişemiyor"
 
-#: vmbackups/jobs.py:443
+#: vmbackups/jobs.py:446
 msgid "Delete backup"
 msgstr "Yedeği sil"
 
-#: vmbackups/jobs.py:452
+#: vmbackups/jobs.py:455
 msgid "This backup is being made; cancel its job to stop it"
 msgstr "Bu yedek alınıyor; durdurmak için işini iptal edin"
 
-#: vmbackups/jobs.py:516
+#: vmbackups/jobs.py:519
 #, python-format
 msgid "The backup's file %(name)s is missing from the target"
 msgstr "Yedeğin %(name)s dosyası hedefte yok"
 
-#: vmbackups/jobs.py:519 vmbackups/jobs.py:521
+#: vmbackups/jobs.py:522 vmbackups/jobs.py:524
 #, python-format
 msgid "The backup's file %(name)s differs from the one written"
 msgstr "Yedeğin %(name)s dosyası yazılandan farklı"
 
-#: vmbackups/jobs.py:531 vmbackups/templates/vmbackups/restore.html:7
+#: vmbackups/jobs.py:534 vmbackups/templates/vmbackups/restore.html:7
 msgid "Restore backup"
 msgstr "Yedeği geri yükle"
 
-#: vmbackups/jobs.py:544
+#: vmbackups/jobs.py:547
 msgid "Only a ready backup is restored"
 msgstr "Yalnızca hazır bir yedek geri yüklenir"
 
-#: vmbackups/jobs.py:574
+#: vmbackups/jobs.py:577
 #, python-format
 msgid "A VM named %(name)s exists on %(compute)s"
 msgstr "%(compute)s üzerinde %(name)s adlı bir sanal makine var"
 
-#: vmbackups/jobs.py:582
+#: vmbackups/jobs.py:585
 #, python-format
 msgid "This host has no active directory storage pool %(pool)s"
 msgstr "Bu sunucuda %(pool)s adlı etkin bir dizin depolama havuzu yok"
 
-#: vmbackups/jobs.py:599
+#: vmbackups/jobs.py:602
 #, python-format
 msgid "The NVRAM file %(path)s exists already"
 msgstr "%(path)s NVRAM dosyası zaten var"
 
-#: vmbackups/jobs.py:630
+#: vmbackups/jobs.py:633
 #, python-format
 msgid "The VM was restored; it did not start: %(error)s"
 msgstr "Sanal makine geri yüklendi; başlamadı: %(error)s"
 
-#: vmbackups/jobs.py:652
+#: vmbackups/jobs.py:655
 #, python-format
 msgid ""
 "A disk was being copied when the job stopped; check this volume, then resolve"
@@ -9904,7 +9904,7 @@ msgstr ""
 "İş durduğunda bir disk kopyalanıyordu; bu birimi kontrol edin, sonra bu işi "
 "çözün: %(volumes)s"
 
-#: vmbackups/jobs.py:657
+#: vmbackups/jobs.py:660
 #, python-format
 msgid ""
 "Storage pool %(pool)s is not active; the restore's copies in it are removed "
@@ -9913,9 +9913,22 @@ msgstr ""
 "%(pool)s depolama havuzu etkin değil; geri yüklemenin içindeki kopyaları "
 "havuz etkin olunca kaldırılır"
 
-#: vmbackups/jobs.py:666
+#: vmbackups/jobs.py:669
 msgid "The VM was not defined; its copies were removed"
 msgstr "Sanal makine tanımlanmadı; kopyaları kaldırıldı"
+
+#: vmbackups/jobs.py:688 vmbackups/templates/vmbackups/target.html:18
+msgid "Read backups from target"
+msgstr "Yedekleri hedeften oku"
+
+#: vmbackups/jobs.py:736
+#, python-format
+msgid ""
+"Not read, as a file of the backup is missing, changed or unreadable: "
+"%(names)s"
+msgstr ""
+"Yedeğin bir dosyası eksik, değişmiş ya da okunamaz olduğu için okunmadı: "
+"%(names)s"
 
 #: vmbackups/templates/vmbackups/consistency.html:1
 msgid "Shut off"
@@ -9945,8 +9958,8 @@ msgstr ""
 "hedeften kaldırılır."
 
 #: vmbackups/templates/vmbackups/index.html:10
-#: vmbackups/templates/vmbackups/target.html:6
-#: vmbackups/templates/vmbackups/target.html:8
+#: vmbackups/templates/vmbackups/target.html:7
+#: vmbackups/templates/vmbackups/target.html:9
 #: vmbackups/templates/vmbackups/targets.html:6
 #: vmbackups/templates/vmbackups/targets.html:8
 msgid "Backup targets"
@@ -10012,21 +10025,29 @@ msgstr ""
 "%(vm)s sanal makinesinin %(time)s tarihli, %(target)s hedefindeki yedeği "
 "kendi UUID'si ve MAC adresleriyle yeni bir sanal makine olarak geri yüklenir."
 
-#: vmbackups/templates/vmbackups/target.html:11
+#: vmbackups/templates/vmbackups/target.html:13
 #, python-format
 msgid "%(counter)s backup."
 msgid_plural "%(counter)s backups."
 msgstr[0] "%(counter)s yedek."
 msgstr[1] "%(counter)s yedek."
 
-#: vmbackups/templates/vmbackups/target.html:23
+#: vmbackups/templates/vmbackups/target.html:18
+msgid ""
+"Adds the backups whose manifest is in the target and that the panel does not "
+"list, as after its database was lost."
+msgstr ""
+"Manifestosu hedefte olup panelin listelemediği yedekleri ekler; örneğin "
+"panelin veritabanı kaybolduktan sonra."
+
+#: vmbackups/templates/vmbackups/target.html:33
 msgid ""
 "Remove this storage pool from the target? The pool and its files stay on the "
 "host."
 msgstr ""
 "Bu depolama havuzu hedeften çıkarılsın mı? Havuz ve dosyaları sunucuda kalır."
 
-#: vmbackups/templates/vmbackups/target.html:33
+#: vmbackups/templates/vmbackups/target.html:43
 #, python-format
 msgid ""
 "The target is inside storage pool %(pool)s: its backups are lost with that "
@@ -10035,11 +10056,11 @@ msgstr ""
 "Hedef %(pool)s depolama havuzunun içinde: o depolama kaybolursa yedekler de "
 "kaybolur."
 
-#: vmbackups/templates/vmbackups/target.html:43
+#: vmbackups/templates/vmbackups/target.html:53
 msgid "Add a compute's storage pool"
 msgstr "Bir sunucunun depolama havuzunu ekle"
 
-#: vmbackups/templates/vmbackups/target.html:45
+#: vmbackups/templates/vmbackups/target.html:55
 msgid ""
 "The pool must be the same directory as the target's other pools, as an NFS "
 "share mounted on each host."
@@ -10047,11 +10068,11 @@ msgstr ""
 "Havuz, hedefin diğer havuzlarıyla aynı dizin olmalıdır; örneğin her sunucuya "
 "bağlanmış bir NFS paylaşımı."
 
-#: vmbackups/templates/vmbackups/target.html:58
+#: vmbackups/templates/vmbackups/target.html:68
 msgid "Delete this backup target? Its storage pools stay on the hosts."
 msgstr "Bu yedek hedefi silinsin mi? Depolama havuzları sunucularda kalır."
 
-#: vmbackups/templates/vmbackups/target.html:58
+#: vmbackups/templates/vmbackups/target.html:68
 msgid "Delete target"
 msgstr "Hedefi sil"
 
@@ -10125,12 +10146,12 @@ msgid "No backup target has a storage pool on this VM's host."
 msgstr ""
 "Hiçbir yedek hedefinin bu sanal makinenin sunucusunda depolama havuzu yok."
 
-#: vmbackups/views.py:67 vmbackups/views.py:75
+#: vmbackups/views.py:67 vmbackups/views.py:85
 #, python-format
 msgid "Backup target %(target)s has backups; delete them first"
 msgstr "%(target)s yedek hedefinde yedekler var; önce onları silin"
 
-#: vmbackups/views.py:92
+#: vmbackups/views.py:102
 #, python-format
 msgid ""
 "Storage pool %(pool)s of %(compute)s is not the same directory as storage "
@@ -10139,7 +10160,7 @@ msgstr ""
 "%(compute)s sunucusunun %(pool)s depolama havuzu, %(other_compute)s "
 "sunucusunun %(other)s depolama havuzuyla aynı dizin değil"
 
-#: vmbackups/views.py:124
+#: vmbackups/views.py:134
 msgid "Choose a backup target"
 msgstr "Bir yedek hedefi seçin"
 

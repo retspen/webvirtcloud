@@ -2,13 +2,23 @@
 {% load i18n %}
 {% load bootstrap_icons %}
 {% load django_bootstrap5 %}
+{% load operations %}
 
 {% block title %}{{ target.name }} - {% trans "Backup targets" %}{% endblock %}
 
 {% block page_heading %}<a href="{% url 'vmbackups:targets' %}">{% trans "Backup targets" %}</a> / {{ target.name }}{% endblock page_heading %}
 
 {% block content %}
-    <p class="text-body-secondary">{% blocktrans count counter=backup_count %}{{ counter }} backup.{% plural %}{{ counter }} backups.{% endblocktrans %}</p>
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <span class="text-body-secondary me-auto">{% blocktrans count counter=backup_count %}{{ counter }} backup.{% plural %}{{ counter }} backups.{% endblocktrans %}</span>
+        {% if pools %}
+        <form method="post">
+            {% csrf_token %}{% submission_key %}
+            <button type="submit" name="import" value="1" class="btn btn-sm btn-outline-primary"
+                    title="{% trans "Adds the backups whose manifest is in the target and that the panel does not list, as after its database was lost." %}">{% bs_icon 'download' %} {% trans "Read backups from target" %}</button>
+        </form>
+        {% endif %}
+    </div>
 
     <div class="row row-cols-1 row-cols-md-2 g-3 mb-4">
     {% for item in pools %}

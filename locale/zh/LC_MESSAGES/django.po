@@ -534,7 +534,7 @@ msgstr "为用户添加密钥表单"
 #: instances/templates/create_flavors.html:20
 #: instances/templates/instances/boot_device.html:17
 #: networks/templates/network.html:134 nwfilters/templates/nwfilter.html:45
-#: vmbackups/templates/vmbackups/target.html:49
+#: vmbackups/templates/vmbackups/target.html:59
 #: vmbackups/templates/vmbackups/targets.html:40
 msgid "Add"
 msgstr "添加"
@@ -3111,7 +3111,7 @@ msgstr "控制台监听的不只是 localhost；只有管理员可以移除其�
 msgid "The name of the virtual machine must not contain any special characters"
 msgstr "虚拟机名称不能包含任何特殊字符"
 
-#: instances/jobs.py:73 vmbackups/jobs.py:83
+#: instances/jobs.py:73 vmbackups/jobs.py:84
 msgid "The VM moved to another compute after the job was queued"
 msgstr "任务排队后，虚拟机已移到另一个计算节点"
 
@@ -3132,17 +3132,17 @@ msgstr "请从可用名称列表中选择克隆的名称"
 msgid "%(quota)s: cannot create '%(clone_name)s'."
 msgstr "%(quota)s：无法创建“%(clone_name)s”。"
 
-#: instances/jobs.py:206 instances/jobs.py:646 vmbackups/jobs.py:499
+#: instances/jobs.py:206 instances/jobs.py:646 vmbackups/jobs.py:502
 #, python-format
 msgid "Instance '%(clone_name)s' already exists!"
 msgstr "虚拟机 '%(clone_name)s' 已存在！"
 
-#: instances/jobs.py:208 vmbackups/jobs.py:501
+#: instances/jobs.py:208 vmbackups/jobs.py:504
 #, python-format
 msgid "Instance name '%(clone_name)s' is longer than 64 characters"
 msgstr "虚拟机名称“%(clone_name)s”超过 64 个字符"
 
-#: instances/jobs.py:211 vmbackups/jobs.py:503
+#: instances/jobs.py:211 vmbackups/jobs.py:506
 #, python-format
 msgid "Instance name '%(clone_name)s' contains invalid characters!"
 msgstr "虚拟机名称 '%(clone_name)s' 包含无效字符！"
@@ -3284,11 +3284,11 @@ msgid "Clone VM"
 msgstr "克隆虚拟机"
 
 #: instances/jobs.py:656 instances/jobs.py:663 instances/jobs.py:1005
-#: vmbackups/jobs.py:220 vmbackups/jobs.py:603
+#: vmbackups/jobs.py:221 vmbackups/jobs.py:606
 msgid "Copying disks"
 msgstr "正在复制磁盘"
 
-#: instances/jobs.py:715 vmbackups/jobs.py:296
+#: instances/jobs.py:715 vmbackups/jobs.py:297
 msgid "libvirt has no result of the copy"
 msgstr "libvirt 没有复制的结果"
 
@@ -3299,7 +3299,7 @@ msgid ""
 "(%(thaw)s); thaw them with: virsh domfsthaw %(vm)s"
 msgstr "复制失败：%(error)s。无法解冻客户机的文件系统（%(thaw)s）；请用以下命令解冻：virsh domfsthaw %(vm)s"
 
-#: instances/jobs.py:729 instances/jobs.py:821 vmbackups/jobs.py:302
+#: instances/jobs.py:729 instances/jobs.py:821 vmbackups/jobs.py:303
 msgid "The copy failed"
 msgstr "复制失败"
 
@@ -3317,11 +3317,11 @@ msgid ""
 "this job: %(volumes)s"
 msgstr "克隆的一个卷正在创建中；请检查这些卷，然后处理此任务：%(volumes)s"
 
-#: instances/jobs.py:801 vmbackups/jobs.py:339
+#: instances/jobs.py:801 vmbackups/jobs.py:340
 msgid "The job stopped before the copy started"
 msgstr "任务在复制开始前停止"
 
-#: instances/jobs.py:808 vmbackups/jobs.py:387
+#: instances/jobs.py:808 vmbackups/jobs.py:388
 msgid "libvirt is still copying the disks"
 msgstr "libvirt 仍在复制磁盘"
 
@@ -4148,7 +4148,7 @@ msgstr "设备"
 #: instances/templates/instances/boot_device.html:14
 #: instances/templates/instances/settings_tab.html:685
 #: networks/templates/network.html:304
-#: vmbackups/templates/vmbackups/target.html:23
+#: vmbackups/templates/vmbackups/target.html:33
 msgid "Remove"
 msgstr "移除"
 
@@ -9195,151 +9195,162 @@ msgstr "恢复的客户机保留虚拟机的地址和主机名：与原虚拟机
 msgid "Start after restore"
 msgstr "恢复后启动"
 
-#: vmbackups/jobs.py:56
+#: vmbackups/jobs.py:57
 #, python-format
 msgid "Backup target %(target)s has no storage pool on %(compute)s"
 msgstr "备份目标 %(target)s 在 %(compute)s 上没有存储池"
 
-#: vmbackups/jobs.py:66
+#: vmbackups/jobs.py:67
 msgid "The VM must be running, paused or shut off to be backed up"
 msgstr "虚拟机必须处于运行、暂停或关闭状态才能备份"
 
-#: vmbackups/jobs.py:70
+#: vmbackups/jobs.py:71
 msgid ""
 "A running VM's backup needs libvirt 11.10 or later; shut the VM down to back "
 "it up"
 msgstr "运行中虚拟机的备份需要 libvirt 11.10 或更高版本；请关闭虚拟机后再备份"
 
-#: vmbackups/jobs.py:72
+#: vmbackups/jobs.py:73
 msgid "A paused VM's file systems cannot be frozen"
 msgstr "无法冻结已暂停虚拟机的文件系统"
 
-#: vmbackups/jobs.py:74
+#: vmbackups/jobs.py:75
 msgid "The guest agent does not answer: the file systems cannot be frozen"
 msgstr "客户机代理没有响应：无法冻结文件系统"
 
-#: vmbackups/jobs.py:124
+#: vmbackups/jobs.py:125
 msgid ""
 "The VM's NVRAM file changed while it was backed up; back the VM up again"
 msgstr "虚拟机的 NVRAM 文件在备份期间发生了变化；请重新备份该虚拟机"
 
-#: vmbackups/jobs.py:185
+#: vmbackups/jobs.py:186
 msgid "Back up VM"
 msgstr "备份虚拟机"
 
-#: vmbackups/jobs.py:236 vmbackups/jobs.py:303
+#: vmbackups/jobs.py:237 vmbackups/jobs.py:304
 msgid "Writing the backup's files"
 msgstr "正在写入备份文件"
 
-#: vmbackups/jobs.py:315
+#: vmbackups/jobs.py:316
 msgid "The guest's file systems could not be thawed; trying again"
 msgstr "无法解冻客户机的文件系统；正在重试"
 
-#: vmbackups/jobs.py:364
+#: vmbackups/jobs.py:365
 #, python-format
 msgid ""
 "The VM is no longer on the compute the job ran on; check these volumes of the"
 " backup target, then resolve this job: %(volumes)s"
 msgstr "虚拟机已不在作业运行的计算节点上；请检查备份目标中的这些卷，然后解决此作业：%(volumes)s"
 
-#: vmbackups/jobs.py:381
+#: vmbackups/jobs.py:382
 #, python-format
 msgid ""
 "A disk was being copied when the job stopped; check these volumes of the "
 "backup target, then resolve this job: %(volumes)s"
 msgstr "作业停止时正在复制磁盘；请检查备份目标中的这些卷，然后解决此作业：%(volumes)s"
 
-#: vmbackups/jobs.py:391
+#: vmbackups/jobs.py:392
 #, python-format
 msgid ""
 "Another backup runs on the VM; check these volumes of the backup target, then"
 " resolve this job: %(volumes)s"
 msgstr "虚拟机上正在运行另一个备份；请检查备份目标中的这些卷，然后解决此作业：%(volumes)s"
 
-#: vmbackups/jobs.py:397
+#: vmbackups/jobs.py:398
 #, python-format
 msgid ""
 "libvirt has no result of the copy; check these volumes of the backup target, "
 "then resolve this job: %(volumes)s"
 msgstr "libvirt 没有复制的结果；请检查备份目标中的这些卷，然后解决此作业：%(volumes)s"
 
-#: vmbackups/jobs.py:405
+#: vmbackups/jobs.py:406
 msgid "The job stopped before the copy ended"
 msgstr "作业在复制结束前停止"
 
-#: vmbackups/jobs.py:412
+#: vmbackups/jobs.py:413
 #, python-format
 msgid "The backup's files could not be written: %(error)s"
 msgstr "无法写入备份文件：%(error)s"
 
-#: vmbackups/jobs.py:430
+#: vmbackups/jobs.py:433
 #, python-format
 msgid "No compute of backup target %(target)s reaches its storage pool"
 msgstr "备份目标 %(target)s 的计算节点都无法访问其存储池"
 
-#: vmbackups/jobs.py:443
+#: vmbackups/jobs.py:446
 msgid "Delete backup"
 msgstr "删除备份"
 
-#: vmbackups/jobs.py:452
+#: vmbackups/jobs.py:455
 msgid "This backup is being made; cancel its job to stop it"
 msgstr "此备份正在创建；要停止它，请取消其作业"
 
-#: vmbackups/jobs.py:516
+#: vmbackups/jobs.py:519
 #, python-format
 msgid "The backup's file %(name)s is missing from the target"
 msgstr "目标中缺少备份文件 %(name)s"
 
-#: vmbackups/jobs.py:519 vmbackups/jobs.py:521
+#: vmbackups/jobs.py:522 vmbackups/jobs.py:524
 #, python-format
 msgid "The backup's file %(name)s differs from the one written"
 msgstr "备份文件 %(name)s 与写入的不同"
 
-#: vmbackups/jobs.py:531 vmbackups/templates/vmbackups/restore.html:7
+#: vmbackups/jobs.py:534 vmbackups/templates/vmbackups/restore.html:7
 msgid "Restore backup"
 msgstr "恢复备份"
 
-#: vmbackups/jobs.py:544
+#: vmbackups/jobs.py:547
 msgid "Only a ready backup is restored"
 msgstr "只能恢复就绪的备份"
 
-#: vmbackups/jobs.py:574
+#: vmbackups/jobs.py:577
 #, python-format
 msgid "A VM named %(name)s exists on %(compute)s"
 msgstr "%(compute)s 上已存在名为 %(name)s 的虚拟机"
 
-#: vmbackups/jobs.py:582
+#: vmbackups/jobs.py:585
 #, python-format
 msgid "This host has no active directory storage pool %(pool)s"
 msgstr "此主机没有名为 %(pool)s 的活动目录存储池"
 
-#: vmbackups/jobs.py:599
+#: vmbackups/jobs.py:602
 #, python-format
 msgid "The NVRAM file %(path)s exists already"
 msgstr "NVRAM 文件 %(path)s 已存在"
 
-#: vmbackups/jobs.py:630
+#: vmbackups/jobs.py:633
 #, python-format
 msgid "The VM was restored; it did not start: %(error)s"
 msgstr "虚拟机已恢复；但未能启动：%(error)s"
 
-#: vmbackups/jobs.py:652
+#: vmbackups/jobs.py:655
 #, python-format
 msgid ""
 "A disk was being copied when the job stopped; check this volume, then resolve"
 " this job: %(volumes)s"
 msgstr "作业停止时正在复制磁盘；请检查此卷，然后解决此作业：%(volumes)s"
 
-#: vmbackups/jobs.py:657
+#: vmbackups/jobs.py:660
 #, python-format
 msgid ""
 "Storage pool %(pool)s is not active; the restore's copies in it are removed "
 "when it is"
 msgstr "存储池 %(pool)s 未激活；其中恢复的副本将在其激活后删除"
 
-#: vmbackups/jobs.py:666
+#: vmbackups/jobs.py:669
 msgid "The VM was not defined; its copies were removed"
 msgstr "虚拟机未定义；其副本已删除"
+
+#: vmbackups/jobs.py:688 vmbackups/templates/vmbackups/target.html:18
+msgid "Read backups from target"
+msgstr "从目标读取备份"
+
+#: vmbackups/jobs.py:736
+#, python-format
+msgid ""
+"Not read, as a file of the backup is missing, changed or unreadable: "
+"%(names)s"
+msgstr "由于备份的某个文件缺失、已更改或无法读取，未读取：%(names)s"
 
 #: vmbackups/templates/vmbackups/consistency.html:1
 msgid "Shut off"
@@ -9367,8 +9378,8 @@ msgid ""
 msgstr "要删除 %(vm)s 在 %(time)s 的备份吗？其文件将从目标中移除。"
 
 #: vmbackups/templates/vmbackups/index.html:10
-#: vmbackups/templates/vmbackups/target.html:6
-#: vmbackups/templates/vmbackups/target.html:8
+#: vmbackups/templates/vmbackups/target.html:7
+#: vmbackups/templates/vmbackups/target.html:9
 #: vmbackups/templates/vmbackups/targets.html:6
 #: vmbackups/templates/vmbackups/targets.html:8
 msgid "Backup targets"
@@ -9432,40 +9443,46 @@ msgid ""
 "with its own UUID and MAC addresses."
 msgstr "%(vm)s 在 %(time)s 的备份（位于 %(target)s）将恢复为一台拥有自己 UUID 和 MAC 地址的新虚拟机。"
 
-#: vmbackups/templates/vmbackups/target.html:11
+#: vmbackups/templates/vmbackups/target.html:13
 #, python-format
 msgid "%(counter)s backup."
 msgid_plural "%(counter)s backups."
 msgstr[0] "%(counter)s 个备份。"
 
-#: vmbackups/templates/vmbackups/target.html:23
+#: vmbackups/templates/vmbackups/target.html:18
+msgid ""
+"Adds the backups whose manifest is in the target and that the panel does not "
+"list, as after its database was lost."
+msgstr "添加清单位于目标中、但面板未列出的备份，例如在面板数据库丢失之后。"
+
+#: vmbackups/templates/vmbackups/target.html:33
 msgid ""
 "Remove this storage pool from the target? The pool and its files stay on the "
 "host."
 msgstr "要从目标中移除此存储池吗？存储池及其文件仍保留在主机上。"
 
-#: vmbackups/templates/vmbackups/target.html:33
+#: vmbackups/templates/vmbackups/target.html:43
 #, python-format
 msgid ""
 "The target is inside storage pool %(pool)s: its backups are lost with that "
 "storage."
 msgstr "目标位于存储池 %(pool)s 内：该存储丢失时其备份也会丢失。"
 
-#: vmbackups/templates/vmbackups/target.html:43
+#: vmbackups/templates/vmbackups/target.html:53
 msgid "Add a compute's storage pool"
 msgstr "添加计算节点的存储池"
 
-#: vmbackups/templates/vmbackups/target.html:45
+#: vmbackups/templates/vmbackups/target.html:55
 msgid ""
 "The pool must be the same directory as the target's other pools, as an NFS "
 "share mounted on each host."
 msgstr "该存储池必须与目标的其他存储池是同一目录，例如挂载在每台主机上的 NFS 共享。"
 
-#: vmbackups/templates/vmbackups/target.html:58
+#: vmbackups/templates/vmbackups/target.html:68
 msgid "Delete this backup target? Its storage pools stay on the hosts."
 msgstr "要删除此备份目标吗？其存储池仍保留在主机上。"
 
-#: vmbackups/templates/vmbackups/target.html:58
+#: vmbackups/templates/vmbackups/target.html:68
 msgid "Delete target"
 msgstr "删除目标"
 
@@ -9530,19 +9547,19 @@ msgstr "存储池 %(pool)s 是备份目标 %(target)s；请先将其从目标中
 msgid "No backup target has a storage pool on this VM's host."
 msgstr "没有备份目标在此虚拟机的主机上有存储池。"
 
-#: vmbackups/views.py:67 vmbackups/views.py:75
+#: vmbackups/views.py:67 vmbackups/views.py:85
 #, python-format
 msgid "Backup target %(target)s has backups; delete them first"
 msgstr "备份目标 %(target)s 中有备份；请先删除它们"
 
-#: vmbackups/views.py:92
+#: vmbackups/views.py:102
 #, python-format
 msgid ""
 "Storage pool %(pool)s of %(compute)s is not the same directory as storage "
 "pool %(other)s of %(other_compute)s"
 msgstr "%(compute)s 的存储池 %(pool)s 与 %(other_compute)s 的存储池 %(other)s 不是同一目录"
 
-#: vmbackups/views.py:124
+#: vmbackups/views.py:134
 msgid "Choose a backup target"
 msgstr "请选择备份目标"
 

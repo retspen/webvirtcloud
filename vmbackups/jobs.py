@@ -11,6 +11,7 @@ from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 from django.db import transaction
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.utils.translation import gettext_noop as _
 from lxml import etree
 from libvirt import VIR_DOMAIN_PAUSED, VIR_DOMAIN_RUNNING, VIR_DOMAIN_SHUTOFF, VIR_ERR_NO_DOMAIN, VIR_ERR_NO_STORAGE_VOL, libvirtError
@@ -25,8 +26,8 @@ from operations.jobs import Cancelled, Kind, Outcome, Plan, register
 from operations.models import Claim, Operation
 from operations.utils import safe_text, say
 from vrtManager import util
-from vrtManager.backup import (backup_file_names, check_restore_host, check_target_space, get_file, put_file, remove_files,
-                               restore_definition, target_pool, volume_exists, wvmBackup)
+from vrtManager.backup import (backup_file_names, check_restore_host, check_target_space, get_file, manifest_names, put_file,
+                               remove_files, restore_definition, target_pool, volume_exists, wvmBackup)
 from vrtManager.connection import NVRAM_DIR, wvmConnect
 from vrtManager.instance import wvmInstance
 from vrtManager.storage import wvmStorage
@@ -420,11 +421,13 @@ class CreateBackup(Kind):
 
 
 def _target_pool(target):
-    """The target's pool through the first of its computes that reaches it."""
+    """(connection, pool) of the target through the first of its computes
+    that reaches its pool."""
     for row in target.pools.select_related("compute").order_by("compute__name"):
         c = row.compute
         try:
-            return target_pool(wvmConnect(c.hostname, c.login, c.password, c.type), row.pool, row.pool_uuid)
+            conn = wvmConnect(c.hostname, c.login, c.password, c.type)
+            return conn, target_pool(conn, row.pool, row.pool_uuid)
         except libvirtError:
             continue
     raise util.OperationError(_("No compute of backup target %(target)s reaches its storage pool"), target=target.name)
@@ -462,7 +465,7 @@ class DeleteBackup(Kind):
     def run(self, op, ctx):
         _superuser(op.user)
         backup = _backup(op.params)
-        pool = _target_pool(backup.target)
+        _conn, pool = _target_pool(backup.target)
         ctx.record_intent(deleting=True)
         return self._delete(backup, pool)
 
@@ -481,7 +484,7 @@ class DeleteBackup(Kind):
         backup = Backup.objects.select_related("target").filter(uuid=op.params["backup"]).first()
         if backup is None:
             return Outcome(Operation.SUCCEEDED)
-        return Outcome(Operation.SUCCEEDED, result=self._delete(backup, _target_pool(backup.target)))
+        return Outcome(Operation.SUCCEEDED, result=self._delete(backup, _target_pool(backup.target)[1]))
 
     def log_entry(self, op, state):
         backup = f"Backup {op.intent['time']} of {op.intent['vm']}"
@@ -503,22 +506,22 @@ def _check_name(name):
         raise util.OperationError(_("Instance name '%(clone_name)s' contains invalid characters!"), clone_name=name)
 
 
-def _check_files(conn, pool, backup):
-    """Each file of the backup is in the target: disks at their size, the
-    small files with their SHA-256."""
+def _check_files(conn, pool, files):
+    """Each file of a backup ({role, volume, capacity, sha256}) is in the
+    target: disks at their size, the small files with their SHA-256."""
     pool.refresh(0)
-    for f in backup.files.all():
+    for f in files:
         try:
-            vol = pool.storageVolLookupByName(f.volume)
+            vol = pool.storageVolLookupByName(f["volume"])
         except libvirtError as err:
             if err.get_error_code() != VIR_ERR_NO_STORAGE_VOL:
                 raise
-            raise util.OperationError(_("The backup's file %(name)s is missing from the target"), name=f.volume) from err
-        if f.role == BackupFile.DISK:
-            if vol.info()[1] != f.capacity:
-                raise util.OperationError(_("The backup's file %(name)s differs from the one written"), name=f.volume)
-        elif hashlib.sha256(get_file(conn, pool, f.volume)).hexdigest() != f.sha256:
-            raise util.OperationError(_("The backup's file %(name)s differs from the one written"), name=f.volume)
+            raise util.OperationError(_("The backup's file %(name)s is missing from the target"), name=f["volume"]) from err
+        if f["role"] == BackupFile.DISK:
+            if vol.info()[1] != f["capacity"]:
+                raise util.OperationError(_("The backup's file %(name)s differs from the one written"), name=f["volume"])
+        elif hashlib.sha256(get_file(conn, pool, f["volume"])).hexdigest() != f["sha256"]:
+            raise util.OperationError(_("The backup's file %(name)s differs from the one written"), name=f["volume"])
 
 
 @register
@@ -574,7 +577,7 @@ class RestoreBackup(Kind):
             raise util.OperationError(_("A VM named %(name)s exists on %(compute)s"), name=p["name"], compute=compute.name)
         row = _target_row(backup.target, compute)
         tpool = target_pool(conn, row.pool, row.pool_uuid)
-        _check_files(conn, tpool, backup)
+        _check_files(conn, tpool, backup.files.values("role", "volume", "capacity", "sha256"))
         definition = get_file(conn, tpool, backup.files.get(role=BackupFile.DOMAIN).volume).decode()
         check_restore_host(conn, definition)
         pools = conn.file_pools()
@@ -672,3 +675,68 @@ class RestoreBackup(Kind):
 def _vm_page(op):
     vm = Instance.objects.get(compute_id=op.intent["compute"], uuid=op.intent["uuid"])
     return reverse("instances:instance", args=[vm.pk])
+
+
+@register
+class ImportBackups(Kind):
+    """The backups of a target read into the panel, as after the panel's
+    database was lost: each manifest whose backup the panel does not list
+    is checked as a restore checks it, then added with its files. Nothing
+    on the target changes."""
+
+    name = "backup.import"
+    label = _("Read backups from target")
+
+    def normalize(self, raw):
+        return {"target": int(raw["target"])}
+
+    def plan(self, user, params):
+        _superuser(user)
+        target = BackupTarget.objects.get(pk=params["target"])
+        return Plan(claims={claims.backup_target_key(target.pk): Claim.EXCLUSIVE},
+                    resource=claims.backup_target_key(target.pk), label=target.name, intent={"target": target.name})
+
+    def run(self, op, ctx):
+        _superuser(op.user)
+        target = BackupTarget.objects.get(pk=op.params["target"])
+        conn, pool = _target_pool(target)
+        added, incomplete = 0, []
+        for name in manifest_names(pool):
+            data = get_file(conn, pool, name)
+            try:
+                manifest = json.loads(data)
+                if manifest["format"] != MANIFEST_FORMAT:
+                    raise ValueError(manifest["format"])
+                if Backup.objects.filter(uuid=manifest["backup"]).exists():
+                    continue
+                _check_files(conn, pool, manifest["files"])
+                files = [{k: f[k] for k in ("role", "dev", "volume", "format", "capacity", "size", "sha256")}
+                         for f in manifest["files"]]
+                vm, created_at = manifest["vm"], parse_datetime(manifest["created_at"])
+                if created_at is None:
+                    raise ValueError(manifest["created_at"])
+                fields = {"vm_uuid": vm["uuid"], "vm_name": vm["name"], "compute_name": manifest["compute"],
+                          "consistency": manifest["consistency"]}
+            except (ValueError, KeyError, TypeError, util.OperationError):
+                # cut short, not a manifest of the panel, or a file missing or changed: the others are still read
+                incomplete.append(name)
+                continue
+            with transaction.atomic():
+                backup = Backup.objects.create(
+                    uuid=manifest["backup"], target=target, state=Backup.READY, **fields,
+                    instance=Instance.objects.filter(uuid=fields["vm_uuid"]).first(),
+                    manifest=manifest, finished_at=timezone.now(), size=sum(f["size"] for f in files) + len(data),
+                )
+                # the time it was taken, not read
+                Backup.objects.filter(pk=backup.pk).update(created_at=created_at)
+                BackupFile.objects.bulk_create(BackupFile(backup=backup, **f) for f in files)
+            added += 1
+        result = {"added": added}
+        if incomplete:
+            result["warning"] = say(_("Not read, as a file of the backup is missing, changed or unreadable: %(names)s"),
+                                    names=", ".join(incomplete))
+        return result
+
+    def log_entry(self, op, state):
+        message = f"Backup target {op.intent['target']}: backups read"
+        return "-", "", "", message if state == Operation.SUCCEEDED else f"{message} ({state})"
