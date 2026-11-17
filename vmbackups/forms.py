@@ -64,6 +64,8 @@ class RestoreDiskForm(forms.Form):
         disks = list(backup.files.filter(role="disk").order_by("dev"))
         self.fields["dev"].choices = [(d.dev, d.dev) for d in disks]
         self.fields["compute"].queryset = Compute.objects.filter(backuptargetpool__target=backup.target).order_by("name")
+        if backup.instance_id:  # the VM's host, when it has the target's pool
+            self.fields["compute"].initial = self.fields["compute"].queryset.filter(instance=backup.instance_id).first()
         if disks:
             first = disks[0]
             self.fields["name"].initial = f"{backup.vm_name}-{first.dev}-restored.{'qcow2' if first.format == 'qcow2' else 'raw'}"

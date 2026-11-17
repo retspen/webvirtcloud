@@ -334,5 +334,6 @@ class OwnerTests(TransactionTestCase):
         admin = get_user_model().objects.create_superuser("adm3", "c@example.com", "pw")
         self.client.force_login(admin)
         BackupTarget.objects.filter(pk=self.target.pk).update(owners=False)
-        self.client.post(reverse("vmbackups:target", args=[self.target.pk]), {"owners": "1"})
+        response = self.client.post(reverse("vmbackups:target", args=[self.target.pk]), {"owners": "1"}, follow=True)
         self.assertTrue(BackupTarget.objects.get(pk=self.target.pk).owners)
+        self.assertContains(response, "VM owners with the backup permission may now use nfs1.")

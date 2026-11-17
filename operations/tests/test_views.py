@@ -67,6 +67,15 @@ class JobsPageTestCase(TransactionTestCase):
         self.assertContains(self.client.get(reverse("operations:jobs"), {"compute": "c"}), link)
         self.assertNotContains(self.client.get(reverse("operations:jobs"), {"state": "failed"}), link)
 
+    def test_a_finished_job_opens_what_it_made(self):
+        from lxml import html as lxml_html
+
+        self.client.force_login(self.user)
+        page = lambda: lxml_html.fromstring(self.client.get(reverse("operations:job", args=[self.op.pk])).content)
+        self.assertFalse(page().xpath("//a[@href='/instances/7/']"))
+        jobs.finish(self.op, Outcome(Operation.SUCCEEDED, result={"open": "/instances/7/"}))
+        self.assertEqual(page().xpath("normalize-space(//a[@href='/instances/7/'])"), "Open")
+
     def test_host_and_user_filters_match_part_of_the_name(self):
         self.client.force_login(self.admin)
         link = reverse("operations:job", args=[self.op.pk])

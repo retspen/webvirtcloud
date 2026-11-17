@@ -91,13 +91,15 @@ class ImportTests(TransactionTestCase):
         return result
 
     def test_new_manifests_are_added_once(self):
-        self.assertEqual(self.read(), {"added": 2})
+        result = self.read()
+        self.assertEqual(result["added"], 2)
+        self.assertEqual(result["open"], reverse("vmbackups:target", args=[self.target.pk]))  # the job page opens it
         backup = Backup.objects.get(uuid=self.a)
         self.assertEqual((backup.state, backup.target, backup.instance, backup.vm_name, backup.consistency),
                          (Backup.READY, self.target, self.vm, "vm1", "frozen"))
         self.assertEqual(backup.created_at.isoformat(), "2026-11-01T10:00:00+00:00")
         self.assertEqual(sorted(backup.files.values_list("role", flat=True)), ["disk", "domain"])
-        self.assertEqual(self.read(), {"added": 0})
+        self.assertEqual(self.read()["added"], 0)
         self.assertEqual(Backup.objects.count(), 2)
 
     def test_a_chain_is_read_base_first_and_linked(self):
@@ -109,7 +111,7 @@ class ImportTests(TransactionTestCase):
         newer["parent"] = base
         self.files[f"wvc-{base}-manifest.json"] = json.dumps(older).encode()
         self.files[f"wvc-{top}-manifest.json"] = json.dumps(newer).encode()
-        self.assertEqual(self.read(), {"added": 2})
+        self.assertEqual(self.read()["added"], 2)
         self.assertEqual(Backup.objects.get(uuid=top).parent, Backup.objects.get(uuid=base))
         self.assertEqual(Backup.objects.get(uuid=base).checkpoint, f"wvc-{base}")
 

@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 17:12+0000\n"
+"POT-Creation-Date: 2026-11-17 19:05+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -76,7 +76,7 @@ msgstr "Geçersiz anahtar"
 #: networks/templates/network.html:373 nwfilters/templates/nwfilters.html:29
 #: storages/templates/storage.html:123 virtsecrets/forms.py:34
 #: virtsecrets/forms.py:36 vmbackups/forms.py:23 vmbackups/forms.py:36
-#: vmbackups/forms.py:79 vmbackups/templates/vmbackups/policies.html:16
+#: vmbackups/forms.py:81 vmbackups/templates/vmbackups/policies.html:16
 #: vmbackups/templates/vmbackups/targets.html:17
 msgid "Name"
 msgstr "Ad"
@@ -485,7 +485,7 @@ msgid "Starts with"
 msgstr "Başlangıcı"
 
 #: accounts/templates/api_token_list.html:18
-#: operations/templates/operations/job.html:76
+#: operations/templates/operations/job.html:79
 msgid "Created"
 msgstr "Oluşturulma"
 
@@ -1013,7 +1013,7 @@ msgid "Done"
 msgstr "Tamamlandı"
 
 #: admin/templates/admin/logs.html:56 admin/views.py:395 logs/views.py:18
-#: operations/templates/operations/job.html:107
+#: operations/templates/operations/job.html:110
 #: vmbackups/templates/vmbackups/index.html:33
 #: vmbackups/templates/vmbackups/policy.html:38
 #: vmbackups/templates/vmbackups/state.html:1
@@ -8590,60 +8590,66 @@ msgid "Progress"
 msgstr "İlerleme"
 
 #: operations/templates/operations/job.html:54
+#: operations/templatetags/operations.py:84
+msgctxt "verb"
+msgid "Open"
+msgstr "Aç"
+
+#: operations/templates/operations/job.html:57
 msgid "Results"
 msgstr "Sonuçlar"
 
-#: operations/templates/operations/job.html:63
+#: operations/templates/operations/job.html:66
 msgid "Left behind"
 msgstr "Geride kalanlar"
 
-#: operations/templates/operations/job.html:69
+#: operations/templates/operations/job.html:72
 msgid "Resolution"
 msgstr "Çözüm"
 
-#: operations/templates/operations/job.html:81
+#: operations/templates/operations/job.html:84
 #: vmbackups/templates/vmbackups/policy.html:36
 msgid "Started"
 msgstr "Başlangıç"
 
-#: operations/templates/operations/job.html:81
+#: operations/templates/operations/job.html:84
 #, python-format
 msgid "queued for %(time)s"
 msgstr "%(time)s kuyrukta"
 
-#: operations/templates/operations/job.html:87
+#: operations/templates/operations/job.html:90
 msgid "Finished"
 msgstr "Bitti"
 
-#: operations/templates/operations/job.html:87
+#: operations/templates/operations/job.html:90
 #, python-format
 msgid "ran for %(time)s"
 msgstr "%(time)s çalıştı"
 
-#: operations/templates/operations/job.html:97
-#: operations/templates/operations/job.html:115
+#: operations/templates/operations/job.html:100
+#: operations/templates/operations/job.html:118
 msgid "Resolve"
 msgstr "Çöz"
 
-#: operations/templates/operations/job.html:98
+#: operations/templates/operations/job.html:101
 msgid "Record what you checked; the job is marked succeeded or failed."
 msgstr ""
 "Neyi kontrol ettiğinizi kaydedin; iş başarılı ya da başarısız olarak "
 "işaretlenir."
 
-#: operations/templates/operations/job.html:101
+#: operations/templates/operations/job.html:104
 msgid "Resolve job form"
 msgstr "İş çözme formu"
 
-#: operations/templates/operations/job.html:104
+#: operations/templates/operations/job.html:107
 msgid "Outcome"
 msgstr "Sonuç"
 
-#: operations/templates/operations/job.html:106
+#: operations/templates/operations/job.html:109
 msgid "Succeeded"
 msgstr "Başarılı"
 
-#: operations/templates/operations/job.html:111
+#: operations/templates/operations/job.html:114
 msgid "What you checked"
 msgstr "Neyi kontrol ettiniz"
 
@@ -8726,11 +8732,6 @@ msgid "%(count)d second"
 msgid_plural "%(count)d seconds"
 msgstr[0] "%(count)d saniye"
 msgstr[1] "%(count)d saniye"
-
-#: operations/templatetags/operations.py:84
-msgctxt "verb"
-msgid "Open"
-msgstr "Aç"
 
 #: operations/templatetags/operations.py:86
 msgid "Dismiss"
@@ -9790,39 +9791,39 @@ msgstr "Geri yüklendikten sonra başlat"
 msgid "Volume name"
 msgstr "Birim adı"
 
-#: vmbackups/forms.py:79 vmbackups/templates/vmbackups/vm_tab.html:14
+#: vmbackups/forms.py:81 vmbackups/templates/vmbackups/vm_tab.html:14
 msgid "Backup target"
 msgstr "Yedek hedefi"
 
-#: vmbackups/forms.py:79
+#: vmbackups/forms.py:81
 msgid "Every VM of a compute"
 msgstr "Bir sunucunun bütün sanal makineleri"
 
-#: vmbackups/forms.py:80
+#: vmbackups/forms.py:82
 msgid "Or these VMs"
 msgstr "Ya da bu sanal makineler"
 
-#: vmbackups/forms.py:80 vmbackups/templates/vmbackups/policies.html:16
+#: vmbackups/forms.py:82 vmbackups/templates/vmbackups/policies.html:16
 msgid "Daily at"
 msgstr "Her gün saat"
 
-#: vmbackups/forms.py:80
+#: vmbackups/forms.py:82
 msgid "Backups kept per VM"
 msgstr "VM başına tutulan yedek"
 
-#: vmbackups/forms.py:81
+#: vmbackups/forms.py:83
 msgid "A full backup every N backups"
 msgstr "Her N yedekte bir tam yedek"
 
-#: vmbackups/forms.py:82 vmbackups/templates/vmbackups/vm_tab.html:22
+#: vmbackups/forms.py:84 vmbackups/templates/vmbackups/vm_tab.html:22
 msgid "Require frozen file systems"
 msgstr "Dosya sistemlerinin dondurulmasını zorunlu kıl"
 
-#: vmbackups/forms.py:82 vmbackups/templates/vmbackups/policies.html:28
+#: vmbackups/forms.py:84 vmbackups/templates/vmbackups/policies.html:28
 msgid "Enabled"
 msgstr "Etkin"
 
-#: vmbackups/forms.py:94
+#: vmbackups/forms.py:96
 msgid ""
 "1: every backup is full. Above 1, the backups between copy only what changed "
 "(running VMs with qcow2 disks)."
@@ -9830,16 +9831,16 @@ msgstr ""
 "1: her yedek tamdır. 1'den büyükse aradaki yedekler yalnızca değişenleri "
 "kopyalar (qcow2 diskli, çalışan VM'ler)."
 
-#: vmbackups/forms.py:101
+#: vmbackups/forms.py:103
 msgid "Choose a compute or VMs, not both"
 msgstr "Bir sunucu ya da sanal makineler seçin, ikisini birden değil"
 
-#: vmbackups/forms.py:106 vmbackups/jobs.py:106
+#: vmbackups/forms.py:108 vmbackups/jobs.py:106
 #, python-format
 msgid "Backup target %(target)s has no storage pool on %(compute)s"
 msgstr "%(target)s yedek hedefinin %(compute)s üzerinde depolama havuzu yok"
 
-#: vmbackups/forms.py:113
+#: vmbackups/forms.py:115
 msgid "Keep one backup at least"
 msgstr "En az bir yedek tutun"
 
@@ -10631,7 +10632,7 @@ msgid "No backup target has a storage pool on this VM's host."
 msgstr ""
 "Hiçbir yedek hedefinin bu sanal makinenin sunucusunda depolama havuzu yok."
 
-#: vmbackups/views.py:83 vmbackups/views.py:109
+#: vmbackups/views.py:83 vmbackups/views.py:111
 #, python-format
 msgid "Backup target %(target)s has backups; delete them first"
 msgstr "%(target)s yedek hedefinde yedekler var; önce onları silin"
@@ -10641,7 +10642,18 @@ msgstr "%(target)s yedek hedefinde yedekler var; önce onları silin"
 msgid "Backup target %(target)s has schedules; delete them first"
 msgstr "%(target)s yedek hedefinin zamanlamaları var; önce onları silin"
 
-#: vmbackups/views.py:126
+#: vmbackups/views.py:95
+#, python-format
+msgid "VM owners with the backup permission may now use %(target)s."
+msgstr ""
+"Yedekleme izni olan VM sahipleri artık %(target)s hedefini kullanabilir."
+
+#: vmbackups/views.py:96
+#, python-format
+msgid "Only superusers use %(target)s now."
+msgstr "%(target)s hedefini artık yalnızca süper kullanıcılar kullanır."
+
+#: vmbackups/views.py:128
 #, python-format
 msgid ""
 "Storage pool %(pool)s of %(compute)s is not the same directory as storage "
@@ -10650,14 +10662,24 @@ msgstr ""
 "%(compute)s sunucusunun %(pool)s depolama havuzu, %(other_compute)s "
 "sunucusunun %(other)s depolama havuzuyla aynı dizin değil"
 
-#: vmbackups/views.py:162
+#: vmbackups/views.py:164
 msgid "Choose a backup target"
 msgstr "Bir yedek hedefi seçin"
 
-#: vmbackups/views.py:198
+#: vmbackups/views.py:200
 #, python-format
 msgid "The backup of %(vm)s taken %(time)s is being deleted."
 msgstr "%(vm)s VM'inin %(time)s tarihli yedeği siliniyor."
+
+#: vmbackups/views.py:290 vmbackups/views.py:313
+#, python-format
+msgid "Backup schedule %(name)s is saved."
+msgstr "%(name)s yedekleme zamanlaması kaydedildi."
+
+#: vmbackups/views.py:304
+#, python-format
+msgid "Backup schedule %(name)s is deleted; its backups stay."
+msgstr "%(name)s yedekleme zamanlaması silindi; yedekleri duruyor."
 
 #: vrtManager/backup.py:35
 #, python-format

@@ -92,6 +92,8 @@ def target(request, target_id):
         target.owners = request.POST["owners"] == "1"
         with audit(request, None, subject, "open to VM owners" if target.owners else "closed to VM owners"):
             target.save(update_fields=["owners"])
+        messages.success(request, _("VM owners with the backup permission may now use %(target)s.") % {"target": target.name}
+                         if target.owners else _("Only superusers use %(target)s now.") % {"target": target.name})
         return redirect("vmbackups:target", target.id)
     if request.method == "POST" and "import" in request.POST:
         try:
@@ -285,7 +287,8 @@ def policies(request):
             policy.owner = request.user
             policy.save()
             form.save_m2m()
-        return redirect("vmbackups:policy", policy.pk)
+        messages.success(request, _("Backup schedule %(name)s is saved.") % {"name": policy.name})
+        return redirect("vmbackups:policies")
     rows = BackupPolicy.objects.select_related("target", "compute", "owner").annotate(vm_count=Count("instances"))
     return render(request, "vmbackups/policies.html", {"policies": rows.order_by("name"), "form": form,
                                                        "time_zone": settings.TIME_ZONE})
@@ -298,6 +301,7 @@ def policy(request, policy_id):
     if request.method == "POST" and "delete" in request.POST:
         with audit(request, None, subject, "delete"):  # its backups stay, without a schedule
             policy.delete()
+        messages.success(request, _("Backup schedule %(name)s is deleted; its backups stay.") % {"name": policy.name})
         return redirect("vmbackups:policies")
     form = PolicyForm(request.POST or None, instance=policy)
     if form.is_valid():
@@ -306,7 +310,8 @@ def policy(request, policy_id):
             policy.owner = request.user
             policy.save()
             form.save_m2m()
-        return redirect("vmbackups:policy", policy.pk)
+        messages.success(request, _("Backup schedule %(name)s is saved.") % {"name": policy.name})
+        return redirect("vmbackups:policies")
     runs = policy.runs.select_related("instance", "operation").order_by("-day", "instance__name")[:200]
     return render(request, "vmbackups/policy.html", {"policy": policy, "form": form, "runs": runs,
                                                      "time_zone": settings.TIME_ZONE})

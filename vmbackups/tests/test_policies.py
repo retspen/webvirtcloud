@@ -34,7 +34,9 @@ class PolicyPageTests(TestCase):
     def test_a_schedule_of_chosen_vms(self):
         response = self.post(instances=[self.vm1.pk])
         policy = BackupPolicy.objects.get()
-        self.assertRedirects(response, reverse("vmbackups:policy", args=[policy.pk]), fetch_redirect_response=False)
+        # back to the list, which says it is saved: the schedule's page is its edit form
+        self.assertRedirects(response, reverse("vmbackups:policies"), fetch_redirect_response=False)
+        self.assertContains(self.client.get(reverse("vmbackups:policies")), "Backup schedule nightly is saved.")
         self.assertEqual((list(policy.instances.all()), policy.compute, policy.time, policy.keep, policy.owner),
                          ([self.vm1], None, datetime.time(2), 7, self.admin))
         self.assertTrue(Logs.objects.filter(message__contains="Backup schedule nightly").exists())
@@ -82,6 +84,7 @@ class PolicyPageTests(TestCase):
                                "instances": [self.vm1.pk]})
         policy.refresh_from_db()
         self.assertEqual((policy.time, policy.keep, policy.enabled), (datetime.time(3, 30), 3, False))
+        self.assertContains(self.client.get(reverse("vmbackups:policies")), "Backup schedule nightly is saved.")
 
     def test_delete_keeps_the_backups(self):
         policy = self.schedule()
@@ -91,6 +94,7 @@ class PolicyPageTests(TestCase):
         self.assertRedirects(response, reverse("vmbackups:policies"), fetch_redirect_response=False)
         self.assertFalse(BackupPolicy.objects.exists())
         self.assertTrue(Backup.objects.filter(pk=backup.pk, policy=None).exists())
+        self.assertContains(self.client.get(reverse("vmbackups:policies")), "Backup schedule nightly is deleted")
 
     def test_the_list_and_the_backups_page(self):
         policy = self.schedule()

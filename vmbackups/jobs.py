@@ -1295,7 +1295,7 @@ class ImportBackups(Kind):
                 Backup.objects.filter(pk=backup.pk).update(created_at=created_at)
                 BackupFile.objects.bulk_create(BackupFile(backup=backup, **f) for f in files)
             added += 1
-        result = {"added": added}
+        result = {"added": added, "open": reverse("vmbackups:target", args=[target.pk])}
         if incomplete:
             result["warning"] = say(_("Not read, as a file of the backup is missing, changed or unreadable: %(names)s"),
                                     names=", ".join(incomplete))

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 17:12+0000\n"
+"POT-Creation-Date: 2026-11-17 19:05+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -73,7 +73,7 @@ msgstr "无效的密钥"
 #: networks/templates/network.html:373 nwfilters/templates/nwfilters.html:29
 #: storages/templates/storage.html:123 virtsecrets/forms.py:34
 #: virtsecrets/forms.py:36 vmbackups/forms.py:23 vmbackups/forms.py:36
-#: vmbackups/forms.py:79 vmbackups/templates/vmbackups/policies.html:16
+#: vmbackups/forms.py:81 vmbackups/templates/vmbackups/policies.html:16
 #: vmbackups/templates/vmbackups/targets.html:17
 msgid "Name"
 msgstr "名称"
@@ -478,7 +478,7 @@ msgid "Starts with"
 msgstr "开头"
 
 #: accounts/templates/api_token_list.html:18
-#: operations/templates/operations/job.html:76
+#: operations/templates/operations/job.html:79
 msgid "Created"
 msgstr "创建时间"
 
@@ -985,7 +985,7 @@ msgid "Done"
 msgstr "完成"
 
 #: admin/templates/admin/logs.html:56 admin/views.py:395 logs/views.py:18
-#: operations/templates/operations/job.html:107
+#: operations/templates/operations/job.html:110
 #: vmbackups/templates/vmbackups/index.html:33
 #: vmbackups/templates/vmbackups/policy.html:38
 #: vmbackups/templates/vmbackups/state.html:1
@@ -8091,58 +8091,64 @@ msgid "Progress"
 msgstr "进度"
 
 #: operations/templates/operations/job.html:54
+#: operations/templatetags/operations.py:84
+msgctxt "verb"
+msgid "Open"
+msgstr "打开"
+
+#: operations/templates/operations/job.html:57
 msgid "Results"
 msgstr "结果"
 
-#: operations/templates/operations/job.html:63
+#: operations/templates/operations/job.html:66
 msgid "Left behind"
 msgstr "遗留项"
 
-#: operations/templates/operations/job.html:69
+#: operations/templates/operations/job.html:72
 msgid "Resolution"
 msgstr "处理结论"
 
-#: operations/templates/operations/job.html:81
+#: operations/templates/operations/job.html:84
 #: vmbackups/templates/vmbackups/policy.html:36
 msgid "Started"
 msgstr "开始时间"
 
-#: operations/templates/operations/job.html:81
+#: operations/templates/operations/job.html:84
 #, python-format
 msgid "queued for %(time)s"
 msgstr "排队 %(time)s"
 
-#: operations/templates/operations/job.html:87
+#: operations/templates/operations/job.html:90
 msgid "Finished"
 msgstr "完成时间"
 
-#: operations/templates/operations/job.html:87
+#: operations/templates/operations/job.html:90
 #, python-format
 msgid "ran for %(time)s"
 msgstr "运行 %(time)s"
 
-#: operations/templates/operations/job.html:97
-#: operations/templates/operations/job.html:115
+#: operations/templates/operations/job.html:100
+#: operations/templates/operations/job.html:118
 msgid "Resolve"
 msgstr "处理"
 
-#: operations/templates/operations/job.html:98
+#: operations/templates/operations/job.html:101
 msgid "Record what you checked; the job is marked succeeded or failed."
 msgstr "记录你检查的内容；任务将被标记为成功或失败。"
 
-#: operations/templates/operations/job.html:101
+#: operations/templates/operations/job.html:104
 msgid "Resolve job form"
 msgstr "处理任务表单"
 
-#: operations/templates/operations/job.html:104
+#: operations/templates/operations/job.html:107
 msgid "Outcome"
 msgstr "处理结果"
 
-#: operations/templates/operations/job.html:106
+#: operations/templates/operations/job.html:109
 msgid "Succeeded"
 msgstr "成功"
 
-#: operations/templates/operations/job.html:111
+#: operations/templates/operations/job.html:114
 msgid "What you checked"
 msgstr "检查内容"
 
@@ -8224,11 +8230,6 @@ msgstr "不确定"
 msgid "%(count)d second"
 msgid_plural "%(count)d seconds"
 msgstr[0] "%(count)d 秒"
-
-#: operations/templatetags/operations.py:84
-msgctxt "verb"
-msgid "Open"
-msgstr "打开"
 
 #: operations/templatetags/operations.py:86
 msgid "Dismiss"
@@ -9230,54 +9231,54 @@ msgstr "恢复后启动"
 msgid "Volume name"
 msgstr "卷名"
 
-#: vmbackups/forms.py:79 vmbackups/templates/vmbackups/vm_tab.html:14
+#: vmbackups/forms.py:81 vmbackups/templates/vmbackups/vm_tab.html:14
 msgid "Backup target"
 msgstr "备份目标"
 
-#: vmbackups/forms.py:79
+#: vmbackups/forms.py:81
 msgid "Every VM of a compute"
 msgstr "某计算节点的所有虚拟机"
 
-#: vmbackups/forms.py:80
+#: vmbackups/forms.py:82
 msgid "Or these VMs"
 msgstr "或这些虚拟机"
 
-#: vmbackups/forms.py:80 vmbackups/templates/vmbackups/policies.html:16
+#: vmbackups/forms.py:82 vmbackups/templates/vmbackups/policies.html:16
 msgid "Daily at"
 msgstr "每天时间"
 
-#: vmbackups/forms.py:80
+#: vmbackups/forms.py:82
 msgid "Backups kept per VM"
 msgstr "每台虚拟机保留的备份数"
 
-#: vmbackups/forms.py:81
+#: vmbackups/forms.py:83
 msgid "A full backup every N backups"
 msgstr "每 N 次备份进行一次完整备份"
 
-#: vmbackups/forms.py:82 vmbackups/templates/vmbackups/vm_tab.html:22
+#: vmbackups/forms.py:84 vmbackups/templates/vmbackups/vm_tab.html:22
 msgid "Require frozen file systems"
 msgstr "要求冻结文件系统"
 
-#: vmbackups/forms.py:82 vmbackups/templates/vmbackups/policies.html:28
+#: vmbackups/forms.py:84 vmbackups/templates/vmbackups/policies.html:28
 msgid "Enabled"
 msgstr "已启用"
 
-#: vmbackups/forms.py:94
+#: vmbackups/forms.py:96
 msgid ""
 "1: every backup is full. Above 1, the backups between copy only what changed "
 "(running VMs with qcow2 disks)."
 msgstr "1：每次备份都是完整备份。大于 1 时，中间的备份只复制变化的部分（适用于使用 qcow2 磁盘的运行中虚拟机）。"
 
-#: vmbackups/forms.py:101
+#: vmbackups/forms.py:103
 msgid "Choose a compute or VMs, not both"
 msgstr "请选择一个计算节点或若干虚拟机，不能同时选择"
 
-#: vmbackups/forms.py:106 vmbackups/jobs.py:106
+#: vmbackups/forms.py:108 vmbackups/jobs.py:106
 #, python-format
 msgid "Backup target %(target)s has no storage pool on %(compute)s"
 msgstr "备份目标 %(target)s 在 %(compute)s 上没有存储池"
 
-#: vmbackups/forms.py:113
+#: vmbackups/forms.py:115
 msgid "Keep one backup at least"
 msgstr "至少保留一个备份"
 
@@ -10001,7 +10002,7 @@ msgstr "没有向虚拟机所有者开放的备份目标在此虚拟机的主机
 msgid "No backup target has a storage pool on this VM's host."
 msgstr "没有备份目标在此虚拟机的主机上有存储池。"
 
-#: vmbackups/views.py:83 vmbackups/views.py:109
+#: vmbackups/views.py:83 vmbackups/views.py:111
 #, python-format
 msgid "Backup target %(target)s has backups; delete them first"
 msgstr "备份目标 %(target)s 中有备份；请先删除它们"
@@ -10011,21 +10012,41 @@ msgstr "备份目标 %(target)s 中有备份；请先删除它们"
 msgid "Backup target %(target)s has schedules; delete them first"
 msgstr "备份目标 %(target)s 有计划；请先删除它们"
 
-#: vmbackups/views.py:126
+#: vmbackups/views.py:95
+#, python-format
+msgid "VM owners with the backup permission may now use %(target)s."
+msgstr "拥有备份权限的虚拟机所有者现在可以使用 %(target)s。"
+
+#: vmbackups/views.py:96
+#, python-format
+msgid "Only superusers use %(target)s now."
+msgstr "现在仅超级用户使用 %(target)s。"
+
+#: vmbackups/views.py:128
 #, python-format
 msgid ""
 "Storage pool %(pool)s of %(compute)s is not the same directory as storage "
 "pool %(other)s of %(other_compute)s"
 msgstr "%(compute)s 的存储池 %(pool)s 与 %(other_compute)s 的存储池 %(other)s 不是同一目录"
 
-#: vmbackups/views.py:162
+#: vmbackups/views.py:164
 msgid "Choose a backup target"
 msgstr "请选择备份目标"
 
-#: vmbackups/views.py:198
+#: vmbackups/views.py:200
 #, python-format
 msgid "The backup of %(vm)s taken %(time)s is being deleted."
 msgstr "正在删除 %(vm)s 于 %(time)s 的备份。"
+
+#: vmbackups/views.py:290 vmbackups/views.py:313
+#, python-format
+msgid "Backup schedule %(name)s is saved."
+msgstr "备份计划 %(name)s 已保存。"
+
+#: vmbackups/views.py:304
+#, python-format
+msgid "Backup schedule %(name)s is deleted; its backups stay."
+msgstr "备份计划 %(name)s 已删除；其备份保留。"
 
 #: vrtManager/backup.py:35
 #, python-format
