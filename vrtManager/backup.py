@@ -8,7 +8,7 @@ from django.utils.translation import gettext_noop
 from lxml import etree
 
 from vrtManager.connection import NVRAM_DIR, wvmConnect
-from vrtManager.instance import PERSISTENT_XML, wvmInstance
+from vrtManager.instance import PERSISTENT_XML, rewrite_for_new_vm, wvmInstance
 from vrtManager.util import OperationError
 
 # pools that keep their volumes as files in one directory
@@ -190,6 +190,75 @@ def remove_files(pool, names):
             vol.delete(0)
 
 
+def volume_exists(pool, name):
+    return wvmConnect._find_volume(pool, name) is not None
+
+
 def manifest_names(pool):
     pool.refresh(0)
     return sorted(name for name in pool.listVolumes() if name.startswith("wvc-") and name.endswith("-manifest.json"))
+
+
+def restore_definition(definition, *, name, uuid, macs, disks, nvram, connect):
+    """A backup's kept definition made a new VM's: rewrite_for_new_vm's
+    changes (macs: one per NIC, in order), its media ejected, a new generation ID, each disk's
+    source the restored file (disks: {dev: (path, format)}) with nothing of
+    the old one's chain, the NVRAM file at nvram, and each NIC's link down
+    unless connect: the restored guest keeps the VM's addresses and names."""
+    tree = etree.fromstring(definition)
+    clone_data = {"name": name, "clone-title": tree.findtext("title") or "",
+                  "clone-description": tree.findtext("description") or "",
+                  **{f"clone-net-mac-{number}": mac for number, mac in enumerate(macs)}}
+    rewrite_for_new_vm(tree, clone_data, uuid)
+    # media are not in the backup: the restore host may not have them, and the VM would not start
+    for source in tree.xpath("devices/disk[@device='cdrom' or @device='floppy']/source"):
+        source.getparent().remove(source)
+    if (genid := tree.find("genid")) is not None:
+        genid.text = None  # libvirt makes a new one
+    for disk in tree.xpath("devices/disk[@device='disk']"):
+        path, disk_format = disks[disk.find("target").get("dev")]
+        disk.set("type", "file")
+        for old in disk.xpath("source|backingStore"):
+            disk.remove(old)
+        driver = disk.find("driver")
+        if driver is None:
+            driver = etree.SubElement(disk, "driver", name="qemu")
+        driver.set("type", disk_format)
+        source = etree.Element("source", file=path)
+        disk.insert(list(disk).index(driver) + 1, source)
+    if (element := tree.find("os/nvram")) is not None:
+        if element.find("source") is not None:
+            element.find("source").set("file", nvram)
+        else:
+            element.text = nvram
+    if not connect:
+        for interface in tree.findall("devices/interface"):
+            link = interface.find("link")
+            if link is None:
+                link = etree.SubElement(interface, "link")
+            link.set("state", "down")
+    return etree.tostring(tree).decode()
+
+
+def check_restore_host(conn, definition):
+    """Refuses a host that cannot run the backup's definition: its emulator,
+    machine type and firmware, the networks, bridges and network filters
+    its NICs name."""
+    tree = etree.fromstring(definition)
+    emulator = tree.findtext("devices/emulator")
+    os_type = tree.find("os/type")
+    arch, machine = os_type.get("arch"), os_type.get("machine")
+    try:
+        caps = etree.fromstring(conn.wvm.getDomainCapabilities(emulator, arch, machine, tree.get("type"), 0))
+    except libvirt.libvirtError as err:
+        raise OperationError(gettext_noop("This host cannot run the VM's emulator %(emulator)s with machine type %(machine)s: %(error)s"),
+                             emulator=emulator, machine=machine, error=err) from err
+    loader = (tree.findtext("os/loader") or "").strip()
+    if loader and loader not in caps.xpath("os/loader/value/text()"):
+        raise OperationError(gettext_noop("This host has no firmware %(loader)s"), loader=loader)
+    for network in sorted(set(tree.xpath("devices/interface[@type='network']/source/@network")) - set(conn.get_networks())):
+        raise OperationError(gettext_noop("This host has no network %(name)s"), name=network)
+    for bridge in sorted(set(tree.xpath("devices/interface[@type='bridge']/source/@bridge")) - set(conn.get_ifaces())):
+        raise OperationError(gettext_noop("This host has no bridge %(name)s"), name=bridge)
+    for nwfilter in sorted(set(tree.xpath("devices/interface/filterref/@filter")) - set(conn.get_nwfilters())):
+        raise OperationError(gettext_noop("This host has no network filter %(name)s"), name=nwfilter)

@@ -27,3 +27,20 @@ class TargetForm(TargetPoolForm):
         if BackupTarget.objects.filter(name=name).exists():
             raise forms.ValidationError(_("A backup target with this name exists"))
         return name
+
+
+class RestoreForm(forms.Form):
+    """A backup restored as a new VM, on a compute that has its target's pool."""
+
+    name = forms.CharField(label=_("Name"), max_length=64)
+    compute = forms.ModelChoiceField(Compute.objects.none(), label=_("Compute"))
+    pool = forms.CharField(label=_("Storage pool for the disks"), max_length=128, initial="default")
+    connect = forms.BooleanField(label=_("Connect the network"), required=False,
+                                 help_text=_("The restored guest keeps the VM's addresses and host name: "
+                                             "connected beside the VM, they clash."))
+    start = forms.BooleanField(label=_("Start after restore"), required=False)
+
+    def __init__(self, *args, backup, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["compute"].queryset = Compute.objects.filter(backuptargetpool__target=backup.target).order_by("name")
+        self.fields["name"].initial = f"{backup.vm_name}-restored"

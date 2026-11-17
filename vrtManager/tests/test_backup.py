@@ -198,3 +198,124 @@ class FilesTestCase(unittest.TestCase):
         self.assertEqual(volume.findtext("target/permissions/mode"), "0600")
         conn.upload_volume(pool, "g", b"ab")
         self.assertIsNone(etree.fromstring(pool.createXML.call_args.args[0]).find("target/permissions"))
+
+
+SOURCE = """<domain type='kvm'>
+  <name>vm1</name><uuid>11111111-1111-4111-8111-111111111111</uuid><genid>22222222-2222-4222-8222-222222222222</genid>
+  <title>web</title>
+  <sysinfo type='smbios'><system><entry name='uuid'>11111111-1111-4111-8111-111111111111</entry></system></sysinfo>
+  <os><type arch='x86_64' machine='pc-q35-10.1'>hvm</type><loader readonly='yes' type='pflash'>/usr/share/edk2/ovmf/OVMF_CODE.fd</loader>
+    <nvram>/var/lib/libvirt/qemu/nvram/vm1_VARS.fd</nvram></os>
+  <devices>
+    <emulator>/usr/libexec/qemu-kvm</emulator>
+    <disk type='file' device='disk'><driver name='qemu' type='qcow2'/>
+      <source file='/pool/a.qcow2'><seclabel model='dac' relabel='no'/></source>
+      <backingStore type='file'><format type='qcow2'/><source file='/pool/base.qcow2'/></backingStore>
+      <target dev='vda' bus='virtio'/></disk>
+    <disk type='file' device='disk'><driver name='qemu' type='raw'/><source file='/pool/b.img'/><target dev='vdb' bus='virtio'/></disk>
+    <disk type='file' device='cdrom'><source file='/iso/cidata-11111111-1111-4111-8111-111111111111.iso'/><target dev='sda'/></disk>
+    <disk type='file' device='cdrom'><source file='/iso/install.iso'/><target dev='sdb'/></disk>
+    <disk type='file' device='floppy'><source file='/iso/drivers.vfd'/><target dev='fda'/></disk>
+    <interface type='network'><mac address='52:54:00:00:00:01'/><source network='default'/>
+      <filterref filter='clean-traffic'><parameter name='MAC' value='52:54:00:00:00:01'/><parameter name='IP' value='192.0.2.5'/></filterref></interface>
+    <interface type='bridge'><mac address='52:54:00:00:00:02'/><source bridge='br0'/><link state='up'/></interface>
+    <graphics type='vnc' passwd='secret1'/>
+  </devices>
+</domain>"""
+
+
+class RestoreDefinitionTestCase(unittest.TestCase):
+    def restored(self, connect=False):
+        from lxml import etree
+
+        from vrtManager.backup import restore_definition
+
+        xml = restore_definition(
+            SOURCE, name="vm1-restored", uuid="33333333-3333-4333-8333-333333333333",
+            macs=["52:54:00:aa:00:01", "52:54:00:aa:00:02"],
+            disks={"vda": ("/dest/vm1-restored-vda.qcow2", "qcow2"), "vdb": ("/dest/vm1-restored-vdb.raw", "raw")},
+            nvram="/var/lib/libvirt/qemu/nvram/vm1-restored_VARS.fd", connect=connect,
+        )
+        return etree.fromstring(xml)
+
+    def test_restore_definition(self):
+        tree = self.restored()
+        self.assertEqual(tree.findtext("name"), "vm1-restored")
+        self.assertEqual(tree.findtext("uuid"), "33333333-3333-4333-8333-333333333333")
+        self.assertEqual(tree.xpath("string(sysinfo/system/entry[@name='uuid'])"), "33333333-3333-4333-8333-333333333333")
+        self.assertEqual(tree.findtext("genid") or "", "")  # libvirt makes a new one
+        self.assertIsNotNone(tree.find("genid"))
+        self.assertEqual(tree.xpath("devices/interface/mac/@address"), ["52:54:00:aa:00:01", "52:54:00:aa:00:02"])
+        self.assertEqual(tree.xpath("devices/interface/filterref/parameter[@name='MAC']/@value"), ["52:54:00:aa:00:01"])
+        self.assertEqual(tree.xpath("devices/interface/filterref/parameter[@name='IP']"), [])
+        self.assertEqual(tree.xpath("devices/disk[@device='disk']/source/@file"),
+                         ["/dest/vm1-restored-vda.qcow2", "/dest/vm1-restored-vdb.raw"])
+        self.assertEqual(tree.xpath("devices/disk[@device='disk']/driver/@type"), ["qcow2", "raw"])
+        self.assertEqual(tree.xpath("devices/disk//backingStore|devices/disk//seclabel|devices/disk//dataStore"), [])
+        self.assertEqual(tree.xpath("devices/disk[@device='cdrom']/source"), [])  # the old VM's cloud-init seed
+        self.assertEqual(len(tree.xpath("devices/disk[@device='cdrom']")), 2)  # the drives stay
+        self.assertEqual(tree.findtext("os/nvram"), "/var/lib/libvirt/qemu/nvram/vm1-restored_VARS.fd")
+        self.assertEqual(tree.xpath("devices/interface/link/@state"), ["down", "down"])
+        self.assertNotEqual(tree.xpath("string(devices/graphics/@passwd)"), "secret1")
+        self.assertEqual(tree.findtext("title"), "web")
+
+    def test_media_are_ejected(self):
+        # not in the backup: the restore host may not have them, and the VM would not start
+        tree = self.restored()
+        self.assertEqual(tree.xpath("devices/disk[@device='cdrom' or @device='floppy']/source"), [])
+        self.assertEqual(len(tree.xpath("devices/disk[@device='cdrom' or @device='floppy']")), 3)
+
+    def test_links_kept_when_connected(self):
+        self.assertEqual(self.restored(connect=True).xpath("devices/interface/link/@state"), ["up"])
+
+
+class RestoreHostTestCase(unittest.TestCase):
+    def conn(self):
+        conn = MagicMock()
+        conn.get_networks.return_value = ["default"]
+        conn.get_ifaces.return_value = ["br0", "eth0"]
+        conn.get_nwfilters.return_value = ["clean-traffic"]
+        conn.wvm.getDomainCapabilities.return_value = (
+            "<domainCapabilities><os><loader><value>/usr/share/edk2/ovmf/OVMF_CODE.fd</value></loader></os></domainCapabilities>")
+        return conn
+
+    def check(self, conn, *texts):
+        from vrtManager.backup import check_restore_host
+
+        if not texts:
+            check_restore_host(conn, SOURCE)
+            return
+        with self.assertRaises(util.OperationError) as caught:
+            check_restore_host(conn, SOURCE)
+        for text in texts:
+            self.assertIn(text, str(caught.exception))
+
+    def test_a_host_that_offers_everything(self):
+        conn = self.conn()
+        self.check(conn)
+        conn.wvm.getDomainCapabilities.assert_called_once_with("/usr/libexec/qemu-kvm", "x86_64", "pc-q35-10.1", "kvm", 0)
+
+    def test_a_missing_network_is_refused(self):
+        conn = self.conn()
+        conn.get_networks.return_value = []
+        self.check(conn, "network default")
+
+    def test_a_missing_bridge_is_refused(self):
+        conn = self.conn()
+        conn.get_ifaces.return_value = ["eth0"]
+        self.check(conn, "br0")
+
+    def test_a_missing_filter_is_refused(self):
+        conn = self.conn()
+        conn.get_nwfilters.return_value = []
+        self.check(conn, "clean-traffic")
+
+    def test_an_emulator_or_machine_the_host_lacks_is_refused(self):
+        conn = self.conn()
+        conn.wvm.getDomainCapabilities.side_effect = error(libvirt.VIR_ERR_INVALID_ARG)
+        self.check(conn, "/usr/libexec/qemu-kvm", "pc-q35-10.1")
+
+    def test_a_firmware_the_host_lacks_is_refused(self):
+        conn = self.conn()
+        conn.wvm.getDomainCapabilities.return_value = "<domainCapabilities><os><loader/></os></domainCapabilities>"
+        self.check(conn, "OVMF_CODE.fd")

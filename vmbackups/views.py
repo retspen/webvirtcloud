@@ -18,7 +18,7 @@ from vrtManager.backup import pool_space, target_pool
 from vrtManager.connection import wvmConnect
 from vrtManager.util import OperationError
 
-from .forms import TargetForm, TargetPoolForm
+from .forms import RestoreForm, TargetForm, TargetPoolForm
 from .models import Backup, BackupTarget
 from .utils import inside_vm_pool
 
@@ -159,3 +159,23 @@ def delete(request, uuid):
         # the job's page follows it: the pages listing backups show no backup's job
         return redirect("operations:job", op.pk)
     return redirect(same_origin_referer(request, reverse("vmbackups:index")))
+
+
+@superuser_only
+def restore(request, uuid):
+    """Restore a ready backup as a new VM: a backup.restore job, followed on its page."""
+    backup = get_object_or_404(Backup.objects.select_related("target"), uuid=uuid, state=Backup.READY)
+    form = RestoreForm(request.POST or None, backup=backup)
+    if form.is_valid():
+        data = form.cleaned_data
+        raw = {"backup": str(backup.uuid), "compute": data["compute"].pk, "pool": data["pool"], "name": data["name"],
+               "connect": data["connect"], "start": data["start"]}
+        try:
+            op = jobs.submit("backup.restore", request.user, raw, request.POST.get("submission_key", ""))
+        except claims.Busy as busy:
+            form.add_error(None, busy_message(busy, request.user))
+        except (jobs.SubmissionConflict, libvirtError) as err:
+            form.add_error(None, error_text(request, err))
+        else:
+            return redirect("operations:job", op.pk)
+    return render(request, "vmbackups/restore.html", {"backup": backup, "form": form})

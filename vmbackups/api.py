@@ -1,6 +1,7 @@
 from django.urls import reverse
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from admin.permissions import IsSuperUser
@@ -9,7 +10,7 @@ from operations.api.serializers import OperationSerializer
 from webvirtcloud.serializers import ErrorSerializer
 
 from .models import Backup
-from .serializers import BackupSerializer, CreateBackupSerializer, SubmissionSerializer
+from .serializers import BackupSerializer, CreateBackupSerializer, RestoreBackupSerializer, SubmissionSerializer
 
 
 def _accepted(request, op):
@@ -42,3 +43,14 @@ class BackupViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.G
         serializer.is_valid(raise_exception=True)
         key = serializer.validated_data["submission_key"]
         return _accepted(request, jobs.submit("backup.delete", request.user, {"backup": str(backup.uuid)}, key))
+
+    @extend_schema(request=RestoreBackupSerializer, responses={202: OperationSerializer, 400: dict, 409: ErrorSerializer})
+    @action(detail=True, methods=["post"])
+    def restore(self, request, uuid=None):
+        backup = self.get_object()
+        serializer = RestoreBackupSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = dict(serializer.validated_data)
+        key = data.pop("submission_key")
+        raw = {**data, "backup": str(backup.uuid), "compute": data["compute"].pk}
+        return _accepted(request, jobs.submit("backup.restore", request.user, raw, key))

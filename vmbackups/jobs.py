@@ -2,25 +2,34 @@
 
 import hashlib
 import json
+import os
+import re
 import time
 from uuid import UUID, uuid4
 
 from django.core.exceptions import PermissionDenied
+from django.urls import reverse
 from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext_noop as _
-from libvirt import VIR_DOMAIN_PAUSED, VIR_DOMAIN_RUNNING, VIR_DOMAIN_SHUTOFF, VIR_ERR_NO_DOMAIN, libvirtError
+from lxml import etree
+from libvirt import VIR_DOMAIN_PAUSED, VIR_DOMAIN_RUNNING, VIR_DOMAIN_SHUTOFF, VIR_ERR_NO_DOMAIN, VIR_ERR_NO_STORAGE_VOL, libvirtError
 
 from appsettings.settings import app_settings
-from instances.jobs import PAUSED_FROZEN, THAW_FAILED, _instance, _log, _snapshot_free_space
+from computes.models import Compute
+from instances.jobs import PAUSED_FROZEN, THAW_FAILED, _instance, _log, _snapshot_free_space, record_vm, vm_claims
+from instances.utils import get_random_mac_address
 from instances.models import Instance
 from operations import claims
 from operations.jobs import Cancelled, Kind, Outcome, Plan, register
 from operations.models import Claim, Operation
 from operations.utils import safe_text, say
 from vrtManager import util
-from vrtManager.backup import backup_file_names, check_target_space, put_file, remove_files, target_pool, wvmBackup
-from vrtManager.connection import wvmConnect
+from vrtManager.backup import (backup_file_names, check_restore_host, check_target_space, get_file, put_file, remove_files,
+                               restore_definition, target_pool, volume_exists, wvmBackup)
+from vrtManager.connection import NVRAM_DIR, wvmConnect
+from vrtManager.instance import wvmInstance
+from vrtManager.storage import wvmStorage
 from vrtManager.instance import LIVE_CLONE_MIN_LIBVIRT
 
 from .models import Backup, BackupFile, BackupTarget
@@ -478,3 +487,188 @@ class DeleteBackup(Kind):
         backup = f"Backup {op.intent['time']} of {op.intent['vm']}"
         message = f"{backup} deleted" if state == Operation.SUCCEEDED else f"{backup}: delete ({state})"
         return op.intent["compute"], op.intent["vm"], op.intent["uuid"], message
+
+
+def _connect(compute):
+    return wvmConnect(compute.hostname, compute.login, compute.password, compute.type)
+
+
+def _check_name(name):
+    """A new VM's name, as the clone's."""
+    if Instance.objects.filter(name=name).exists():
+        raise util.OperationError(_("Instance '%(clone_name)s' already exists!"), clone_name=name)
+    if len(name) > 64:
+        raise util.OperationError(_("Instance name '%(clone_name)s' is longer than 64 characters"), clone_name=name)
+    if not re.fullmatch(r"[a-zA-Z0-9-]+", name):
+        raise util.OperationError(_("Instance name '%(clone_name)s' contains invalid characters!"), clone_name=name)
+
+
+def _check_files(conn, pool, backup):
+    """Each file of the backup is in the target: disks at their size, the
+    small files with their SHA-256."""
+    pool.refresh(0)
+    for f in backup.files.all():
+        try:
+            vol = pool.storageVolLookupByName(f.volume)
+        except libvirtError as err:
+            if err.get_error_code() != VIR_ERR_NO_STORAGE_VOL:
+                raise
+            raise util.OperationError(_("The backup's file %(name)s is missing from the target"), name=f.volume) from err
+        if f.role == BackupFile.DISK:
+            if vol.info()[1] != f.capacity:
+                raise util.OperationError(_("The backup's file %(name)s differs from the one written"), name=f.volume)
+        elif hashlib.sha256(get_file(conn, pool, f.volume)).hexdigest() != f.sha256:
+            raise util.OperationError(_("The backup's file %(name)s differs from the one written"), name=f.volume)
+
+
+@register
+class RestoreBackup(Kind):
+    """A ready backup made a new VM on a compute that has the target's pool:
+    its disks copied from the target into one of the compute's pools, its
+    NVRAM file into libvirt's directory, then the VM defined, last."""
+
+    name = "backup.restore"
+    label = _("Restore backup")
+    progress_bytes = True
+
+    def normalize(self, raw):
+        return {"backup": str(UUID(str(raw["backup"]))), "compute": int(raw["compute"]),
+                "pool": str(raw.get("pool", "")).strip(), "name": str(raw.get("name", "")).strip(),
+                "connect": str(raw.get("connect", "")).lower() in ("1", "true", "on"),
+                "start": str(raw.get("start", "")).lower() in ("1", "true", "on")}
+
+    def plan(self, user, params):
+        _superuser(user)
+        backup = _backup(params)
+        if backup.state != Backup.READY:
+            raise util.OperationError(_("Only a ready backup is restored"))
+        compute = Compute.objects.get(pk=params["compute"])
+        _target_row(backup.target, compute)
+        compute.refuse_new_vms()
+        _check_name(params["name"])
+        volumes = {f.dev: f"{params['name']}-{f.dev}.{'qcow2' if f.format == 'qcow2' else 'raw'}"
+                   for f in backup.files.filter(role=BackupFile.DISK)}
+        keys = vm_claims(compute, params["name"])
+        for name in volumes.values():  # no other job makes a volume of these names meanwhile
+            keys[claims.volume_key(compute.pk, params["pool"], name)] = Claim.EXCLUSIVE
+        keys[claims.backup_key(backup.uuid)] = Claim.SHARED
+        keys[claims.backup_target_key(backup.target_id)] = Claim.EXCLUSIVE
+        return Plan(
+            claims=keys,
+            resource=claims.backup_key(backup.uuid),
+            label=f"{compute.name}/{params['name']}",
+            intent={"compute": compute.pk, "uuid": str(uuid4()), "name": params["name"], "from": backup.vm_name,
+                    "volumes": volumes, "pool": params["pool"],
+                    "time": timezone.localtime(backup.created_at).strftime("%Y-%m-%d %H:%M")},
+        )
+
+    def run(self, op, ctx):
+        _superuser(op.user)
+        p = op.params
+        backup = _backup(p)
+        compute = Compute.objects.get(pk=p["compute"])
+        compute.refuse_new_vms()
+        _check_name(p["name"])
+        conn = _connect(compute)
+        if p["name"] in conn.get_instances():
+            raise util.OperationError(_("A VM named %(name)s exists on %(compute)s"), name=p["name"], compute=compute.name)
+        row = _target_row(backup.target, compute)
+        tpool = target_pool(conn, row.pool, row.pool_uuid)
+        _check_files(conn, tpool, backup)
+        definition = get_file(conn, tpool, backup.files.get(role=BackupFile.DOMAIN).volume).decode()
+        check_restore_host(conn, definition)
+        pools = conn.file_pools()
+        if p["pool"] not in pools:
+            raise util.OperationError(_("This host has no active directory storage pool %(pool)s"), pool=p["pool"])
+        dest = pools[p["pool"]][0]
+        disks = list(backup.files.filter(role=BackupFile.DISK).order_by("dev"))
+        check_target_space(dest, [{"capacity": d.capacity} for d in disks], **_free_space())
+        volumes = op.intent["volumes"]
+        for name in volumes.values():
+            wvmInstance._refuse_taken(dest, name)
+        nvram_file = backup.files.filter(role=BackupFile.NVRAM).first()
+        tree = etree.fromstring(definition)
+        old_nvram = tree.xpath("string(os/nvram/source/@file)") or (tree.findtext("os/nvram") or "").strip()
+        # the VM's own file in libvirt's directory; libvirt makes it from the template when none was kept
+        nvram = os.path.join(NVRAM_DIR, p["name"] + "_VARS" + os.path.splitext(old_nvram)[1]) if old_nvram else None
+        macs = [get_random_mac_address() for _nic in tree.findall("devices/interface")]
+        if nvram:
+            # a file of that name may be a removed VM's kept one, or another VM's: never taken, never removed
+            with conn._nvram_pool() as nvram_pool:
+                if volume_exists(nvram_pool, os.path.basename(nvram)):
+                    raise util.OperationError(_("The NVRAM file %(path)s exists already"), path=nvram)
+
+        # what the VM is made of, before anything is made: recovery finds and removes it by these
+        ctx.record_intent(nvram=nvram, macs=macs)
+        ctx.set_phase(_("Copying disks"))
+        storage = wvmStorage(compute.hostname, compute.login, compute.password, compute.type, p["pool"])
+        paths = {}
+        for disk in disks:
+            ctx.record_intent(copying=disk.dev)
+            paths[disk.dev] = storage.clone_volume(tpool.storageVolLookupByName(disk.volume), volumes[disk.dev],
+                                                   vol_fmt=disk.format, disk_owner_uid=_owner()[0],
+                                                   disk_owner_gid=_owner()[1])
+            ctx.record_intent(copied=[*op.intent.get("copied", []), disk.dev], copying=None)
+        if nvram and nvram_file:
+            data = get_file(conn, tpool, nvram_file.volume)
+            with conn._nvram_pool() as nvram_pool:
+                # QEMU's, as the clone's copy: qemu may run without libvirt changing a file's owner
+                conn.upload_volume(nvram_pool, os.path.basename(nvram), data, owner=_owner(), mode="0600")
+
+        compute.refuse_new_vms()  # again: the host may have gone in maintenance while the disks were copied
+        xml = restore_definition(definition, name=p["name"], uuid=op.intent["uuid"], macs=macs,
+                                 disks={d.dev: (paths[d.dev], d.format) for d in disks}, nvram=nvram,
+                                 connect=p["connect"])
+        conn.wvm.defineXML(xml)
+        record_vm(op, owner=True)
+        result = {"open": _vm_page(op)}
+        if p["start"]:
+            try:
+                compute.refuse_start()
+                conn.wvm.lookupByUUIDString(op.intent["uuid"]).create()
+            except libvirtError as err:
+                result["warning"] = say(_("The VM was restored; it did not start: %(error)s"), error=err)
+        return result
+
+    def progress(self, op):
+        disks = Backup.objects.filter(uuid=op.params["backup"]).values_list("files__dev", "files__capacity", "files__role")
+        copied = set(op.intent.get("copied", []))
+        sizes = {dev: capacity for dev, capacity, role in disks if role == BackupFile.DISK}
+        return sum(c for dev, c in sizes.items() if dev in copied), sum(sizes.values())
+
+    def reconcile(self, op):
+        compute = Compute.objects.get(pk=op.intent["compute"])
+        conn = _connect(compute)
+        try:
+            conn.wvm.lookupByUUIDString(op.intent["uuid"])
+        except libvirtError as err:
+            if err.get_error_code() != VIR_ERR_NO_DOMAIN:
+                raise  # unreachable: recovery waits and retries
+        else:  # defined last: the restore is done
+            record_vm(op, owner=True)
+            return Outcome(Operation.SUCCEEDED, result={"open": _vm_page(op)})
+        if op.intent.get("copying"):  # libvirt's answer to that copy is unknown
+            return Outcome(Operation.UNCERTAIN, error=say(_(
+                "A disk was being copied when the job stopped; check this volume, then resolve this job: %(volumes)s"),
+                volumes=op.intent["volumes"][op.intent["copying"]]))
+        if copied := [op.intent["volumes"][dev] for dev in op.intent.get("copied", [])]:
+            pools = conn.file_pools()
+            if op.intent["pool"] not in pools:  # recovery waits: the copies are removed once it runs
+                raise util.OperationError(_("Storage pool %(pool)s is not active; the restore's copies in it are "
+                                            "removed when it is"), pool=op.intent["pool"])
+            pool = pools[op.intent["pool"]][0]
+            pool.refresh(0)
+            remove_files(pool, copied)
+        if nvram := op.intent.get("nvram"):
+            with conn._nvram_pool() as nvram_pool:
+                remove_files(nvram_pool, [os.path.basename(nvram)])
+        ended = Operation.CANCELLED if op.cancel_requested else Operation.FAILED
+        return Outcome(ended, error=say(_("The VM was not defined; its copies were removed")))
+
+    def log_entry(self, op, state):
+        return _log(op, state, f"restored from the backup of {op.intent['from']} taken {op.intent['time']}")
+
+
+def _vm_page(op):
+    vm = Instance.objects.get(compute_id=op.intent["compute"], uuid=op.intent["uuid"])
+    return reverse("instances:instance", args=[vm.pk])

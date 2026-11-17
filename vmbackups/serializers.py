@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from computes.models import Compute
 from instances.models import Instance
 
 from .models import Backup, BackupFile, BackupTarget
@@ -30,4 +31,13 @@ class CreateBackupSerializer(serializers.Serializer):
 
 
 class SubmissionSerializer(serializers.Serializer):
+    submission_key = serializers.CharField(write_only=True)
+
+
+class RestoreBackupSerializer(serializers.Serializer):
+    compute = serializers.PrimaryKeyRelatedField(queryset=Compute.objects.all())
+    pool = serializers.CharField(default="default")
+    name = serializers.CharField(max_length=64)
+    connect = serializers.BooleanField(default=False)
+    start = serializers.BooleanField(default=False)
     submission_key = serializers.CharField(write_only=True)

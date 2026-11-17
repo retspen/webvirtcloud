@@ -697,6 +697,68 @@ def agent_interfaces(dom):
     return interfaces
 
 
+
+def rewrite_for_new_vm(tree, clone_data, uuid):
+    """A VM's persistent definition (tree) made another VM's, in place: its
+    name, UUID, title and description, each NIC's MAC (clone-net-mac-<n>)
+    and its filter parameters, a new VNC password, no host device, an
+    empty TPM and no cloud-init seed of the VM's. The clone and the restore
+    of a backup share it."""
+    # the cloud-init seed holds the VM's own instance-id and hostname: the clone's drive stays empty
+    seed = f"cidata-{tree.findtext('uuid')}.iso"
+    for source in tree.xpath("devices/disk[@device='cdrom']/source"):
+        if os.path.basename(source.get("file") or "") == seed:
+            source.getparent().remove(source)
+    tree.find("name").text = clone_data["name"]
+    uuid_el = tree.find("uuid")
+    if uuid_el is None:
+        uuid_el = etree.SubElement(tree, "uuid")
+    uuid_el.text = uuid
+    # libvirt refuses an SMBIOS UUID other than the domain's
+    for entry in tree.xpath("sysinfo/system/entry[@name='uuid']"):
+        entry.text = uuid
+    wvmInstance._set_options(
+        tree,
+        {
+            "title": clone_data.get("clone-title", ""),
+            "description": clone_data.get("clone-description", ""),
+        },
+    )
+
+    # the clone gets a new, empty TPM (the clone form says so): an emulated
+    # one without the VM's state path; a host's or another process's would be shared
+    for backend in tree.xpath("devices/tpm/backend"):
+        if backend.get("type") != "emulator":
+            raise util.OperationError(gettext_noop("A VM with a host's or an external TPM is not cloned; remove it first"))
+        for source in backend.findall("source"):
+            backend.remove(source)
+
+    # a host device is one VM's: the clone gets none (the clone form says so)
+    for hostdev in tree.findall("devices/hostdev"):
+        hostdev.getparent().remove(hostdev)
+    for num, net in enumerate(tree.findall("devices/interface")):
+        if net.get("type") == "hostdev":  # numbered as the form numbers the VM's NICs
+            net.getparent().remove(net)
+            continue
+        mac = clone_data.get(f"clone-net-mac-{num}")
+        if not mac:
+            raise ValueError(f"No MAC address for network interface {num}")
+        net.find("mac").set("address", wvmInstance.fix_mac(mac))
+        # a filter's parameters of the source's own addresses would block the clone's traffic:
+        # its MAC is the clone's, its IP the one it learns (clean-traffic's default), unless
+        # learning is off; libvirt learns no IPv6 address, so IPV6 stays for the admin to change
+        for parameter in net.xpath("filterref/parameter[@name='MAC']"):
+            parameter.set("value", wvmInstance.fix_mac(mac))
+        if not net.xpath("filterref/parameter[@name='CTRL_IP_LEARNING'][@value='none']"):
+            for parameter in net.xpath("filterref/parameter[@name='IP']"):
+                parameter.getparent().remove(parameter)
+
+    # the clone's console gets a password of its own: one copied from the source would open both
+    for graphics in tree.findall("devices/graphics[@type='vnc']"):
+        graphics.set("passwd", util.randomPasswd(8))  # the length VNC allows
+        graphics.attrib.pop("passwdValidTo", None)  # an expired source's would leave it unusable
+
+
 class wvmInstance(wvmConnect):
     # set by cached_reads(): libvirt answers reused within the block
     _read_cache = None
@@ -2463,7 +2525,8 @@ class wvmInstance(wvmConnect):
             if pool is not None:
                 pool.refresh(0)
 
-    def fix_mac(self, mac):
+    @staticmethod
+    def fix_mac(mac):
         if ":" in mac:
             return mac
         # if mac does not contain ":", try to split into tuples and join with ":"
@@ -2480,26 +2543,7 @@ class wvmInstance(wvmConnect):
             raise ValueError("An instance with the clone name already exists")
 
         tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
-        # the cloud-init seed holds the VM's own instance-id and hostname: the clone's drive stays empty
-        seed = f"cidata-{tree.findtext('uuid')}.iso"
-        for source in tree.xpath("devices/disk[@device='cdrom']/source"):
-            if os.path.basename(source.get("file") or "") == seed:
-                source.getparent().remove(source)
-        tree.find("name").text = clone_data["name"]
-        uuid_el = tree.find("uuid")
-        if uuid_el is None:
-            uuid_el = etree.SubElement(tree, "uuid")
-        uuid_el.text = uuid
-        # libvirt refuses an SMBIOS UUID other than the domain's
-        for entry in tree.xpath("sysinfo/system/entry[@name='uuid']"):
-            entry.text = uuid
-        self._set_options(
-            tree,
-            {
-                "title": clone_data.get("clone-title", ""),
-                "description": clone_data.get("clone-description", ""),
-            },
-        )
+        rewrite_for_new_vm(tree, clone_data, uuid)
 
         disks = []
         for disk in list(tree.findall("devices/disk")):
@@ -2517,39 +2561,6 @@ class wvmInstance(wvmConnect):
             if not supported or not dev or not clone_data.get("disk-" + dev):
                 raise ValueError("Cannot clone a disk without a supported source and destination")
             disks.append((source, dev))
-
-        # the clone gets a new, empty TPM (the clone form says so): an emulated
-        # one without the VM's state path; a host's or another process's would be shared
-        for backend in tree.xpath("devices/tpm/backend"):
-            if backend.get("type") != "emulator":
-                raise util.OperationError(gettext_noop("A VM with a host's or an external TPM is not cloned; remove it first"))
-            for source in backend.findall("source"):
-                backend.remove(source)
-
-        # a host device is one VM's: the clone gets none (the clone form says so)
-        for hostdev in tree.findall("devices/hostdev"):
-            hostdev.getparent().remove(hostdev)
-        for num, net in enumerate(tree.findall("devices/interface")):
-            if net.get("type") == "hostdev":  # numbered as the form numbers the VM's NICs
-                net.getparent().remove(net)
-                continue
-            mac = clone_data.get(f"clone-net-mac-{num}")
-            if not mac:
-                raise ValueError(f"No MAC address for network interface {num}")
-            net.find("mac").set("address", self.fix_mac(mac))
-            # a filter's parameters of the source's own addresses would block the clone's traffic:
-            # its MAC is the clone's, its IP the one it learns (clean-traffic's default), unless
-            # learning is off; libvirt learns no IPv6 address, so IPV6 stays for the admin to change
-            for parameter in net.xpath("filterref/parameter[@name='MAC']"):
-                parameter.set("value", self.fix_mac(mac))
-            if not net.xpath("filterref/parameter[@name='CTRL_IP_LEARNING'][@value='none']"):
-                for parameter in net.xpath("filterref/parameter[@name='IP']"):
-                    parameter.getparent().remove(parameter)
-
-        # the clone's console gets a password of its own: one copied from the source would open both
-        for graphics in tree.findall("devices/graphics[@type='vnc']"):
-            graphics.set("passwd", util.randomPasswd(8))  # the length VNC allows
-            graphics.attrib.pop("passwdValidTo", None)  # an expired source's would leave it unusable
 
         nvram = tree.find("os/nvram")
         if nvram is not None and nvram.get("type", "file") != "file":
@@ -3143,7 +3154,8 @@ class wvmInstance(wvmConnect):
         if not found:
             raise util.OperationError(gettext_noop("The VM has no network interface %(mac)s"), mac=mac_address)
 
-    def _set_options(self, tree, options):
+    @staticmethod
+    def _set_options(tree, options):
         for o in ["title", "description"]:
             option = tree.find(o)
             option_value = options.get(o, "").strip()
