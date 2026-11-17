@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 13:00+0000\n"
+"POT-Creation-Date: 2026-11-17 13:03+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -76,7 +76,7 @@ msgstr "Geçersiz anahtar"
 #: networks/templates/network.html:373 nwfilters/templates/nwfilters.html:29
 #: storages/templates/storage.html:123 virtsecrets/forms.py:34
 #: virtsecrets/forms.py:36 vmbackups/forms.py:23 vmbackups/forms.py:36
-#: vmbackups/forms.py:57 vmbackups/templates/vmbackups/policies.html:16
+#: vmbackups/forms.py:75 vmbackups/templates/vmbackups/policies.html:16
 #: vmbackups/templates/vmbackups/targets.html:17
 msgid "Name"
 msgstr "Ad"
@@ -473,7 +473,7 @@ msgstr "%(name)s API anahtarı için işlemler"
 #: templates/common/confirm_delete.html:5
 #: templates/common/confirm_delete.html:9
 #: templates/common/confirm_delete.html:26
-#: vmbackups/templates/vmbackups/delete_form.html:2
+#: vmbackups/templates/vmbackups/delete_form.html:11
 msgid "Delete"
 msgstr "Sil"
 
@@ -793,7 +793,8 @@ msgstr "Bellek"
 #: admin/forms.py:210 instances/models.py:240
 #: instances/templates/create_instance_w2.html:118
 #: instances/templates/instances/settings_tab.html:25
-#: instances/templates/instances/stats_tab.html:53
+#: instances/templates/instances/stats_tab.html:53 vmbackups/forms.py:53
+#: vmbackups/templates/vmbackups/restore_over.html:18
 msgid "Disk"
 msgstr "Disk"
 
@@ -2129,6 +2130,7 @@ msgstr "Bu sunucular bakımda ve hesaba katılmadı:"
 
 #: computes/templates/computes/balance.html:32
 #: instances/templates/instances/snapshots_tab.html:18
+#: vmbackups/templates/vmbackups/restore_over.html:18
 msgid "Now"
 msgstr "Şimdi"
 
@@ -3458,8 +3460,8 @@ msgid "Clone VM"
 msgstr "Sanal makineyi klonla"
 
 #: instances/jobs.py:656 instances/jobs.py:663 instances/jobs.py:1005
-#: vmbackups/jobs.py:244 vmbackups/jobs.py:665 vmbackups/jobs.py:829
-#: vmbackups/jobs.py:972
+#: vmbackups/jobs.py:244 vmbackups/jobs.py:665 vmbackups/jobs.py:830
+#: vmbackups/jobs.py:973
 msgid "Copying disks"
 msgstr "Diskler kopyalanıyor"
 
@@ -3955,6 +3957,7 @@ msgstr "Sunucunun bir havuzunda zaten bulunan bir birim."
 #: instances/templates/create_instance_w2.html:165
 #: instances/templates/instances/move_disk.html:16
 #: instances/templates/instances/settings_tab.html:223 vmbackups/forms.py:14
+#: vmbackups/forms.py:55
 msgid "Storage pool"
 msgstr "Depolama havuzu"
 
@@ -4565,6 +4568,8 @@ msgstr "İstatistikler"
 #: vmbackups/templates/vmbackups/index.html:8
 #: vmbackups/templates/vmbackups/policies.html:9
 #: vmbackups/templates/vmbackups/restore.html:9
+#: vmbackups/templates/vmbackups/restore_disk.html:9
+#: vmbackups/templates/vmbackups/restore_over.html:8
 #: vmbackups/templates/vmbackups/targets.html:17
 msgid "Backups"
 msgstr "Yedekler"
@@ -9736,7 +9741,7 @@ msgstr ""
 "Eski değerin yerini hemen alır; bir parolanın şifrelediği veriler yeniden "
 "şifrelenmez."
 
-#: vmbackups/forms.py:13 vmbackups/forms.py:37
+#: vmbackups/forms.py:13 vmbackups/forms.py:37 vmbackups/forms.py:54
 msgid "Compute"
 msgstr "Sunucu"
 
@@ -9764,44 +9769,48 @@ msgstr ""
 msgid "Start after restore"
 msgstr "Geri yüklendikten sonra başlat"
 
-#: vmbackups/forms.py:57 vmbackups/templates/vmbackups/vm_tab.html:13
+#: vmbackups/forms.py:56
+msgid "Volume name"
+msgstr "Birim adı"
+
+#: vmbackups/forms.py:75 vmbackups/templates/vmbackups/vm_tab.html:13
 msgid "Backup target"
 msgstr "Yedek hedefi"
 
-#: vmbackups/forms.py:57
+#: vmbackups/forms.py:75
 msgid "Every VM of a compute"
 msgstr "Bir sunucunun bütün sanal makineleri"
 
-#: vmbackups/forms.py:58
+#: vmbackups/forms.py:76
 msgid "Or these VMs"
 msgstr "Ya da bu sanal makineler"
 
-#: vmbackups/forms.py:58 vmbackups/templates/vmbackups/policies.html:16
+#: vmbackups/forms.py:76 vmbackups/templates/vmbackups/policies.html:16
 msgid "Daily at"
 msgstr "Her gün saat"
 
-#: vmbackups/forms.py:58
+#: vmbackups/forms.py:76
 msgid "Backups to keep of each VM"
 msgstr "Her sanal makineden tutulacak yedek sayısı"
 
-#: vmbackups/forms.py:59 vmbackups/templates/vmbackups/vm_tab.html:21
+#: vmbackups/forms.py:77 vmbackups/templates/vmbackups/vm_tab.html:21
 msgid "Require frozen file systems"
 msgstr "Dosya sistemlerinin dondurulmasını zorunlu kıl"
 
-#: vmbackups/forms.py:59 vmbackups/templates/vmbackups/policies.html:27
+#: vmbackups/forms.py:77 vmbackups/templates/vmbackups/policies.html:27
 msgid "Enabled"
 msgstr "Etkin"
 
-#: vmbackups/forms.py:75
+#: vmbackups/forms.py:93
 msgid "Choose a compute or VMs, not both"
 msgstr "Bir sunucu ya da sanal makineler seçin, ikisini birden değil"
 
-#: vmbackups/forms.py:80 vmbackups/jobs.py:58
+#: vmbackups/forms.py:98 vmbackups/jobs.py:58
 #, python-format
 msgid "Backup target %(target)s has no storage pool on %(compute)s"
 msgstr "%(target)s yedek hedefinin %(compute)s üzerinde depolama havuzu yok"
 
-#: vmbackups/forms.py:87
+#: vmbackups/forms.py:105
 msgid "Keep one backup at least"
 msgstr "En az bir yedek tutun"
 
@@ -9938,7 +9947,7 @@ msgstr "Yedeğin TPM durum dosyası %(name)s düz bir dosya adı değil"
 msgid "Restore backup"
 msgstr "Yedeği geri yükle"
 
-#: vmbackups/jobs.py:605 vmbackups/jobs.py:788 vmbackups/jobs.py:939
+#: vmbackups/jobs.py:605 vmbackups/jobs.py:789 vmbackups/jobs.py:940
 msgid "Only a ready backup is restored"
 msgstr "Yalnızca hazır bir yedek geri yüklenir"
 
@@ -9947,7 +9956,7 @@ msgstr "Yalnızca hazır bir yedek geri yüklenir"
 msgid "A VM named %(name)s exists on %(compute)s"
 msgstr "%(compute)s üzerinde %(name)s adlı bir sanal makine var"
 
-#: vmbackups/jobs.py:643 vmbackups/jobs.py:823 vmbackups/jobs.py:968
+#: vmbackups/jobs.py:643 vmbackups/jobs.py:824 vmbackups/jobs.py:969
 #, python-format
 msgid "This host has no active directory storage pool %(pool)s"
 msgstr "Bu sunucuda %(pool)s adlı etkin bir dizin depolama havuzu yok"
@@ -9962,7 +9971,7 @@ msgstr "%(path)s NVRAM dosyası zaten var"
 msgid "The VM was restored; it did not start: %(error)s"
 msgstr "Sanal makine geri yüklendi; başlamadı: %(error)s"
 
-#: vmbackups/jobs.py:719 vmbackups/jobs.py:898
+#: vmbackups/jobs.py:719 vmbackups/jobs.py:899
 #, python-format
 msgid ""
 "A disk was being copied when the job stopped; check this volume, then resolve"
@@ -9971,7 +9980,7 @@ msgstr ""
 "İş durduğunda bir disk kopyalanıyordu; bu birimi kontrol edin, sonra bu işi "
 "çözün: %(volumes)s"
 
-#: vmbackups/jobs.py:724 vmbackups/jobs.py:904
+#: vmbackups/jobs.py:724 vmbackups/jobs.py:905
 #, python-format
 msgid ""
 "Storage pool %(pool)s is not active; the restore's copies in it are removed "
@@ -9984,16 +9993,16 @@ msgstr ""
 msgid "The VM was not defined; its copies were removed"
 msgstr "Sanal makine tanımlanmadı; kopyaları kaldırıldı"
 
-#: vmbackups/jobs.py:750
+#: vmbackups/jobs.py:751
 msgid "Shut the VM down to restore a backup over it"
 msgstr "Üzerine yedek geri yüklemek için VM'i kapatın"
 
-#: vmbackups/jobs.py:753
+#: vmbackups/jobs.py:754
 msgid "The VM has snapshots; delete them to restore a backup over it"
 msgstr ""
 "VM'in anlık görüntüleri var; üzerine yedek geri yüklemek için onları silin"
 
-#: vmbackups/jobs.py:758
+#: vmbackups/jobs.py:759
 #, python-format
 msgid ""
 "The VM's disks (%(now)s) are not the backup's (%(then)s); restore it as a new"
@@ -10002,37 +10011,37 @@ msgstr ""
 "VM'in diskleri (%(now)s) yedeğinkiler (%(then)s) değil; yeni bir VM olarak ya"
 " da tek disk olarak geri yükleyin"
 
-#: vmbackups/jobs.py:761
+#: vmbackups/jobs.py:762
 msgid "The VM's UEFI firmware changed since the backup; restore it as a new VM"
 msgstr ""
 "VM'in UEFI donanım yazılımı yedekten sonra değişti; yeni bir VM olarak geri "
 "yükleyin"
 
-#: vmbackups/jobs.py:763
+#: vmbackups/jobs.py:764
 msgid "The VM's TPM changed since the backup; restore it as a new VM"
 msgstr "VM'in TPM'i yedekten sonra değişti; yeni bir VM olarak geri yükleyin"
 
-#: vmbackups/jobs.py:778
+#: vmbackups/jobs.py:779
 msgid "Restore backup over the VM"
 msgstr "Yedeği VM'in üzerine geri yükle"
 
-#: vmbackups/jobs.py:791
+#: vmbackups/jobs.py:792
 msgid "The backup's VM is no longer in the panel; restore it as a new VM"
 msgstr "Yedeğin VM'i artık panelde yok; yeni bir VM olarak geri yükleyin"
 
-#: vmbackups/jobs.py:814
+#: vmbackups/jobs.py:815
 msgid "The VM's disks changed after the job was queued"
 msgstr "İş kuyruğa alındıktan sonra VM'in diskleri değişti"
 
-#: vmbackups/jobs.py:842
+#: vmbackups/jobs.py:843
 msgid "The VM changed while its backup was copied; it keeps its disks"
 msgstr "Yedeği kopyalanırken VM değişti; VM disklerini koruyor"
 
-#: vmbackups/jobs.py:843
+#: vmbackups/jobs.py:844
 msgid "Replacing the VM's disks"
 msgstr "VM'in diskleri değiştiriliyor"
 
-#: vmbackups/jobs.py:881
+#: vmbackups/jobs.py:882
 msgid ""
 "The VM moved to another compute; check its disks and the restore's copies, "
 "then resolve this job"
@@ -10040,7 +10049,7 @@ msgstr ""
 "VM başka bir sunucuya taşındı; disklerini ve geri yüklemenin kopyalarını "
 "denetleyin, sonra bu işi çözümleyin"
 
-#: vmbackups/jobs.py:891
+#: vmbackups/jobs.py:892
 msgid ""
 "The VM was started while its disks were being replaced; check its disks, then"
 " resolve this job"
@@ -10048,25 +10057,25 @@ msgstr ""
 "VM'in diskleri değiştirilirken VM başlatıldı; disklerini denetleyin, sonra bu"
 " işi çözümleyin"
 
-#: vmbackups/jobs.py:909
+#: vmbackups/jobs.py:910
 msgid "The VM keeps its disks; the restore's copies were removed"
 msgstr "VM disklerini koruyor; geri yüklemenin kopyaları silindi"
 
-#: vmbackups/jobs.py:921
+#: vmbackups/jobs.py:922
 msgid "Restore a disk of a backup"
 msgstr "Yedeğin bir diskini geri yükle"
 
-#: vmbackups/jobs.py:932
+#: vmbackups/jobs.py:933
 #, python-format
 msgid "The backup has no disk %(dev)s"
 msgstr "Yedekte %(dev)s diski yok"
 
-#: vmbackups/jobs.py:942
+#: vmbackups/jobs.py:943
 #, python-format
 msgid "%(name)s is not a volume name"
 msgstr "%(name)s bir birim adı değil"
 
-#: vmbackups/jobs.py:998
+#: vmbackups/jobs.py:999
 #, python-format
 msgid ""
 "The disk was being copied when the job stopped; check this volume, then "
@@ -10075,15 +10084,15 @@ msgstr ""
 "İş durduğunda disk kopyalanıyordu; bu birimi denetleyin, sonra bu işi "
 "çözümleyin: %(volume)s"
 
-#: vmbackups/jobs.py:1001
+#: vmbackups/jobs.py:1002
 msgid "The disk was not restored"
 msgstr "Disk geri yüklenmedi"
 
-#: vmbackups/jobs.py:1022 vmbackups/templates/vmbackups/target.html:18
+#: vmbackups/jobs.py:1023 vmbackups/templates/vmbackups/target.html:18
 msgid "Read backups from target"
 msgstr "Yedekleri hedeften oku"
 
-#: vmbackups/jobs.py:1070
+#: vmbackups/jobs.py:1071
 #, python-format
 msgid ""
 "Not read, as a file of the backup is missing, changed or unreadable: "
@@ -10092,11 +10101,11 @@ msgstr ""
 "Yedeğin bir dosyası eksik, değişmiş ya da okunamaz olduğu için okunmadı: "
 "%(names)s"
 
-#: vmbackups/jobs.py:1086
+#: vmbackups/jobs.py:1087
 msgid "Check backup target"
 msgstr "Yedek hedefini denetle"
 
-#: vmbackups/jobs.py:1113
+#: vmbackups/jobs.py:1114
 #, python-format
 msgid "Files of these backups are missing from the target: %(backups)s"
 msgstr "Şu yedeklerin dosyaları hedefte yok: %(backups)s"
@@ -10125,13 +10134,26 @@ msgstr "Dondurulmuş"
 msgid "Crash-consistent"
 msgstr "Çökme tutarlı"
 
-#: vmbackups/templates/vmbackups/delete_form.html:1
+#: vmbackups/templates/vmbackups/delete_form.html:4
 #: vmbackups/templates/vmbackups/restore.html:9
 #: vmbackups/templates/vmbackups/restore.html:18
+#: vmbackups/templates/vmbackups/restore_disk.html:18
 msgid "Restore"
 msgstr "Geri yükle"
 
-#: vmbackups/templates/vmbackups/delete_form.html:3
+#: vmbackups/templates/vmbackups/delete_form.html:6
+msgid "As a new VM"
+msgstr "Yeni bir VM olarak"
+
+#: vmbackups/templates/vmbackups/delete_form.html:7
+msgid "Over the VM"
+msgstr "VM'in üzerine"
+
+#: vmbackups/templates/vmbackups/delete_form.html:8
+msgid "One disk"
+msgstr "Tek disk"
+
+#: vmbackups/templates/vmbackups/delete_form.html:12
 #, python-format
 msgid ""
 "Delete the backup of %(vm)s taken %(time)s? Its files are removed from the "
@@ -10298,6 +10320,62 @@ msgstr ""
 "%(vm)s sanal makinesinin %(time)s tarihli, %(target)s hedefindeki yedeği "
 "kendi UUID'si ve MAC adresleriyle yeni bir sanal makine olarak geri yüklenir."
 
+#: vmbackups/templates/vmbackups/restore_disk.html:7
+#: vmbackups/templates/vmbackups/restore_disk.html:9
+msgid "Restore one disk"
+msgstr "Tek disk geri yükle"
+
+#: vmbackups/templates/vmbackups/restore_disk.html:12
+#, python-format
+msgid ""
+"A disk of the backup of %(vm)s taken %(time)s, in %(target)s, is copied as a "
+"new volume, attached to no VM."
+msgstr ""
+"%(vm)s VM'inin %(time)s tarihli, %(target)s içindeki yedeğinden bir disk, "
+"hiçbir VM'e bağlanmadan yeni bir birim olarak kopyalanır."
+
+#: vmbackups/templates/vmbackups/restore_over.html:6
+#: vmbackups/templates/vmbackups/restore_over.html:8
+#: vmbackups/templates/vmbackups/restore_over.html:33
+msgid "Restore over the VM"
+msgstr "VM'in üzerine geri yükle"
+
+#: vmbackups/templates/vmbackups/restore_over.html:11
+#, python-format
+msgid ""
+"The backup of %(vm)s taken %(time)s, in %(target)s, is restored over the VM: "
+"its disks are copied as new volumes and the VM is switched to them. Its "
+"settings, MAC addresses and UUID stay."
+msgstr ""
+"%(vm)s VM'inin %(time)s tarihli, %(target)s içindeki yedeği VM'in üzerine "
+"geri yüklenir: diskleri yeni birimler olarak kopyalanır ve VM bunlara "
+"geçirilir. Ayarları, MAC adresleri ve UUID'si aynı kalır."
+
+#: vmbackups/templates/vmbackups/restore_over.html:18
+msgid "After the restore"
+msgstr "Geri yüklemeden sonra"
+
+#: vmbackups/templates/vmbackups/restore_over.html:26
+msgid "The old volumes stay in their pools until you delete them."
+msgstr "Eski birimler siz silene kadar havuzlarında kalır."
+
+#: vmbackups/templates/vmbackups/restore_over.html:27
+msgid "The UEFI variables return to the backup's."
+msgstr "UEFI değişkenleri yedekteki haline döner."
+
+#: vmbackups/templates/vmbackups/restore_over.html:28
+msgid "The TPM state returns to the backup's."
+msgstr "TPM durumu yedekteki haline döner."
+
+#: vmbackups/templates/vmbackups/restore_over.html:33
+#, python-format
+msgid ""
+"Restore the backup over %(vm)s? What the VM wrote since the backup is no "
+"longer on the disks it runs from."
+msgstr ""
+"Yedek %(vm)s üzerine geri yüklensin mi? VM'in yedekten sonra yazdıkları, "
+"çalışacağı disklerde artık olmaz."
+
 #: vmbackups/templates/vmbackups/state.html:1
 msgid "Files of the backup are missing from the target"
 msgstr "Yedeğin dosyaları hedefte yok"
@@ -10419,17 +10497,17 @@ msgid "No backup target has a storage pool on this VM's host."
 msgstr ""
 "Hiçbir yedek hedefinin bu sanal makinenin sunucusunda depolama havuzu yok."
 
-#: vmbackups/views.py:68 vmbackups/views.py:89
+#: vmbackups/views.py:69 vmbackups/views.py:90
 #, python-format
 msgid "Backup target %(target)s has backups; delete them first"
 msgstr "%(target)s yedek hedefinde yedekler var; önce onları silin"
 
-#: vmbackups/views.py:71
+#: vmbackups/views.py:72
 #, python-format
 msgid "Backup target %(target)s has schedules; delete them first"
 msgstr "%(target)s yedek hedefinin zamanlamaları var; önce onları silin"
 
-#: vmbackups/views.py:106
+#: vmbackups/views.py:107
 #, python-format
 msgid ""
 "Storage pool %(pool)s of %(compute)s is not the same directory as storage "
@@ -10438,7 +10516,7 @@ msgstr ""
 "%(compute)s sunucusunun %(pool)s depolama havuzu, %(other_compute)s "
 "sunucusunun %(other)s depolama havuzuyla aynı dizin değil"
 
-#: vmbackups/views.py:138
+#: vmbackups/views.py:139
 msgid "Choose a backup target"
 msgstr "Bir yedek hedefi seçin"
 

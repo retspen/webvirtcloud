@@ -143,6 +143,19 @@ class IndexTests(TransactionTestCase):
         self.assertIn("db1", self.rows("?state=failed")[0])
         self.assertEqual(self.rows("?state=ready&vm=db"), [])
 
+    def test_the_restore_menu_offers_over_the_vm_only_with_its_vm(self):
+        self.client.force_login(self.admin)
+        page = lxml_html.fromstring(self.client.get(reverse("vmbackups:index")).content)
+        links = page.xpath("//table[@id='backups']//a[contains(@class, 'dropdown-item')]/@href")
+        ready = Backup.objects.get(vm_name="web1")
+        self.assertEqual(links, [reverse("vmbackups:restore", args=[ready.uuid]),
+                                 reverse("vmbackups:restore_over", args=[ready.uuid]),
+                                 reverse("vmbackups:restore_disk", args=[ready.uuid])])
+        Backup.objects.filter(pk=ready.pk).update(instance=None)
+        page = lxml_html.fromstring(self.client.get(reverse("vmbackups:index")).content)
+        self.assertNotIn(reverse("vmbackups:restore_over", args=[ready.uuid]),
+                         page.xpath("//table[@id='backups']//a/@href"))
+
     def test_only_superusers(self):
         user = get_user_model().objects.create_user("idx_user", password="pw")
         self.client.force_login(user)

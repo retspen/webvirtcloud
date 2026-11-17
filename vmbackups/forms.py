@@ -47,6 +47,24 @@ class RestoreForm(forms.Form):
         self.fields["name"].initial = f"{backup.vm_name}-restored"
 
 
+class RestoreDiskForm(forms.Form):
+    """One disk of a backup restored as a new volume, attached to no VM."""
+
+    dev = forms.ChoiceField(label=_("Disk"))
+    compute = forms.ModelChoiceField(Compute.objects.none(), label=_("Compute"))
+    pool = forms.CharField(label=_("Storage pool"), max_length=128, initial="default")
+    name = forms.CharField(label=_("Volume name"), max_length=255)
+
+    def __init__(self, *args, backup, **kwargs):
+        super().__init__(*args, **kwargs)
+        disks = list(backup.files.filter(role="disk").order_by("dev"))
+        self.fields["dev"].choices = [(d.dev, d.dev) for d in disks]
+        self.fields["compute"].queryset = Compute.objects.filter(backuptargetpool__target=backup.target).order_by("name")
+        if disks:
+            first = disks[0]
+            self.fields["name"].initial = f"{backup.vm_name}-{first.dev}-restored.{'qcow2' if first.format == 'qcow2' else 'raw'}"
+
+
 class PolicyForm(forms.ModelForm):
     """A backup schedule: a compute's VMs or chosen VMs, all on hosts that
     have a pool of its target."""

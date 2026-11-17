@@ -19,7 +19,8 @@ from vrtManager.backup import pool_space, target_pool
 from vrtManager.connection import wvmConnect
 from vrtManager.util import OperationError
 
-from .forms import PolicyForm, RestoreForm, TargetForm, TargetPoolForm
+from .forms import PolicyForm, RestoreDiskForm, RestoreForm, TargetForm, TargetPoolForm
+from .jobs import _over_plan, _proxy
 from .models import Backup, BackupPolicy, BackupTarget
 from .utils import inside_vm_pool
 
@@ -193,6 +194,50 @@ def restore(request, uuid):
         else:
             return redirect("operations:job", op.pk)
     return render(request, "vmbackups/restore.html", {"backup": backup, "form": form})
+
+
+def _submit(request, kind, raw):
+    """The job, or None with the reason shown."""
+    try:
+        return jobs.submit(kind, request.user, raw, request.POST.get("submission_key", ""))
+    except claims.Busy as busy:
+        messages.error(request, busy_message(busy, request.user))
+    except (jobs.SubmissionConflict, libvirtError, OperationError) as err:
+        messages.error(request, error_text(request, err))
+    return None
+
+
+@superuser_only
+def restore_over(request, uuid):
+    """Restore a ready backup over its own shut-off VM, after the page shows
+    which volumes it makes: a backup.restore_over job, followed on its page."""
+    backup = get_object_or_404(Backup.objects.select_related("target", "instance__compute"), uuid=uuid,
+                               state=Backup.READY, instance__isnull=False)
+    if request.method == "POST" and (op := _submit(request, "backup.restore_over", {"backup": str(backup.uuid)})):
+        return redirect("operations:job", op.pk)
+    over, problem = None, None
+    try:
+        over = _over_plan(backup, _proxy(backup.instance))
+    except (OperationError, libvirtError) as err:
+        problem = error_text(request, err)
+    disks = [{"dev": dev, "old": over["old"][dev], "pool": pool, "name": name}
+             for dev, (pool, name) in sorted(over["disks"].items())] if over else []
+    return render(request, "vmbackups/restore_over.html", {"backup": backup, "disks": disks, "over": over,
+                                                           "problem": problem})
+
+
+@superuser_only
+def restore_disk(request, uuid):
+    """Restore one disk of a ready backup as a new volume: a backup.restore_disk job, followed on its page."""
+    backup = get_object_or_404(Backup.objects.select_related("target"), uuid=uuid, state=Backup.READY)
+    form = RestoreDiskForm(request.POST or None, backup=backup)
+    if form.is_valid():
+        data = form.cleaned_data
+        raw = {"backup": str(backup.uuid), "dev": data["dev"], "compute": data["compute"].pk, "pool": data["pool"],
+               "name": data["name"]}
+        if op := _submit(request, "backup.restore_disk", raw):
+            return redirect("operations:job", op.pk)
+    return render(request, "vmbackups/restore_disk.html", {"backup": backup, "form": form})
 
 
 @superuser_only

@@ -133,3 +133,24 @@ class RestoreDiskTests(TransactionTestCase):
         self.assertEqual(entry[0], "h1")
         self.assertEqual(entry[3], "VM vm1: disk vdb of the backup taken 2026-11-17 11:40 restored as vm1-vdb-restored.raw "
                                    "in default")
+
+    def test_the_page_submits_the_job(self):
+        from lxml import html as lxml_html
+
+        self.client.force_login(self.admin)
+        url = reverse("vmbackups:restore_disk", args=[self.backup.uuid])
+        page = lxml_html.fromstring(self.client.get(url).content)
+        self.assertEqual(page.xpath("//select[@name='dev']/option/@value"), ["vdb"])
+        self.assertEqual(page.xpath("string(//input[@name='name']/@value)"), "vm1-vdb-restored.raw")
+        response = self.client.post(url, {"dev": "vdb", "compute": self.compute.pk, "pool": "default",
+                                          "name": "vm1-vdb-restored.raw", "submission_key": "key-page-disk1"})
+        op = Operation.objects.get(kind="backup.restore_disk")
+        self.assertRedirects(response, reverse("operations:job", args=[op.pk]), fetch_redirect_response=False)
+
+    def test_api_restore_disk(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(f"/api/v1/backups/{self.backup.uuid}/restore-disk/",
+                                    {"dev": "vdb", "compute": self.compute.pk, "name": "x.raw", "submission_key": "key-api-disk1"},
+                                    content_type="application/json")
+        self.assertEqual(response.status_code, 202, response.content)
+        self.assertEqual(response.json()["kind"], "backup.restore_disk")

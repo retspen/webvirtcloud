@@ -743,7 +743,8 @@ class RestoreBackup(Kind):
 
 def _over_plan(backup, proxy):
     """What a restore over the backup's VM makes: {"disks": {dev: [pool,
-    volume name]}, "nvram": the VM's NVRAM path or None, "tpm": bool}.
+    volume name]}, "old": {dev: the disk's path now}, "nvram": the VM's NVRAM
+    path or None, "tpm": bool}.
     Refuses a VM that is not shut off, has snapshots, or whose disks, UEFI
     firmware or TPM are not the backup's."""
     if proxy.get_status() != VIR_DOMAIN_SHUTOFF:
@@ -764,7 +765,7 @@ def _over_plan(backup, proxy):
     time = timezone.localtime(backup.created_at).strftime("%Y%m%d-%H%M")
     return {"disks": {dev: [now[dev]["pool"], f"{proxy.instance.name()}-{dev}-{time}.{'qcow2' if f.format == 'qcow2' else 'raw'}"]
                       for dev, f in files.items()},
-            "nvram": plan["nvram"], "tpm": plan["tpm"]}
+            "old": {dev: now[dev]["path"] for dev in files}, "nvram": plan["nvram"], "tpm": plan["tpm"]}
 
 
 @register

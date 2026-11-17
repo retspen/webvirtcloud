@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load bootstrap_icons %}
+{% load operations %}
+
+{% block title %}{% trans "Restore over the VM" %}{% endblock %}
+
+{% block page_heading %}<a href="{% url 'vmbackups:index' %}">{% trans "Backups" %}</a> / {% trans "Restore over the VM" %}{% endblock page_heading %}
+
+{% block content %}
+    <p>{% blocktrans with vm=backup.vm_name time=backup.created_at|date:"Y-m-d H:i" target=backup.target.name %}The backup of {{ vm }} taken {{ time }}, in {{ target }}, is restored over the VM: its disks are copied as new volumes and the VM is switched to them. Its settings, MAC addresses and UUID stay.{% endblocktrans %}</p>
+    {% if problem %}
+        <div class="alert alert-warning" role="status">{% bs_icon 'exclamation-triangle' %} {{ problem }}</div>
+    {% else %}
+        <div class="card" style="max-width: 50rem;">
+            <div class="card-body">
+                <table class="table table-sm" id="restore-over-disks">
+                    <thead><tr><th>{% trans "Disk" %}</th><th>{% trans "Now" %}</th><th>{% trans "After the restore" %}</th></tr></thead>
+                    <tbody>
+                    {% for disk in disks %}
+                        <tr><td>{{ disk.dev }}</td><td class="text-break">{{ disk.old }}</td><td class="text-break">{{ disk.pool }} / {{ disk.name }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                <ul>
+                    <li>{% trans "The old volumes stay in their pools until you delete them." %}</li>
+                    {% if over.nvram %}<li>{% trans "The UEFI variables return to the backup's." %}</li>{% endif %}
+                    {% if over.tpm %}<li>{% trans "The TPM state returns to the backup's." %}</li>{% endif %}
+                </ul>
+                <form method="post">
+                    {% csrf_token %}{% submission_key %}
+                    <button type="submit" class="btn btn-primary"
+                            data-confirm="{% blocktrans with vm=backup.vm_name %}Restore the backup over {{ vm }}? What the VM wrote since the backup is no longer on the disks it runs from.{% endblocktrans %}">{% bs_icon 'arrow-clockwise' %} {% trans "Restore over the VM" %}</button>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

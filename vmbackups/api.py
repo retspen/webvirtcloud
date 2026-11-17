@@ -10,7 +10,8 @@ from operations.api.serializers import OperationSerializer
 from webvirtcloud.serializers import ErrorSerializer
 
 from .models import Backup
-from .serializers import BackupSerializer, CreateBackupSerializer, RestoreBackupSerializer, SubmissionSerializer
+from .serializers import (BackupSerializer, CreateBackupSerializer, RestoreBackupSerializer, RestoreDiskSerializer,
+                          SubmissionSerializer)
 
 
 def _accepted(request, op):
@@ -54,3 +55,23 @@ class BackupViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.G
         key = data.pop("submission_key")
         raw = {**data, "backup": str(backup.uuid), "compute": data["compute"].pk}
         return _accepted(request, jobs.submit("backup.restore", request.user, raw, key))
+
+    @extend_schema(request=SubmissionSerializer, responses={202: OperationSerializer, 409: ErrorSerializer})
+    @action(detail=True, methods=["post"], url_path="restore-over")
+    def restore_over(self, request, uuid=None):
+        backup = self.get_object()
+        serializer = SubmissionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        key = serializer.validated_data["submission_key"]
+        return _accepted(request, jobs.submit("backup.restore_over", request.user, {"backup": str(backup.uuid)}, key))
+
+    @extend_schema(request=RestoreDiskSerializer, responses={202: OperationSerializer, 400: dict, 409: ErrorSerializer})
+    @action(detail=True, methods=["post"], url_path="restore-disk")
+    def restore_disk(self, request, uuid=None):
+        backup = self.get_object()
+        serializer = RestoreDiskSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = dict(serializer.validated_data)
+        key = data.pop("submission_key")
+        raw = {**data, "backup": str(backup.uuid), "compute": data["compute"].pk}
+        return _accepted(request, jobs.submit("backup.restore_disk", request.user, raw, key))

@@ -34,6 +34,14 @@ class SubmissionSerializer(serializers.Serializer):
     submission_key = serializers.CharField(write_only=True)
 
 
+class RestoreDiskSerializer(serializers.Serializer):
+    dev = serializers.CharField(max_length=32)
+    compute = serializers.PrimaryKeyRelatedField(queryset=Compute.objects.all())
+    pool = serializers.CharField(default="default")
+    name = serializers.CharField(max_length=255)
+    submission_key = serializers.CharField(write_only=True)
+
+
 class RestoreBackupSerializer(serializers.Serializer):
     compute = serializers.PrimaryKeyRelatedField(queryset=Compute.objects.all())
     pool = serializers.CharField(default="default")

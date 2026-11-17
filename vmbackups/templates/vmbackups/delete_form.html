@@ -1,3 +1,12 @@
-{% load i18n %}{% load operations %}{% load bootstrap_icons %}{% if backup.state == "ready" %}<a class="btn btn-sm btn-outline-primary me-1" href="{% url 'vmbackups:restore' backup.uuid %}">{% trans "Restore" %}</a>{% endif %}{% if backup.state != "creating" %}<form method="post" action="{% url 'vmbackups:delete' backup.uuid %}" class="d-inline">{% csrf_token %}{% submission_key %}
+{% load i18n %}{% load operations %}{% load bootstrap_icons %}{% if backup.state == "ready" %}<div class="btn-group me-1">
+    {# fixed: the menu would be cut off by the table's scrolling box #}
+    <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+            data-bs-popper-config='{"strategy": "fixed"}'>{% trans "Restore" %}</button>
+    <ul class="dropdown-menu dropdown-menu-end shadow">
+        <li><a class="dropdown-item" href="{% url 'vmbackups:restore' backup.uuid %}">{% trans "As a new VM" %}</a></li>
+        {% if backup.instance_id %}<li><a class="dropdown-item" href="{% url 'vmbackups:restore_over' backup.uuid %}">{% trans "Over the VM" %}</a></li>{% endif %}
+        <li><a class="dropdown-item" href="{% url 'vmbackups:restore_disk' backup.uuid %}">{% trans "One disk" %}</a></li>
+    </ul>
+</div>{% endif %}{% if backup.state != "creating" %}<form method="post" action="{% url 'vmbackups:delete' backup.uuid %}" class="d-inline">{% csrf_token %}{% submission_key %}
 <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans "Delete" %}" title="{% trans "Delete" %}"
         data-confirm="{% blocktrans with time=backup.created_at|date:"Y-m-d H:i" vm=backup.vm_name %}Delete the backup of {{ vm }} taken {{ time }}? Its files are removed from the target.{% endblocktrans %}">{% bs_icon 'trash' %}</button></form>{% endif %}

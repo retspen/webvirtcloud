@@ -310,3 +310,43 @@ class RestoreOverTests(TransactionTestCase):
         op = self.interrupted(self.submit())
         self.assertEqual(RestoreOver().reconcile(op).state, Operation.FAILED)
         self.assertIn("vm1-vda-20261117-1140.qcow2", self.removed)  # libvirt may have made it before failing
+
+    def test_the_page_shows_the_volumes_then_submits(self):
+        from django.urls import reverse
+        from lxml import html as lxml_html
+
+        self.client.force_login(self.admin)
+        url = reverse("vmbackups:restore_over", args=[self.backup.uuid])
+        page = lxml_html.fromstring(self.client.get(url).content)
+        row = [" ".join(td.text_content().split()) for td in page.xpath("//table[@id='restore-over-disks']/tbody/tr/td")]
+        self.assertEqual(row, ["vda", "/pool/vm1.qcow2", "default / vm1-vda-20261117-1140.qcow2"])
+        self.assertIn("UEFI", page.text_content())
+        response = self.client.post(url, {"submission_key": "key-page-over1"})
+        op = Operation.objects.get(kind="backup.restore_over")
+        self.assertRedirects(response, reverse("operations:job", args=[op.pk]), fetch_redirect_response=False)
+
+    def test_the_page_says_why_not(self):
+        from django.urls import reverse
+
+        self.proxy.get_status.return_value = libvirt.VIR_DOMAIN_RUNNING
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("vmbackups:restore_over", args=[self.backup.uuid]))
+        self.assertContains(response, "Shut the VM down")
+        self.assertNotContains(response, "key-")  # no form
+
+    def test_only_superusers_and_a_backup_with_its_vm(self):
+        from django.urls import reverse
+
+        url = reverse("vmbackups:restore_over", args=[self.backup.uuid])
+        self.client.force_login(get_user_model().objects.create_user("ro_user", password="pw"))
+        self.assertEqual(self.client.get(url).status_code, 403)
+        self.client.force_login(self.admin)
+        Backup.objects.filter(pk=self.backup.pk).update(instance=None)
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_api_restore_over(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(f"/api/v1/backups/{self.backup.uuid}/restore-over/", {"submission_key": "key-api-over1"},
+                                    content_type="application/json")
+        self.assertEqual(response.status_code, 202, response.content)
+        self.assertEqual(response.json()["kind"], "backup.restore_over")
