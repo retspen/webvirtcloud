@@ -13,7 +13,7 @@ from instances.jobs import DeleteInstance
 from instances.models import Instance
 from instances import utils
 from instances.utils import paths_used_on_other_computes
-from libvirt import VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM, VIR_ERR_NO_STORAGE_VOL, libvirtError
+from libvirt import VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA, VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM, VIR_ERR_NO_STORAGE_VOL, libvirtError
 from logs.models import Logs
 from operations.jobs import Context
 from operations.models import Claim, Operation, acquire
@@ -65,6 +65,11 @@ class DestroyOrderTestCase(TransactionTestCase):
         self.assertEqual(set(Claim.objects.values_list("resource", "mode")), {
             (f"compute:{self.instance.compute_id}", "exclusive"), (f"instance:{UUID}", "exclusive")})
         self.assertEqual(self.proxy.mock_calls, [])
+
+    def test_backup_checkpoints_go_with_the_vm(self):
+        # libvirt refuses to undefine a VM that has checkpoints without this flag
+        self.run_job(self.queue())
+        self.assertTrue(self.proxy.delete.call_args[0][0] & VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA)
 
     def test_the_nvram_goes_only_when_asked(self):
         for data, wanted, unwanted in (

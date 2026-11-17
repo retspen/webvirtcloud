@@ -25,6 +25,7 @@ from libvirt import (
     VIR_DOMAIN_XML_SECURE,
     VIR_DOMAIN_XML_INACTIVE,
     VIR_DOMAIN_XML_MIGRATABLE,
+    VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA,
     VIR_DOMAIN_UNDEFINE_KEEP_NVRAM,
     VIR_ERR_NO_DOMAIN,
     VIR_ERR_NO_STORAGE_POOL,
@@ -632,8 +633,9 @@ class wvmInstances(wvmConnect):
             self.delete_nvram(nvram)
             raise
         try:
-            # libvirt refuses to undefine a VM with NVRAM without this; the file stays for the cleanup
-            dom.undefineFlags(VIR_DOMAIN_UNDEFINE_KEEP_NVRAM)
+            # libvirt refuses to undefine a VM with NVRAM or backup checkpoints without these; the file stays for
+            # the cleanup, the checkpoints are this host's (the next backup is full)
+            dom.undefineFlags(VIR_DOMAIN_UNDEFINE_KEEP_NVRAM | VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA)
             try:
                 started = dom.isActive()
             except libvirtError as error:

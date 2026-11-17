@@ -14,7 +14,7 @@ from django.template.loader import render_to_string
 from django.utils.translation import gettext_noop
 from django.utils.translation import gettext_noop as _
 from libvirt import (VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE, VIR_DOMAIN_JOB_NONE, VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL,
-                     VIR_DOMAIN_SHUTOFF, VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_MANAGED_SAVE,
+                     VIR_DOMAIN_SHUTOFF, VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA, VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_MANAGED_SAVE,
                      VIR_DOMAIN_UNDEFINE_NVRAM, VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA, VIR_DOMAIN_XML_INACTIVE,
                      VIR_ERR_NO_DOMAIN, VIR_ERR_NO_STORAGE_VOL, libvirtError)
 from lxml import etree
@@ -1495,7 +1495,8 @@ class DeleteInstance(Kind):
         if proxy.instance.isActive():
             proxy.force_shutdown()
         # snapshot metadata goes with the domain; internal snapshot data stays in kept disk images
-        flags = VIR_DOMAIN_UNDEFINE_MANAGED_SAVE | VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA
+        flags = (VIR_DOMAIN_UNDEFINE_MANAGED_SAVE | VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA
+                 | VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA)  # backup checkpoints go with the VM
         flags |= VIR_DOMAIN_UNDEFINE_NVRAM if op.params["delete_nvram"] else VIR_DOMAIN_UNDEFINE_KEEP_NVRAM
         proxy.delete(flags)
         return _removed(op)

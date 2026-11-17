@@ -57,7 +57,7 @@ class ShutOffMigrationTestCase(unittest.TestCase):
         destination(host).moveto(source, "vm", live=False, unsafe=False, offline=True)
         self.assertEqual(host.defined, ["<domain><name>vm</name></domain>"])
         self.assertEqual(source.instance.calls, [])
-        self.assertEqual(source.instance.undefined, libvirt.VIR_DOMAIN_UNDEFINE_KEEP_NVRAM)
+        self.assertEqual(source.instance.undefined, libvirt.VIR_DOMAIN_UNDEFINE_KEEP_NVRAM | libvirt.VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA)
 
     def test_a_tpm_without_local_state_moves(self):
         xml = "<domain><devices><tpm model='tpm-tis'><backend type='passthrough'/></tpm></devices></domain>"
