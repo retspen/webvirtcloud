@@ -22,7 +22,7 @@ from instances.jobs import PAUSED_FROZEN, THAW_FAILED, _instance, _log, _snapsho
 from instances.utils import get_random_mac_address
 from instances.models import Instance
 from operations import claims
-from operations.jobs import Cancelled, Kind, Outcome, Plan, register
+from operations.jobs import Cancelled, Kind, Outcome, Plan, register, register_periodic
 from operations.models import Claim, Operation
 from operations.utils import safe_text, say
 from vrtManager import util
@@ -190,8 +190,9 @@ class CreateBackup(Kind):
     def normalize(self, raw):
         return {"instance": int(raw["instance"]), "target": int(raw["target"]),
                 "frozen": str(raw.get("frozen", "")).lower() in ("1", "true", "on"),
-                # the schedule that asked for it, if one did
-                "policy": int(raw["policy"]) if raw.get("policy") else None}
+                # the schedule that asked for it, if one did, and the end of its window
+                "policy": int(raw["policy"]) if raw.get("policy") else None,
+                "deadline": parse_datetime(raw["deadline"]).isoformat() if raw.get("deadline") else None}
 
     def plan(self, user, params):
         _superuser(user)
@@ -213,6 +214,14 @@ class CreateBackup(Kind):
 
     def run(self, op, ctx):
         instance, target, row, proxy, pool, plan = _checked(op)
+        if op.params.get("policy"):
+            # after the host's checks, which may have waited for it: a schedule's backup starts in its window,
+            # and on no host gone into maintenance (one by hand may)
+            if op.params.get("deadline") and timezone.now() > parse_datetime(op.params["deadline"]):
+                raise util.OperationError(_("The schedule's window ended before the backup could start"))
+            if instance.compute._in_maintenance_now():
+                raise util.OperationError(_("%(compute)s went into maintenance before the scheduled backup could "
+                                            "start"), compute=instance.compute.name)
         status = proxy.get_status()
         live = status != VIR_DOMAIN_SHUTOFF
         names = backup_file_names(op.intent["backup"], plan["disks"], bool(plan["nvram"]))
@@ -437,8 +446,29 @@ def _target_pool(target):
     raise util.OperationError(_("No compute of backup target %(target)s reaches its storage pool"), target=target.name)
 
 
+def _target_claims(target):
+    """A job on a target alone: the target, and its computes shared, which
+    the worker counts so a hung host takes no more than its share of slots."""
+    keys = {claims.compute_key(compute_id): Claim.SHARED
+            for compute_id in target.pools.values_list("compute_id", flat=True)}
+    keys[claims.backup_target_key(target.pk)] = Claim.EXCLUSIVE
+    return keys
+
+
 def _backup(params):
     return Backup.objects.select_related("target").get(uuid=params["backup"])
+
+
+def _beyond_keep(backup, policy_id):
+    """Whether the schedule still exists and the backup is still one of its
+    VM's ready backups beyond what it keeps (keep raised, or a newer one gone,
+    since the deletion was queued)."""
+    policy = BackupPolicy.objects.filter(pk=policy_id).first()
+    if policy is None or backup.policy_id != policy.pk or backup.instance_id is None:
+        return False
+    ready = list(Backup.objects.filter(policy=policy, instance_id=backup.instance_id, state=Backup.READY)
+                 .order_by("-created_at").values_list("pk", flat=True))
+    return backup.pk in ready[policy.keep:]
 
 
 @register
@@ -450,7 +480,9 @@ class DeleteBackup(Kind):
     label = _("Delete backup")
 
     def normalize(self, raw):
-        return {"backup": str(UUID(str(raw["backup"])))}
+        # retention: the schedule whose keep the backup is beyond, when the schedule asks
+        return {"backup": str(UUID(str(raw["backup"]))),
+                "retention": int(raw["retention"]) if raw.get("retention") else None}
 
     def plan(self, user, params):
         _superuser(user)
@@ -458,8 +490,7 @@ class DeleteBackup(Kind):
         if backup.state == Backup.CREATING:
             raise util.OperationError(_("This backup is being made; cancel its job to stop it"))
         return Plan(
-            claims={claims.backup_key(backup.uuid): Claim.EXCLUSIVE,
-                    claims.backup_target_key(backup.target_id): Claim.EXCLUSIVE},
+            claims={claims.backup_key(backup.uuid): Claim.EXCLUSIVE, **_target_claims(backup.target)},
             resource=claims.backup_key(backup.uuid),
             label=f"{backup.target.name}/{backup.vm_name}",
             intent={"compute": backup.compute_name, "vm": backup.vm_name, "uuid": backup.vm_uuid,
@@ -469,6 +500,8 @@ class DeleteBackup(Kind):
     def run(self, op, ctx):
         _superuser(op.user)
         backup = _backup(op.params)
+        if op.params.get("retention") and not _beyond_keep(backup, op.params["retention"]):
+            raise util.OperationError(_("The backup is no longer beyond what its schedule keeps; it is kept"))
         _conn, pool = _target_pool(backup.target)
         ctx.record_intent(deleting=True)
         return self._delete(backup, pool)
@@ -697,7 +730,7 @@ class ImportBackups(Kind):
     def plan(self, user, params):
         _superuser(user)
         target = BackupTarget.objects.get(pk=params["target"])
-        return Plan(claims={claims.backup_target_key(target.pk): Claim.EXCLUSIVE},
+        return Plan(claims=_target_claims(target),
                     resource=claims.backup_target_key(target.pk), label=target.name, intent={"target": target.name})
 
     def run(self, op, ctx):
@@ -744,3 +777,51 @@ class ImportBackups(Kind):
     def log_entry(self, op, state):
         message = f"Backup target {op.intent['target']}: backups read"
         return "-", "", "", message if state == Operation.SUCCEEDED else f"{message} ({state})"
+
+
+@register
+class CheckTarget(Kind):
+    """A target's backups checked against its pool: a ready backup with a
+    file gone (its manifest too) becomes missing, a missing one whose files
+    are all there ready again. A pool no compute reaches marks nothing."""
+
+    name = "backup.check"
+    label = _("Check backup target")
+
+    def normalize(self, raw):
+        return {"target": int(raw["target"])}
+
+    def plan(self, user, params):
+        _superuser(user)
+        target = BackupTarget.objects.get(pk=params["target"])
+        return Plan(claims=_target_claims(target),
+                    resource=claims.backup_target_key(target.pk), label=target.name, intent={"target": target.name})
+
+    def run(self, op, ctx):
+        _superuser(op.user)
+        target = BackupTarget.objects.get(pk=op.params["target"])
+        _conn, pool = _target_pool(target)
+        pool.refresh(0)
+        present = set(pool.listVolumes())
+        missing = []
+        for backup in target.backups.filter(state__in=(Backup.READY, Backup.MISSING)).prefetch_related("files"):
+            needed = {f.volume for f in backup.files.all()} | {f"{backup.prefix}-manifest.json"}
+            state = Backup.READY if needed <= present else Backup.MISSING
+            if state == Backup.MISSING:
+                missing.append(f"{backup.vm_name} {timezone.localtime(backup.created_at):%Y-%m-%d %H:%M}")
+            # only from the state read: a deletion begun meanwhile is left alone
+            Backup.objects.filter(pk=backup.pk, state=backup.state).update(state=state)
+        BackupTarget.objects.filter(pk=target.pk).update(checked_at=timezone.now())
+        if missing:
+            return {"warning": say(_("Files of these backups are missing from the target: %(backups)s"),
+                                   backups=", ".join(missing))}
+        return {}
+
+    def log_entry(self, op, state):
+        message = f"Backup target {op.intent['target']}: checked"
+        return "-", "", "", message if state == Operation.SUCCEEDED else f"{message} ({state})"
+
+
+from .schedule import run_schedules  # noqa: E402 (it submits this module's kinds)
+
+register_periodic(run_schedules)
