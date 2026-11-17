@@ -106,7 +106,7 @@ class AdminTestCase(TestCase):
         for block in (lambda: self.client.post(reverse("admin:user_block", args=[user.id])),
                       lambda: self.client.post(reverse("admin:user_update", args=[user.id]),
                                                {"username": "taken", "role": "user", "max_instances": 1, "max_cpus": 1,
-                                                "max_memory": 1, "max_disk_size": 1, "seen": user_seen(user)})):
+                                                "max_memory": 1, "max_disk_size": 1, "max_backup_size": 0, "seen": user_seen(user)})):
             _, token = ApiToken.objects.create(user)
             self.assertEqual(block().status_code, 302)
             self.client.post(reverse("admin:user_unblock", args=[user.id]))
@@ -126,7 +126,7 @@ class AdminTestCase(TestCase):
                 "max_instances": 1,
                 "max_cpus": 1,
                 "max_memory": 1,  # GiB
-                "max_disk_size": 4,
+                "max_disk_size": 4, "max_backup_size": 0,
             },
         )
         self.assertRedirects(response, reverse("admin:user_list"))
@@ -153,7 +153,7 @@ class AdminTestCase(TestCase):
                 "max_instances": 2,
                 "max_cpus": 2,
                 "max_memory": 2,  # GiB
-                "max_disk_size": 8,
+                "max_disk_size": 8, "max_backup_size": 0,
             },
         )
         self.assertRedirects(response, reverse("admin:user_list"))

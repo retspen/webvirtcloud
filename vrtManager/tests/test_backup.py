@@ -48,6 +48,8 @@ def proxy(xml=None, live=None, state=libvirt.VIR_DOMAIN_SHUTOFF, managed_save=Fa
     def volume(path):
         vol = MagicMock()
         vol.info.return_value = [0, (10 if path.endswith("qcow2") else 20) * GIB, GIB]
+        vol.path.return_value = path
+        vol.XMLDesc.return_value = "<volume/>"
         vol.storagePoolLookupByVolume.return_value = pool
         return vol
 
@@ -67,13 +69,31 @@ class BackupPlanTestCase(unittest.TestCase):
         self.assertEqual(
             plan["disks"],
             [
-                {"dev": "vda", "path": "/pool/a.qcow2", "pool": "default", "format": "qcow2", "capacity": 10 * GIB},
-                {"dev": "vdb", "path": "/pool/b.img", "pool": "default", "format": "raw", "capacity": 20 * GIB},
+                {"dev": "vda", "path": "/pool/a.qcow2", "pool": "default", "format": "qcow2", "capacity": 10 * GIB,
+                 "allocation": GIB},
+                {"dev": "vdb", "path": "/pool/b.img", "pool": "default", "format": "raw", "capacity": 20 * GIB,
+                 "allocation": GIB},
             ],
         )
         self.assertEqual(plan["left_out"], [{"dev": "sda", "why": "CD-ROM: not copied"}])
         self.assertIsNone(plan["nvram"])
         self.assertIn("<name>vm1</name>", plan["definition"])
+
+    def test_a_disks_allocation_counts_its_backing_files(self):
+        # an overlay holds what changed since its snapshot: the backup copies the chain flat
+        p = proxy()
+        def volume(path):
+            vol = MagicMock()
+            vol.info.return_value = [0, 10 * GIB, GIB]
+            vol.path.return_value = path
+            backing = {"/pool/a.qcow2": "/pool/a.base"}.get(path)
+            vol.XMLDesc.return_value = (f"<volume><backingStore><path>{backing}</path></backingStore></volume>"
+                                        if backing else "<volume/>")
+            vol.storagePoolLookupByVolume.return_value.name.return_value = "default"
+            return vol
+        p.get_volume_by_path = MagicMock(side_effect=volume)
+        disks = {d["dev"]: d for d in p.backup_plan()["disks"]}
+        self.assertEqual((disks["vda"]["allocation"], disks["vdb"]["allocation"]), (2 * GIB, GIB))
 
     def test_the_nvram_is_named(self):
         xml = domain(os_extra="<nvram>/var/lib/libvirt/qemu/nvram/vm1_VARS.fd</nvram>")

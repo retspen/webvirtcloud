@@ -67,6 +67,12 @@ class UserAttributes(models.Model):
         help_text=_("-1: no limit; 0: none allowed"),
         validators=[MinValueValidator(-1)],
     )
+    max_backup_size = models.IntegerField(
+        _("max backup size (GiB)"),
+        default=0,
+        help_text=_("-1: no limit; 0: none allowed"),
+        validators=[MinValueValidator(-1)],
+    )
 
     def __str__(self):
         return self.user.username

@@ -53,7 +53,7 @@ class wvmBackup(wvmInstance):
 
     def backup_plan(self):
         """What a backup of the VM copies, from its persistent definition:
-        {"definition", "disks": [{dev, path, pool, format, capacity}],
+        {"definition", "disks": [{dev, path, pool, format, capacity, allocation}],
         "nvram": path or None, "tpm": whether it has a TPM (shut off: its
         state is read by the job), "left_out": [{dev, why}]}. Refuses, naming
         why, a VM whose backup could not be restored as it is."""
@@ -99,8 +99,10 @@ class wvmBackup(wvmInstance):
                     raise
                 raise OperationError(gettext_noop("Disk %(dev)s (%(path)s) is in no storage pool of the host; it cannot be backed up"),
                               dev=dev, path=path) from err
+            info = vol.info()
             disks.append({"dev": dev, "path": path, "pool": vol.storagePoolLookupByVolume().name(),
-                          "format": disk_format, "capacity": vol.info()[1]})
+                          "format": disk_format, "capacity": info[1],
+                          "allocation": min(info[1], self._chain_allocation(vol))})
 
         if self.instance.state()[0] != libvirt.VIR_DOMAIN_SHUTOFF:
             # a running VM's disks are copied: the definition kept must name the same ones
@@ -146,6 +148,20 @@ class wvmBackup(wvmInstance):
         with self._nvram_pool() as pool:
             vol = self._find_volume(pool, os.path.basename(path))
             return None if vol is None else self.download_volume(vol)
+
+    def _chain_allocation(self, vol):
+        """The bytes a disk's volume and the files below it hold: its backup
+        copies them flat."""
+        total, seen = 0, set()
+        while vol is not None and vol.path() not in seen:
+            seen.add(vol.path())
+            total += vol.info()[2]
+            below = etree.fromstring(vol.XMLDesc(0)).findtext("backingStore/path")
+            try:
+                vol = self.get_volume_by_path(below) if below else None
+            except libvirt.libvirtError:
+                vol = None  # in no pool: counted by its own size only
+        return total
 
     def checkpoint_usable(self, name, devs):
         """Whether the checkpoint name can be an incremental backup's base:

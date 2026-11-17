@@ -218,10 +218,10 @@ def check_user_quota(user, instance, cpu, memory, disk_size):
     user_instances = UserInstance.objects.filter(user=user, instance__is_template=False).select_related(
         "instance__compute"
     )
-    # a clone counts from its job's admission until its VM is recorded
+    # a clone, or a restore of a backup as a new VM, counts from its job's admission until its VM is recorded
     clones = [
         op.intent["quota"] for op in Operation.objects.filter(
-            user=user, kind="instance.clone", state__in=Operation.ACTIVE + (Operation.UNCERTAIN,))
+            user=user, kind__in=("instance.clone", "backup.restore"), state__in=Operation.ACTIVE + (Operation.UNCERTAIN,))
         if "quota" in op.intent and not Instance.objects.filter(uuid=op.intent["uuid"]).exists()
     ]
     instance += user_instances.count() + len(clones)

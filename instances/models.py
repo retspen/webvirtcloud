@@ -436,6 +436,7 @@ class PermissionSet(models.Model):
             ("passwordless_console", _("Can access console without password")),
             ("view_instances", "Can view instances"),
             ("snapshot_instances", "Can snapshot instances"),
+            ("backup_instances", "Can back up instances"),
         ]
 
         managed = False

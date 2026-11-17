@@ -13,7 +13,7 @@ from computes.models import Compute
 from instances.models import Instance
 
 RAW = "Raw-Passw0rd-in-the-form"
-LIMITS = {"role": "user", "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 4}
+LIMITS = {"role": "user", "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 4, "max_backup_size": 0}
 
 
 class UserCreateTests(TestCase):

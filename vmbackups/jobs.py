@@ -8,6 +8,8 @@ import time
 from uuid import UUID, uuid4
 
 from django.core.exceptions import PermissionDenied
+from django.db.models import Sum
+from django.http import Http404
 from django.urls import reverse
 from django.db import transaction
 from django.utils import timezone
@@ -16,10 +18,11 @@ from django.utils.translation import gettext_noop as _
 from lxml import etree
 from libvirt import VIR_DOMAIN_PAUSED, VIR_DOMAIN_RUNNING, VIR_DOMAIN_SHUTOFF, VIR_ERR_NO_DOMAIN, VIR_ERR_NO_STORAGE_VOL, libvirtError
 
+from accounts.models import UserAttributes
 from appsettings.settings import app_settings
 from computes.models import Compute
 from instances.jobs import MOVED, PAUSED_FROZEN, THAW_FAILED, _instance, _log, _snapshot_free_space, record_vm, vm_claims
-from instances.utils import get_random_mac_address
+from instances.utils import QUOTA_UNVERIFIED, paths_used_on_other_computes, QUOTA_UNVERIFIED_TEXT, check_user_quota, get_random_mac_address, quota_message
 from instances.models import Instance
 from operations import claims
 from operations.jobs import Cancelled, Kind, Outcome, Plan, register, register_periodic
@@ -45,6 +48,51 @@ PROGRESS_EVERY = 2  # seconds between reads of a push backup's progress
 def _superuser(user):
     if user is None or not user.is_active or not user.is_superuser:
         raise PermissionDenied
+
+
+def _may_use(user, instance=None, target=None):
+    """A superuser; or a VM owner with the backup permission, who may change
+    instance, on a target open to VM owners."""
+    if user is None or not user.is_active:
+        raise PermissionDenied
+    if user.is_superuser:
+        return
+    if not user.has_perm("instances.backup_instances"):
+        raise PermissionDenied
+    if instance is not None:
+        from instances.views import get_instance
+
+        if instance.is_template:  # a template is cloned, not backed up by its owner
+            raise PermissionDenied
+        try:
+            get_instance(user, instance.pk, perm_type="change")
+        except Http404 as err:
+            raise PermissionDenied from err
+    if target is not None and not target.owners:
+        raise util.OperationError(_("Backup target %(target)s is not open to VM owners"), target=target.name)
+
+
+def _backup_quota(user, needed):
+    """A VM owner's backups by hand (being made: their estimate) and needed
+    bytes more stay within their backup quota."""
+    if user.is_superuser:
+        return
+    limit = UserAttributes.objects.get_or_create(user=user)[0].max_backup_size
+    if limit < 0:
+        return
+    used = (Backup.objects.filter(taken_by=user, policy__isnull=True, state__in=Backup.LIVING)
+            .aggregate(total=Sum("size"))["total"] or 0)
+    if used + needed > limit * 1024**3:
+        raise util.OperationError(_("The backup needs %(needed).1f GiB; %(used).1f GiB of your %(limit)d GiB backup "
+                                    "quota is used"), needed=needed / 1024**3, used=used / 1024**3, limit=limit)
+
+
+def _vm_pool(instance):
+    """The storage pool of the VM's first disk: where its owner's restore as
+    a new VM goes."""
+    proxy = _proxy(instance)
+    path = etree.fromstring(proxy._XMLDesc(PERSISTENT_XML)).xpath("string(devices/disk[@device='disk']/source/@file)")
+    return proxy.get_volume_by_path(path).storagePoolLookupByVolume().name()
 
 
 def _proxy(instance):
@@ -79,18 +127,25 @@ def _check_state(proxy, frozen):
 def _checked(op):
     """In the worker, before anything is made: the VM, its target pool (the
     one registered) and the space for its disks."""
-    _superuser(op.user)
     instance = _instance(op.params["instance"])
+    target = BackupTarget.objects.get(pk=op.params["target"])
+    _may_use(op.user, instance, target)  # again: rights may have changed since the job was queued
     if instance.compute_id != op.intent["compute"]:
         raise util.OperationError(_("The VM moved to another compute after the job was queued"))
-    target = BackupTarget.objects.get(pk=op.params["target"])
     row = _target_row(target, instance.compute)
     proxy = _proxy(instance)
     pool = target_pool(proxy, row.pool, row.pool_uuid)
     plan = proxy.backup_plan()
     _check_state(proxy, op.params["frozen"])
     check_target_space(pool, plan["disks"], **_free_space())
+    # the target claim admits one backup at a time: this check counts every other one of the user's
+    _backup_quota(op.user, _estimate(plan))
     return instance, target, row, proxy, pool, plan
+
+
+def _estimate(plan):
+    """A backup's size before it is made: what its disks hold now."""
+    return sum(d.get("allocation", 0) for d in plan["disks"])
 
 
 def _free_space():
@@ -245,17 +300,21 @@ class CreateBackup(Kind):
                 "deadline": parse_datetime(raw["deadline"]).isoformat() if raw.get("deadline") else None}
 
     def plan(self, user, params):
-        _superuser(user)
         instance = _instance(params["instance"])
         target = BackupTarget.objects.get(pk=params["target"])
+        _may_use(user, instance, target)
+        if not user.is_superuser and (params["policy"] or params["deadline"]):
+            raise PermissionDenied  # only a schedule asks for those
         _target_row(target, instance.compute)
         proxy = _proxy(instance)
-        proxy.backup_plan()
+        _backup_quota(user, _estimate(proxy.backup_plan()))
         _check_state(proxy, params["frozen"])
         return Plan(
             claims={claims.compute_key(instance.compute_id): Claim.SHARED,
                     claims.instance_key(instance.uuid): Claim.EXCLUSIVE,
-                    claims.backup_target_key(target.pk): Claim.EXCLUSIVE},
+                    claims.backup_target_key(target.pk): Claim.EXCLUSIVE,
+                    # a VM owner's backups one at a time: each run's quota check sees the others' rows
+                    **({} if user.is_superuser else {f"backup_quota:{user.pk}": Claim.EXCLUSIVE})},
             resource=claims.instance_key(instance.uuid),
             label=f"{instance.compute.name}/{instance.name}",
             intent={"compute": instance.compute_id, "uuid": instance.uuid, "backup": str(uuid4()),
@@ -287,7 +346,8 @@ class CreateBackup(Kind):
                           parent=parent.checkpoint if parent else None, backing=backing)
         Backup.objects.create(uuid=op.intent["backup"], target=target, instance=instance, vm_uuid=instance.uuid,
                               vm_name=instance.name, compute_name=instance.compute.name, operation=op, policy=policy,
-                              parent=parent, checkpoint=checkpoint)
+                              parent=parent, checkpoint=checkpoint, taken_by=op.user,
+                              size=_estimate(plan))  # until it is written: the quota counts it
         ctx.set_phase(_("Copying disks"))
         if live:
             return self._run_live(op, ctx, proxy, pool, status)
@@ -545,9 +605,18 @@ class DeleteBackup(Kind):
         return {"backup": str(UUID(str(raw["backup"]))),
                 "retention": int(raw["retention"]) if raw.get("retention") else None}
 
+    @staticmethod
+    def _may_delete(user, backup):
+        """A superuser; or a VM owner with the backup permission, a backup
+        they took by hand."""
+        _may_use(user)
+        if not user.is_superuser and (backup.taken_by_id != user.pk or backup.policy_id is not None):
+            raise PermissionDenied
+        _may_use(user, target=backup.target)
+
     def plan(self, user, params):
-        _superuser(user)
         backup = _backup(params)
+        self._may_delete(user, backup)
         if backup.state == Backup.CREATING:
             raise util.OperationError(_("This backup is being made; cancel its job to stop it"))
         if backup.depended_on():
@@ -561,8 +630,8 @@ class DeleteBackup(Kind):
         )
 
     def run(self, op, ctx):
-        _superuser(op.user)
         backup = _backup(op.params)
+        self._may_delete(op.user, backup)
         if op.params.get("retention") and not _beyond_keep(backup, op.params["retention"]):
             raise util.OperationError(_("The backup is no longer beyond what its schedule keeps; it is kept"))
         if backup.depended_on():  # made since the deletion was queued: the target claim now holds it off
@@ -583,6 +652,8 @@ class DeleteBackup(Kind):
         return {}
 
     def reconcile(self, op):
+        if not op.intent.get("deleting"):  # stopped before it began: the rights it checks are not checked here
+            return Outcome(Operation.FAILED, error=say(_("The job stopped before the deletion began")))
         backup = Backup.objects.select_related("target").filter(uuid=op.params["backup"]).first()
         if backup is None:
             return Outcome(Operation.SUCCEEDED)
@@ -669,11 +740,40 @@ class RestoreBackup(Kind):
                 "connect": str(raw.get("connect", "")).lower() in ("1", "true", "on"),
                 "start": str(raw.get("start", "")).lower() in ("1", "true", "on")}
 
+    @staticmethod
+    def _owner_quota(user, params, backup):
+        """For a VM owner: the backup is of a VM they may change, restored on
+        its compute into its first disk's pool, within their quota. What the
+        new VM adds to the quota, None for a superuser."""
+        _may_use(user, backup.instance, backup.target)
+        if user.is_superuser:
+            return None
+        if backup.instance is None:
+            raise PermissionDenied
+        if params["compute"] != backup.instance.compute_id or params["pool"] != _vm_pool(backup.instance):
+            raise PermissionDenied
+        compute = backup.instance.compute
+        conn = _connect(compute)
+        row = _target_row(backup.target, compute)
+        tree = etree.fromstring(get_file(conn, target_pool(conn, row.pool, row.pool_uuid),
+                                         backup.files.get(role=BackupFile.DOMAIN).volume))
+        memory = int(tree.findtext("memory")) * {"KiB": 1, "MiB": 1024, "GiB": 1024**2}.get(
+            tree.find("memory").get("unit", "KiB"), 1) // 1024
+        disk = sum(f.capacity >> 30 for f in backup.files.filter(role=BackupFile.DISK))
+        quota = {"cpus": int(tree.findtext("vcpu")), "memory": memory, "disk": disk}
+        exceeded = check_user_quota(user, 1, quota["cpus"], quota["memory"], quota["disk"])
+        if exceeded == QUOTA_UNVERIFIED:
+            raise util.OperationError(QUOTA_UNVERIFIED_TEXT)
+        if exceeded:
+            raise util.OperationError(_("%(quota)s: cannot restore %(name)s"), quota=quota_message(exceeded),
+                                      name=params["name"])
+        return quota
+
     def plan(self, user, params):
-        _superuser(user)
         backup = _backup(params)
         if backup.state != Backup.READY:
             raise util.OperationError(_("Only a ready backup is restored"))
+        quota = self._owner_quota(user, params, backup)
         compute = Compute.objects.get(pk=params["compute"])
         _target_row(backup.target, compute)
         compute.refuse_new_vms()
@@ -685,19 +785,25 @@ class RestoreBackup(Kind):
             keys[claims.volume_key(compute.pk, params["pool"], name)] = Claim.EXCLUSIVE
         keys[claims.backup_key(backup.uuid)] = Claim.SHARED
         keys[claims.backup_target_key(backup.target_id)] = Claim.EXCLUSIVE
+        if quota:  # a VM owner's: no other increase of their quota is admitted until the VM is recorded
+            keys[claims.quota_key(user.pk)] = Claim.EXCLUSIVE
         return Plan(
             claims=keys,
             resource=claims.backup_key(backup.uuid),
             label=f"{compute.name}/{params['name']}",
             intent={"compute": compute.pk, "uuid": str(uuid4()), "name": params["name"], "from": backup.vm_name,
-                    "volumes": volumes, "pool": params["pool"],
+                    "volumes": volumes, "pool": params["pool"], **({"quota": quota} if quota else {}),
                     "time": timezone.localtime(backup.created_at).strftime("%Y-%m-%d %H:%M")},
         )
 
     def run(self, op, ctx):
-        _superuser(op.user)
         p = op.params
         backup = _backup(p)
+        # the rights again; the quota was taken at admission: the job counts in it until its VM is recorded
+        _may_use(op.user, backup.instance if not op.user.is_superuser else None, backup.target)
+        if not op.user.is_superuser and (backup.instance is None or p["compute"] != backup.instance.compute_id
+                                         or p["pool"] != _vm_pool(backup.instance)):
+            raise PermissionDenied  # the VM moved since the job was queued: the owner's restore follows it
         compute = Compute.objects.get(pk=p["compute"])
         compute.refuse_new_vms()
         _check_name(p["name"])
@@ -812,7 +918,7 @@ class RestoreBackup(Kind):
         return _log(op, state, f"restored from the backup of {op.intent['from']} taken {op.intent['time']}")
 
 
-def _over_plan(backup, proxy):
+def _over_plan(backup, proxy, owner=False):
     """What a restore over the backup's VM makes: {"disks": {dev: [pool,
     volume name]}, "old": {dev: the disk's path now}, "nvram": the VM's NVRAM
     path or None, "tpm": bool}.
@@ -829,6 +935,10 @@ def _over_plan(backup, proxy):
     if set(now) != set(files):
         raise util.OperationError(_("The VM's disks (%(now)s) are not the backup's (%(then)s); restore it as a new VM "
                                     "or one disk"), now=", ".join(sorted(now)), then=", ".join(sorted(files)))
+    for dev, f in files.items():  # a VM owner's disk quota counts the VM's disks as they are now
+        if owner and f.capacity > now[dev]["capacity"]:
+            raise util.OperationError(_("The backup's disk %(dev)s is larger than the VM's now; restore it as a new VM"),
+                                      dev=dev)
     if bool(plan["nvram"]) != (backup.manifest.get("nvram", "none") != "none"):
         raise util.OperationError(_("The VM's UEFI firmware changed since the backup; restore it as a new VM"))
     if plan["tpm"] != (backup.manifest.get("tpm", "none") != "none"):
@@ -854,15 +964,16 @@ class RestoreOver(Kind):
         return {"backup": str(UUID(str(raw["backup"])))}
 
     def plan(self, user, params):
-        _superuser(user)
         backup = _backup(params)
         if backup.state != Backup.READY:
             raise util.OperationError(_("Only a ready backup is restored"))
         instance = backup.instance
         if instance is None:
+            _may_use(user)
             raise util.OperationError(_("The backup's VM is no longer in the panel; restore it as a new VM"))
+        _may_use(user, instance, backup.target)
         _target_row(backup.target, instance.compute)
-        over = _over_plan(backup, _proxy(instance))
+        over = _over_plan(backup, _proxy(instance), owner=not user.is_superuser)
         keys = {claims.compute_key(instance.compute_id): Claim.SHARED, claims.instance_key(instance.uuid): Claim.EXCLUSIVE,
                 claims.backup_key(backup.uuid): Claim.SHARED, claims.backup_target_key(backup.target_id): Claim.EXCLUSIVE}
         for pool, name in over["disks"].values():  # no other job makes a volume of these names meanwhile
@@ -876,13 +987,13 @@ class RestoreOver(Kind):
         )
 
     def run(self, op, ctx):
-        _superuser(op.user)
         backup = _backup(op.params)
         instance = _instance(backup.instance_id)
+        _may_use(op.user, instance, backup.target)
         if instance.compute_id != op.intent["compute"]:
             raise util.OperationError(MOVED)
         proxy = _proxy(instance)
-        if _over_plan(backup, proxy) != op.intent["over"]:
+        if _over_plan(backup, proxy, owner=not op.user.is_superuser) != op.intent["over"]:
             raise util.OperationError(_("The VM's disks changed after the job was queued"))
         row = _target_row(backup.target, instance.compute)
         tpool = target_pool(proxy, row.pool, row.pool_uuid)
@@ -914,10 +1025,12 @@ class RestoreOver(Kind):
             ctx.record_intent(copied=[*op.intent.get("copied", []), dev], paths=paths, copying=None)
 
         # the VM may have been started or saved outside the panel meanwhile: then it keeps its disks
-        if _over_plan(backup, proxy) != op.intent["over"]:
+        if _over_plan(backup, proxy, owner=not op.user.is_superuser) != op.intent["over"]:
             raise util.OperationError(_("The VM changed while its backup was copied; it keeps its disks"))
+        # an owner cannot remove the old disks: they go once the VM no longer names them
+        remove = [] if op.user.is_superuser else list(op.intent["over"]["old"].values())
         ctx.set_phase(_("Replacing the VM's disks"))
-        ctx.record_intent(switching=True, autostart=bool(proxy.instance.autostart()))
+        ctx.record_intent(switching=True, autostart=bool(proxy.instance.autostart()), remove=remove)
         return self._switch(op, backup, proxy, tpool)
 
     @staticmethod
@@ -947,7 +1060,23 @@ class RestoreOver(Kind):
         proxy._defineXML(restore_over_definition(proxy._XMLDesc(PERSISTENT_XML), disks))
         if op.intent["autostart"]:
             proxy.instance.setAutostart(1)
+        RestoreOver._remove_old(op, proxy, backup.instance)
         return {"open": reverse("instances:instance", args=[backup.instance_id])}
+
+    @staticmethod
+    def _remove_old(op, proxy, instance):
+        """The disks the VM ran from, after the switch, when its owner restored
+        it; one another domain uses, checked right before, is kept."""
+        paths = op.intent.get("remove", [])
+        if not paths:
+            return
+        used = proxy.paths_used_by_other_domains(paths) | paths_used_on_other_computes(instance.compute, paths)
+        for path in (path for path in paths if path not in used):
+            try:
+                proxy.get_volume_by_path(path).delete(0)
+            except libvirtError as err:
+                if err.get_error_code() != VIR_ERR_NO_STORAGE_VOL:
+                    raise
 
     def progress(self, op):
         disks = Backup.objects.filter(uuid=op.params["backup"]).values_list("files__dev", "files__capacity", "files__role")
@@ -969,6 +1098,7 @@ class RestoreOver(Kind):
                 # defined: the switch is done; the VM may have run since, its NVRAM and TPM are not replaced again
                 if op.intent["autostart"]:
                     proxy.instance.setAutostart(1)
+                self._remove_old(op, proxy, instance)
                 return Outcome(Operation.SUCCEEDED, result={"open": reverse("instances:instance", args=[instance.pk])})
             if proxy.get_status() != VIR_DOMAIN_SHUTOFF or proxy.instance.hasManagedSaveImage(0):
                 return Outcome(Operation.UNCERTAIN, error=say(_(

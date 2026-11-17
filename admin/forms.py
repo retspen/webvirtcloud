@@ -19,6 +19,7 @@ from .models import Permission
 
 # each permission's name in the user's language: the database keeps the English one
 PERMISSION_NAMES = {
+    "backup_instances": _("Can back up instances"),
     "change_password": _("Can change password"),
     "clone_instances": _("Can clone instances"),
     "passwordless_console": _("Can access console without password"),
@@ -28,6 +29,8 @@ PERMISSION_NAMES = {
 
 # what each permission lets a user do, shown beside its switch
 PERMISSION_HELP = {
+    "backup_instances": _("Back up the VMs they may change into targets open to VM owners, restore those backups over "
+                          "the VM or as a new VM, and delete the backups they took, within their quotas"),
     "change_password": _("Change their own password on their profile page"),
     "clone_instances": _("Clone the VMs they may change and the templates they may view, within their quota"),
     "passwordless_console": _("Open a console without the VM's console password"),
@@ -197,7 +200,7 @@ class UserCreateForm(UserForm):
 
 
 # the quota's limits, with the unit each is entered in (memory in GiB, kept in MiB)
-QUOTA_UNITS = {"max_instances": "", "max_cpus": "", "max_memory": "GiB", "max_disk_size": "GiB"}
+QUOTA_UNITS = {"max_instances": "", "max_cpus": "", "max_memory": "GiB", "max_disk_size": "GiB", "max_backup_size": "GiB"}
 
 
 class UserAttributesForm(forms.ModelForm):
@@ -208,6 +211,7 @@ class UserAttributesForm(forms.ModelForm):
     max_cpus = forms.IntegerField(label=_("vCPUs"), min_value=0, required=False)
     max_memory = forms.DecimalField(label=_("Memory"), min_value=0, required=False)
     max_disk_size = forms.IntegerField(label=_("Disk"), min_value=0, required=False)
+    max_backup_size = forms.IntegerField(label=_("Backups"), min_value=0, required=False)
 
     class Meta:
         model = UserAttributes

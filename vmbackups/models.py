@@ -14,6 +14,7 @@ class BackupTarget(models.Model):
     name = models.CharField(max_length=64, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     checked_at = models.DateTimeField(null=True)  # its last target check that ended
+    owners = models.BooleanField(default=False)  # VM owners with the backup permission may use it
 
     def __str__(self):
         return self.name
@@ -87,6 +88,7 @@ class BackupRun(models.Model):
 class Backup(models.Model):
     CREATING, READY, FAILED, DELETING, MISSING = "creating", "ready", "failed", "deleting", "missing"
     STATES = [(CREATING, "creating"), (READY, "ready"), (FAILED, "failed"), (DELETING, "deleting"), (MISSING, "missing")]
+    LIVING = (CREATING, READY, MISSING, DELETING)  # its files are or will be in the target
     OFFLINE, FROZEN, CRASH = "offline", "frozen", "crash"
     CONSISTENCIES = [(OFFLINE, "offline"), (FROZEN, "frozen"), (CRASH, "crash-consistent")]
 
@@ -108,13 +110,15 @@ class Backup(models.Model):
     # an incremental backup's base; its disk files have the parent's as backing files
     parent = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, related_name="children")
     checkpoint = models.CharField(max_length=64, blank=True)  # the VM's checkpoint made with it
+    # whose job made it: a VM owner's own backups count in their backup quota
+    taken_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+")
 
     class Meta:
         ordering = ["-created_at"]
 
     def depended_on(self):
         """Whether a backup builds on this one: a failed one holds nothing."""
-        return self.children.filter(state__in=(self.CREATING, self.READY, self.MISSING, self.DELETING)).exists()
+        return self.children.filter(state__in=self.LIVING).exists()
 
     @property
     def prefix(self):

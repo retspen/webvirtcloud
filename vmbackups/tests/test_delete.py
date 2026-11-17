@@ -80,6 +80,13 @@ class DeleteBackupTests(TransactionTestCase):
         self.assertEqual(DeleteBackup().reconcile(op).state, Operation.SUCCEEDED)
         self.assertFalse(Backup.objects.exists())
 
+    def test_recovery_does_not_begin_a_deletion(self):
+        # the worker stopped before run: the rights it would check are not checked again by recovery
+        op = self.submit()
+        self.assertEqual(DeleteBackup().reconcile(op).state, Operation.FAILED)
+        self.assertTrue(Backup.objects.filter(pk=self.backup.pk).exists())
+        self.assertEqual(self.removed, [])
+
     def test_a_creating_backup_is_not_deleted(self):
         Backup.objects.filter(pk=self.backup.pk).update(state=Backup.CREATING)
         with self.assertRaisesMessage(OperationError, "being made"):

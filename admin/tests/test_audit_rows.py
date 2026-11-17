@@ -7,7 +7,7 @@ from django.urls import reverse
 from logs.models import Logs
 from admin.tests.edits import group_seen, user_seen
 
-ATTRIBUTES = {"role": "user", "max_instances": 2, "max_cpus": 2, "max_memory": 2, "max_disk_size": 20}
+ATTRIBUTES = {"role": "user", "max_instances": 2, "max_cpus": 2, "max_memory": 2, "max_disk_size": 20, "max_backup_size": 0}
 
 
 def rows():
