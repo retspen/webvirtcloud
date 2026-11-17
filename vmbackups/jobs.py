@@ -922,6 +922,102 @@ class RestoreOver(Kind):
         return _log(op, state, f"restored over from its backup taken {op.intent['time']}")
 
 
+@register
+class RestoreDisk(Kind):
+    """One disk of a ready backup copied as a new volume into a pool of a
+    compute that has the target's pool; attached to no VM."""
+
+    name = "backup.restore_disk"
+    label = _("Restore a disk of a backup")
+    progress_bytes = True
+
+    def normalize(self, raw):
+        return {"backup": str(UUID(str(raw["backup"]))), "dev": str(raw["dev"]).strip(), "compute": int(raw["compute"]),
+                "pool": str(raw.get("pool", "")).strip(), "name": str(raw.get("name", "")).strip()}
+
+    @staticmethod
+    def _disk(backup, params):
+        disk = backup.files.filter(role=BackupFile.DISK, dev=params["dev"]).first()
+        if disk is None:
+            raise util.OperationError(_("The backup has no disk %(dev)s"), dev=params["dev"])
+        return disk
+
+    def plan(self, user, params):
+        _superuser(user)
+        backup = _backup(params)
+        if backup.state != Backup.READY:
+            raise util.OperationError(_("Only a ready backup is restored"))
+        self._disk(backup, params)
+        if not params["name"] or "/" in params["name"] or params["name"].startswith("."):
+            raise util.OperationError(_("%(name)s is not a volume name"), name=params["name"])
+        compute = Compute.objects.get(pk=params["compute"])
+        _target_row(backup.target, compute)
+        return Plan(
+            claims={claims.compute_key(compute.pk): Claim.SHARED,
+                    claims.volume_key(compute.pk, params["pool"], params["name"]): Claim.EXCLUSIVE,
+                    claims.backup_key(backup.uuid): Claim.SHARED,
+                    claims.backup_target_key(backup.target_id): Claim.EXCLUSIVE},
+            resource=claims.backup_key(backup.uuid),
+            label=f"{compute.name}/{backup.vm_name}",
+            intent={"compute": compute.pk, "uuid": backup.vm_uuid,
+                    "time": timezone.localtime(backup.created_at).strftime("%Y-%m-%d %H:%M")},
+        )
+
+    def run(self, op, ctx):
+        _superuser(op.user)
+        p = op.params
+        backup = _backup(p)
+        disk = self._disk(backup, p)
+        compute = Compute.objects.get(pk=p["compute"])
+        conn = _connect(compute)
+        row = _target_row(backup.target, compute)
+        tpool = target_pool(conn, row.pool, row.pool_uuid)
+        _check_files(conn, tpool, [{"role": disk.role, "volume": disk.volume, "capacity": disk.capacity, "sha256": ""}])
+        pools = conn.file_pools()
+        if p["pool"] not in pools:
+            raise util.OperationError(_("This host has no active directory storage pool %(pool)s"), pool=p["pool"])
+        dest = pools[p["pool"]][0]
+        wvmInstance._refuse_taken(dest, p["name"])
+        check_target_space(dest, [{"capacity": disk.capacity}], **_free_space())
+        ctx.set_phase(_("Copying disks"))
+        ctx.record_intent(copying=True)
+        storage = wvmStorage(compute.hostname, compute.login, compute.password, compute.type, p["pool"])
+        try:
+            storage.clone_volume(tpool.storageVolLookupByName(disk.volume), p["name"], vol_fmt=disk.format,
+                                 disk_owner_uid=_owner()[0], disk_owner_gid=_owner()[1])
+        except libvirtError:  # libvirt answered: the copy failed; a volume it made is removed (its name is the job's)
+            dest.refresh(0)
+            remove_files(dest, [p["name"]])
+            ctx.record_intent(copying=False)
+            raise
+        ctx.record_intent(copying=False, copied=True)
+        return self._result(op)
+
+    @staticmethod
+    def _result(op):
+        return {"open": reverse("storage", args=[op.params["compute"], op.params["pool"]])}
+
+    def progress(self, op):
+        capacity = Backup.objects.filter(uuid=op.params["backup"], files__dev=op.params["dev"]).values_list(
+            "files__capacity", flat=True).first() or 0
+        return (capacity if op.intent.get("copied") else 0), capacity
+
+    def reconcile(self, op):
+        if op.intent.get("copied"):
+            return Outcome(Operation.SUCCEEDED, result=self._result(op))
+        if op.intent.get("copying"):  # libvirt's answer to the copy is unknown
+            return Outcome(Operation.UNCERTAIN, error=say(_(
+                "The disk was being copied when the job stopped; check this volume, then resolve this job: %(volume)s"),
+                volume=op.params["name"]))
+        ended = Operation.CANCELLED if op.cancel_requested else Operation.FAILED
+        return Outcome(ended, error=say(_("The disk was not restored")))
+
+    def log_entry(self, op, state):
+        p = op.params
+        return _log(op, state, f"disk {p['dev']} of the backup taken {op.intent['time']} restored as {p['name']} "
+                               f"in {p['pool']}")
+
+
 def _vm_page(op):
     vm = Instance.objects.get(compute_id=op.intent["compute"], uuid=op.intent["uuid"])
     return reverse("instances:instance", args=[vm.pk])

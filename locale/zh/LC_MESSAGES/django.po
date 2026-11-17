@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 12:59+0000\n"
+"POT-Creation-Date: 2026-11-17 13:00+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -3289,6 +3289,7 @@ msgstr "克隆虚拟机"
 
 #: instances/jobs.py:656 instances/jobs.py:663 instances/jobs.py:1005
 #: vmbackups/jobs.py:244 vmbackups/jobs.py:665 vmbackups/jobs.py:829
+#: vmbackups/jobs.py:972
 msgid "Copying disks"
 msgstr "正在复制磁盘"
 
@@ -9365,7 +9366,7 @@ msgstr "备份的 TPM 状态文件 %(name)s 不是普通文件名"
 msgid "Restore backup"
 msgstr "恢复备份"
 
-#: vmbackups/jobs.py:605 vmbackups/jobs.py:788
+#: vmbackups/jobs.py:605 vmbackups/jobs.py:788 vmbackups/jobs.py:939
 msgid "Only a ready backup is restored"
 msgstr "只能恢复就绪的备份"
 
@@ -9374,7 +9375,7 @@ msgstr "只能恢复就绪的备份"
 msgid "A VM named %(name)s exists on %(compute)s"
 msgstr "%(compute)s 上已存在名为 %(name)s 的虚拟机"
 
-#: vmbackups/jobs.py:643 vmbackups/jobs.py:823
+#: vmbackups/jobs.py:643 vmbackups/jobs.py:823 vmbackups/jobs.py:968
 #, python-format
 msgid "This host has no active directory storage pool %(pool)s"
 msgstr "此主机没有名为 %(pool)s 的活动目录存储池"
@@ -9466,22 +9467,47 @@ msgstr "替换磁盘期间虚拟机被启动；请检查其磁盘，然后处理
 msgid "The VM keeps its disks; the restore's copies were removed"
 msgstr "虚拟机保留其磁盘；恢复的副本已删除"
 
-#: vmbackups/jobs.py:928 vmbackups/templates/vmbackups/target.html:18
+#: vmbackups/jobs.py:921
+msgid "Restore a disk of a backup"
+msgstr "恢复备份的一个磁盘"
+
+#: vmbackups/jobs.py:932
+#, python-format
+msgid "The backup has no disk %(dev)s"
+msgstr "备份中没有磁盘 %(dev)s"
+
+#: vmbackups/jobs.py:942
+#, python-format
+msgid "%(name)s is not a volume name"
+msgstr "%(name)s 不是有效的卷名"
+
+#: vmbackups/jobs.py:998
+#, python-format
+msgid ""
+"The disk was being copied when the job stopped; check this volume, then "
+"resolve this job: %(volume)s"
+msgstr "任务停止时磁盘正在复制；请检查此卷，然后处理此任务：%(volume)s"
+
+#: vmbackups/jobs.py:1001
+msgid "The disk was not restored"
+msgstr "磁盘未恢复"
+
+#: vmbackups/jobs.py:1022 vmbackups/templates/vmbackups/target.html:18
 msgid "Read backups from target"
 msgstr "从目标读取备份"
 
-#: vmbackups/jobs.py:976
+#: vmbackups/jobs.py:1070
 #, python-format
 msgid ""
 "Not read, as a file of the backup is missing, changed or unreadable: "
 "%(names)s"
 msgstr "由于备份的某个文件缺失、已更改或无法读取，未读取：%(names)s"
 
-#: vmbackups/jobs.py:992
+#: vmbackups/jobs.py:1086
 msgid "Check backup target"
 msgstr "检查备份目标"
 
-#: vmbackups/jobs.py:1019
+#: vmbackups/jobs.py:1113
 #, python-format
 msgid "Files of these backups are missing from the target: %(backups)s"
 msgstr "以下备份的文件在目标中缺失：%(backups)s"

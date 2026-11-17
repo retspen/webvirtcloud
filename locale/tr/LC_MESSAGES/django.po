@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 12:59+0000\n"
+"POT-Creation-Date: 2026-11-17 13:00+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -3459,6 +3459,7 @@ msgstr "Sanal makineyi klonla"
 
 #: instances/jobs.py:656 instances/jobs.py:663 instances/jobs.py:1005
 #: vmbackups/jobs.py:244 vmbackups/jobs.py:665 vmbackups/jobs.py:829
+#: vmbackups/jobs.py:972
 msgid "Copying disks"
 msgstr "Diskler kopyalanıyor"
 
@@ -9937,7 +9938,7 @@ msgstr "Yedeğin TPM durum dosyası %(name)s düz bir dosya adı değil"
 msgid "Restore backup"
 msgstr "Yedeği geri yükle"
 
-#: vmbackups/jobs.py:605 vmbackups/jobs.py:788
+#: vmbackups/jobs.py:605 vmbackups/jobs.py:788 vmbackups/jobs.py:939
 msgid "Only a ready backup is restored"
 msgstr "Yalnızca hazır bir yedek geri yüklenir"
 
@@ -9946,7 +9947,7 @@ msgstr "Yalnızca hazır bir yedek geri yüklenir"
 msgid "A VM named %(name)s exists on %(compute)s"
 msgstr "%(compute)s üzerinde %(name)s adlı bir sanal makine var"
 
-#: vmbackups/jobs.py:643 vmbackups/jobs.py:823
+#: vmbackups/jobs.py:643 vmbackups/jobs.py:823 vmbackups/jobs.py:968
 #, python-format
 msgid "This host has no active directory storage pool %(pool)s"
 msgstr "Bu sunucuda %(pool)s adlı etkin bir dizin depolama havuzu yok"
@@ -10051,11 +10052,38 @@ msgstr ""
 msgid "The VM keeps its disks; the restore's copies were removed"
 msgstr "VM disklerini koruyor; geri yüklemenin kopyaları silindi"
 
-#: vmbackups/jobs.py:928 vmbackups/templates/vmbackups/target.html:18
+#: vmbackups/jobs.py:921
+msgid "Restore a disk of a backup"
+msgstr "Yedeğin bir diskini geri yükle"
+
+#: vmbackups/jobs.py:932
+#, python-format
+msgid "The backup has no disk %(dev)s"
+msgstr "Yedekte %(dev)s diski yok"
+
+#: vmbackups/jobs.py:942
+#, python-format
+msgid "%(name)s is not a volume name"
+msgstr "%(name)s bir birim adı değil"
+
+#: vmbackups/jobs.py:998
+#, python-format
+msgid ""
+"The disk was being copied when the job stopped; check this volume, then "
+"resolve this job: %(volume)s"
+msgstr ""
+"İş durduğunda disk kopyalanıyordu; bu birimi denetleyin, sonra bu işi "
+"çözümleyin: %(volume)s"
+
+#: vmbackups/jobs.py:1001
+msgid "The disk was not restored"
+msgstr "Disk geri yüklenmedi"
+
+#: vmbackups/jobs.py:1022 vmbackups/templates/vmbackups/target.html:18
 msgid "Read backups from target"
 msgstr "Yedekleri hedeften oku"
 
-#: vmbackups/jobs.py:976
+#: vmbackups/jobs.py:1070
 #, python-format
 msgid ""
 "Not read, as a file of the backup is missing, changed or unreadable: "
@@ -10064,11 +10092,11 @@ msgstr ""
 "Yedeğin bir dosyası eksik, değişmiş ya da okunamaz olduğu için okunmadı: "
 "%(names)s"
 
-#: vmbackups/jobs.py:992
+#: vmbackups/jobs.py:1086
 msgid "Check backup target"
 msgstr "Yedek hedefini denetle"
 
-#: vmbackups/jobs.py:1019
+#: vmbackups/jobs.py:1113
 #, python-format
 msgid "Files of these backups are missing from the target: %(backups)s"
 msgstr "Şu yedeklerin dosyaları hedefte yok: %(backups)s"
