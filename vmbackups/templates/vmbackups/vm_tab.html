@@ -1,0 +1,62 @@
+{% load i18n %}
+{% load operations %}
+{% load bootstrap_icons %}
+<div class="tab-pane" id="backups" role="tabpanel">
+    <div class="card">
+        <div class="card-body">
+            {% if backups.problem %}
+                <div class="alert alert-warning" role="status">{% bs_icon 'exclamation-triangle' %} {{ backups.problem }}</div>
+            {% else %}
+            <form action="{% url 'vmbackups:create' instance.id %}" method="post" aria-label="{% trans "Back up now" %}">{% csrf_token %}{% submission_key %}
+                <div class="row g-2 align-items-center">
+                    <div class="col-12 col-md">
+                        <label class="visually-hidden" for="backup-target">{% trans "Backup target" %}</label>
+                        <select class="form-select" id="backup-target" name="target" required>
+                            {% for target in backups.targets %}<option value="{{ target.id }}">{{ target.name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-auto">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="frozen" id="backup-frozen"{% if instance.status != 1 or not instance.guest_agent_ready %} disabled{% endif %}>
+                            <label class="form-check-label" for="backup-frozen">{% trans "Require frozen file systems" %}</label>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-auto d-grid">
+                        <button type="submit" class="btn btn-primary">{% bs_icon 'archive' %} {% trans "Back up now" %}</button>
+                    </div>
+                </div>
+                <p class="small text-body-secondary mt-2 mb-0">{% blocktrans %}A running VM keeps running: its disks are copied from one instant, its file systems frozen for that instant when the guest agent answers, otherwise the backup is crash-consistent. Memory is not kept.{% endblocktrans %}</p>
+            </form>
+            {% endif %}
+
+            {% if backups.rows %}
+            <div class="table-responsive mt-3">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr><th>{% trans "Time" %}</th><th>{% trans "Target" %}</th><th>{% trans "Consistency" %}</th><th class="text-end">{% trans "Size" %}</th><th>{% trans "State" %}</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for backup in backups.rows %}
+                        <tr>
+                            <td class="text-nowrap">{{ backup.created_at|date:"Y-m-d H:i" }}</td>
+                            <td>{{ backup.target.name }}</td>
+                            <td>{{ backup.get_consistency_display }}</td>
+                            <td class="text-end text-nowrap">{% if backup.size %}{{ backup.size|filesizeformat }}{% else %}–{% endif %}</td>
+                            <td>
+                                {% if backup.state == "ready" %}<span class="badge text-bg-success">{% trans "Ready" %}</span>
+                                {% elif backup.state == "creating" %}<span class="badge text-bg-info">{% trans "Creating" %}</span>
+                                {% elif backup.state == "deleting" %}<span class="badge text-bg-warning">{% trans "Deleting" %}</span>
+                                {% else %}<span class="badge text-bg-danger">{% trans "Failed" %}</span>{% endif %}
+                                {% if backup.operation_id %}<a class="small ms-1" href="{% url 'operations:job' backup.operation_id %}">{% trans "Job" %}</a>{% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <p class="text-body-secondary mt-3 mb-0">{% trans "No backup of this VM yet." %}</p>
+            {% endif %}
+        </div>
+    </div>
+</div>

@@ -2,12 +2,18 @@ from django.contrib import messages
 from django.db import transaction
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.views.decorators.http import require_POST
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import gettext_noop
 from libvirt import libvirtError
 
 from admin.decorators import superuser_only
+from instances.models import Instance
 from logs.audit import audit
+from operations import claims, jobs
+from operations.utils import busy_message
+from webvirtcloud.middleware import error_text
 from vrtManager.backup import pool_space, target_pool
 from vrtManager.connection import wvmConnect
 from vrtManager.util import OperationError
@@ -99,3 +105,23 @@ def target(request, target_id):
     pools = [pool_state(row) for row in target.pools.select_related("compute").order_by("compute__name")]
     return render(request, "vmbackups/target.html", {"target": target, "pools": pools, "form": form,
                                                      "backup_count": target.backups.count()})
+
+
+@require_POST
+@superuser_only
+def create(request, instance_id):
+    """Back up now, from the VM's Backups tab: a backup.create job."""
+    instance = get_object_or_404(Instance, pk=instance_id)
+    page = reverse("instances:instance", args=[instance.pk]) + "#backups"
+    raw = {"instance": instance.pk, "target": request.POST.get("target", ""), "frozen": request.POST.get("frozen", "")}
+    try:
+        op = jobs.submit("backup.create", request.user, raw, request.POST.get("submission_key", ""))
+    except claims.Busy as busy:
+        messages.error(request, busy_message(busy, request.user))
+    except (jobs.SubmissionConflict, libvirtError) as err:
+        messages.error(request, error_text(request, err))
+    except (ValueError, BackupTarget.DoesNotExist):
+        messages.error(request, _("Choose a backup target"))
+    else:
+        jobs.remember_job(request, op)
+    return redirect(page)

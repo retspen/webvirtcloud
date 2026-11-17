@@ -2764,11 +2764,15 @@ class wvmInstance(wvmConnect):
         )
 
     def backup_targets(self):
-        """The target paths of the running backup; None when none runs."""
+        """The target paths of the running backup; None when none runs, also
+        when the domain stopped (a guest that shut down during its backup
+        stops when the backup ends: PRESERVE_SHUTDOWN_DOMAIN)."""
+        if not self.instance.isActive():
+            return None
         try:
             xml = self.instance.backupGetXMLDesc(0)
         except libvirtError as err:
-            if err.get_error_code() == VIR_ERR_NO_DOMAIN_BACKUP:
+            if err.get_error_code() in (VIR_ERR_NO_DOMAIN_BACKUP, VIR_ERR_OPERATION_INVALID):
                 return None
             raise
         return set(etree.fromstring(xml).xpath("disks/disk/target/@file"))
@@ -2776,7 +2780,14 @@ class wvmInstance(wvmConnect):
     def backup_progress(self):
         """(bytes copied, bytes to copy) of the running backup; None when
         none runs."""
-        stats = self.instance.jobStats(0)
+        if not self.instance.isActive():
+            return None
+        try:
+            stats = self.instance.jobStats(0)
+        except libvirtError as err:
+            if err.get_error_code() == VIR_ERR_OPERATION_INVALID:  # stopped since: its backup ended
+                return None
+            raise
         if (
             stats.get("type", VIR_DOMAIN_JOB_NONE) == VIR_DOMAIN_JOB_NONE
             or stats.get("operation") != VIR_DOMAIN_JOB_OPERATION_BACKUP

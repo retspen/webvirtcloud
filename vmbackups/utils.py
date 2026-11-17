@@ -1,10 +1,12 @@
-from django.utils.translation import gettext_noop
+from django.utils.translation import gettext, gettext_noop
+from libvirt import libvirtError
 from lxml import etree
 
 from storages.forms import inside
+from vrtManager.backup import wvmBackup
 from vrtManager.util import InUse
 
-from .models import Backup, BackupTargetPool
+from .models import Backup, BackupTarget, BackupTargetPool
 
 
 def inside_vm_pool(conn, pool):
@@ -36,3 +38,19 @@ def refuse_target_pool(compute, pool):
             pool=pool,
             target=row.target.name,
         )
+
+
+def vm_tab(instance):
+    """The VM page's Backups tab: the VM's backups, the targets of its host,
+    and why it cannot be backed up, if it cannot."""
+    targets = list(BackupTarget.objects.filter(pools__compute=instance.compute).order_by("name"))
+    problem = None
+    if not targets:
+        problem = gettext("No backup target has a storage pool on this VM's host.")
+    else:
+        c = instance.compute
+        try:
+            wvmBackup(c.hostname, c.login, c.password, c.type, instance.name, uuid=instance.uuid).backup_plan()
+        except libvirtError as err:
+            problem = str(err)
+    return {"rows": instance.backups.select_related("target", "operation"), "targets": targets, "problem": problem}

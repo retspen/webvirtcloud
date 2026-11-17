@@ -67,6 +67,7 @@ from vrtManager.util import randomPasswd
 
 from instances.models import Instance
 from instances.templatetags.vm_states import disk_seen
+from vmbackups.utils import vm_tab
 
 from . import addresses, report, utils
 from .api.serializers import DestroyOptionsSerializer, PowerOnSerializer
@@ -386,8 +387,12 @@ def _instance_page(request, pk, instance, compute):
     else:
         migrate_refusal = None
 
+    # superusers back VMs up; not a template, which is cloned
+    backups = vm_tab(instance) if request.user.is_superuser and not instance.is_template else None
+
     return render(request, "instance.html", {
         "instance": instance,
+        "backups": backups,
         "compute": compute,
         "computes": computes,
         "users": users,

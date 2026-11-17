@@ -107,6 +107,11 @@
                     <button class="nav-link text-nowrap" id="graphics-tab" aria-controls="graphics" data-bs-toggle="pill" data-bs-target="#graphics" type="button" role="tab" aria-selected="false">{% bs_icon 'bar-chart-line' %} {% trans "Stats" %}</button>
                 </li>
                 {% endif %}
+                {% if backups %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link text-nowrap" id="backups-tab" aria-controls="backups" data-bs-toggle="pill" data-bs-target="#backups" type="button" role="tab" aria-selected="false">{% bs_icon 'archive' %} {% trans "Backups" %}</button>
+                </li>
+                {% endif %}
                 <li class="nav-item" role="presentation">
                     <button class="nav-link text-nowrap" id="undefine-tab" aria-controls="undefine" data-bs-toggle="pill" data-bs-target="#undefine" type="button" role="tab" aria-selected="false">{% bs_icon 'trash' %} {% trans "Destroy" %}</button>
                 </li>
@@ -126,6 +131,7 @@
             {% if can_snapshot and not instance.is_template %}{% include 'instances/snapshots_tab.html' %}{% endif %}
             {% if show_settings %}{% include 'instances/settings_tab.html' %}{% endif %}
             {% if not instance.is_template %}{% include 'instances/stats_tab.html' %}{% endif %}
+            {% if backups %}{% include 'vmbackups/vm_tab.html' %}{% endif %}
             {% include 'instances/destroy_tab.html' %}
         </div>
     </div>

@@ -210,6 +210,19 @@ class BackupTestCase(unittest.TestCase):
         }
         self.assertIsNone(p.backup_progress())
 
+    def test_a_domain_stopped_after_its_backup_has_no_backup_running(self):
+        # PRESERVE_SHUTDOWN_DOMAIN: libvirt stops a guest that shut down once its backup ends
+        p = proxy()
+        p.instance.isActive.return_value = False
+        self.assertIsNone(p.backup_progress())
+        self.assertIsNone(p.backup_targets())
+        p.instance.jobStats.assert_not_called()
+        p.instance.isActive.return_value = True  # stopped between the check and the read
+        p.instance.jobStats.side_effect = error(libvirt.VIR_ERR_OPERATION_INVALID)
+        p.instance.backupGetXMLDesc.side_effect = error(libvirt.VIR_ERR_OPERATION_INVALID)
+        self.assertIsNone(p.backup_progress())
+        self.assertIsNone(p.backup_targets())
+
     def test_result(self):
         p = proxy()
         backup = {"type": libvirt.VIR_DOMAIN_JOB_COMPLETED, "operation": libvirt.VIR_DOMAIN_JOB_OPERATION_BACKUP}
