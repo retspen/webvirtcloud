@@ -55,6 +55,7 @@ panel ── gstfsd on each compute, at the compute's hostname, port 16510 (HMAC
 | `datasource` | cloud-init metadata (OpenStack format), a VM found by its client address |
 | `logs` | the audit log (`Logs`) and its page |
 | `operations` | jobs: `Operation`, `Claim`, `WorkerLease`, the worker and the Jobs pages |
+| `vmbackups` | VM backups: targets (a storage pool per compute), backups and their files, their jobs and pages |
 
 ## vrtManager
 

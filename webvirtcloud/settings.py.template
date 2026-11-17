@@ -97,6 +97,7 @@ INSTALLED_APPS = [
     "virtsecrets",
     "logs",
     "operations",
+    "vmbackups",
     "rest_framework",
     "knox",
     "axes",

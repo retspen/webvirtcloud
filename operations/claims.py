@@ -79,6 +79,15 @@ def quota_key(user_id):
     return f"quota:user:{user_id}"
 
 
+def backup_target_key(target_id):
+    """A backup target: one copy into or out of it at a time."""
+    return f"backup_target:{target_id}"
+
+
+def backup_key(uuid):
+    return f"backup:{uuid}"
+
+
 @cache
 def _node():
     """The installation's id (worker.host_identity): the same after a container
