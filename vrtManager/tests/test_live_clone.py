@@ -273,6 +273,16 @@ class CreateCloneTargetTestCase(unittest.TestCase):
         self.assertEqual(volume.findtext("target/permissions/owner"), "107")
         self.assertEqual(volume.findtext("target/permissions/group"), "108")
         self.assertEqual(flags, 0)
+        self.assertEqual(volume.findtext("target/compat"), "1.1")
+
+    def test_a_raw_volume_has_no_qcow2_features(self):
+        p = proxy()
+        p.wvm.storagePoolLookupByName.return_value = p.pool
+        p.create_clone_target({"pool": "default", "name": "copy-vdb.raw", "capacity": GIB, "format": "raw"}, 107, 107)
+        volume = etree.fromstring(p.pool.createXML.call_args.args[0])
+        self.assertEqual(volume.find("target/format").get("type"), "raw")
+        self.assertIsNone(volume.find("target/compat"))
+        self.assertIsNone(volume.find("target/features"))
 
 
 class DefineCloneTestCase(unittest.TestCase):

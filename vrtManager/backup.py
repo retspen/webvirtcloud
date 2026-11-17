@@ -1,9 +1,14 @@
 """VM backups: the target pools and what a VM's backup holds (app vmbackups)."""
 
+import hashlib
+import os
+
 import libvirt
 from django.utils.translation import gettext_noop
 from lxml import etree
 
+from vrtManager.connection import NVRAM_DIR, wvmConnect
+from vrtManager.instance import PERSISTENT_XML, wvmInstance
 from vrtManager.util import OperationError
 
 # pools that keep their volumes as files in one directory
@@ -41,3 +46,150 @@ def pool_space(pool):
     pool.refresh(0)
     _state, size, used, free = pool.info()
     return {"name": pool.name(), "size": size, "free": free, "used_percent": used * 100 / size if size else 0}
+
+
+class wvmBackup(wvmInstance):
+    """The VM side of a backup."""
+
+    def backup_plan(self):
+        """What a backup of the VM copies, from its persistent definition:
+        {"definition", "disks": [{dev, path, pool, format, capacity}],
+        "nvram": path or None, "left_out": [{dev, why}]}. Refuses, naming
+        why, a VM whose backup could not be restored as it is."""
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        name = self.instance.name()
+        if self.instance.hasManagedSaveImage(0):
+            raise OperationError(gettext_noop("%(vm)s has a saved state; start it or remove the saved state first"), vm=name)
+        if tree.find("devices/tpm") is not None:
+            raise OperationError(gettext_noop("%(vm)s has TPM state; TPM backups come later"), vm=name)
+        if tree.find("devices/filesystem") is not None:
+            raise OperationError(gettext_noop("%(vm)s shares a host directory (filesystem); it cannot be backed up"), vm=name)
+        if tree.xpath("os/kernel|os/initrd|os/dtb"):
+            raise OperationError(gettext_noop("%(vm)s boots a kernel file of the host; it cannot be backed up"), vm=name)
+        if tree.xpath("devices/hostdev|devices/interface[@type='hostdev']"):
+            raise OperationError(gettext_noop("%(vm)s has a host device; it cannot be backed up"), vm=name)
+
+        disks, left_out = [], []
+        for disk in tree.xpath("devices/disk"):
+            dev = disk.find("target").get("dev")
+            if disk.get("device") in ("cdrom", "floppy"):
+                why = gettext_noop("CD-ROM: not copied") if disk.get("device") == "cdrom" else gettext_noop("Floppy: not copied")
+                left_out.append({"dev": dev, "why": why})
+                continue
+            if disk.xpath("encryption|source/encryption"):
+                raise OperationError(gettext_noop("Disk %(dev)s is encrypted; it cannot be backed up"), dev=dev)
+            path = disk.xpath("string(source/@file)")
+            if disk.get("type") != "file" or not path:
+                raise OperationError(gettext_noop("Disk %(dev)s is not a file; it cannot be backed up"), dev=dev)
+            if disk.find("shareable") is not None:
+                raise OperationError(gettext_noop("Disk %(dev)s is shareable; it cannot be backed up"), dev=dev)
+            disk_format = disk.xpath("string(driver/@type)") or "raw"
+            if disk_format not in ("qcow2", "raw"):
+                raise OperationError(gettext_noop("Disk %(dev)s is %(format)s; only qcow2 and raw disks are backed up"),
+                              dev=dev, format=disk_format)
+            try:
+                vol = self.get_volume_by_path(path)
+            except libvirt.libvirtError as err:
+                if err.get_error_code() != libvirt.VIR_ERR_NO_STORAGE_VOL:
+                    raise
+                raise OperationError(gettext_noop("Disk %(dev)s (%(path)s) is in no storage pool of the host; it cannot be backed up"),
+                              dev=dev, path=path) from err
+            disks.append({"dev": dev, "path": path, "pool": vol.storagePoolLookupByVolume().name(),
+                          "format": disk_format, "capacity": vol.info()[1]})
+
+        if self.instance.state()[0] != libvirt.VIR_DOMAIN_SHUTOFF:
+            # a running VM's disks are copied: the definition kept must name the same ones
+            live = etree.fromstring(self._XMLDesc(0))
+            copied = [(d["dev"], d["path"]) for d in disks]
+            running = [(d.find("target").get("dev"), d.xpath("string(source/@file)"))
+                       for d in live.xpath("devices/disk[not(@device='cdrom' or @device='floppy')]")]
+            if copied != running:
+                changed = sorted({dev for dev, _path in set(copied) ^ set(running)})
+                raise OperationError(gettext_noop("Disks %(devs)s change at the next start; back the VM up after it restarts"),
+                              devs=", ".join(changed))
+
+        nvram = tree.xpath("string(os/nvram/source/@file)") or (tree.findtext("os/nvram") or "").strip() or None
+        if nvram and os.path.dirname(nvram) != NVRAM_DIR:
+            raise OperationError(gettext_noop("The NVRAM file %(path)s is not in libvirt's NVRAM directory %(dir)s and cannot be copied"),
+                          path=nvram, dir=NVRAM_DIR)
+        return {"definition": etree.tostring(tree).decode(), "disks": disks, "nvram": nvram, "left_out": left_out}
+
+    def copy_disk_offline(self, disk, pool, name, owner_uid, owner_gid):
+        """A shut-off VM's disk copied into the target pool, flat, in its
+        format (libvirt's createXMLFrom). Returns the copy's path."""
+        return self.get_wvmStorage(pool).clone_volume(
+            self.get_volume_by_path(disk["path"]), name, vol_fmt=disk["format"],
+            disk_owner_uid=owner_uid, disk_owner_gid=owner_gid,
+        )
+
+    def make_live_targets(self, disks, pool, names, owner_uid, owner_gid):
+        """The empty volumes a running VM's push backup writes into, in the
+        target pool; the targets begin_clone_backup takes."""
+        targets = []
+        for disk in disks:
+            target = {"dev": disk["dev"], "pool": pool, "name": names[disk["dev"]],
+                      "capacity": disk["capacity"], "format": disk["format"]}
+            target["path"] = self.create_clone_target(target, owner_uid, owner_gid)
+            targets.append(target)
+        return targets
+
+    def read_nvram(self, path):
+        """The bytes of the VM's NVRAM file; None when it was never made (the
+        VM never started)."""
+        with self._nvram_pool() as pool:
+            vol = self._find_volume(pool, os.path.basename(path))
+            return None if vol is None else self.download_volume(vol)
+
+
+def backup_file_names(uuid, disks, nvram):
+    """The names of a backup's files in the target pool, from its UUID only."""
+    prefix = f"wvc-{uuid}"
+    return {
+        "disks": {d["dev"]: f"{prefix}-{d['dev']}.{'qcow2' if d['format'] == 'qcow2' else 'raw'}" for d in disks},
+        "nvram": f"{prefix}-nvram.fd" if nvram else None,
+        "domain": f"{prefix}-domain.xml",
+        "manifest": f"{prefix}-manifest.json",
+    }
+
+
+def check_target_space(pool, disks, free_percent, free_min_gib):
+    """The target keeps the disks' virtual capacity plus free_percent of
+    it, at least free_min_gib GiB, free (the snapshots' and clones' rule)."""
+    size = sum(d["capacity"] for d in disks)
+    needed = size + max(size * free_percent / 100, free_min_gib * 1024**3)
+    pool.refresh(0)
+    free = pool.info()[3]
+    if free < needed:
+        raise OperationError(gettext_noop(
+            "Storage pool %(pool)s has %(free).1f GiB free; the backup needs %(size).1f GiB (the copied disks, "
+            "plus %(percent)g%% of them, at least %(minimum)g GiB)"),
+            pool=pool.name(), free=free / 1024**3, size=needed / 1024**3, percent=free_percent, minimum=free_min_gib)
+
+
+def put_file(conn, pool, name, data, owner):
+    """Writes a small file of a backup into the target pool as owner (uid,
+    gid), replacing one of that name, and reads it back. Returns its
+    SHA-256."""
+    remove_files(pool, [name])
+    vol = conn.upload_volume(pool, name, data, owner=owner)
+    if conn.download_volume(vol) != data:
+        vol.delete(0)
+        raise OperationError(gettext_noop("The file %(name)s read back from the backup target differs from the one written"), name=name)
+    return hashlib.sha256(data).hexdigest()
+
+
+def get_file(conn, pool, name):
+    return conn.download_volume(pool.storageVolLookupByName(name))
+
+
+def remove_files(pool, names):
+    """Deletes the volumes names of pool; missing ones are passed over."""
+    for name in names:
+        vol = wvmConnect._find_volume(pool, name)
+        if vol is not None:
+            vol.delete(0)
+
+
+def manifest_names(pool):
+    pool.refresh(0)
+    return sorted(name for name in pool.listVolumes() if name.startswith("wvc-") and name.endswith("-manifest.json"))

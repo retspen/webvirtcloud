@@ -197,6 +197,8 @@ UNREAD_DISKS = etree.XPath("devices/disk[@device='disk'][not(driver/@type='raw')
 # One use of NVRAM_DIR's pool at a time (_nvram_pool), on every host: a copy
 # holds two hosts' pools, and locks per host taken by migrations both ways
 # could deadlock. Reentrant, as that copy takes it twice.
+# A lock of the process is enough: every user (migration, clone, backup and
+# their recoveries) runs in the worker, the one process that runs jobs.
 NVRAM_LOCK = threading.RLock()
 
 class wvmConnection(object):
@@ -1070,16 +1072,18 @@ class wvmConnect(object):
             with contextlib.suppress(libvirtError):
                 pool.destroy()
 
-    def upload_volume(self, pool, name, data):
+    def upload_volume(self, pool, name, data, owner=None, mode="0644"):
         """A new raw volume in pool holding data, written through a libvirt
-        stream, which every connection type carries. A failed write leaves
-        no volume."""
+        stream, which every connection type carries; owner: (uid, gid) of
+        its file, else libvirt's (root). A failed write leaves no volume."""
+        permissions = (f"<permissions><owner>{owner[0]}</owner><group>{owner[1]}</group><mode>{mode}</mode></permissions>"
+                       if owner else "")
         stream = self.wvm.newStream(0)
         vol = None
         try:
             vol = pool.createXML(
                 f"<volume><name>{util.xml_escape(name)}</name><capacity>{len(data)}</capacity>"
-                "<target><format type='raw'/></target></volume>",
+                f"<target><format type='raw'/>{permissions}</target></volume>",
                 0,
             )
             vol.upload(stream, 0, len(data), 0)
@@ -1093,6 +1097,21 @@ class wvmConnect(object):
                 vol.delete(0)
             raise
         return vol
+
+    def download_volume(self, vol):
+        """A volume's bytes, read through a libvirt stream. For small files
+        (NVRAM, a backup's definition and manifest): held in memory."""
+        chunks = []
+        stream = self.wvm.newStream(0)
+        try:
+            vol.download(stream, 0, 0, 0)
+            stream.recvAll(lambda _stream, data, out: out.append(data), chunks)
+            stream.finish()
+        except Exception:
+            with contextlib.suppress(libvirtError):
+                stream.abort()
+            raise
+        return b"".join(chunks)
 
     @staticmethod
     def _find_volume(pool, name):

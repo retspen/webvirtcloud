@@ -502,17 +502,7 @@ class wvmInstances(wvmConnect):
                 if self._find_volume(target, name) is None:
                     raise util.OperationError(gettext_noop("The destination host cannot see the NVRAM file %(path)s"), path=path)
                 return None
-            chunks = []
-            stream = conn.wvm.newStream(0)
-            try:
-                vol.download(stream, 0, 0, 0)
-                stream.recvAll(lambda _stream, data, out: out.append(data), chunks)
-                stream.finish()
-            except Exception:
-                with contextlib.suppress(libvirtError):
-                    stream.abort()
-                raise
-            self.upload_volume(target, name, b"".join(chunks))
+            self.upload_volume(target, name, conn.download_volume(vol))
         return name
 
     def delete_nvram(self, name):
@@ -2567,6 +2557,8 @@ class wvmInstance(wvmConnect):
         return tree, disks
 
     def _clone_volume_xml(self, name, capacity, vol_format, owner_uid, owner_gid):
+        # compat and features are qcow2's: libvirt refuses them for another format
+        qcow2 = "<compat>1.1</compat><features><lazy_refcounts/></features>" if vol_format == "qcow2" else ""
         return f"""<volume>
                       <name>{util.xml_escape(name)}</name>
                       <capacity>{capacity}</capacity>
@@ -2579,8 +2571,7 @@ class wvmInstance(wvmConnect):
                           <mode>0644</mode>
                           <label>virt_image_t</label>
                         </permissions>
-                        <compat>1.1</compat>
-                        <features><lazy_refcounts/></features>
+                        {qcow2}
                       </target>
                     </volume>"""
 
