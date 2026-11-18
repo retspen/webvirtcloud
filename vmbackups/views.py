@@ -287,7 +287,7 @@ def restore_over(request, uuid):
         over = _over_plan(backup, proxy, owner=not request.user.is_superuser)
         names = _over_names(backup, proxy, over)
     except (OperationError, libvirtError) as err:
-        problem = error_text(request, err)
+        over, problem = None, error_text(request, err)
     disks = [{"dev": dev, "old": over["old"][dev], "pool": pool, "name": names[dev]}
              for dev, pool in sorted(over["disks"].items())] if over else []
     return render(request, "vmbackups/restore_over.html", {"backup": backup, "disks": disks, "over": over,

@@ -350,6 +350,15 @@ class RestoreOverTests(TransactionTestCase):
         self.assertContains(response, "Shut the VM down")
         self.assertNotContains(response, "key-")  # no form
 
+    def test_the_page_says_why_when_the_pool_cannot_be_read(self):
+        from django.urls import reverse
+
+        self.dest.refresh.side_effect = error(libvirt.VIR_ERR_INTERNAL_ERROR)
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("vmbackups:restore_over", args=[self.backup.uuid]))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "key-")  # no form
+
     def test_only_superusers_and_a_backup_with_its_vm(self):
         from django.urls import reverse
 

@@ -23,7 +23,7 @@ def inside_vm_pool(conn, pool):
 def refuse_backup_volume(compute, pool, volume):
     """A volume of a backup is deleted with its backup, on the Backups pages."""
     for backup in Backup.objects.filter(target__pools__compute=compute, target__pools__pool=pool):
-        if volume.startswith(backup.prefix + "-"):
+        if backup.owns(volume):
             raise InUse(
                 gettext_noop("Volume %(volume)s belongs to a backup of %(vm)s; delete the backup on the Backups page"),
                 volume=volume,

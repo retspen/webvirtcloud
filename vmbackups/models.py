@@ -1,3 +1,4 @@
+import re
 import uuid
 
 from django.conf import settings
@@ -86,6 +87,9 @@ class BackupRun(models.Model):
         constraints = [models.UniqueConstraint(fields=["policy", "instance", "day"], name="one_run_per_day")]
 
 
+UUID_IN_NAME = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+
+
 class Backup(models.Model):
     CREATING, READY, FAILED, DELETING, MISSING = "creating", "ready", "failed", "deleting", "missing"
     STATES = [(CREATING, "creating"), (READY, "ready"), (FAILED, "failed"), (DELETING, "deleting"), (MISSING, "missing")]
@@ -127,6 +131,11 @@ class Backup(models.Model):
     def depended_on(self):
         """Whether a backup builds on this one: a failed one holds nothing."""
         return self.children.filter(state__in=self.LIVING).exists()
+
+    def owns(self, name):
+        """Whether the target's file name is one of this backup's: its prefix, then no other backup's UUID (a
+        VM may be named "<this prefix>-x", and its backups' files begin with this prefix too)."""
+        return name.startswith(self.prefix + "-") and not UUID_IN_NAME.search(name, len(self.prefix))
 
     def save(self, *args, **kwargs):
         if not self.prefix:

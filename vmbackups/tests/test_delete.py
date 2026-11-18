@@ -63,6 +63,21 @@ class DeleteBackupTests(TransactionTestCase):
         self.assertEqual(self.removed, [[f"{prefix}-manifest.json"], [f"{prefix}-vda.qcow2", f"{prefix}-domain.xml"]])
         self.assertFalse(Backup.objects.exists())
 
+    def test_a_vm_named_after_this_backup_keeps_its_backups_files(self):
+        # a VM may be named "<this backup's prefix>-x": its backups' files begin with this prefix too
+        other = f"{self.backup.prefix}-x-00000000-0000-4000-8000-00000000000a"
+        self.pool.listVolumes.return_value = [*self.pool.listVolumes.return_value, f"{other}-vda.qcow2",
+                                              f"{other}-manifest.json"]
+        self.run_job(self.submit())
+        self.assertNotIn(f"{other}-vda.qcow2", sum(self.removed, []))
+
+    def test_its_volumes_are_refused_but_not_those_of_a_vm_named_after_it(self):
+        from vmbackups.utils import refuse_backup_volume
+
+        with self.assertRaises(OperationError):
+            refuse_backup_volume(self.compute, "b1", f"{self.backup.prefix}-vda.qcow2")
+        refuse_backup_volume(self.compute, "b1", f"{self.backup.prefix}-x-00000000-0000-4000-8000-00000000000a-vda.qcow2")
+
     def test_the_pool_is_refreshed_before_the_manifest_is_looked_up(self):
         # another compute made the backup: this one's pool lists its files only after a refresh
         self.pool.refresh.side_effect = lambda flags: self.removed.append("refresh")

@@ -678,7 +678,7 @@ class DeleteBackup(Kind):
         pool.refresh(0)
         manifest = f"{backup.prefix}-manifest.json"
         remove_files(pool, [manifest])
-        remove_files(pool, [n for n in pool.listVolumes() if n.startswith(backup.prefix + "-") and n != manifest])
+        remove_files(pool, [n for n in pool.listVolumes() if backup.owns(n) and n != manifest])
         backup.delete()
         return {}
 
