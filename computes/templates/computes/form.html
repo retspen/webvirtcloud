@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load django_bootstrap5 %}
 {% load i18n %}
+{% load static %}
 
 {% block title %}{% if form.instance.pk %}{% trans "Edit host" %}{% else %}{% trans "Add host" %}{% endif %}{% endblock %}
 
@@ -8,6 +9,8 @@
     <span class="text-break">{% if form.instance.pk %}{% blocktrans with name=form.instance.name %}Edit host: {{ name }}{% endblocktrans %}{% else %}{% trans "Add host" %}{% endif %}</span>
     <span class="badge text-bg-light border align-middle fs-6">{{ form.kind }}</span>
 {% endblock page_heading %}
+
+{% block style %}<link href="{% static 'css/tom-select.bootstrap5.min.css' %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
 <p class="text-body-secondary">{{ form.about }}</p>
@@ -24,6 +27,7 @@
                 {% if "login" in form.fields %}<div class="col-md-6">{% bootstrap_field form.login %}</div>{% endif %}
                 {% if "password" in form.fields %}<div class="col-md-6">{% bootstrap_field form.password %}</div>{% endif %}
                 <div class="col-12">{% bootstrap_field form.details %}</div>
+                <div class="col-12">{% bootstrap_field form.tags %}</div>
             </div>
             {# open when one of them is set or refused #}
             <details class="border-top pt-3"{% if form.migration_address.value or form.migration_address.errors or form.gstfsd_key.errors %} open{% endif %}>
@@ -47,3 +51,7 @@
     </div>
 </form>
 {% endblock content %}
+{% block script %}
+<script src="{% static 'js/tom-select.complete.min.js' %}"></script>
+<script src="{% static 'js/searchable_select.js' %}"></script>
+{% endblock script %}

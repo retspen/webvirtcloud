@@ -35,6 +35,7 @@ class Instance(models.Model):
     is_template = models.BooleanField(_("is template"), default=False)
     created = models.DateTimeField(_("created"), auto_now_add=True)
     drbd = models.CharField(_("drbd"), max_length=24, default="None")
+    tags = models.ManyToManyField("computes.Tag", blank=True, related_name="instances", verbose_name=_("tags"))
 
     objects = InstanceManager()
 
@@ -407,9 +408,9 @@ class Instance(models.Model):
 
 
 class InstanceTombstone(models.Model):
-    """Ownership of a VM that disappeared from its compute.
+    """Ownership and tags of a VM that disappeared from its compute.
 
-    Kept for INSTANCE_OWNERSHIP_RETENTION_DAYS so that the owners come back
+    Kept for INSTANCE_OWNERSHIP_RETENTION_DAYS so that they come back
     when the same UUID shows up again, on this or another compute.
     """
 
@@ -418,6 +419,7 @@ class InstanceTombstone(models.Model):
     host = models.CharField(max_length=64, blank=True)  # the compute's name: the compute may be deleted
     is_template = models.BooleanField(default=False)
     owners = models.JSONField(default=list)  # [{"user": id, "is_change": .., "is_delete": .., "is_vnc": ..}]
+    tags = models.JSONField(default=list)  # the names: a tag deleted meanwhile is not given back
     removed = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

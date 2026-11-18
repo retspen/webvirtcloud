@@ -2,7 +2,7 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 from vrtManager.connection import CONN_SOCKET, CONN_SSH, CONN_TCP, CONN_TLS
 
-from computes.models import Compute
+from computes.models import TAG_NAME, Compute, Tag
 
 from .validators import validate_hostname
 
@@ -27,13 +27,64 @@ class KeepSecretsMixin:
         return self.cleaned_data["gstfsd_key"] or self.instance.gstfsd_key
 
 
+class TagsWidget(forms.SelectMultiple):
+    """The tags there are and those given, to choose from or add to (Tom Select)."""
+
+    def __init__(self):
+        # Tom Select's line for a new name typed (searchable_select.js)
+        super().__init__(attrs={"data-tags": "", "data-add": _("Add tag %(tag)s")})
+
+    def optgroups(self, name, value, attrs=None):
+        self.choices = [(n, n) for n in sorted(set(Tag.objects.values_list("name", flat=True)) | set(value))]
+        return super().optgroups(name, value, attrs)
+
+
+class TagsField(forms.Field):
+    """Tag names, each once and in lower case; the tags are made when saved (Tag.named)."""
+
+    widget = TagsWidget
+
+    def __init__(self, **kwargs):
+        super().__init__(required=False, label=_("Tags"), **kwargs)
+
+    def to_python(self, value):
+        names = [str(name).strip().lower() for name in value or ()]
+        return list(dict.fromkeys(name for name in names if name))
+
+    def validate(self, value):
+        for name in value:
+            if len(name) > 32:
+                raise forms.ValidationError(_("A tag has at most 32 characters"))
+            TAG_NAME(name)
+
+
+class TagsForm(forms.Form):
+    tags = TagsField()
+
+
+class ComputeTagsMixin:
+    """The compute's tags on its form."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["tags"] = TagsField()
+        if self.instance.pk:
+            self.initial["tags"] = list(self.instance.tags.values_list("name", flat=True))
+
+    def save(self, commit=True):
+        compute = super().save(commit)
+        if commit:
+            compute.tags.set(Tag.named(self.cleaned_data["tags"]))
+        return compute
+
+
 SECRET_WIDGETS = {"password": forms.PasswordInput(), "gstfsd_key": forms.PasswordInput()}
 DETAILS = {"details": _("Description")}
 DETAILS_HELP = {"details": _("Shown on the hosts list")}
 SASL_LABELS = {"login": _("SASL login"), "password": _("SASL password")} | DETAILS
 
 
-class TcpComputeForm(KeepSecretsMixin, forms.ModelForm):
+class TcpComputeForm(ComputeTagsMixin, KeepSecretsMixin, forms.ModelForm):
     conn_type = CONN_TCP
     kind = "TCP"
     about = _("libvirt over TCP, with a SASL login")
@@ -44,10 +95,10 @@ class TcpComputeForm(KeepSecretsMixin, forms.ModelForm):
         widgets = SECRET_WIDGETS
         labels = SASL_LABELS
         help_texts = DETAILS_HELP
-        exclude = ["type"]
+        exclude = ["type", "tags"]
 
 
-class SshComputeForm(KeepSecretsMixin, forms.ModelForm):
+class SshComputeForm(ComputeTagsMixin, KeepSecretsMixin, forms.ModelForm):
     conn_type = CONN_SSH
     kind = "SSH"
     about = _("libvirt over SSH, with the panel's SSH key")
@@ -58,10 +109,10 @@ class SshComputeForm(KeepSecretsMixin, forms.ModelForm):
         widgets = SECRET_WIDGETS
         labels = {"login": _("SSH user")} | DETAILS
         help_texts = DETAILS_HELP
-        exclude = ["password", "type"]
+        exclude = ["password", "type", "tags"]
 
 
-class TlsComputeForm(KeepSecretsMixin, forms.ModelForm):
+class TlsComputeForm(ComputeTagsMixin, KeepSecretsMixin, forms.ModelForm):
     conn_type = CONN_TLS
     kind = "TLS"
     about = _("libvirt over TLS, with certificates")
@@ -72,10 +123,10 @@ class TlsComputeForm(KeepSecretsMixin, forms.ModelForm):
         widgets = SECRET_WIDGETS
         labels = SASL_LABELS
         help_texts = DETAILS_HELP
-        exclude = ["type"]
+        exclude = ["type", "tags"]
 
 
-class SocketComputeForm(KeepSecretsMixin, forms.ModelForm):
+class SocketComputeForm(ComputeTagsMixin, KeepSecretsMixin, forms.ModelForm):
     conn_type = CONN_SOCKET
     kind = _("Local")
     about = _("the libvirt of the host the panel runs on, by its socket")

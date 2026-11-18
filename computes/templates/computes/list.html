@@ -81,6 +81,7 @@
                         </div>
                         <div class="small text-body-secondary font-monospace mt-1">{{ compute.hostname }}</div>
                         {% if compute.details %}<div class="small text-body-secondary">{{ compute.details }}</div>{% endif %}
+                        {% with tags=compute.tags.all %}{% if tags %}<div class="mt-1">{% include 'common/tag_badges.html' %}</div>{% endif %}{% endwith %}
                         {% if compute.status is not True %}
                             <div class="small text-danger">{{ compute.connection_error }}</div>
                         {% endif %}

@@ -3,6 +3,7 @@
 {# a VM's name, its title, and with owners its owners: the first as a badge, the others counted #}
 <a class="fw-semibold text-break" href="{% url 'instances:instance' instance.id %}">{{ instance.name }}</a>
 {% if instance.info and instance.title %}<div class="small text-body-secondary text-break">{{ instance.title }}</div>{% endif %}
+{% with tags=instance.tags.all %}{% if tags %}<div class="mt-1">{% include 'common/tag_badges.html' %}</div>{% endif %}{% endwith %}
 {% if owners %}
     {% with users=instance.userinstance_set.all %}
     {% if users %}

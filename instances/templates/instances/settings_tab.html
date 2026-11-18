@@ -920,6 +920,18 @@
                             {% elif instance.status != 5 %}{% trans "Shut the VM down to change this." %}{% endif %}</p>
                     </form>
                 </div>
+                {% if tags_form %}
+                <div class="list-group-item p-3 p-md-4">
+                    <h2 class="h6 mb-2" id="options-tags"><label for="{{ tags_form.tags.id_for_label }}">{% trans "Tags" %}</label></h2>
+                    <form action="{% url 'instances:set_tags' instance.id %}" method="post">{% csrf_token %}
+                        {{ tags_form.tags }}
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2">
+                            <span class="small text-body-secondary">{% trans "Choose a tag or type a new one. Owners see the tags but cannot change them." %}</span>
+                            <button class="btn btn-primary" type="submit">{% trans "Save" %}</button>
+                        </div>
+                    </form>
+                </div>
+                {% endif %}
                 {% if request.user.is_superuser %}
                 <div class="list-group-item p-3 p-md-4" role="group" aria-labelledby="options-devices">
                     <div class="d-flex flex-wrap justify-content-between column-gap-3 mb-2">

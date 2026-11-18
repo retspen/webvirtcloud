@@ -14,7 +14,8 @@ from ipaddress import ip_address
 from accounts.models import UserInstance, UserSSHKey
 from admin.decorators import superuser_only
 from appsettings.settings import app_settings
-from computes.models import Compute
+from computes.forms import TagsForm
+from computes.models import Compute, Tag
 from computes.validators import validate_hostname, validate_login
 from computes.utils import (
     libvirt_compute_lock,
@@ -96,14 +97,14 @@ def index(request):
     if request.user.is_superuser and app_settings.VIEW_INSTANCES_LIST_STYLE == "grouped":
         # each host's VMs by name: the database keeps no order of its own
         prefetch_related_objects(computes, Prefetch("instance_set", queryset=Instance.objects.order_by("name")),
-                                 "instance_set__userinstance_set__user")
+                                 "instance_set__userinstance_set__user", "instance_set__tags")
         instances = [inst for compute in computes for inst in compute.instance_set.all()]
     elif show_hosts:
-        instances = list(Instance.objects.order_by("name").prefetch_related("userinstance_set__user"))
+        instances = list(Instance.objects.order_by("name").prefetch_related("userinstance_set__user", "tags"))
     else:
         instances = list(Instance.objects.filter(
             userinstance__user=request.user
-        ).order_by("name").prefetch_related("userinstance_set__user"))
+        ).order_by("name").prefetch_related("userinstance_set__user", "tags"))
         # other users get no host names or connection errors, only whether
         # a host of their own VMs is down
         own_hosts_down = any(c.status is not True for c in computes)
@@ -398,6 +399,7 @@ def _instance_page(request, pk, instance, compute):
         "compute": compute,
         "computes": computes,
         "users": users,
+        "tags_form": TagsForm(initial={"tags": [t.name for t in instance.tags.all()]}) if request.user.is_superuser else None,
         "publickeys": publickeys,
         "userinstance": userinstance,
         "userinstances": userinstances,
@@ -2389,6 +2391,23 @@ def add_owner(request, pk):
     elif entry.skip:
         messages.warning(request, _("%(user)s is already an owner") % {"user": user})
     return _back(request, pk, "users")
+
+
+@require_POST
+@superuser_only
+@serialize_instance_mutation
+def set_tags(request, pk):
+    """The VM's tags, those not there yet made; the VM held, so a move does not lose them."""
+    instance = get_instance(request.user, pk)
+    form = TagsForm(request.POST)
+    if not form.is_valid():
+        messages.error(request, " ".join(form.errors["tags"]))
+        return _back(request, pk, "options")
+    names = form.cleaned_data["tags"]
+    with audit_vm(request, instance, f"tags {', '.join(sorted(names)) or 'none'}"), transaction.atomic():
+        lock_ownership()  # not while the VM's tags are kept or given back (computes.utils.forget)
+        instance.tags.set(Tag.named(names))
+    return _back(request, pk, "options")
 
 
 # Buses for the empty CD-ROM of a new VM: fdc and virtio have no ejectable

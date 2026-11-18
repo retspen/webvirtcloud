@@ -159,7 +159,7 @@ def read_hosts(computes):
 def computes(request):
     """The computes, with what each has given its VMs, and the totals of the
     ones the panel reaches."""
-    computes = list(Compute.objects.order_by("name"))
+    computes = list(Compute.objects.order_by("name").prefetch_related("tags"))
     totals = {"hosts": len(computes), "connected": 0, "vms": 0, "running": 0,
               "vcpus": 0, "cpus": 0, "assigned": 0, "memory": 0}
     read_hosts(computes)

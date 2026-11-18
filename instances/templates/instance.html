@@ -8,7 +8,7 @@
 {% block title %}{% trans "Instance" %} - {{ instance.name }}{% endblock %}
 
 {% block style %}
-{% if request.user.is_superuser and users %}<link href="{% static 'css/tom-select.bootstrap5.min.css' %}" rel="stylesheet">{% endif %}
+{% if request.user.is_superuser %}<link href="{% static 'css/tom-select.bootstrap5.min.css' %}" rel="stylesheet">{% endif %}
 {% endblock style %}
 
 {% block page_header %}{% endblock page_header %}{# the card below has the heading #}
@@ -29,6 +29,7 @@
                         {% vm_state instance.status as state %}
                         <span class="badge text-bg-{{ state.1 }}">{{ state.0 }}</span>
                         {% if instance.is_template %}<span class="badge text-bg-light border">{% trans "Template" %}</span>{% endif %}
+                        {% include 'common/tag_badges.html' with tags=instance.tags.all %}
                     </div>
                     {% if instance.title %}<p class="text-body-secondary mb-1">{{ instance.title }}</p>{% endif %}
                     {% include 'instances/host_link.html' %}
@@ -138,7 +139,7 @@
 
 {% endblock %}
 {% block script %}
-{% if request.user.is_superuser and users %}{# Add owner's user list #}
+{% if request.user.is_superuser %}{# the add-owner user list and the tags #}
 <script src="{% static 'js/tom-select.complete.min.js' %}"></script>
 <script src="{% static 'js/searchable_select.js' %}"></script>
 {% endif %}

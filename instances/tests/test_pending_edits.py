@@ -285,8 +285,10 @@ class PendingEditsTestCase(TestCase):
         # a search box for a list of every user (searchable_select.js)
         self.assertEqual(doc.xpath("//select[@id='add-owner-user']/@data-searchable"), [""])
         self.assertIn("/static/js/searchable_select.js", doc.xpath("//script/@src"))
-        User.objects.filter(username="pe-new").delete()  # no one left to add: no search box to load
-        self.assertNotIn("/static/js/searchable_select.js", self.page().xpath("//script/@src"))
+        User.objects.filter(username="pe-new").delete()  # no one left to add: the tags field still uses it
+        doc = self.page()
+        self.assertEqual(doc.xpath("//select[@name='tags']/@data-tags"), [""])
+        self.assertIn("/static/js/searchable_select.js", doc.xpath("//script/@src"))
 
     def test_the_page_has_a_hidden_notice_for_a_host_that_stops_answering(self):
         # instance_status.js shows it while the state poll fails

@@ -8,7 +8,7 @@
 {% block page_heading %}{% trans "Removed VMs" %}{% endblock page_heading %}
 
 {% block content %}
-<p class="text-body-secondary">{% trans "VMs that vanished from their compute. Their owners come back if the same UUID shows up again before the record expires." %}</p>
+<p class="text-body-secondary">{% trans "VMs that vanished from their compute. Their owners and tags come back if the same UUID shows up again before the record expires." %}</p>
 {% if not tombstones %}
     <div class="alert alert-info shadow-sm">
         {% bs_icon 'info-circle' %} {% trans "No removed VMs" %}
@@ -21,11 +21,12 @@
         </div>
         <div class="list-group list-group-flush searchable">
         {% for tombstone in tombstones %}
-            <div class="list-group-item py-3" data-search="{{ tombstone.name }} {{ tombstone.uuid }} {{ tombstone.host }} {{ tombstone.owner_names|join:' ' }}">
+            <div class="list-group-item py-3" data-search="{{ tombstone.name }} {{ tombstone.uuid }} {{ tombstone.host }} {{ tombstone.owner_names|join:' ' }} {{ tombstone.tags|join:' ' }}">
                 <div class="row g-2 align-items-center">
                     <div class="col-12 col-md-4">
                         <span class="fw-semibold text-break">{{ tombstone.name }}</span>
                         {% if tombstone.is_template %}<span class="badge text-bg-light border">{% trans "Template" %}</span>{% endif %}
+                        {% include 'common/tag_badges.html' with tags=tombstone.tags %}
                         <div class="font-monospace small text-body-secondary text-break mt-1">{{ tombstone.uuid }}</div>
                     </div>
                     <div class="col-12 col-md-5 small">

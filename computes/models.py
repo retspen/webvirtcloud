@@ -1,8 +1,9 @@
 from ipaddress import ip_address
 
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.db import IntegrityError, transaction
-from django.db.models import CharField, DateTimeField, IntegerField, Model, Q, UniqueConstraint
+from django.db.models import CharField, DateTimeField, IntegerField, ManyToManyField, Model, Q, UniqueConstraint
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import gettext_noop
@@ -12,6 +13,27 @@ from computes.validators import validate_gstfsd_key, validate_hostname, validate
 from vrtManager import util
 from vrtManager.connection import connection_manager
 from vrtManager.hostdetails import wvmHostDetails
+
+
+TAG_NAME = RegexValidator(r"^[a-z0-9][a-z0-9._-]*\Z",
+                          _("A tag is letters a-z, digits, dots, dashes and underscores, and begins with a letter or digit"))
+
+
+class Tag(Model):
+    """A name given to VMs and hosts, kept in lower case: one name is one tag."""
+
+    name = CharField(_("name"), max_length=32, unique=True, validators=[TAG_NAME])
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+    @classmethod
+    def named(cls, names):
+        """The tags of names, those not there yet made."""
+        return [cls.objects.get_or_create(name=name)[0] for name in names]
 
 
 # what the panel connects to a compute with
@@ -57,6 +79,7 @@ class Compute(Model):
     # it is ready once none of its VMs runs (refuse_new_vms, refuse_start);
     # since when: the host's bulk migrations from then on are its own
     maintenance_since = DateTimeField(null=True, blank=True, editable=False)
+    tags = ManyToManyField(Tag, blank=True, related_name="computes", verbose_name=_("tags"))
 
     class Meta:
         constraints = [UniqueConstraint(fields=["host_uuid"], condition=~Q(host_uuid=""), name="one_compute_per_host")]

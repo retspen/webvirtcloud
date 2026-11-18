@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 from django.utils import timezone
-from computes.models import ENDPOINT, Compute
+from computes.models import ENDPOINT, Compute, Tag
 from instances.models import Instance, InstanceTombstone
 from logs.audit import write
 from operations import claims
@@ -87,7 +87,8 @@ def _log(inst, what):
 
 
 def move_ownership(source, target):
-    """Give target the owners, template flag, backups and schedules of source; a user's rights are merged."""
+    """Give target the owners, tags, template flag, backups and schedules of source; a user's rights are merged."""
+    target.tags.add(*source.tags.all())
     Backup.objects.filter(instance=source).update(instance=target)
     for policy in source.backup_policies.all():
         policy.instances.add(target)
@@ -130,9 +131,10 @@ def _bury(inst):
         {"user": ui.user_id, "is_change": ui.is_change, "is_delete": ui.is_delete, "is_vnc": ui.is_vnc}
         for ui in UserInstance.objects.filter(instance=inst)
     ]
-    if owners or inst.is_template:
+    tags = list(inst.tags.values_list("name", flat=True))
+    if owners or inst.is_template or tags:
         InstanceTombstone.objects.create(uuid=inst.uuid, name=inst.name, host=inst.compute.name,
-                                         is_template=inst.is_template, owners=owners)
+                                         is_template=inst.is_template, owners=owners, tags=tags)
         _log(inst, "owners kept on the Removed VMs page")
     else:
         _log(inst, "left the panel (no owners)")
@@ -152,6 +154,7 @@ def _restore(inst):
                 is_delete=owner["is_delete"],
                 is_vnc=owner["is_vnc"],
             )
+    inst.tags.set(Tag.objects.filter(name__in=tombstone.tags))
     if tombstone.is_template:
         inst.is_template = True
         inst.save(update_fields=["is_template"])

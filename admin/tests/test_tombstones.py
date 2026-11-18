@@ -21,6 +21,7 @@ class TombstoneTests(TestCase):
             uuid=UUID,
             name="ts-vm",
             host="ts-host",
+            tags=["prod"],
             owners=[
                 {"user": self.owner.id, "is_change": True, "is_delete": False, "is_vnc": True},
                 {"user": 999999, "is_change": False, "is_delete": False, "is_vnc": False},
@@ -39,6 +40,7 @@ class TombstoneTests(TestCase):
         self.assertContains(response, "ts-vm")
         self.assertContains(response, UUID)
         self.assertContains(response, "ts-owner")
+        self.assertContains(response, "prod")
         self.assertContains(response, '<span class="fw-semibold">ts-host</span>', html=True)
 
     def test_only_superusers_see_or_remove_them(self):

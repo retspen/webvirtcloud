@@ -6,3 +6,17 @@ document.querySelectorAll("select[data-searchable]").forEach(function (select) {
         onItemAdd: function () { this.blur(); },
     });
 });
+
+// A <select multiple data-tags>: the tags there are, and a new one typed (the server checks it).
+document.querySelectorAll("select[data-tags]").forEach(function (select) {
+    new TomSelect(select, {
+        create: true, persist: false, createFilter: /^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$/,
+        render: {
+            // the page's own words (data-add): the library's are English
+            option_create: function (data, escape) {
+                return '<div class="create">' + escape(select.dataset.add.replace("%(tag)s", data.input)) + "</div>";
+            },
+            no_results: null,
+        },
+    });
+});
