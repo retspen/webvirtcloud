@@ -61,6 +61,14 @@ class BulkMigratePageTests(TestCase):
         self.assertIsNone(off.get("checked"))
         self.assertIsNotNone(off.get("data-shut-off"))
 
+    def test_the_vms_tags_choose_them(self):
+        from computes.models import Tag
+        self.vms["ev-run"].tags.add(Tag.objects.create(name="prod"), Tag.objects.create(name="web"))
+        page = self.page()
+        self.assertEqual(page.xpath("//select[@id='bulk-migrate-tag']/option/@value"), ["", "prod", "web"])
+        self.assertEqual(self.box(page, "ev-run").get("data-tags"), "prod web")
+        self.assertEqual(self.box(page, "ev-off").get("data-tags"), "")
+
     def test_a_vm_with_a_disk_the_hosts_do_not_share_is_refused(self):
         page = self.page()
         local = self.box(page, "ev-local")

@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 17:53+0000\n"
+"POT-Creation-Date: 2026-11-18 18:18+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -66,7 +66,7 @@ msgstr "Geçersiz anahtar"
 
 #: accounts/forms.py:95 computes/templates/computes/balance.html:61
 #: computes/templates/computes/balance.html:108
-#: computes/templates/computes/bulk_migrate.html:65
+#: computes/templates/computes/bulk_migrate.html:71
 #: computes/templates/computes/instances.html:53
 #: instances/templates/add_instance_volume.html:39
 #: instances/templates/allinstances_index_grouped.html:11
@@ -798,7 +798,7 @@ msgid "vCPUs"
 msgstr "vCPU"
 
 #: admin/forms.py:222 computes/templates/computes/balance.html:62
-#: computes/templates/computes/bulk_migrate.html:67
+#: computes/templates/computes/bulk_migrate.html:73
 #: computes/templates/computes/instances.html:57
 #: computes/templates/computes/list.html:63
 #: computes/templates/overview.html:110 computes/templates/overview.html:194
@@ -2306,7 +2306,7 @@ msgstr[0] "Önerilen taşımalar (%(counter)s)"
 msgstr[1] "Önerilen taşımalar (%(counter)s)"
 
 #: computes/templates/computes/balance.html:60
-#: computes/templates/computes/bulk_migrate.html:64
+#: computes/templates/computes/bulk_migrate.html:70
 msgid "Select all"
 msgstr "Tümünü seç"
 
@@ -2315,7 +2315,7 @@ msgid "Migration"
 msgstr "Taşıma"
 
 #: computes/templates/computes/balance.html:85
-#: computes/templates/computes/bulk_migrate.html:99
+#: computes/templates/computes/bulk_migrate.html:105
 msgid "Migrations at once"
 msgstr "Aynı anda taşıma"
 
@@ -2353,7 +2353,7 @@ msgid "Let it move"
 msgstr "Taşınabilsin"
 
 #: computes/templates/computes/balance.html:110
-#: computes/templates/computes/bulk_migrate.html:70
+#: computes/templates/computes/bulk_migrate.html:76
 msgid "Why"
 msgstr "Neden"
 
@@ -2403,7 +2403,7 @@ msgid "The host has no VMs."
 msgstr "Bu sunucuda sanal makine yok."
 
 #: computes/templates/computes/bulk_migrate.html:48
-#: computes/templates/computes/bulk_migrate.html:69
+#: computes/templates/computes/bulk_migrate.html:75
 msgid "Destination"
 msgstr "Hedef"
 
@@ -2411,41 +2411,46 @@ msgstr "Hedef"
 msgid "Spread over the other hosts"
 msgstr "Diğer sunuculara dağıt"
 
+#: computes/templates/computes/bulk_migrate.html:56
 #: computes/templates/computes/bulk_migrate.html:57
+msgid "Choose by tag"
+msgstr "Etikete göre seç"
+
+#: computes/templates/computes/bulk_migrate.html:63
 msgid "Also migrate the shut-off VMs"
 msgstr "Kapalı sanal makineleri de taşı"
 
-#: computes/templates/computes/bulk_migrate.html:66
+#: computes/templates/computes/bulk_migrate.html:72
 #: computes/templates/computes/instances.html:55
 #: instances/templates/allinstances_index_grouped.html:12
 #: instances/templates/allinstances_index_nongrouped.html:10
 msgid "Status"
 msgstr "Durum"
 
-#: computes/templates/computes/bulk_migrate.html:104
+#: computes/templates/computes/bulk_migrate.html:110
 #, python-format
 msgid "Put %(source)s in maintenance and migrate the chosen VMs?"
 msgstr "%(source)s bakıma alınsın ve seçilen sanal makineler taşınsın mı?"
 
-#: computes/templates/computes/bulk_migrate.html:106
+#: computes/templates/computes/bulk_migrate.html:112
 #, python-format
 msgid "Migrate the chosen VMs from %(source)s to the hosts shown?"
 msgstr ""
 "Seçilen sanal makineler %(source)s sunucusundan gösterilen sunuculara "
 "taşınsın mı?"
 
-#: computes/templates/computes/bulk_migrate.html:108
+#: computes/templates/computes/bulk_migrate.html:114
 #, python-format
 msgid "Migrate the chosen VMs from %(source)s to %(dest)s?"
 msgstr ""
 "Seçilen sanal makineler %(source)s sunucusundan %(dest)s sunucusuna taşınsın "
 "mı?"
 
-#: computes/templates/computes/bulk_migrate.html:111
+#: computes/templates/computes/bulk_migrate.html:117
 msgid "Migrate and put in maintenance"
 msgstr "Taşı ve bakıma al"
 
-#: computes/templates/computes/bulk_migrate.html:111
+#: computes/templates/computes/bulk_migrate.html:117
 msgid "Migrate the chosen VMs"
 msgstr "Seçilen sanal makineleri taşı"
 
@@ -3008,16 +3013,16 @@ msgstr ""
 msgid "The host did not answer within %(seconds)s seconds"
 msgstr "Sunucu %(seconds)s saniye içinde yanıt vermedi"
 
-#: computes/views.py:359
+#: computes/views.py:360
 msgid "No other host has room for it"
 msgstr "Başka hiçbir sunucuda ona yer yok"
 
-#: computes/views.py:437
+#: computes/views.py:439
 #, python-format
 msgid "The host was saved, but the panel cannot connect to it: %(error)s"
 msgstr "Sunucu kaydedildi, ancak panel ona bağlanamıyor: %(error)s"
 
-#: computes/views.py:510
+#: computes/views.py:512
 #, python-format
 msgid ""
 "Its VMs keep running on the host and leave the panel; their owners are kept "

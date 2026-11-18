@@ -1,6 +1,7 @@
 // The Bulk Migrate page: another destination reloads the list; the header
 // box ticks or unticks every VM that can migrate, "Also migrate the
-// shut-off VMs" the shut-off ones. Spread over the hosts, a change reloads
+// shut-off VMs" the shut-off ones, a tag chosen those with it (data-tags)
+// and no others. Spread over the hosts, a change reloads
 // the list too: where each VM goes depends on the others. The Migrate
 // button counts the ticked VMs and is off while none is.
 const choose = document.getElementById("bulk-migrate-choose");
@@ -31,6 +32,14 @@ document.getElementById("bulk-migrate-all")?.addEventListener("change", function
 });
 document.getElementById("bulk-migrate-shut-off")?.addEventListener("change", function (event) {
     tick(".bulk-migrate-vm[data-shut-off]:not(:disabled)", event.target.checked);
+});
+document.getElementById("bulk-migrate-tag")?.addEventListener("change", function (event) {
+    const tag = event.target.value;
+    if (tag) {
+        document.querySelectorAll(".bulk-migrate-vm:not(:disabled)").forEach(function (box) {
+            box.checked = (box.dataset.tags || "").split(" ").includes(tag);
+        });
+    }
 });
 document.addEventListener("change", function (event) {
     if (spreading && event.target.id !== "bulk-migrate-parallel" && event.target.id !== "bulk-migrate-target") {

@@ -52,7 +52,13 @@
         {% else %}
         <span class="fw-semibold">{{ target.name }}</span>
         {% endif %}
-        <div class="form-check form-switch ms-auto mb-0">
+        {% if tags %}{# bulk_migrate.js ticks the VMs with the tag chosen #}
+        <select id="bulk-migrate-tag" class="form-select form-select-sm w-auto ms-auto" aria-label="{% trans "Choose by tag" %}">
+            <option value="">{% trans "Choose by tag" %}</option>
+            {% for tag in tags %}<option value="{{ tag }}">{{ tag }}</option>{% endfor %}
+        </select>
+        {% endif %}
+        <div class="form-check form-switch {% if not tags %}ms-auto {% endif %}mb-0">
             <input class="form-check-input" type="checkbox" role="switch" id="bulk-migrate-shut-off"{% if shut_off_ticked %} checked{% endif %}>
             <label class="form-check-label small" for="bulk-migrate-shut-off">{% trans "Also migrate the shut-off VMs" %}</label>
         </div>
@@ -75,11 +81,11 @@
                 <tr>
                     <td class="ps-3">
                         {% if spreading %}
-                        <input class="form-check-input bulk-migrate-vm" type="checkbox" name="vm" value="{{ instance.pk }}" id="bulk-migrate-{{ instance.pk }}" form="bulk-migrate-choose"
+                        <input class="form-check-input bulk-migrate-vm" type="checkbox" name="vm" value="{{ instance.pk }}" id="bulk-migrate-{{ instance.pk }}" data-tags="{% for tag in instance.tags.all %}{{ tag }}{% if not forloop.last %} {% endif %}{% endfor %}" form="bulk-migrate-choose"
                             {% if instance.info.0 == 5 %} data-shut-off{% endif %}{% if instance.target %} checked{% endif %}{% if instance.refusal %} disabled{% endif %}>
                         {% if instance.target %}<input type="hidden" name="instance" value="{{ instance.pk }}"><input type="hidden" name="target" value="{{ instance.target.pk }}">{% endif %}
                         {% else %}
-                        <input class="form-check-input bulk-migrate-vm" type="checkbox" name="instance" value="{{ instance.pk }}" id="bulk-migrate-{{ instance.pk }}"
+                        <input class="form-check-input bulk-migrate-vm" type="checkbox" name="instance" value="{{ instance.pk }}" id="bulk-migrate-{{ instance.pk }}" data-tags="{% for tag in instance.tags.all %}{{ tag }}{% if not forloop.last %} {% endif %}{% endfor %}"
                             {% if instance.info.0 == 5 %} data-shut-off{% elif not instance.refusal %} checked{% endif %}{% if instance.refusal %} disabled{% endif %}>
                         {% endif %}
                     </td>

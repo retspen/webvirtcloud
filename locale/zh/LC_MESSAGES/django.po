@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 17:53+0000\n"
+"POT-Creation-Date: 2026-11-18 18:18+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -63,7 +63,7 @@ msgstr "无效的密钥"
 
 #: accounts/forms.py:95 computes/templates/computes/balance.html:61
 #: computes/templates/computes/balance.html:108
-#: computes/templates/computes/bulk_migrate.html:65
+#: computes/templates/computes/bulk_migrate.html:71
 #: computes/templates/computes/instances.html:53
 #: instances/templates/add_instance_volume.html:39
 #: instances/templates/allinstances_index_grouped.html:11
@@ -772,7 +772,7 @@ msgid "vCPUs"
 msgstr "vCPU"
 
 #: admin/forms.py:222 computes/templates/computes/balance.html:62
-#: computes/templates/computes/bulk_migrate.html:67
+#: computes/templates/computes/bulk_migrate.html:73
 #: computes/templates/computes/instances.html:57
 #: computes/templates/computes/list.html:63
 #: computes/templates/overview.html:110 computes/templates/overview.html:194
@@ -2208,7 +2208,7 @@ msgid_plural "Proposed migrations (%(counter)s)"
 msgstr[0] "建议的迁移（%(counter)s）"
 
 #: computes/templates/computes/balance.html:60
-#: computes/templates/computes/bulk_migrate.html:64
+#: computes/templates/computes/bulk_migrate.html:70
 msgid "Select all"
 msgstr "全选"
 
@@ -2217,7 +2217,7 @@ msgid "Migration"
 msgstr "迁移"
 
 #: computes/templates/computes/balance.html:85
-#: computes/templates/computes/bulk_migrate.html:99
+#: computes/templates/computes/bulk_migrate.html:105
 msgid "Migrations at once"
 msgstr "同时迁移数"
 
@@ -2252,7 +2252,7 @@ msgid "Let it move"
 msgstr "允许迁移"
 
 #: computes/templates/computes/balance.html:110
-#: computes/templates/computes/bulk_migrate.html:70
+#: computes/templates/computes/bulk_migrate.html:76
 msgid "Why"
 msgstr "原因"
 
@@ -2299,7 +2299,7 @@ msgid "The host has no VMs."
 msgstr "此主机没有虚拟机。"
 
 #: computes/templates/computes/bulk_migrate.html:48
-#: computes/templates/computes/bulk_migrate.html:69
+#: computes/templates/computes/bulk_migrate.html:75
 msgid "Destination"
 msgstr "目标主机"
 
@@ -2307,37 +2307,42 @@ msgstr "目标主机"
 msgid "Spread over the other hosts"
 msgstr "分散到其他主机"
 
+#: computes/templates/computes/bulk_migrate.html:56
 #: computes/templates/computes/bulk_migrate.html:57
+msgid "Choose by tag"
+msgstr "按标签选择"
+
+#: computes/templates/computes/bulk_migrate.html:63
 msgid "Also migrate the shut-off VMs"
 msgstr "同时迁移已关机的虚拟机"
 
-#: computes/templates/computes/bulk_migrate.html:66
+#: computes/templates/computes/bulk_migrate.html:72
 #: computes/templates/computes/instances.html:55
 #: instances/templates/allinstances_index_grouped.html:12
 #: instances/templates/allinstances_index_nongrouped.html:10
 msgid "Status"
 msgstr "状态"
 
-#: computes/templates/computes/bulk_migrate.html:104
+#: computes/templates/computes/bulk_migrate.html:110
 #, python-format
 msgid "Put %(source)s in maintenance and migrate the chosen VMs?"
 msgstr "将 %(source)s 置于维护状态并迁移所选虚拟机？"
 
-#: computes/templates/computes/bulk_migrate.html:106
+#: computes/templates/computes/bulk_migrate.html:112
 #, python-format
 msgid "Migrate the chosen VMs from %(source)s to the hosts shown?"
 msgstr "将所选虚拟机从 %(source)s 迁移到所示主机？"
 
-#: computes/templates/computes/bulk_migrate.html:108
+#: computes/templates/computes/bulk_migrate.html:114
 #, python-format
 msgid "Migrate the chosen VMs from %(source)s to %(dest)s?"
 msgstr "将选中的虚拟机从 %(source)s 迁移到 %(dest)s？"
 
-#: computes/templates/computes/bulk_migrate.html:111
+#: computes/templates/computes/bulk_migrate.html:117
 msgid "Migrate and put in maintenance"
 msgstr "迁移并进入维护"
 
-#: computes/templates/computes/bulk_migrate.html:111
+#: computes/templates/computes/bulk_migrate.html:117
 msgid "Migrate the chosen VMs"
 msgstr "迁移所选虚拟机"
 
@@ -2867,16 +2872,16 @@ msgstr "请输入主机 /etc/default/webvirt-gstfsd 中 GSTFSD_KEY 的 64 个十
 msgid "The host did not answer within %(seconds)s seconds"
 msgstr "主机未在 %(seconds)s 秒内响应"
 
-#: computes/views.py:359
+#: computes/views.py:360
 msgid "No other host has room for it"
 msgstr "没有其他主机能容纳它"
 
-#: computes/views.py:437
+#: computes/views.py:439
 #, python-format
 msgid "The host was saved, but the panel cannot connect to it: %(error)s"
 msgstr "主机已保存，但面板无法连接到它：%(error)s"
 
-#: computes/views.py:510
+#: computes/views.py:512
 #, python-format
 msgid ""
 "Its VMs keep running on the host and leave the panel; their owners are kept "

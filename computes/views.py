@@ -326,14 +326,15 @@ def bulk_migrate(request, compute_id):
     reach = Reach(request)
     spreading = len(targets) > 1 and request.GET.get("target", "spread") == "spread"
     utils.refresh_instance_database(compute)
-    instances = list(Instance.objects.filter(compute=compute).order_by("name"))
+    instances = list(Instance.objects.filter(compute=compute).order_by("name").prefetch_related("tags"))
     read_list_rows(instances, [compute])
+    tags = sorted({tag.name for instance in instances for tag in instance.tags.all()})
     if not spreading:
         target = next((t for t in targets if str(t.pk) == request.GET.get("target")), targets[0] if targets else None)
         for instance in instances if target else ():
             instance.refusal = reach.refusal(instance, target)
         return render(request, "computes/bulk_migrate.html",
-                      {"compute": compute, "targets": targets, "target": target, "instances": instances,
+                      {"compute": compute, "targets": targets, "target": target, "instances": instances, "tags": tags,
                        "parallel": range(1, parallel_limit() + 1), "entering": entering})
 
     # the other hosts' loads: the VMs of this one are read above, also when its capacity cannot be
@@ -360,6 +361,7 @@ def bulk_migrate(request, compute_id):
     going = [instance for instance in instances if instance.target]
     return render(request, "computes/bulk_migrate.html",
                   {"compute": compute, "targets": targets, "spreading": True, "instances": instances, "entering": entering,
+                   "tags": tags,
                    "all_ticked": len(going) == len([instance for instance in instances if not instance.refusal]),
                    "shut_off_ticked": any(instance.info[0] == 5 for instance in going),
                    "unreachable": [host for host in targets if host.pk not in others],
