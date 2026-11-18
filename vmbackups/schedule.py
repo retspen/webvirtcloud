@@ -150,7 +150,7 @@ def retain():
         if policy.target_id in tried or not _active_superuser(policy.owner):
             continue
         vms = (Backup.objects.filter(policy=policy, state=Backup.READY, instance__isnull=False)
-               .values_list("instance_id", flat=True).distinct())
+               .order_by().values_list("instance_id", flat=True).distinct())  # no created_at in the distinct
         for instance_id in vms:
             # a chain goes when all of it is beyond keep, newest first: only a backup nothing builds on is deleted
             beyond = [b for b in beyond_keep(policy, instance_id) if not b.depended_on()]

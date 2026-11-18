@@ -219,7 +219,7 @@ def _prune_checkpoints(op, proxy, plan):
     one, the base of its next incremental backup."""
     backups = Backup.objects.filter(vm_uuid=op.intent["uuid"]).exclude(checkpoint="").exclude(uuid=op.intent["backup"])
     keep = set()
-    for policy_id in backups.filter(policy__full_every__gt=1).values_list("policy", flat=True).distinct():
+    for policy_id in backups.filter(policy__full_every__gt=1).order_by().values_list("policy", flat=True).distinct():
         newest = backups.filter(policy=policy_id, state=Backup.READY).order_by("-created_at").first()
         if newest is not None:
             keep.add(newest.checkpoint)

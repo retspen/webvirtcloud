@@ -367,6 +367,12 @@ class ScheduleTests(TransactionTestCase):
         schedule.retain()
         self.assertEqual(self.deletes()[-1].params["backup"], str(older.uuid))
 
+    def test_retention_reads_each_vm_once(self):
+        self.backups(*[Backup.READY] * 4)
+        with patch("vmbackups.schedule.beyond_keep", return_value=[]) as beyond:
+            schedule.retain()
+        self.assertEqual(beyond.call_count, 1)
+
     def chained(self, *backups):
         for parent, child in zip(backups, backups[1:]):
             Backup.objects.filter(pk=child.pk).update(parent=parent)
