@@ -78,7 +78,7 @@ class BackupRun(models.Model):
     day = models.DateField()  # the local day of the schedule's time
     state = models.CharField(max_length=16, choices=STATES)
     operation = models.ForeignKey(Operation, on_delete=models.SET_NULL, null=True)
-    note = models.CharField(max_length=255, blank=True)
+    note = models.JSONField(default=list)  # messages (operations.utils.say), shown in the reader's language
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

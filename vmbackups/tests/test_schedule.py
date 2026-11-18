@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import libvirt
 from django.contrib.auth import get_user_model
 from django.test import TransactionTestCase, override_settings
-from django.utils import timezone
+from django.utils import timezone, translation
 
 from appsettings.settings import get_settings
 from computes.models import Compute
@@ -17,6 +17,7 @@ from instances.models import Instance
 from operations import jobs
 from operations.jobs import Context
 from operations.models import Operation, acquire
+from operations.utils import words
 from vmbackups import schedule
 from vmbackups.jobs import CheckTarget, DeleteBackup, _beyond_keep
 from vmbackups.models import Backup, BackupFile, BackupPolicy, BackupRun, BackupTarget, BackupTargetPool
@@ -192,7 +193,7 @@ class ScheduleTests(TransactionTestCase):
         self.pass_at(at(2026, 11, 17, 8, 1))
         run = BackupRun.objects.get()
         self.assertEqual(run.state, BackupRun.SKIPPED)
-        self.assertIn("maintenance", run.note)
+        self.assertIn("maintenance", words(run.note))
         self.assertEqual(self.creates(), [])
 
     def test_maintenance_ended_inside_the_window(self):
@@ -212,7 +213,7 @@ class ScheduleTests(TransactionTestCase):
         self.pass_at(at(2026, 11, 17, 8, 1))  # the worker was down from before 02:00
         run = BackupRun.objects.get()
         self.assertEqual(run.state, BackupRun.SKIPPED)
-        self.assertIn("6 hours", run.note)
+        self.assertIn("6 hours", words(run.note))
         self.assertEqual(self.creates(), [])
 
     def test_a_new_schedule_does_not_skip_the_times_before_it(self):
@@ -270,14 +271,16 @@ class ScheduleTests(TransactionTestCase):
         self.pass_at(at(2026, 11, 17, 2, 0))
         run = BackupRun.objects.get()
         self.assertEqual(run.state, BackupRun.FAILED)
-        self.assertIn("owner", run.note)
+        self.assertIn("owner", words(run.note))
 
     def test_a_vm_that_cannot_be_backed_up_fails_once_with_the_reason(self):
-        self.proxy.backup_plan.side_effect = OperationError("%(vm)s has TPM state; TPM backups come later", vm="vm1")
+        self.proxy.backup_plan.side_effect = OperationError("%(vm)s has TPM state; shut it down to back it up", vm="vm1")
         self.pass_at(at(2026, 11, 17, 2, 0))
         self.pass_at(at(2026, 11, 17, 2, 1))
         run = BackupRun.objects.get()
-        self.assertEqual((run.state, run.note), (BackupRun.FAILED, "vm1 has TPM state; TPM backups come later"))
+        self.assertEqual((run.state, words(run.note)), (BackupRun.FAILED, "vm1 has TPM state; shut it down to back it up"))
+        with translation.override("tr"):  # in the reader's language, its values in place
+            self.assertEqual(words(run.note), "vm1 TPM durumu taşıyor; yedeklemek için kapatın")
 
     def test_an_unreachable_host_is_tried_again(self):
         from vrtManager.util import ConnectionFailed

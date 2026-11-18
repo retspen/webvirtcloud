@@ -2,6 +2,7 @@
 {% load i18n %}
 {% load static %}
 {% load bootstrap_icons %}
+{% load operations %}
 
 {% block title %}{{ policy.name }} - {% trans "Backup schedules" %}{% endblock %}
 {% block style %}<link href="{% static 'css/tom-select.bootstrap5.min.css' %}" rel="stylesheet">{% endblock %}
@@ -36,7 +37,7 @@
                                 {% if run.state == "submitted" %}{% if run.operation_id %}<a href="{% url 'operations:job' run.operation_id %}">{% trans "Backup job" %}</a>{% else %}{% trans "Started" %}{% endif %}
                                 {% elif run.state == "skipped" %}<span class="badge text-bg-secondary">{% trans "Skipped" %}</span>
                                 {% else %}<span class="badge text-bg-danger">{% trans "Failed" %}</span>{% endif %}
-                                {% if run.note %}<div class="small text-body-secondary">{% trans run.note %}</div>{% endif %}
+                                {% if run.note %}<div class="small text-body-secondary">{{ run.note|words }}</div>{% endif %}
                             </td>
                         </tr>
                     {% endfor %}

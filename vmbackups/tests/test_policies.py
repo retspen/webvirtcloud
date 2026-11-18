@@ -12,6 +12,7 @@ from computes.models import Compute
 from instances.models import Instance
 from instances.tests.test_page_controls import PageControls
 from logs.models import Logs
+from operations.utils import say
 from vmbackups.models import Backup, BackupPolicy, BackupRun, BackupTarget, BackupTargetPool
 
 
@@ -85,7 +86,7 @@ class PolicyPageTests(TestCase):
     def test_edit_and_the_runs(self):
         policy = self.schedule()
         BackupRun.objects.create(policy=policy, instance=self.vm1, day=datetime.date.today(), state=BackupRun.SKIPPED,
-                                 note="The host was in maintenance")
+                                 note=say("The host was in maintenance"))
         url = reverse("vmbackups:policy", args=[policy.pk])
         page = self.client.get(url)
         self.assertContains(page, "The host was in maintenance")

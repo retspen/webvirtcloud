@@ -11,6 +11,7 @@ from django.utils.translation import gettext, ngettext, pgettext, pgettext_lazy
 
 from operations.jobs import take_remembered
 from operations.models import Operation
+from operations.utils import words as _words
 
 register = template.Library()
 
@@ -52,6 +53,12 @@ def state_color(state):
 @register.filter
 def state_label(state):
     return STATE_LABELS[state]
+
+
+@register.filter
+def words(messages):
+    """A job's stored messages (operations.utils.say) in the reader's language."""
+    return _words(messages)
 
 
 @register.filter

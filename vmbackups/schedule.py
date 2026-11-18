@@ -17,7 +17,7 @@ from libvirt import libvirtError
 from computes.models import Compute
 from operations import claims, jobs
 from operations.models import Operation
-from operations.utils import safe_text
+from operations.utils import safe_text, said, say
 from vrtManager.util import ConnectionFailed
 
 from .jobs import beyond_keep
@@ -50,7 +50,7 @@ def run_schedules(now=None):
                     continue
                 in_maintenance = Compute.objects.filter(pk=vm.compute_id, maintenance_since__isnull=False).exists()
                 if not open_:
-                    _record(policy, vm, day, BackupRun.SKIPPED, IN_MAINTENANCE if in_maintenance else NOT_STARTED)
+                    _record(policy, vm, day, BackupRun.SKIPPED, say(IN_MAINTENANCE if in_maintenance else NOT_STARTED))
                 elif not in_maintenance:  # deferred while the window lasts
                     due.setdefault(vm.compute_id, []).append((policy.pk, vm.pk, day, start))
     for compute_id, items in due.items():
@@ -75,9 +75,9 @@ def occurrences(policy, now):
             yield day, start
 
 
-def _record(policy, vm, day, state, note="", operation=None):
+def _record(policy, vm, day, state, note=(), operation=None):
     BackupRun.objects.get_or_create(policy=policy, instance=vm, day=day,
-                                    defaults={"state": state, "note": note[:255], "operation": operation})
+                                    defaults={"state": state, "note": list(note), "operation": operation})
 
 
 def _active_superuser(user):
@@ -106,7 +106,7 @@ def _submit(policy_id, vm_id, day, start):
     if Compute.objects.filter(pk=vm.compute_id, maintenance_since__isnull=False).exists():
         return
     if not _active_superuser(policy.owner):
-        _record(policy, vm, day, BackupRun.FAILED, NO_OWNER)
+        _record(policy, vm, day, BackupRun.FAILED, say(NO_OWNER))
         return
     # the same key for the same run: a worker stopped before the row was written gets the same job back
     key = f"bk-{policy.pk}-{vm.pk}-{day:%Y%m%d}"
@@ -117,7 +117,7 @@ def _submit(policy_id, vm_id, day, start):
     except (claims.Busy, ConnectionFailed):
         return
     except (libvirtError, PermissionDenied, jobs.SubmissionConflict) as err:  # it would be refused again
-        _record(policy, vm, day, BackupRun.FAILED, safe_text(str(err) or type(err).__name__))
+        _record(policy, vm, day, BackupRun.FAILED, said(err) if str(err) else say(type(err).__name__))
         return
     except Exception as err:
         logger.error("schedule %s: backup of %s not submitted: %s", policy.name, vm.name, safe_text(err))
