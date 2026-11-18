@@ -163,18 +163,19 @@ class wvmBackup(wvmInstance):
                 vol = None  # in no pool: counted by its own size only
         return total
 
-    def checkpoint_usable(self, name, devs):
-        """Whether the checkpoint name can be an incremental backup's base:
-        on this host, with a bitmap of known size for each disk of devs
-        (libvirt leaves the size out for a lost or invalid bitmap)."""
+    def checkpoint_sizes(self, name, devs):
+        """The bytes each disk of devs changed since the checkpoint name,
+        {dev: size}, or None when it cannot be an incremental backup's base:
+        not on this host, or a disk without a bitmap of known size (libvirt
+        leaves the size out for a lost or invalid bitmap)."""
         try:
             xml = self.instance.checkpointLookupByName(name).getXMLDesc(libvirt.VIR_DOMAIN_CHECKPOINT_XML_SIZE)
         except libvirt.libvirtError as err:
             if err.get_error_code() != libvirt.VIR_ERR_NO_DOMAIN_CHECKPOINT:
                 raise
-            return False
-        sized = set(etree.fromstring(xml).xpath("disks/disk[@checkpoint='bitmap' and @size]/@name"))
-        return set(devs) <= sized
+            return None
+        sizes = {d.get("name"): int(d.get("size")) for d in etree.fromstring(xml).xpath("disks/disk[@checkpoint='bitmap' and @size]")}
+        return {dev: sizes[dev] for dev in devs} if set(devs) <= set(sizes) else None
 
     def prune_checkpoints(self, keep, known, devs):
         """Deletes the backups' checkpoints (wvc-) of a running VM but those

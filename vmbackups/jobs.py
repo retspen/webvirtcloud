@@ -131,8 +131,8 @@ def _check_state(proxy, frozen):
 
 
 def _checked(op):
-    """In the worker, before anything is made: the VM, its target pool (the
-    one registered) and the space for its disks."""
+    """In the worker, before anything is made: the VM and its target pool
+    (the one registered)."""
     instance = _instance(op.params["instance"])
     target = BackupTarget.objects.get(pk=op.params["target"])
     _may_use(op.user, instance, target)  # again: rights may have changed since the job was queued
@@ -143,7 +143,6 @@ def _checked(op):
     pool = target_pool(proxy, row.pool, row.pool_uuid)
     plan = proxy.backup_plan()
     _check_state(proxy, op.params["frozen"])
-    check_target_space(pool, plan["disks"], **_free_space())
     # the target claim admits one backup at a time: this check counts every other one of the user's
     _backup_quota(op.user, _estimate(plan))
     return instance, target, row, proxy, pool, plan
@@ -188,10 +187,11 @@ def _nvram(op, proxy):
 
 
 def _chain_parent(policy, instance, target, plan, proxy, pool):
-    """The backup a scheduled backup of the VM builds on, or None for a full
-    one: the schedule's newest ready backup with a checkpoint, in a chain
-    shorter than full_every, of the same disks, every file of its chain in
-    the target, and its checkpoint's bitmaps whole on the VM."""
+    """The backup a scheduled backup of the VM builds on and the bytes each
+    disk changed since, or (None, None) for a full one: the schedule's
+    newest ready backup with a checkpoint, in a chain shorter than
+    full_every, of the same disks, every file of its chain in the target,
+    and its checkpoint's bitmaps whole on the VM."""
     last = (Backup.objects.filter(instance=instance, policy=policy, target=target, state=Backup.READY)
             .exclude(checkpoint="").order_by("-created_at").first())
     chain, backup = [], last
@@ -199,17 +199,18 @@ def _chain_parent(policy, instance, target, plan, proxy, pool):
         chain.append(backup)
         backup = backup.parent
     if not chain or len(chain) >= policy.full_every or any(b.state != Backup.READY for b in chain):
-        return None
+        return None, None
     if chain[-1].manifest.get("parent"):  # its base's row is gone: the chain cannot be read whole
-        return None
+        return None, None
     devs = sorted(d["dev"] for d in plan["disks"])
     if sorted(last.files.filter(role=BackupFile.DISK).values_list("dev", flat=True)) != devs:
-        return None
+        return None, None
     pool.refresh(0)
     files = set(BackupFile.objects.filter(backup__in=chain, role=BackupFile.DISK).values_list("volume", flat=True))
     if not files <= set(pool.listVolumes()):
-        return None
-    return last if proxy.checkpoint_usable(last.checkpoint, devs) else None
+        return None, None
+    sizes = proxy.checkpoint_sizes(last.checkpoint, devs)
+    return (last, sizes) if sizes is not None else (None, None)
 
 
 def _prune_checkpoints(op, proxy, plan):
@@ -349,7 +350,10 @@ class CreateBackup(Kind):
         # a running VM's scheduled backup makes a checkpoint the next one builds on (bitmaps need qcow2 disks)
         checkpoint = (f"wvc-{op.intent['backup']}" if live and policy and policy.full_every > 1
                       and all(d["format"] == "qcow2" for d in plan["disks"]) else "")
-        parent = _chain_parent(policy, instance, target, plan, proxy, pool) if checkpoint else None
+        parent, changed = _chain_parent(policy, instance, target, plan, proxy, pool) if checkpoint else (None, None)
+        # an incremental backup copies the blocks changed since its parent only
+        check_target_space(pool, [{"capacity": size} for size in changed.values()] if parent else plan["disks"],
+                           **_free_space())
         backing = {f.dev: f.volume for f in parent.files.filter(role=BackupFile.DISK)} if parent else {}
         ctx.record_intent(live=live, plan=plan, names=names, pool=row.pool, pool_uuid=row.pool_uuid,
                           consistency=Backup.OFFLINE if not live else Backup.CRASH, checkpoint=checkpoint,

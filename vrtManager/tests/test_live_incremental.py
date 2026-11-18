@@ -82,7 +82,7 @@ class LiveIncrementalTestCase(SimpleTestCase):
             self.write(dom, "0xdd", offset * MIB)
         self.backup(proxy, NAME + "-full.qcow2", checkpoint="wvc-1")
         self.write(dom, "0xbb", 2 * MIB)
-        self.assertTrue(proxy.checkpoint_usable("wvc-1", ["vda"]))
+        self.assertGreaterEqual(proxy.checkpoint_sizes("wvc-1", ["vda"])["vda"], MIB)  # the block written since
         self.backup(proxy, NAME + "-inc1.qcow2", incremental="wvc-1", checkpoint="wvc-2", backing=NAME + "-full.qcow2")
         self.write(dom, "0xcc", 4 * MIB)
         self.backup(proxy, NAME + "-inc2.qcow2", incremental="wvc-2", checkpoint="wvc-3", backing=NAME + "-inc1.qcow2")
@@ -111,7 +111,7 @@ class LiveIncrementalTestCase(SimpleTestCase):
 
         # after a migration the checkpoint's record is gone, its bitmap is not: the pruning finds it
         dom.checkpointLookupByName("wvc-3").delete(libvirt.VIR_DOMAIN_CHECKPOINT_DELETE_METADATA_ONLY)
-        self.assertFalse(proxy.checkpoint_usable("wvc-3", ["vda"]))
+        self.assertIsNone(proxy.checkpoint_sizes("wvc-3", ["vda"]))
         proxy.prune_checkpoints(keep=set(), known={"wvc-3": 3}, devs=["vda"])
         nodes = json.loads(libvirt_qemu.qemuMonitorCommand(
             dom, json.dumps({"execute": "query-named-block-nodes", "arguments": {"flat": True}}), 0))["return"]

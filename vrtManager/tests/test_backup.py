@@ -496,15 +496,15 @@ class CheckpointTestCase(unittest.TestCase):
         self.deleted.append((name, flags))
         checkpoints.pop(name)
 
-    def test_a_checkpoint_is_usable_only_with_a_size_for_every_disk(self):
+    def test_a_checkpoint_has_sizes_only_with_one_for_every_disk(self):
         sized = ("<domaincheckpoint><disks><disk name='vda' checkpoint='bitmap' size='0'/>"
                  "<disk name='vdb' checkpoint='bitmap' size='4096'/></disks></domaincheckpoint>")
         lost = sized.replace(" size='4096'", "")  # libvirt leaves size out for a lost or invalid bitmap
         p = self.proxy({"wvc-a": sized, "wvc-b": lost})
-        self.assertTrue(p.checkpoint_usable("wvc-a", ["vda", "vdb"]))
-        self.assertFalse(p.checkpoint_usable("wvc-b", ["vda", "vdb"]))
-        self.assertFalse(p.checkpoint_usable("wvc-a", ["vda", "vdb", "vdc"]))
-        self.assertFalse(p.checkpoint_usable("wvc-x", ["vda"]))  # not on this host (after a migration)
+        self.assertEqual(p.checkpoint_sizes("wvc-a", ["vda", "vdb"]), {"vda": 0, "vdb": 4096})
+        self.assertIsNone(p.checkpoint_sizes("wvc-b", ["vda", "vdb"]))
+        self.assertIsNone(p.checkpoint_sizes("wvc-a", ["vda", "vdb", "vdc"]))
+        self.assertIsNone(p.checkpoint_sizes("wvc-x", ["vda"]))  # not on this host (after a migration)
         p.instance.checkpointLookupByName("wvc-a").getXMLDesc.assert_called_with(libvirt.VIR_DOMAIN_CHECKPOINT_XML_SIZE)
 
     def test_pruning_keeps_the_anchors_and_removes_orphan_bitmaps(self):

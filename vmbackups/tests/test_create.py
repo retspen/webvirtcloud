@@ -23,6 +23,7 @@ from vmbackups.models import Backup, BackupFile, BackupTarget, BackupTargetPool
 from vrtManager.util import OperationError
 
 GIB = 1024**3
+MIB = 1024**2
 WORKER = "wvc-test:1:a"
 NVRAM = "/var/lib/libvirt/qemu/nvram/vm1_VARS.fd"
 
@@ -494,7 +495,7 @@ class CreateBackupTests(TransactionTestCase):
                                       format="qcow2", capacity=GIB)
         self.pool.listVolumes.return_value = [f.volume for f in BackupFile.objects.all()]
         self.proxy.get_status.return_value = libvirt.VIR_DOMAIN_RUNNING
-        self.proxy.checkpoint_usable.return_value = True
+        self.proxy.checkpoint_sizes.return_value = {"vda": MIB}
         return parent
 
     def scheduled(self):
@@ -514,12 +515,25 @@ class CreateBackupTests(TransactionTestCase):
         self.assertEqual(self.proxy.make_live_targets.call_args.kwargs["backing"], {"vda": f"{parent.prefix}-vda.qcow2"})
         self.assertEqual(self.proxy.begin_clone_backup.call_args.kwargs,
                          {"incremental": parent.checkpoint, "checkpoint": backup.checkpoint})
-        self.proxy.checkpoint_usable.assert_called_with(parent.checkpoint, ["vda"])
+        self.proxy.checkpoint_sizes.assert_called_with(parent.checkpoint, ["vda"])
         self.assertEqual((backup.manifest["parent"], backup.manifest["checkpoint"]), (str(parent.uuid), backup.checkpoint))
         # the checkpoints pruned before the backup began: the anchor stays
         keep = self.proxy.prune_checkpoints.call_args.kwargs["keep"]
         self.assertEqual(keep, {parent.checkpoint})
         self.assertIn(parent.checkpoint, self.proxy.prune_checkpoints.call_args.kwargs["known"])
+
+    def test_an_incremental_backup_needs_room_for_the_changed_data_only(self):
+        parent = self.chain()
+        self.pool.info.return_value = [2, 100 * GIB, 0, GIB + GIB // 2]  # less than the disk's capacity and margin
+        op = self.scheduled()
+        self.run_job(op)
+        self.assertEqual(self.backup(op).parent, parent)
+        from operations.models import Claim
+
+        Claim.objects.all().delete()
+        self.proxy.checkpoint_sizes.return_value = None  # a full backup then: it needs the disk's capacity
+        with self.assertRaisesMessage(OperationError, "the backup needs"):
+            self.run_job(self.scheduled())
 
     def test_a_chain_as_long_as_full_every_starts_again(self):
         self.chain(full_every=3, links=3)
@@ -533,7 +547,7 @@ class CreateBackupTests(TransactionTestCase):
 
     def test_a_base_that_cannot_be_used_gives_a_full_backup(self):
         for name, broken in (
-            ("lost bitmap", lambda: setattr(self.proxy.checkpoint_usable, "return_value", False)),
+            ("lost bitmap", lambda: setattr(self.proxy.checkpoint_sizes, "return_value", None)),
             ("file gone", lambda: setattr(self.pool.listVolumes, "return_value", [])),
             ("disk added", lambda: self.proxy.backup_plan.return_value["disks"].append(
                 {"dev": "vdb", "path": "/pool/b.qcow2", "pool": "default", "format": "qcow2", "capacity": GIB})),
