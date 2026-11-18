@@ -21,7 +21,7 @@
             {% for policy in policies %}
                 <tr>
                     <td><a href="{% url 'vmbackups:policy' policy.id %}">{{ policy.name }}</a></td>
-                    <td>{% if policy.compute %}{% blocktrans with compute=policy.compute.name %}Every VM of {{ compute }}{% endblocktrans %}{% else %}{% blocktrans count counter=policy.vm_count %}{{ counter }} VM{% plural %}{{ counter }} VMs{% endblocktrans %}{% endif %}</td>
+                    <td>{% if policy.compute %}{% blocktrans with compute=policy.compute.name %}Every VM of {{ compute }}{% endblocktrans %}{% elif policy.tag %}{% blocktrans with tag=policy.tag.name %}VMs tagged {{ tag }}{% endblocktrans %}{% else %}{% blocktrans count counter=policy.vm_count %}{{ counter }} VM{% plural %}{{ counter }} VMs{% endblocktrans %}{% endif %}</td>
                     <td>{{ policy.target.name }}</td>
                     <td>{{ policy.time|time:"H:i" }}</td>
                     <td class="text-end">{{ policy.keep }}</td>

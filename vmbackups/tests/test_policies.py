@@ -8,7 +8,7 @@ from django.test import TestCase
 from django.urls import reverse
 from lxml import html as lxml_html
 
-from computes.models import Compute
+from computes.models import Compute, Tag
 from instances.models import Instance
 from instances.tests.test_page_controls import PageControls
 from logs.models import Logs
@@ -46,12 +46,21 @@ class PolicyPageTests(TestCase):
         self.post(compute=self.c1.pk)
         self.assertEqual(BackupPolicy.objects.get().compute, self.c1)
 
-    def test_compute_or_vms_not_both_nor_neither(self):
-        for fields in ({}, {"compute": self.c1.pk, "instances": [self.vm1.pk]}):
+    def test_a_schedule_of_a_tag(self):
+        prod = Tag.objects.create(name="prod")
+        self.vm1.tags.add(prod)
+        self.post(tag=prod.pk)
+        self.assertEqual(BackupPolicy.objects.get().tag, prod)
+        self.assertContains(self.client.get(reverse("vmbackups:policies")), "VMs tagged prod")
+
+    def test_compute_vms_or_tag_one_only(self):
+        prod = Tag.objects.create(name="prod")
+        for fields in ({}, {"compute": self.c1.pk, "instances": [self.vm1.pk]}, {"compute": self.c1.pk, "tag": prod.pk},
+                       {"instances": [self.vm1.pk], "tag": prod.pk}):
             with self.subTest(fields):
                 response = self.post(**fields)
                 self.assertEqual(response.status_code, 200)
-                self.assertContains(response, "Choose a compute or VMs")
+                self.assertContains(response, "Choose a compute, VMs or a tag: one of them")
         self.assertFalse(BackupPolicy.objects.exists())
 
     def test_vms_on_a_host_without_the_target_are_refused(self):
@@ -59,6 +68,9 @@ class PolicyPageTests(TestCase):
         self.assertContains(response, "has no storage pool on h2")
         response = self.post(compute=self.c2.pk)
         self.assertContains(response, "has no storage pool on h2")
+        prod = Tag.objects.create(name="prod")
+        self.vm3.tags.add(prod)
+        self.assertContains(self.post(tag=prod.pk), "has no storage pool on h2")  # the tag's VMs now
         self.assertFalse(BackupPolicy.objects.exists())
 
     def test_the_list_leads_to_the_new_schedule_page(self):
@@ -151,8 +163,12 @@ class PolicyTabTests(PageControls, TestCase):
         chosen.instances.add(self.instance)
         BackupPolicy.objects.create(name="whole-host", target=target, compute=self.compute, time=datetime.time(3), keep=2,
                                     owner=admin)
+        prod = Tag.objects.create(name="prod")
+        self.instance.tags.add(prod)
+        BackupPolicy.objects.create(name="tagged", target=target, tag=prod, time=datetime.time(4), keep=2, owner=admin)
         with patch("vmbackups.utils.wvmBackup"):
             self.controls(admin)
         tab = lxml_html.fromstring(self.last_page).xpath("string(//div[@id='backups'])")
         self.assertIn("chosen", tab)
         self.assertIn("whole-host", tab)
+        self.assertIn("tagged", tab)

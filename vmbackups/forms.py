@@ -72,14 +72,14 @@ class RestoreDiskForm(forms.Form):
 
 
 class PolicyForm(forms.ModelForm):
-    """A backup schedule: a compute's VMs or chosen VMs, all on hosts that
-    have a pool of its target."""
+    """A backup schedule: a compute's VMs, chosen VMs or a tag's VMs, all on
+    hosts that have a pool of its target (a tag's: those that have it now)."""
 
     class Meta:
         model = BackupPolicy
-        fields = ["name", "target", "compute", "instances", "time", "keep", "full_every", "frozen", "enabled"]
+        fields = ["name", "target", "compute", "instances", "tag", "time", "keep", "full_every", "frozen", "enabled"]
         labels = {"name": _("Name"), "target": _("Backup target"), "compute": _("Every VM of a compute"),
-                  "instances": _("Or these VMs"), "time": _("Daily at"), "keep": _("Backups kept per VM"),
+                  "instances": _("Or these VMs"), "tag": _("Or every VM with a tag"), "time": _("Daily at"), "keep": _("Backups kept per VM"),
                   "full_every": _("A full backup every N backups"),
                   "frozen": _("Require frozen file systems"), "enabled": _("Enabled")}
         widgets = {"time": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
@@ -98,11 +98,16 @@ class PolicyForm(forms.ModelForm):
 
     def clean(self):
         data = super().clean()
-        compute, vms, target = data.get("compute"), data.get("instances"), data.get("target")
-        if bool(compute) == bool(vms):
-            raise forms.ValidationError(_("Choose a compute or VMs, not both"))
+        compute, vms, tag, target = data.get("compute"), data.get("instances"), data.get("tag"), data.get("target")
+        if [bool(compute), bool(vms), bool(tag)].count(True) != 1:
+            raise forms.ValidationError(_("Choose a compute, VMs or a tag: one of them"))
         if target is not None:
-            hosts = {compute} if compute else {vm.compute for vm in vms}
+            if compute:
+                hosts = {compute}
+            elif tag:
+                hosts = {vm.compute for vm in tag.instances.filter(is_template=False).select_related("compute")}
+            else:
+                hosts = {vm.compute for vm in vms}
             for host in sorted(hosts, key=lambda c: c.name):
                 if target.pool_on(host) is None:
                     raise forms.ValidationError(_("Backup target %(target)s has no storage pool on %(compute)s"),

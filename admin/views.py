@@ -505,6 +505,12 @@ def tag_update(request, pk):
 @superuser_only
 def tag_delete(request, pk):
     tag = get_object_or_404(Tag, pk=pk)
+    schedules = list(tag.backup_policies.values_list("name", flat=True))
+    if schedules:  # it would back up nothing (models.PROTECT)
+        messages.error(request, ngettext("The backup schedule %(schedules)s backs up its VMs: change it first",
+                                         "The backup schedules %(schedules)s back up its VMs: change them first",
+                                         len(schedules)) % {"schedules": ", ".join(schedules)})
+        return redirect("admin:tag_list")
     if request.method == "POST":
         with audit(request, None, f"Tag {tag.name}", "delete"), transaction.atomic():
             lock_ownership()

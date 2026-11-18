@@ -61,6 +61,16 @@ class TagAdminTests(TestCase):
         self.client.post(reverse("admin:tag_update", args=[self.prod.pk]), {"name": "PROD"})
         self.assertEqual(self.messages(), [])
 
+    def test_a_tag_a_backup_schedule_uses_is_kept(self):
+        import datetime
+        from vmbackups.models import BackupPolicy, BackupTarget
+        BackupPolicy.objects.create(name="nightly", target=BackupTarget.objects.create(name="nfs"), tag=self.prod,
+                                    time=datetime.time(2), keep=3)
+        response = self.client.post(reverse("admin:tag_delete", args=[self.prod.pk]), follow=True)
+        self.assertContains(response, "The backup schedule nightly backs up its VMs")
+        self.assertTrue(Tag.objects.filter(name="prod").exists())
+        self.assertEqual(self.messages(), [])
+
     def test_only_superusers(self):
         self.client.force_login(User.objects.create_user("tg-user", password="pw"))
         for url in (reverse("admin:tag_list"), reverse("admin:tag_update", args=[self.prod.pk]),

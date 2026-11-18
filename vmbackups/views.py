@@ -311,7 +311,7 @@ def restore_disk(request, uuid):
 @superuser_only
 def policies(request):
     """The backup schedules."""
-    rows = BackupPolicy.objects.select_related("target", "compute", "owner").annotate(vm_count=Count("instances"))
+    rows = BackupPolicy.objects.select_related("target", "compute", "tag", "owner").annotate(vm_count=Count("instances"))
     return render(request, "vmbackups/policies.html", {"policies": rows.order_by("name")})
 
 

@@ -5,8 +5,9 @@
     {% bootstrap_field form.name %}
     {% bootstrap_field form.target %}
     <div class="row g-2">
-        <div class="col-md-5">{% bootstrap_field form.compute %}</div>
-        <div class="col-md-7">{% bootstrap_field form.instances %}</div>
+        <div class="col-md-4">{% bootstrap_field form.compute %}</div>
+        <div class="col-md-5">{% bootstrap_field form.instances %}</div>
+        <div class="col-md-3">{% bootstrap_field form.tag %}</div>
     </div>
     <div class="row g-2">
         <div class="col-sm-6">{% blocktrans asvar zone_help %}Time zone: {{ time_zone }}{% endblocktrans %}{% bootstrap_field form.time help_text=zone_help %}</div>

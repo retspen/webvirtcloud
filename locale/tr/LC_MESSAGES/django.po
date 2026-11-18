@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 18:18+0000\n"
+"POT-Creation-Date: 2026-11-18 18:30+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -329,7 +329,7 @@ msgstr "Burada oturumunuz açık kalır; diğer oturumlarınız kapanır."
 #: templates/common/confirm_delete.html:25 templates/common/form.html:27
 #: virtsecrets/templates/create_secret_block.html:48
 #: virtsecrets/templates/secrets.html:106
-#: vmbackups/templates/vmbackups/policy_form.html:22
+#: vmbackups/templates/vmbackups/policy_form.html:23
 #: vmbackups/templates/vmbackups/target_new.html:18
 msgid "Cancel"
 msgstr "İptal"
@@ -1328,24 +1328,36 @@ msgstr ""
 msgid "Rename tag %(tag)s"
 msgstr "%(tag)s etiketini yeniden adlandır"
 
-#: admin/views.py:513
+#: admin/views.py:510
+#, python-format
+msgid "The backup schedule %(schedules)s backs up its VMs: change it first"
+msgid_plural ""
+"The backup schedules %(schedules)s back up its VMs: change them first"
+msgstr[0] ""
+"%(schedules)s yedekleme zamanlaması bu etiketin sanal makinelerini "
+"yedekliyor: önce onu değiştirin"
+msgstr[1] ""
+"%(schedules)s yedekleme zamanlamaları bu etiketin sanal makinelerini "
+"yedekliyor: önce onları değiştirin"
+
+#: admin/views.py:519
 #, python-format
 msgid "Tag %(tag)s deleted"
 msgstr "%(tag)s etiketi silindi"
 
-#: admin/views.py:518
+#: admin/views.py:524
 #, python-format
 msgid "It is taken off %(vms)s and %(hosts)s."
 msgstr "%(vms)s ve %(hosts)s üzerinden kaldırılır."
 
-#: admin/views.py:519
+#: admin/views.py:525
 #, python-format
 msgid "%(count)s VM"
 msgid_plural "%(count)s VMs"
 msgstr[0] "%(count)s sanal makine"
 msgstr[1] "%(count)s sanal makine"
 
-#: admin/views.py:520
+#: admin/views.py:526
 #, python-format
 msgid "%(count)s host"
 msgid_plural "%(count)s hosts"
@@ -2601,7 +2613,7 @@ msgstr "hiçbiri"
 #: networks/templates/network.html:337 networks/templates/network.html:379
 #: networks/templates/network.html:406 networks/templates/network.html:445
 #: nwfilters/templates/nwfilter.html:157 templates/common/form.html:28
-#: vmbackups/templates/vmbackups/policy_form.html:21
+#: vmbackups/templates/vmbackups/policy_form.html:22
 msgid "Save"
 msgstr "Kaydet"
 
@@ -9905,6 +9917,10 @@ msgstr "Bir sunucunun bütün sanal makineleri"
 msgid "Or these VMs"
 msgstr "Ya da bu sanal makineler"
 
+#: vmbackups/forms.py:82
+msgid "Or every VM with a tag"
+msgstr "Ya da bir etiketin bütün sanal makineleri"
+
 #: vmbackups/forms.py:82 vmbackups/templates/vmbackups/policies.html:17
 msgid "Daily at"
 msgstr "Her gün saat"
@@ -9934,15 +9950,15 @@ msgstr ""
 "kopyalar (qcow2 diskli, çalışan VM'ler)."
 
 #: vmbackups/forms.py:103
-msgid "Choose a compute or VMs, not both"
-msgstr "Bir sunucu ya da sanal makineler seçin, ikisini birden değil"
+msgid "Choose a compute, VMs or a tag: one of them"
+msgstr "Bir sunucu, sanal makineler ya da bir etiket seçin: yalnız birini"
 
-#: vmbackups/forms.py:108 vmbackups/jobs.py:113
+#: vmbackups/forms.py:113 vmbackups/jobs.py:113
 #, python-format
 msgid "Backup target %(target)s has no storage pool on %(compute)s"
 msgstr "%(target)s yedek hedefinin %(compute)s üzerinde depolama havuzu yok"
 
-#: vmbackups/forms.py:115
+#: vmbackups/forms.py:120
 msgid "Keep one backup at least"
 msgstr "En az bir yedek tutun"
 
@@ -10449,6 +10465,11 @@ msgstr "Tam yedek"
 msgid "Every VM of %(compute)s"
 msgstr "%(compute)s üzerindeki bütün sanal makineler"
 
+#: vmbackups/templates/vmbackups/policies.html:24
+#, python-format
+msgid "VMs tagged %(tag)s"
+msgstr "%(tag)s etiketli sanal makineler"
+
 #: vmbackups/templates/vmbackups/policies.html:28
 msgid "Every backup"
 msgstr "Her yedek"
@@ -10508,12 +10529,12 @@ msgstr "Atlandı"
 msgid "No run yet."
 msgstr "Henüz çalışma yok."
 
-#: vmbackups/templates/vmbackups/policy_form.html:12
+#: vmbackups/templates/vmbackups/policy_form.html:13
 #, python-format
 msgid "Time zone: %(time_zone)s"
 msgstr "Saat dilimi: %(time_zone)s"
 
-#: vmbackups/templates/vmbackups/policy_form.html:20
+#: vmbackups/templates/vmbackups/policy_form.html:21
 msgid ""
 "Each VM is backed up once a day, starting at the time; a VM that has not "
 "started within 6 hours waits for the next day. Older backups of each VM "

@@ -40,5 +40,17 @@ class PolicyModelTests(TestCase):
                                             keep=3, owner=self.admin)
         self.assertEqual([vm.name for vm in whole.vms()], ["vm1", "vm2"])  # the compute's VMs now, no template
 
+    def test_the_vms_of_a_tag_s_policy(self):
+        from computes.models import Tag
+        prod = Tag.objects.create(name="prod")
+        self.vm.tags.add(prod)
+        Instance.objects.create(compute=self.compute, name="tpl", uuid="61616161-0000-4000-8000-000000000004",
+                                is_template=True).tags.add(prod)
+        tagged = BackupPolicy.objects.create(name="prod", target=self.target, tag=prod, time=datetime.time(3), keep=3,
+                                             owner=self.admin)
+        self.assertEqual([vm.name for vm in tagged.vms()], ["vm1"])
+        Instance.objects.create(compute=self.compute, name="vm0", uuid="61616161-0000-4000-8000-000000000005").tags.add(prod)
+        self.assertEqual([vm.name for vm in tagged.vms()], ["vm0", "vm1"])  # the VMs with it now
+
     def test_missing_state(self):
         self.assertIn(Backup.MISSING, dict(Backup.STATES))

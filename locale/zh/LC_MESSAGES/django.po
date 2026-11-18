@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 18:18+0000\n"
+"POT-Creation-Date: 2026-11-18 18:30+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -324,7 +324,7 @@ msgstr "您在此处保持登录；您的其他会话将结束。"
 #: templates/common/confirm_delete.html:25 templates/common/form.html:27
 #: virtsecrets/templates/create_secret_block.html:48
 #: virtsecrets/templates/secrets.html:106
-#: vmbackups/templates/vmbackups/policy_form.html:22
+#: vmbackups/templates/vmbackups/policy_form.html:23
 #: vmbackups/templates/vmbackups/target_new.html:18
 msgid "Cancel"
 msgstr "取消"
@@ -1286,23 +1286,30 @@ msgstr "若其 UUID 再次出现，其所有者将不再恢复对该虚拟机的
 msgid "Rename tag %(tag)s"
 msgstr "重命名标签 %(tag)s"
 
-#: admin/views.py:513
+#: admin/views.py:510
+#, python-format
+msgid "The backup schedule %(schedules)s backs up its VMs: change it first"
+msgid_plural ""
+"The backup schedules %(schedules)s back up its VMs: change them first"
+msgstr[0] "备份计划 %(schedules)s 正在备份该标签的虚拟机：请先修改计划"
+
+#: admin/views.py:519
 #, python-format
 msgid "Tag %(tag)s deleted"
 msgstr "标签 %(tag)s 已删除"
 
-#: admin/views.py:518
+#: admin/views.py:524
 #, python-format
 msgid "It is taken off %(vms)s and %(hosts)s."
 msgstr "它将从 %(vms)s 和 %(hosts)s 上移除。"
 
-#: admin/views.py:519
+#: admin/views.py:525
 #, python-format
 msgid "%(count)s VM"
 msgid_plural "%(count)s VMs"
 msgstr[0] "%(count)s 个虚拟机"
 
-#: admin/views.py:520
+#: admin/views.py:526
 #, python-format
 msgid "%(count)s host"
 msgid_plural "%(count)s hosts"
@@ -2483,7 +2490,7 @@ msgstr "无"
 #: networks/templates/network.html:337 networks/templates/network.html:379
 #: networks/templates/network.html:406 networks/templates/network.html:445
 #: nwfilters/templates/nwfilter.html:157 templates/common/form.html:28
-#: vmbackups/templates/vmbackups/policy_form.html:21
+#: vmbackups/templates/vmbackups/policy_form.html:22
 msgid "Save"
 msgstr "保存"
 
@@ -9336,6 +9343,10 @@ msgstr "某计算节点的所有虚拟机"
 msgid "Or these VMs"
 msgstr "或这些虚拟机"
 
+#: vmbackups/forms.py:82
+msgid "Or every VM with a tag"
+msgstr "或带某个标签的所有虚拟机"
+
 #: vmbackups/forms.py:82 vmbackups/templates/vmbackups/policies.html:17
 msgid "Daily at"
 msgstr "每天时间"
@@ -9363,15 +9374,15 @@ msgid ""
 msgstr "1：每次备份都是完整备份。大于 1 时，中间的备份只复制变化的部分（适用于使用 qcow2 磁盘的运行中虚拟机）。"
 
 #: vmbackups/forms.py:103
-msgid "Choose a compute or VMs, not both"
-msgstr "请选择一个计算节点或若干虚拟机，不能同时选择"
+msgid "Choose a compute, VMs or a tag: one of them"
+msgstr "选择一个计算节点、若干虚拟机或一个标签：只选其一"
 
-#: vmbackups/forms.py:108 vmbackups/jobs.py:113
+#: vmbackups/forms.py:113 vmbackups/jobs.py:113
 #, python-format
 msgid "Backup target %(target)s has no storage pool on %(compute)s"
 msgstr "备份目标 %(target)s 在 %(compute)s 上没有存储池"
 
-#: vmbackups/forms.py:115
+#: vmbackups/forms.py:120
 msgid "Keep one backup at least"
 msgstr "至少保留一个备份"
 
@@ -9840,6 +9851,11 @@ msgstr "完整备份"
 msgid "Every VM of %(compute)s"
 msgstr "%(compute)s 的所有虚拟机"
 
+#: vmbackups/templates/vmbackups/policies.html:24
+#, python-format
+msgid "VMs tagged %(tag)s"
+msgstr "带 %(tag)s 标签的虚拟机"
+
 #: vmbackups/templates/vmbackups/policies.html:28
 msgid "Every backup"
 msgstr "每次备份"
@@ -9897,12 +9913,12 @@ msgstr "已跳过"
 msgid "No run yet."
 msgstr "还没有运行记录。"
 
-#: vmbackups/templates/vmbackups/policy_form.html:12
+#: vmbackups/templates/vmbackups/policy_form.html:13
 #, python-format
 msgid "Time zone: %(time_zone)s"
 msgstr "时区：%(time_zone)s"
 
-#: vmbackups/templates/vmbackups/policy_form.html:20
+#: vmbackups/templates/vmbackups/policy_form.html:21
 msgid ""
 "Each VM is backed up once a day, starting at the time; a VM that has not "
 "started within 6 hours waits for the next day. Older backups of each VM "

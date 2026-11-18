@@ -71,6 +71,6 @@ def vm_tab(instance, user):
         except libvirtError as err:
             problem = str(err)
     schedules = [] if owner else BackupPolicy.objects.filter(
-        Q(instances=instance) | Q(compute=instance.compute_id)).distinct().order_by("name")
+        Q(instances=instance) | Q(compute=instance.compute_id) | Q(tag__instances=instance)).distinct().order_by("name")
     return {"rows": rows, "targets": targets, "problem": problem, "schedules": schedules,
             "pending_deletes": pending_deletes()}

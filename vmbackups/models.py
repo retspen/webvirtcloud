@@ -4,7 +4,7 @@ import uuid
 from django.conf import settings
 from django.db import models
 
-from computes.models import Compute
+from computes.models import Compute, Tag
 from instances.models import Instance
 from operations.models import Operation
 from vrtManager.backup import backup_prefix
@@ -40,7 +40,7 @@ class BackupTargetPool(models.Model):
 
 
 class BackupPolicy(models.Model):
-    """A schedule: its VMs (those chosen, or every VM of a compute) backed
+    """A schedule: its VMs (those chosen, every VM of a compute, or every VM with a tag) backed
     up into its target once a day at its time, the newest keep of each VM
     kept. Its jobs run as its owner, a superuser."""
 
@@ -48,6 +48,8 @@ class BackupPolicy(models.Model):
     target = models.ForeignKey(BackupTarget, on_delete=models.PROTECT, related_name="policies")
     compute = models.ForeignKey(Compute, on_delete=models.CASCADE, null=True, blank=True)
     instances = models.ManyToManyField(Instance, blank=True, related_name="backup_policies")
+    # a tag a schedule backs up is not deleted: the schedule would back up nothing
+    tag = models.ForeignKey(Tag, on_delete=models.PROTECT, null=True, blank=True, related_name="backup_policies")
     time = models.TimeField()  # in the panel's time zone
     keep = models.PositiveSmallIntegerField()
     full_every = models.PositiveSmallIntegerField(default=1)  # a full backup every N; the others incremental
@@ -63,9 +65,11 @@ class BackupPolicy(models.Model):
         return self.name
 
     def vms(self):
-        """Its VMs now: a compute's are those it has at this moment, templates left out."""
+        """Its VMs now: a compute's or a tag's are those it has at this moment, templates left out."""
         if self.compute_id:
             return Instance.objects.filter(compute_id=self.compute_id, is_template=False).order_by("name")
+        if self.tag_id:
+            return Instance.objects.filter(tags=self.tag_id, is_template=False).order_by("name")
         return self.instances.select_related("compute").order_by("name")
 
 
