@@ -125,7 +125,7 @@ class CreateBackupTests(TransactionTestCase):
     def test_a_shut_off_vm_is_copied_offline(self):
         op = self.submit()
         self.assertEqual(self.run_job(op), {"backup": op.intent["backup"]})
-        prefix = f"wvc-{op.intent['backup']}"
+        prefix = f"vm1-{op.intent['backup']}"
         self.proxy.copy_disk_offline.assert_called_once_with(plan()["disks"][0], "b1", f"{prefix}-vda.qcow2", *_owner())
         self.proxy.begin_clone_backup.assert_not_called()
         self.assertEqual(self.written, [f"{prefix}-domain.xml", f"{prefix}-manifest.json"])  # the manifest last
@@ -142,7 +142,7 @@ class CreateBackupTests(TransactionTestCase):
         self.proxy.backup_plan.return_value = plan(tpm=True)
         op = self.submit()
         self.run_job(op)
-        prefix = f"wvc-{op.intent['backup']}"
+        prefix = f"vm1-{op.intent['backup']}"
         self.assertEqual(self.written, [f"{prefix}-tpm-tpm2-00.permall", f"{prefix}-domain.xml", f"{prefix}-manifest.json"])
         self.assertEqual(self.modes[f"{prefix}-tpm-tpm2-00.permall"], "0600")  # a secret
         self.assertEqual(self.modes[f"{prefix}-domain.xml"], "0600")  # its graphics passwords
@@ -161,13 +161,13 @@ class CreateBackupTests(TransactionTestCase):
     def test_a_failed_backup_removes_the_tpm_files_it_wrote(self):
         self.proxy.backup_plan.return_value = plan(tpm=True)
         op = self.submit()
-        prefix = f"wvc-{op.intent['backup']}"
-        self.pool.listVolumes.return_value = [f"{prefix}-tpm-tpm2-00.permall", "wvc-00000000-0000-4000-8000-000000000009-tpm-x"]
+        prefix = f"vm1-{op.intent['backup']}"
+        self.pool.listVolumes.return_value = [f"{prefix}-tpm-tpm2-00.permall", "vm2-00000000-0000-4000-8000-000000000009-tpm-x"]
         self.fail_on = "-domain.xml"  # once the TPM file is written
         op = self.interrupted(op)
         self.assertEqual(CreateBackup().reconcile(op).state, Operation.FAILED)
         self.assertIn(f"{prefix}-tpm-tpm2-00.permall", self.removed)
-        self.assertNotIn("wvc-00000000-0000-4000-8000-000000000009-tpm-x", self.removed)
+        self.assertNotIn("vm2-00000000-0000-4000-8000-000000000009-tpm-x", self.removed)
 
     def test_a_running_vm_is_frozen_backed_up_and_thawed(self):
         self.proxy.get_status.return_value = libvirt.VIR_DOMAIN_RUNNING
@@ -266,7 +266,7 @@ class CreateBackupTests(TransactionTestCase):
         self.proxy.read_nvram.side_effect = [b"vars", b"new", b"vars"]  # before; after, changed then back
         op = self.submit()
         self.run_job(op)
-        self.assertIn(f"wvc-{op.intent['backup']}-nvram.fd", self.written)
+        self.assertIn(f"vm1-{op.intent['backup']}-nvram.fd", self.written)
         self.assertEqual(self.backup(op).manifest["nvram"], "copied")
 
     def test_nvram_changed_across_the_copy_is_retried_then_refused(self):
@@ -278,7 +278,7 @@ class CreateBackupTests(TransactionTestCase):
         self.assertEqual(self.proxy.read_nvram.call_count, 4)  # before, then three after
         outcome = CreateBackup().reconcile(op)
         self.assertEqual(outcome.state, Operation.FAILED)
-        self.assertIn(f"wvc-{op.intent['backup']}-vda.qcow2", self.removed)
+        self.assertIn(f"vm1-{op.intent['backup']}-vda.qcow2", self.removed)
         self.assertEqual(self.backup(op).state, Backup.FAILED)
 
     def test_the_guest_shutting_down_does_not_fail_the_backup(self):
@@ -319,14 +319,14 @@ class CreateBackupTests(TransactionTestCase):
         outcome = CreateBackup().reconcile(op)
         self.assertEqual(outcome.state, Operation.FAILED)
         self.assertIn("No space left on device", outcome.error[0]["text"])
-        self.assertIn(f"wvc-{op.intent['backup']}-vda.qcow2", self.removed)
+        self.assertIn(f"vm1-{op.intent['backup']}-vda.qcow2", self.removed)
         self.assertEqual(self.backup(op).state, Backup.FAILED)
 
     def test_a_failed_push_backup_removes_the_volumes(self):
         self.proxy.get_status.return_value = libvirt.VIR_DOMAIN_RUNNING
         self.proxy.backup_result.return_value = (False, "No space left on device")
         op = self.interrupted(self.submit())
-        self.assertIn(f"wvc-{op.intent['backup']}-vda.qcow2", self.removed)
+        self.assertIn(f"vm1-{op.intent['backup']}-vda.qcow2", self.removed)
         self.assertEqual(CreateBackup().reconcile(op).state, Operation.FAILED)
 
     def live_interrupted(self):
@@ -352,7 +352,7 @@ class CreateBackupTests(TransactionTestCase):
         self.proxy.backup_result.return_value = None
         outcome = CreateBackup().reconcile(op)
         self.assertEqual(outcome.state, Operation.UNCERTAIN)
-        self.assertIn(f"wvc-{op.intent['backup']}-vda.qcow2", outcome.error[0]["values"]["volumes"])
+        self.assertIn(f"vm1-{op.intent['backup']}-vda.qcow2", outcome.error[0]["values"]["volumes"])
         self.assertEqual(self.removed, [])  # the files stay for the administrator
         self.assertEqual(self.backup(op).state, Backup.FAILED)
 
@@ -416,7 +416,7 @@ class CreateBackupTests(TransactionTestCase):
         self.proxy.backup_targets.return_value = None
         self.proxy.backup_result.return_value = (False, "operation aborted")
         self.assertEqual(CreateBackup().reconcile(op).state, Operation.CANCELLED)
-        self.assertIn(f"wvc-{op.intent['backup']}-vda.qcow2", self.removed)
+        self.assertIn(f"vm1-{op.intent['backup']}-vda.qcow2", self.removed)
 
     def test_an_offline_copy_cancelled_stops_before_its_next_disk(self):
         op = self.submit()
@@ -432,7 +432,7 @@ class CreateBackupTests(TransactionTestCase):
         with self.assertRaises(Cancelled):
             self.run_job(op)
         self.assertEqual(self.written, [])
-        self.assertIn(f"wvc-{op.intent['backup']}-vda.qcow2", self.removed)
+        self.assertIn(f"vm1-{op.intent['backup']}-vda.qcow2", self.removed)
         self.assertEqual(self.backup(op).state, Backup.FAILED)
 
     def test_a_vm_started_during_its_offline_copy_is_not_published(self):
@@ -444,7 +444,7 @@ class CreateBackupTests(TransactionTestCase):
         outcome = CreateBackup().reconcile(op)  # recovery does not publish it either
         self.assertEqual(outcome.state, Operation.FAILED)
         self.assertIn("started", str(outcome.error))
-        self.assertIn(f"wvc-{op.intent['backup']}-vda.qcow2", self.removed)
+        self.assertIn(f"vm1-{op.intent['backup']}-vda.qcow2", self.removed)
         self.assertEqual(self.backup(op).state, Backup.FAILED)
 
     def test_progress_counts_the_copied_disks(self):

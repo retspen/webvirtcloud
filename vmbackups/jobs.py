@@ -31,7 +31,7 @@ from operations.jobs import Cancelled, Kind, Outcome, Plan, register, register_p
 from operations.models import Claim, Operation
 from operations.utils import safe_text, say
 from vrtManager import util
-from vrtManager.backup import (backup_file_names, check_restore_host, check_target_space, get_file, manifest_names, put_file,
+from vrtManager.backup import (backup_file_names, backup_prefix, check_restore_host, check_target_space, get_file, manifest_names, put_file,
                                remove_files, restore_definition, restore_over_definition, target_pool, volume_exists,
                                wvmBackup)
 from vrtManager.connection import NVRAM_DIR, wvmConnect
@@ -345,7 +345,7 @@ class CreateBackup(Kind):
                                             "start"), compute=instance.compute.name)
         status = proxy.get_status()
         live = status != VIR_DOMAIN_SHUTOFF
-        names = backup_file_names(op.intent["backup"], plan["disks"], bool(plan["nvram"]))
+        names = backup_file_names(backup_prefix(instance.name, op.intent["backup"]), plan["disks"], bool(plan["nvram"]))
         # a schedule deleted since the job was queued: the backup is kept, without it
         policy = BackupPolicy.objects.filter(pk=op.params.get("policy")).first() if op.params.get("policy") else None
         # a running VM's scheduled backup makes a checkpoint the next one builds on (bitmaps need qcow2 disks)
@@ -1358,6 +1358,7 @@ class ImportBackups(Kind):
             with transaction.atomic():
                 backup = Backup.objects.create(
                     uuid=manifest["backup"], target=target, state=Backup.READY, **fields,
+                    prefix=name.removesuffix("-manifest.json"),
                     instance=Instance.objects.filter(uuid=fields["vm_uuid"]).first(),
                     manifest=manifest, finished_at=timezone.now(), size=sum(f["size"] for f in files) + len(data),
                 )

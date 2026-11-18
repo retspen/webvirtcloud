@@ -2,6 +2,7 @@
 
 import hashlib
 import os
+import re
 
 import libvirt
 from django.utils.translation import gettext_noop
@@ -213,9 +214,15 @@ class wvmBackup(wvmInstance):
                     for name in sorted(pool.listVolumes()) if not name.startswith(".")}
 
 
-def backup_file_names(uuid, disks, nvram):
-    """The names of a backup's files in the target pool, from its UUID only."""
-    prefix = f"wvc-{uuid}"
+def backup_prefix(vm_name, uuid):
+    """The start of a backup's file names in the target pool: its VM's name,
+    so the directory shows whose it is, and the backup's UUID."""
+    name = re.sub(r"[^A-Za-z0-9._-]", "_", vm_name)[:64].lstrip(".-") or "vm"
+    return f"{name}-{uuid}"
+
+
+def backup_file_names(prefix, disks, nvram):
+    """The names of a backup's files in the target pool."""
     return {
         "disks": {d["dev"]: f"{prefix}-{d['dev']}.{'qcow2' if d['format'] == 'qcow2' else 'raw'}" for d in disks},
         "nvram": f"{prefix}-nvram.fd" if nvram else None,
@@ -267,9 +274,12 @@ def volume_exists(pool, name):
     return wvmConnect._find_volume(pool, name) is not None
 
 
+MANIFEST_NAME = re.compile(r"-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-manifest\.json$")
+
+
 def manifest_names(pool):
     pool.refresh(0)
-    return sorted(name for name in pool.listVolumes() if name.startswith("wvc-") and name.endswith("-manifest.json"))
+    return sorted(name for name in pool.listVolumes() if MANIFEST_NAME.search(name))
 
 
 def set_disk_sources(tree, disks):

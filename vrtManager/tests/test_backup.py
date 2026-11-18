@@ -9,7 +9,7 @@ import libvirt
 from lxml import etree
 
 from vrtManager import util
-from vrtManager.backup import backup_file_names, check_target_space, put_file, wvmBackup
+from vrtManager.backup import backup_file_names, backup_prefix, check_target_space, manifest_names, put_file, wvmBackup
 from vrtManager.instance import PERSISTENT_XML
 
 GIB = 1024**3
@@ -208,18 +208,33 @@ class BackupPlanTestCase(unittest.TestCase):
 class FilesTestCase(unittest.TestCase):
     def test_file_names(self):
         uuid = "00000000-0000-4000-8000-000000000001"
+        prefix = backup_prefix("web-01", uuid)
+        self.assertEqual(prefix, f"web-01-{uuid}")  # whose backup it is, seen in the target's directory
         disks = [{"dev": "vda", "format": "qcow2"}, {"dev": "vdb", "format": "raw"}]
         self.assertEqual(
-            backup_file_names(uuid, disks, nvram=True),
+            backup_file_names(prefix, disks, nvram=True),
             {
-                "disks": {"vda": f"wvc-{uuid}-vda.qcow2", "vdb": f"wvc-{uuid}-vdb.raw"},
-                "nvram": f"wvc-{uuid}-nvram.fd",
-                "tpm": f"wvc-{uuid}-tpm-",
-                "domain": f"wvc-{uuid}-domain.xml",
-                "manifest": f"wvc-{uuid}-manifest.json",
+                "disks": {"vda": f"{prefix}-vda.qcow2", "vdb": f"{prefix}-vdb.raw"},
+                "nvram": f"{prefix}-nvram.fd",
+                "tpm": f"{prefix}-tpm-",
+                "domain": f"{prefix}-domain.xml",
+                "manifest": f"{prefix}-manifest.json",
             },
         )
-        self.assertIsNone(backup_file_names(uuid, disks, nvram=False)["nvram"])
+        self.assertIsNone(backup_file_names(prefix, disks, nvram=False)["nvram"])
+
+    def test_a_vm_name_is_made_safe_for_a_file_name(self):
+        uuid = "00000000-0000-4000-8000-000000000001"
+        self.assertEqual(backup_prefix("my vm/ç", uuid), f"my_vm__-{uuid}")
+        self.assertEqual(backup_prefix("..", uuid), f"vm-{uuid}")
+        self.assertEqual(len(backup_prefix("x" * 200, uuid)), 64 + 1 + 36)
+
+    def test_manifests_of_either_naming_are_found(self):
+        pool = MagicMock()
+        uuid = "00000000-0000-4000-8000-000000000001"
+        pool.listVolumes.return_value = [f"wvc-{uuid}-manifest.json", f"web-01-{uuid}-manifest.json",
+                                         f"web-01-{uuid}-vda.qcow2", "notes-manifest.json"]
+        self.assertEqual(manifest_names(pool), [f"web-01-{uuid}-manifest.json", f"wvc-{uuid}-manifest.json"])
 
     def test_space_counts_virtual_capacity_and_the_margin(self):
         # 2 x 10 GiB plus max(10 % of it, 1 GiB) = 22 GiB

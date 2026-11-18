@@ -6,6 +6,7 @@ from django.db import models
 from computes.models import Compute
 from instances.models import Instance
 from operations.models import Operation
+from vrtManager.backup import backup_prefix
 
 
 class BackupTarget(models.Model):
@@ -112,6 +113,7 @@ class Backup(models.Model):
     checkpoint = models.CharField(max_length=64, blank=True)  # the VM's checkpoint made with it
     # whose job made it: a VM owner's own backups count in their backup quota
     taken_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+")
+    prefix = models.CharField(max_length=128)  # every file of the backup in the target begins with it and "-"
 
     class Meta:
         ordering = ["-created_at"]
@@ -126,10 +128,10 @@ class Backup(models.Model):
         """Whether a backup builds on this one: a failed one holds nothing."""
         return self.children.filter(state__in=self.LIVING).exists()
 
-    @property
-    def prefix(self):
-        """Every file of the backup in the target is named from its UUID only."""
-        return f"wvc-{self.uuid}"
+    def save(self, *args, **kwargs):
+        if not self.prefix:
+            self.prefix = backup_prefix(self.vm_name, self.uuid)
+        super().save(*args, **kwargs)
 
 
 class BackupFile(models.Model):

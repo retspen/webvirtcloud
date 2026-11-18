@@ -98,6 +98,7 @@ class ImportTests(TransactionTestCase):
         self.assertEqual((backup.state, backup.target, backup.instance, backup.vm_name, backup.consistency),
                          (Backup.READY, self.target, self.vm, "vm1", "frozen"))
         self.assertEqual(backup.created_at.isoformat(), "2026-11-01T10:00:00+00:00")
+        self.assertEqual(backup.prefix, f"wvc-{self.a}")  # its files' names, as the target has them
         self.assertEqual(sorted(backup.files.values_list("role", flat=True)), ["disk", "domain"])
         self.assertEqual(self.read()["added"], 0)
         self.assertEqual(Backup.objects.count(), 2)

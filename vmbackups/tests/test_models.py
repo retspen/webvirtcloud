@@ -51,8 +51,9 @@ class BackupModelTests(TestCase):
         self.assertIsNone(self.target.pool_on(self.compute))
 
     def test_prefix(self):
-        backup = Backup(uuid=UUID("00000000-0000-4000-8000-000000000001"))
-        self.assertEqual(backup.prefix, "wvc-00000000-0000-4000-8000-000000000001")
+        target = BackupTarget.objects.create(name="nfs-p")
+        backup = Backup.objects.create(uuid=UUID("00000000-0000-4000-8000-000000000001"), target=target, vm_name="web 01")
+        self.assertEqual(backup.prefix, "web_01-00000000-0000-4000-8000-000000000001")
 
     def test_claim_keys(self):
         self.assertEqual(backup_target_key(3), "backup_target:3")
