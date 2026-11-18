@@ -12,6 +12,7 @@ from instances.models import Instance, InstanceTombstone
 from logs.audit import write
 from operations import claims
 from operations.models import Claim
+from vmbackups.models import Backup, BackupRun
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +87,14 @@ def _log(inst, what):
 
 
 def move_ownership(source, target):
-    """Give target the owners and template flag of source; a user's rights are merged."""
+    """Give target the owners, template flag, backups and schedules of source; a user's rights are merged."""
+    Backup.objects.filter(instance=source).update(instance=target)
+    for policy in source.backup_policies.all():
+        policy.instances.add(target)
+    taken = set(BackupRun.objects.filter(instance=target).values_list("policy_id", "day"))
+    for run in BackupRun.objects.filter(instance=source):  # a schedule's run of the day: not taken twice
+        if (run.policy_id, run.day) not in taken:
+            BackupRun.objects.filter(pk=run.pk).update(instance=target)
     for ui in UserInstance.objects.filter(instance=source):
         existing = UserInstance.objects.filter(instance=target, user=ui.user).first()
         if existing is None:

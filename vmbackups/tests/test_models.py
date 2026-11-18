@@ -1,3 +1,4 @@
+import datetime
 from uuid import UUID
 
 from django.db import IntegrityError
@@ -56,3 +57,23 @@ class BackupModelTests(TestCase):
     def test_claim_keys(self):
         self.assertEqual(backup_target_key(3), "backup_target:3")
         self.assertEqual(backup_key("00000000-0000-4000-8000-000000000001"), "backup:00000000-0000-4000-8000-000000000001")
+
+    def test_a_vm_whose_row_changes_keeps_its_backups_and_schedules(self):
+        # a migration the destination's VM list recorded first: that row takes the VM's place
+        from computes.utils import move_ownership
+        from vmbackups.models import BackupPolicy, BackupRun
+
+        uuid = "11111111-1111-1111-1111-111111111111"
+        old = Instance.objects.create(compute=self.compute, name="vm1", uuid=uuid)
+        other = Compute.objects.create(name="h2", hostname="192.0.2.11", login="u", password="p", type=1)
+        new = Instance.objects.create(compute=other, name="vm1", uuid=uuid)
+        backup = self.backup(old)
+        policy = BackupPolicy.objects.create(name="nightly", target=self.target, time=datetime.time(2), keep=2)
+        policy.instances.add(old)
+        BackupRun.objects.create(policy=policy, instance=old, day=datetime.date(2026, 11, 18), state=BackupRun.SUBMITTED)
+        move_ownership(old, new)
+        old.delete()
+        backup.refresh_from_db()
+        self.assertEqual(backup.instance, new)
+        self.assertEqual(list(policy.instances.all()), [new])
+        self.assertEqual(list(policy.runs.values_list("instance", flat=True)), [new.pk])  # not backed up twice tonight

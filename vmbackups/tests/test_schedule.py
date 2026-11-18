@@ -17,7 +17,7 @@ from operations import jobs
 from operations.jobs import Context
 from operations.models import Operation, acquire
 from vmbackups import schedule
-from vmbackups.jobs import CheckTarget, DeleteBackup
+from vmbackups.jobs import CheckTarget, DeleteBackup, _beyond_keep
 from vmbackups.models import Backup, BackupFile, BackupPolicy, BackupRun, BackupTarget, BackupTargetPool
 from vrtManager.util import OperationError
 
@@ -396,6 +396,24 @@ class ScheduleTests(TransactionTestCase):
         schedule.retain()
         self.assertEqual(len(self.deletes()), 2)
         self.assertEqual(self.deletes()[-1].params["backup"], str(oldest.uuid))
+
+    def test_a_missing_incremental_goes_with_its_chain(self):
+        # keep 2: a full and an incremental on it whose files are lost, then two new fulls
+        full, inc, new, newest = self.backups(Backup.READY, Backup.MISSING, Backup.READY, Backup.READY)
+        self.chained(full, inc)
+        schedule.retain()
+        (op,) = self.deletes()
+        self.assertEqual(op.params["backup"], str(inc.uuid))
+        self.assertTrue(_beyond_keep(inc, self.policy.pk))
+        self.finish_all()
+        Backup.objects.filter(pk=inc.pk).delete()
+        schedule.retain()
+        self.assertEqual(self.deletes()[-1].params["backup"], str(full.uuid))
+
+    def test_a_missing_backup_does_not_count_in_keep(self):
+        oldest, _missing, _newest = self.backups(Backup.READY, Backup.MISSING, Backup.READY)
+        schedule.retain()
+        self.assertEqual(self.deletes(), [])
 
     def test_retention_keeps_keep_ready_backups_when_the_newest_failed(self):
         self.backups(Backup.READY, Backup.READY, Backup.FAILED)

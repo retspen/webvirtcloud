@@ -586,16 +586,25 @@ def _backup(params):
     return Backup.objects.select_related("target").get(uuid=params["backup"])
 
 
+def beyond_keep(policy, instance_id):
+    """A schedule's backups of a VM beyond what it keeps, newest first: the
+    ready ones past keep, and the missing ones older than the oldest kept
+    (keep counts ready ones only; a missing one would pin its chain)."""
+    rows = list(Backup.objects.filter(policy=policy, instance_id=instance_id, state__in=(Backup.READY, Backup.MISSING))
+                .order_by("-created_at"))
+    ready = [b for b in rows if b.state == Backup.READY]
+    if len(ready) <= policy.keep:
+        return []
+    return [b for b in rows if b.created_at < ready[policy.keep - 1].created_at]
+
+
 def _beyond_keep(backup, policy_id):
-    """Whether the schedule still exists and the backup is still one of its
-    VM's ready backups beyond what it keeps (keep raised, or a newer one gone,
-    since the deletion was queued)."""
+    """Whether the schedule still exists and the backup is still beyond what
+    it keeps (keep raised, or a newer one gone, since the deletion was queued)."""
     policy = BackupPolicy.objects.filter(pk=policy_id).first()
     if policy is None or backup.policy_id != policy.pk or backup.instance_id is None or backup.depended_on():
         return False
-    ready = list(Backup.objects.filter(policy=policy, instance_id=backup.instance_id, state=Backup.READY)
-                 .order_by("-created_at").values_list("pk", flat=True))
-    return backup.pk in ready[policy.keep:]
+    return backup.pk in {b.pk for b in beyond_keep(policy, backup.instance_id)}
 
 
 @register

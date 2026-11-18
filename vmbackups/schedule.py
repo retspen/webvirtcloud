@@ -20,6 +20,7 @@ from operations.models import Operation
 from operations.utils import safe_text
 from vrtManager.util import ConnectionFailed
 
+from .jobs import beyond_keep
 from .models import Backup, BackupPolicy, BackupRun, BackupTarget
 
 logger = logging.getLogger(__name__)
@@ -140,22 +141,19 @@ def _attempt_key(base):
 
 
 def retain():
-    """Each schedule's ready backups of a VM beyond keep that no backup
-    builds on, oldest first: one
+    """Each schedule's backups of a VM beyond keep that no backup builds on,
+    oldest first: one
     deletion a target at a time (its claim admits one), the rest at the next
     passes. Backups by hand and those of removed VMs are left alone."""
     tried = set()
     for policy in BackupPolicy.objects.select_related("owner"):
         if policy.target_id in tried or not _active_superuser(policy.owner):
             continue
-        ready = (Backup.objects.filter(policy=policy, state=Backup.READY, instance__isnull=False)
-                 .order_by("instance_id", "-created_at"))
-        groups = {}
-        for backup in ready:
-            groups.setdefault(backup.instance_id, []).append(backup)
-        for rows in groups.values():
+        vms = (Backup.objects.filter(policy=policy, state=Backup.READY, instance__isnull=False)
+               .values_list("instance_id", flat=True).distinct())
+        for instance_id in vms:
             # a chain goes when all of it is beyond keep, newest first: only a backup nothing builds on is deleted
-            beyond = [b for b in rows[policy.keep:] if not b.depended_on()]
+            beyond = [b for b in beyond_keep(policy, instance_id) if not b.depended_on()]
             if beyond:
                 tried.add(policy.target_id)
                 if (key := _attempt_key(f"rt-{beyond[-1].uuid.hex}")) is None:
