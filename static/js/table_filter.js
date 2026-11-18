@@ -4,15 +4,16 @@
 // shows when its text contains the search, in any case: plain text, not a
 // pattern. A row with data-search is searched in that text only, not in its
 // buttons and menus. With a state list, the row's [data-state] must
-// be the chosen state too. In a grouped list a search for a group's host
+// be the chosen state too; with a tag list (#tag-filter), the chosen tag
+// one of the row's data-tags (names split by spaces). In a grouped list a search for a group's host
 // shows all of its rows, and its header row (data-group-header) shows while
 // any of its rows does. A page's #no-match shows while no row does. The
 // search is remembered for a day, per page, unless its box has data-forget.
 //
 // The instance list's state pills (#state-pills) set the state; each one's
 // [data-count-state] counts the VMs of its state the search finds (its
-// state left aside), "" all of them; a state's pill with none is hidden
-// unless chosen; the chosen state is remembered as the search is, so that a
+// state left aside, the tag not), "" all of them; a state's pill with none is hidden
+// unless chosen; the chosen state and tag are remembered as the search is, so that a
 // list the poll reloads keeps it. #filter-status tells screen readers how
 // many VMs match, collapsed hosts' VMs too.
 
@@ -26,6 +27,8 @@ function filterTable(doc) {
     var text = fold(doc.getElementById("filter").value);
     var states = doc.getElementById("state-filter");
     var state = states ? states.value : "";
+    var tags = doc.getElementById("tag-filter");
+    var tag = tags ? tags.value : "";
     var anyShown = false;
     var counts = {"": 0}, vms = 0, shownVms = 0;
     doc.querySelectorAll(".searchable").forEach(function (group) {
@@ -39,7 +42,8 @@ function filterTable(doc) {
             }
             var mark = row.querySelector("[data-state]");
             var searched = row.dataset.search !== undefined ? row.dataset.search : row.textContent;
-            var found = hostMatches || fold(searched).includes(text);
+            var found = (hostMatches || fold(searched).includes(text))
+                && (!tag || (row.dataset.tags || "").split(" ").indexOf(tag) >= 0);
             row.hidden = !((!state || (mark && mark.dataset.state === state)) && found);
             shown = shown || !row.hidden;
             if (mark) {
@@ -107,6 +111,22 @@ if (typeof module !== "undefined") {
             filterTable(document);
         });
     }
+    var tags = document.getElementById("tag-filter");
+    if (tags) {
+        try {
+            var keptTag = sessionStorage.getItem(key + "_tag") || "";
+            // a tag no row has any longer is not chosen
+            if (Array.prototype.some.call(tags.options, function (option) { return option.value === keptTag; })) {
+                tags.value = keptTag;
+            }
+        } catch (e) {
+            // storage turned off: all tags
+        }
+        tags.addEventListener("change", function () {
+            keep(tags.value, key + "_tag");
+            filterTable(document);
+        });
+    }
     var pills = document.getElementById("state-pills");
     function chooseState(pill) {
         states.value = pill.dataset.pillState;
@@ -142,6 +162,10 @@ if (typeof module !== "undefined") {
         clear.addEventListener("click", function () {
             search.value = "";
             keep("");
+            if (tags) {
+                tags.value = "";
+                keep("", key + "_tag");
+            }
             if (pills) {
                 chooseState(pills.querySelector('[data-pill-state=""]'));
             } else if (states) {

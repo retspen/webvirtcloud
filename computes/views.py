@@ -179,7 +179,8 @@ def computes(request):
             totals["assigned"] += given["assigned"]["all"]
             totals["memory"] += given["memory"]
     return render(request, "computes/list.html",
-                  {"computes": computes, "totals": totals, "job_resource": claims.bulk_migrate_key()})
+                  {"computes": computes, "totals": totals, "job_resource": claims.bulk_migrate_key(),
+                   "tags": sorted({tag.name for compute in computes for tag in compute.tags.all()})})
 
 
 @superuser_only

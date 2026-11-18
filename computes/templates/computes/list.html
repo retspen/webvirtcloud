@@ -11,6 +11,7 @@
         {% include 'create_comp_block.html' %}
         {% if computes|length > 1 %}<a href="{% url 'balance' %}" class="btn btn-outline-primary mt-1 ms-1 float-end">{% trans "Balance" %}</a>{% endif %}
         {% include 'search_block.html' %}
+        <div class="float-end m-1">{% include 'common/tag_filter.html' %}</div>
         <h3 class="mb-3">{% trans "Computes" %}</h3>
     </div>
 </div>
@@ -66,7 +67,7 @@
             <tbody class="searchable">
             {% for compute in computes %}
                 {% with given=compute.shown_capacity %}
-                <tr{% if compute.status is not True %} class="table-warning"{% endif %}>
+                <tr data-tags="{% for tag in compute.tags.all %}{{ tag }}{% if not forloop.last %} {% endif %}{% endfor %}"{% if compute.status is not True %} class="table-warning"{% endif %}>
                     <td class="py-3">
                         <div class="d-flex flex-wrap align-items-center gap-2">
                             <a class="fw-semibold" href="{% url 'overview' compute.id %}">{{ compute.name }}</a>

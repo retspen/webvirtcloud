@@ -104,4 +104,7 @@ class HostTagsTests(TestCase):
     def test_the_hosts_list_shows_them(self):
         compute = Compute.objects.create(name="kvm1", hostname="192.0.2.1", login="wvc", password="pw", type=1)
         compute.tags.add(Tag.objects.create(name="rack-1"))
-        self.assertContains(self.client.get(reverse("computes")), "rack-1")
+        response = self.client.get(reverse("computes"))
+        self.assertContains(response, "rack-1")
+        self.assertContains(response, '<option value="rack-1">rack-1</option>', html=True)
+        self.assertContains(response, 'data-tags="rack-1"')

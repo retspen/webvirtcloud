@@ -6,6 +6,7 @@
 
 {% block page_heading_extra %}
     <div class="d-flex flex-wrap justify-content-end gap-2 mt-1">
+        {% include 'common/tag_filter.html' %}
         {# the list's search and the address search, as one control #}
         <div class="input-group w-auto">
             <input id="filter" class="form-control" type="text" placeholder="{% trans 'Search' %}" aria-label="{% trans 'Search' %}">
@@ -66,7 +67,7 @@
         {% if instances %}
         {# table_filter.js shows it while no row matches #}
         <div id="no-match" class="text-center text-body-secondary py-4" hidden>
-            {% trans "No VM matches the search and the state." %}
+            {% trans "No VM matches the filters." %}
             <button type="button" class="btn btn-link" id="clear-filters">{% trans "Clear the filters" %}</button>
         </div>
         {% endif %}

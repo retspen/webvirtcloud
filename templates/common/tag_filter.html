@@ -1,0 +1,7 @@
+{% load i18n %}{# tags: the names of the listed rows' tags; table_filter.js shows the rows with the one chosen #}
+{% if tags %}
+<select id="tag-filter" class="form-select w-auto" aria-label="{% trans "Tag" %}">
+    <option value="">{% trans "All tags" %}</option>
+    {% for tag in tags %}<option value="{{ tag }}">{{ tag }}</option>{% endfor %}
+</select>
+{% endif %}

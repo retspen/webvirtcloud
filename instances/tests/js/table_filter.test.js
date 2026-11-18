@@ -19,8 +19,9 @@ function group(rows, host) {
     return {dataset: host ? {host} : {}, querySelectorAll: (s) => (s === "tr, [data-search], [data-group-header]" ? rows : [])};
 }
 function page(groups, text, state, noMatch, extra = {}) {
-    // a list without a state list (state undefined) has no such element
+    // a list without a state list (state undefined) has no such element, nor one without tags a tag list
     const inputs = {filter: {value: text}, "state-filter": state === undefined ? undefined : {value: state},
+                    "tag-filter": extra.tag === undefined ? undefined : {value: extra.tag},
                     "no-match": noMatch, "filter-status": extra.status};
     return {
         getElementById: (id) => inputs[id],
@@ -102,6 +103,25 @@ assert.strictEqual(counts[3].parentElement.hidden, false, "the chosen state stay
 filterInstances(page([group(fleet)], "no-such-vm", "Active", undefined, {counts, status}));
 assert.strictEqual(counts[0].parentElement.hidden, false, "All stays when nothing is found");
 
+// the tag list: a row shows with the chosen tag among its own (data-tags), a whole name
+const withTags = (row, tags) => Object.assign(row, {dataset: Object.assign(row.dataset, {tags})});
+const tagged = [withTags(vm("web-1", "Active", "web-1"), "prod web"), withTags(vm("db-1", "Off", "db-1"), "prod"),
+                withTags(vm("web-2", "Active", "web-2"), "")];
+filterInstances(page([group(tagged)], "", "", undefined, {tag: "prod"}));
+assert.deepStrictEqual(visible(tagged), ["web-1", "db-1"]);
+filterInstances(page([group(tagged)], "web", "", undefined, {tag: "prod"}));
+assert.deepStrictEqual(visible(tagged), ["web-1"], "the search and the tag both apply");
+filterInstances(page([group(tagged)], "", "", undefined, {tag: "pro"}));
+assert.deepStrictEqual(visible(tagged), [], "a tag is a whole name");
+filterInstances(page([group(tagged)], "", "", undefined, {tag: ""}));
+assert.deepStrictEqual(visible(tagged), ["web-1", "db-1", "web-2"], "no tag chosen: all");
+const tagCounts = [count(""), count("Active"), count("Off")];
+filterInstances(page([group(tagged)], "", "Active", undefined, {tag: "prod", counts: tagCounts}));
+assert.deepStrictEqual(tagCounts.map((c) => c.textContent), [2, 1, 1], "the state counts follow the tag");
+const hostVms = [hostRow("host-a"), withTags(vm("web-1", "Active", "web-1"), "prod"), withTags(vm("db-1", "Active", "db-1"), "")];
+filterInstances(page([group(hostVms, "host-a")], "host-a", "", undefined, {tag: "prod"}));
+assert.deepStrictEqual(visible(hostVms), ["host-a", "web-1"], "a host's name and a tag: its VMs with the tag");
+
 // a search is without case and accents in any language: "istanbul" finds "İSTANBUL"
 const turkish = [vm("İSTANBUL-1", "Active"), vm("ankara", "Active"), vm("Şişli", "Off")];
 filterInstances(page([group(turkish)], "istanbul", ""));
@@ -113,16 +133,18 @@ assert.deepStrictEqual(visible(turkish), ["Şişli"]);
 {
     const vmModule = require("vm");
     const fs = require("fs");
-    const stored = {"VMs_filter_state": "Off"};
+    const stored = {"VMs_filter_state": "Off", "VMs_filter_tag": "prod"};
     const pill = (state) => ({dataset: {pillState: state}, classList: {toggle() {}}, setAttribute() {}});
     const pillList = [pill(""), pill("Active"), pill("Off")];
     const elements = {
         filter: {value: "", hasAttribute: () => false, addEventListener() {}},
         "state-filter": {value: "", addEventListener() {}},
         "state-pills": {querySelectorAll: () => pillList, querySelector: () => pillList[0], addEventListener() {}},
+        "tag-filter": {value: "", options: [{value: ""}, {value: "prod"}], addEventListener() {}},
     };
     const doc = {title: "VMs", getElementById: (id) => elements[id], querySelectorAll: () => []};
     const storage = {getItem: (k) => stored[k] || null, setItem: (k, v) => { stored[k] = v; }, removeItem: (k) => { delete stored[k]; }};
     vmModule.runInNewContext(fs.readFileSync(process.argv[2], "utf8"), {document: doc, sessionStorage: storage});
     assert.strictEqual(elements["state-filter"].value, "Off");
+    assert.strictEqual(elements["tag-filter"].value, "prod", "the chosen tag is remembered too");
 }
