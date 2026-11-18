@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 import libvirt
 from django.contrib.auth import get_user_model
 from django.test import TransactionTestCase, override_settings
+from django.utils import timezone
 
 from appsettings.settings import get_settings
 from computes.models import Compute
@@ -489,6 +490,16 @@ class ScheduleTests(TransactionTestCase):
         Operation.objects.all().delete()
         self.run_check([*present, f"{gone.prefix}-manifest.json"])
         self.assertEqual(Backup.objects.get(pk=gone.pk).state, Backup.READY)
+
+    def test_a_backup_finished_minutes_ago_is_not_marked_missing(self):
+        # written through another compute: this one's NFS client may not list its files yet
+        (backup,) = self.backups(Backup.READY)
+        Backup.objects.filter(pk=backup.pk).update(finished_at=timezone.now() - datetime.timedelta(minutes=2))
+        self.run_check([])
+        self.assertEqual(Backup.objects.get(pk=backup.pk).state, Backup.READY)
+        Backup.objects.filter(pk=backup.pk).update(finished_at=timezone.now() - datetime.timedelta(minutes=20))
+        self.run_check([])
+        self.assertEqual(Backup.objects.get(pk=backup.pk).state, Backup.MISSING)
 
     def test_an_incremental_backup_whose_base_file_is_gone_is_missing(self):
         base, top = self.backups(Backup.READY, Backup.READY)

@@ -1,5 +1,6 @@
 """Jobs of the vmbackups app (operations framework)."""
 
+import datetime
 import hashlib
 import json
 import os
@@ -42,6 +43,7 @@ from .models import Backup, BackupFile, BackupPolicy, BackupTarget
 MANIFEST_FORMAT = 1
 NVRAM_READS = 3  # a running VM's NVRAM read after its backup, until it is the one read before
 NVRAM_WAIT = 5  # seconds between those reads
+CHECK_SETTLE = datetime.timedelta(minutes=10)  # an NFS client lists another's new files within minutes
 PROGRESS_EVERY = 2  # seconds between reads of a push backup's progress
 
 
@@ -228,6 +230,9 @@ def _publish(op, proxy, pool):
     manifest written and read back, then the row ready with its files.
     Runs again in recovery: each upload replaces its volume."""
     plan, names = op.intent["plan"], op.intent["names"]
+    if not op.intent["live"] and proxy.get_status() != VIR_DOMAIN_SHUTOFF:
+        # its NVRAM and TPM state would be newer than the disks copied
+        raise util.OperationError(_("The VM started while its disks were copied; back it up again"))
     backup = Backup.objects.get(uuid=op.intent["backup"])
     pool.refresh(0)
     files = []
@@ -247,7 +252,8 @@ def _publish(op, proxy, pool):
                       "sha256": put_file(proxy, pool, names["tpm"] + name, data, _owner(), mode="0600")})
     definition = plan["definition"].encode()
     files.append({"role": BackupFile.DOMAIN, "dev": "", "volume": names["domain"], "format": "", "capacity": len(definition),
-                  "size": len(definition), "sha256": put_file(proxy, pool, names["domain"], definition, _owner())})
+                  "size": len(definition), "sha256": put_file(proxy, pool, names["domain"], definition, _owner(),
+                                                              mode="0600")})  # it has the graphics passwords
     manifest = {
         "format": MANIFEST_FORMAT,
         "backup": str(backup.uuid),
@@ -367,6 +373,10 @@ class CreateBackup(Kind):
         except libvirtError as err:  # libvirt answered: the copy failed and ended
             ctx.record_intent(copy_result=[False, safe_text(err)], copying=None)
             raise
+        op.refresh_from_db(fields=["cancel_requested"])
+        if op.cancel_requested:  # asked during the last disk's copy
+            _discard(op, pool)
+            raise Cancelled
         ctx.record_intent(copy_result=[True, ""])
         ctx.set_phase(_("Writing the backup's files"))
         return _publish(op, proxy, pool)
@@ -1365,6 +1375,7 @@ class CheckTarget(Kind):
         _conn, pool = _target_pool(target)
         pool.refresh(0)
         present = set(pool.listVolumes())
+        settled = timezone.now() - CHECK_SETTLE
         missing = []
         for backup in target.backups.filter(state__in=(Backup.READY, Backup.MISSING)).prefetch_related("files"):
             needed = {f.volume for f in backup.files.all()} | {f"{backup.prefix}-manifest.json"}
@@ -1373,6 +1384,8 @@ class CheckTarget(Kind):
                 state = Backup.READY if needed <= present else Backup.MISSING
             except util.OperationError:  # its base's row is gone
                 state = Backup.MISSING
+            if state == Backup.MISSING and backup.state == Backup.READY and (backup.finished_at or settled) > settled:
+                continue  # just written through another compute: this one may not list its files yet (NFS)
             if state == Backup.MISSING:
                 missing.append(f"{backup.vm_name} {timezone.localtime(backup.created_at):%Y-%m-%d %H:%M}")
             # only from the state read: a deletion begun meanwhile is left alone
