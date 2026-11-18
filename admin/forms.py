@@ -12,6 +12,7 @@ from django.utils.translation import gettext_lazy as _
 from accounts.forms import UniqueEmailMixin
 from accounts.models import UserAttributes, UserInstance
 from appsettings.settings import app_settings
+from computes.models import Tag
 from instances.models import Instance
 
 from .models import Permission
@@ -47,6 +48,15 @@ def permission_rows(field):
         rows.append((box, PERMISSION_NAMES.get(permission.codename, permission.name),
                      PERMISSION_HELP.get(permission.codename, "")))
     return rows
+
+
+class TagForm(forms.ModelForm):
+    class Meta:
+        model = Tag
+        fields = ["name"]
+
+    def clean_name(self):
+        return self.cleaned_data["name"].strip().lower()
 
 
 class GroupForm(forms.ModelForm):

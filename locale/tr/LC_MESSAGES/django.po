@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 17:32+0000\n"
+"POT-Creation-Date: 2026-11-18 17:53+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -153,7 +153,7 @@ msgstr "en fazla disk boyutu (GiB)"
 msgid "max backup size (GiB)"
 msgstr "en fazla yedek boyutu (GiB)"
 
-#: accounts/models.py:88 admin/forms.py:23
+#: accounts/models.py:88 admin/forms.py:24
 msgid "Can change password"
 msgstr "Parola değiştirebilir"
 
@@ -171,13 +171,13 @@ msgid "User Profile"
 msgstr "Kullanıcı Profili"
 
 #: accounts/templates/account.html:17 accounts/templates/profile.html:18
-#: admin/forms.py:92 admin/templates/admin/user_list.html:24
+#: admin/forms.py:102 admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:30
 msgid "Superuser"
 msgstr "Süperkullanıcı"
 
 #: accounts/templates/account.html:19 accounts/templates/profile.html:20
-#: admin/forms.py:92 admin/templates/admin/user_list.html:24
+#: admin/forms.py:102 admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:32
 msgid "Template editor"
 msgstr "Şablon düzenleyici"
@@ -223,7 +223,8 @@ msgid "User sections"
 msgstr "Kullanıcı bölümleri"
 
 #: accounts/templates/account.html:50 accounts/templates/account.html:58
-#: admin/forms.py:210 computes/templates/computes/list.html:34
+#: admin/forms.py:220 admin/templates/admin/tag_list.html:19
+#: computes/templates/computes/list.html:34
 #: computes/templates/computes/list.html:61 computes/templates/overview.html:90
 #: instances/views.py:265 vmbackups/templates/vmbackups/policies.html:17
 msgid "VMs"
@@ -467,6 +468,7 @@ msgstr "%(name)s API anahtarı için işlemler"
 #: accounts/templates/api_token_list.html:12
 #: accounts/templates/ssh_key_list.html:13
 #: admin/templates/admin/group_list.html:44
+#: admin/templates/admin/tag_list.html:32
 #: admin/templates/admin/tombstone_list.html:43
 #: admin/templates/admin/user_list.html:74
 #: admin/templates/admin/user_list.html:76
@@ -516,7 +518,7 @@ msgid "Signing in..."
 msgstr "Oturum açılıyor..."
 
 #: accounts/templates/profile.html:6 accounts/templates/profile.html:8
-#: templates/navbar.html:53
+#: templates/navbar.html:54
 msgid "Profile"
 msgstr "Profil"
 
@@ -692,27 +694,27 @@ msgid "OTP of %(user)s was reset: a new QR code can be mailed."
 msgstr ""
 "%(user)s kullanıcısının OTP'si sıfırlandı: yeni bir QR kodu gönderilebilir."
 
-#: admin/forms.py:22
+#: admin/forms.py:23
 msgid "Can back up instances"
 msgstr "Sanal makineleri yedekleyebilir"
 
-#: admin/forms.py:24
+#: admin/forms.py:25
 msgid "Can clone instances"
 msgstr "Sanal makineleri klonlayabilir"
 
-#: admin/forms.py:25 instances/models.py:438
+#: admin/forms.py:26 instances/models.py:438
 msgid "Can access console without password"
 msgstr "Parolasız konsol erişimi yapabilir"
 
-#: admin/forms.py:26
+#: admin/forms.py:27
 msgid "Can snapshot instances"
 msgstr "Sanal makinelerin anlık görüntüsünü alabilir"
 
-#: admin/forms.py:27
+#: admin/forms.py:28
 msgid "Can view instances"
 msgstr "Sanal makineleri görebilir"
 
-#: admin/forms.py:32
+#: admin/forms.py:33
 msgid ""
 "Back up the VMs they may change into targets open to VM owners, restore those"
 " backups over the VM or as a new VM, and delete the backups they took, within"
@@ -722,11 +724,11 @@ msgstr ""
 " yedekleri VM'in üzerine ya da yeni bir VM olarak geri yükleme ve kendi "
 "aldığı yedekleri silme; kotaları içinde"
 
-#: admin/forms.py:34
+#: admin/forms.py:35
 msgid "Change their own password on their profile page"
 msgstr "Profil sayfasında kendi parolasını değiştirme"
 
-#: admin/forms.py:35
+#: admin/forms.py:36
 msgid ""
 "Clone the VMs they may change and the templates they may view, within their "
 "quota"
@@ -734,21 +736,21 @@ msgstr ""
 "Kotası dahilinde, değiştirebildiği sanal makineleri ve görebildiği şablonları"
 " klonlama"
 
-#: admin/forms.py:36
+#: admin/forms.py:37
 msgid "Open a console without the VM's console password"
 msgstr "Sanal makinenin konsol parolası olmadan konsol aç"
 
-#: admin/forms.py:37
+#: admin/forms.py:38
 msgid "Take, revert and delete snapshots of the VMs they may change"
 msgstr ""
 "Değiştirebildiği sanal makinelerin anlık görüntülerini alma, geri yükleme ve "
 "silme"
 
-#: admin/forms.py:38
+#: admin/forms.py:39
 msgid "See every VM and host in the lists, read-only"
 msgstr "Listelerde tüm sanal makineleri ve sunucuları salt okunur görme"
 
-#: admin/forms.py:92 admin/templates/admin/logs.html:39
+#: admin/forms.py:102 admin/templates/admin/logs.html:39
 #: admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:34
 #: computes/templates/computes/instances.html:54
@@ -760,24 +762,24 @@ msgstr "Listelerde tüm sanal makineleri ve sunucuları salt okunur görme"
 msgid "User"
 msgstr "Kullanıcı"
 
-#: admin/forms.py:99 admin/templates/admin/group_form.html:31
+#: admin/forms.py:109 admin/templates/admin/group_form.html:31
 msgid "Permissions"
 msgstr "İzinler"
 
-#: admin/forms.py:106 admin/templates/admin/group_list.html:6
+#: admin/forms.py:116 admin/templates/admin/group_list.html:6
 #: admin/templates/admin/group_list.html:8
 #: admin/templates/admin/group_list.html:24
 #: admin/templates/admin/user_form.html:124 templates/navbar.html:36
 msgid "Groups"
 msgstr "Gruplar"
 
-#: admin/forms.py:160
+#: admin/forms.py:170
 #, python-format
 msgid "NEW_USER_DEFAULT_INSTANCES: %(name)s is not exactly one VM"
 msgstr ""
 "NEW_USER_DEFAULT_INSTANCES: %(name)s tam olarak tek bir sanal makine değil"
 
-#: admin/forms.py:163
+#: admin/forms.py:173
 #, python-format
 msgid ""
 "NEW_USER_DEFAULT_INSTANCES: %(name)s has an owner, and only one is allowed"
@@ -785,7 +787,7 @@ msgstr ""
 "NEW_USER_DEFAULT_INSTANCES: %(name)s sanal makinesinin bir sahibi var ve "
 "yalnızca bir sahibe izin veriliyor"
 
-#: admin/forms.py:211 computes/templates/computes/list.html:62
+#: admin/forms.py:221 computes/templates/computes/list.html:62
 #: computes/templates/overview.html:102 instances/forms.py:15
 #: instances/templates/allinstances_index_grouped.html:16
 #: instances/templates/allinstances_index_nongrouped.html:14
@@ -795,7 +797,7 @@ msgstr ""
 msgid "vCPUs"
 msgstr "vCPU"
 
-#: admin/forms.py:212 computes/templates/computes/balance.html:62
+#: admin/forms.py:222 computes/templates/computes/balance.html:62
 #: computes/templates/computes/bulk_migrate.html:67
 #: computes/templates/computes/instances.html:57
 #: computes/templates/computes/list.html:63
@@ -809,7 +811,7 @@ msgstr "vCPU"
 msgid "Memory"
 msgstr "Bellek"
 
-#: admin/forms.py:213 instances/models.py:241
+#: admin/forms.py:223 instances/models.py:241
 #: instances/templates/create_instance_w2.html:118
 #: instances/templates/instances/settings_tab.html:25
 #: instances/templates/instances/stats_tab.html:53 vmbackups/forms.py:57
@@ -817,7 +819,7 @@ msgstr "Bellek"
 msgid "Disk"
 msgstr "Disk"
 
-#: admin/forms.py:214 instances/templates/instance.html:113
+#: admin/forms.py:224 instances/templates/instance.html:113
 #: templates/navbar.html:21 vmbackups/templates/vmbackups/index.html:8
 #: vmbackups/templates/vmbackups/index.html:10
 #: vmbackups/templates/vmbackups/policies.html:8
@@ -829,27 +831,27 @@ msgstr "Disk"
 msgid "Backups"
 msgstr "Yedekler"
 
-#: admin/forms.py:224
+#: admin/forms.py:234
 msgid "No limit"
 msgstr "Sınır yok"
 
-#: admin/forms.py:240
+#: admin/forms.py:250
 msgid "Enter a limit or choose No limit."
 msgstr "Bir sınır girin ya da Sınır yok'u seçin."
 
-#: admin/forms.py:252
+#: admin/forms.py:262
 msgid "The user must change it at their next login"
 msgstr "Kullanıcı bir sonraki girişinde onu değiştirmek zorundadır"
 
-#: admin/forms.py:258
+#: admin/forms.py:268
 msgid "With a password"
 msgstr "Parolayla"
 
-#: admin/forms.py:258
+#: admin/forms.py:268
 msgid "Without a password"
 msgstr "Parolasız"
 
-#: admin/forms.py:264
+#: admin/forms.py:274
 msgid "A user without a password cannot be made to change it"
 msgstr "Parolası olmayan bir kullanıcıya parola değiştirme zorunluluğu konamaz"
 
@@ -1006,22 +1008,68 @@ msgstr "Sonuç"
 msgid "IP"
 msgstr "IP"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:395 instances/states.py:19
+#: admin/templates/admin/logs.html:56 admin/views.py:397 instances/states.py:19
 #: instances/views.py:489 logs/views.py:18
 msgid "Unknown"
 msgstr "Bilinmeyen"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:395 logs/views.py:18
+#: admin/templates/admin/logs.html:56 admin/views.py:397 logs/views.py:18
 msgid "Done"
 msgstr "Tamamlandı"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:395 logs/views.py:18
+#: admin/templates/admin/logs.html:56 admin/views.py:397 logs/views.py:18
 #: operations/templates/operations/job.html:110
 #: vmbackups/templates/vmbackups/index.html:34
 #: vmbackups/templates/vmbackups/policy.html:39
 #: vmbackups/templates/vmbackups/state.html:1
 msgid "Failed"
 msgstr "Başarısız"
+
+#: admin/templates/admin/tag_list.html:5 admin/templates/admin/tag_list.html:7
+#: computes/forms.py:48 instances/templates/instances/settings_tab.html:925
+#: templates/navbar.html:39
+msgid "Tags"
+msgstr "Etiketler"
+
+#: admin/templates/admin/tag_list.html:10
+msgid ""
+"The tags of VMs and hosts. A tag is made when it is first given, on a VM's "
+"Options tab or a host's form."
+msgstr ""
+"Sanal makinelerin ve sunucuların etiketleri. Bir etiket, ilk kez bir sanal "
+"makinenin Seçenekler sekmesinde ya da bir sunucunun formunda verildiğinde "
+"oluşur."
+
+#: admin/templates/admin/tag_list.html:12
+msgid "No tags yet"
+msgstr "Henüz etiket yok"
+
+#: admin/templates/admin/tag_list.html:18 templates/common/tag_filter.html:3
+msgid "Tag"
+msgstr "Etiket"
+
+#: admin/templates/admin/tag_list.html:20
+#: computes/templates/computes/list.html:27
+msgid "Hosts"
+msgstr "Sunucular"
+
+#: admin/templates/admin/tag_list.html:21
+#: computes/templates/computes/instances.html:58
+#: computes/templates/computes/list.html:64
+#: instances/templates/allinstances_index_grouped.html:18
+#: instances/templates/allinstances_index_nongrouped.html:16
+#: instances/templates/instances/settings_tab.html:450
+#: instances/templates/instances/settings_tab.html:485
+#: networks/templates/network.html:146 networks/templates/network.html:204
+#: networks/templates/network.html:286 nwfilters/templates/nwfilter.html:56
+#: nwfilters/templates/nwfilter.html:100 nwfilters/templates/nwfilters.html:35
+#: storages/templates/storage.html:126 virtsecrets/templates/secrets.html:33
+msgid "Actions"
+msgstr "Eylemler"
+
+#: admin/templates/admin/tag_list.html:31
+msgid "Rename"
+msgstr "Yeniden adlandır"
 
 #: admin/templates/admin/tombstone_list.html:6
 #: admin/templates/admin/tombstone_list.html:8
@@ -1155,7 +1203,7 @@ msgstr "Kullanıcı oluştur"
 msgid "New user"
 msgstr "Yeni kullanıcı"
 
-#: admin/templates/admin/user_list.html:19 admin/views.py:179
+#: admin/templates/admin/user_list.html:19 admin/views.py:181
 #: instances/templates/instances/settings_tab.html:79 templates/navbar.html:35
 msgid "Users"
 msgstr "Kullanıcılar"
@@ -1214,7 +1262,7 @@ msgstr "Burada belirlenen parolayla oturum açar."
 msgid "Signs in another way, such as LDAP. The current password is removed."
 msgstr "LDAP gibi başka bir yolla oturum açar. Mevcut parola kaldırılır."
 
-#: admin/views.py:42
+#: admin/views.py:44
 #, python-format
 msgid ""
 "%(name)s was changed meanwhile: here it is as it is now; make your change "
@@ -1222,58 +1270,87 @@ msgid ""
 msgstr ""
 "%(name)s bu arada değişti: güncel hâli aşağıda; değişikliğinizi yeniden yapın"
 
-#: admin/views.py:75
+#: admin/views.py:77
 msgid "Create Group"
 msgstr "Grup Oluştur"
 
-#: admin/views.py:117
+#: admin/views.py:119
 msgid "Update Group"
 msgstr "Grubu Güncelle"
 
-#: admin/views.py:133
+#: admin/views.py:135
 msgid "Its members stay but lose the permissions it gave them."
 msgstr "Üyeleri kalır ancak grubun onlara verdiği izinleri kaybeder."
 
-#: admin/views.py:139
+#: admin/views.py:141
 msgid "You cannot block, delete or demote your own account"
 msgstr "Kendi hesabınızı engelleyemez, silemez veya yetkisini düşüremezsiniz"
 
-#: admin/views.py:140
+#: admin/views.py:142
 msgid "This would leave no active superuser"
 msgstr "Bu işlem hiç etkin süper kullanıcı bırakmaz"
 
-#: admin/views.py:214
+#: admin/views.py:216
 msgid "Create User"
 msgstr "Kullanıcı Oluştur"
 
-#: admin/views.py:287
+#: admin/views.py:289
 msgid "Update User"
 msgstr "Kullanıcı Güncelle"
 
-#: admin/views.py:311
+#: admin/views.py:313
 #, python-format
 msgid "Password changed for %(user)s"
 msgstr "%(user)s parolası değiştirildi"
 
-#: admin/views.py:338
+#: admin/views.py:340
 msgid "Their access to VMs, SSH keys and settings go; the VMs themselves stay."
 msgstr ""
 "Sanal makinelere erişimi, SSH anahtarları ve ayarları silinir; sanal "
 "makinelerin kendisi kalır."
 
-#: admin/views.py:444
+#: admin/views.py:446
 msgid "deleted user"
 msgstr "silinmiş kullanıcı"
 
-#: admin/views.py:456
+#: admin/views.py:458
 #, python-format
 msgid "Removed VM %(name)s deleted"
 msgstr "Kaldırılan sanal makine %(name)s silindi"
 
-#: admin/views.py:463
+#: admin/views.py:465
 msgid "Its owners no longer get the VM back if its UUID shows up again."
 msgstr ""
 "UUID'si yeniden görünse bile sahipleri sanal makineyi artık geri almaz."
+
+#: admin/views.py:502
+#, python-format
+msgid "Rename tag %(tag)s"
+msgstr "%(tag)s etiketini yeniden adlandır"
+
+#: admin/views.py:513
+#, python-format
+msgid "Tag %(tag)s deleted"
+msgstr "%(tag)s etiketi silindi"
+
+#: admin/views.py:518
+#, python-format
+msgid "It is taken off %(vms)s and %(hosts)s."
+msgstr "%(vms)s ve %(hosts)s üzerinden kaldırılır."
+
+#: admin/views.py:519
+#, python-format
+msgid "%(count)s VM"
+msgid_plural "%(count)s VMs"
+msgstr[0] "%(count)s sanal makine"
+msgstr[1] "%(count)s sanal makine"
+
+#: admin/views.py:520
+#, python-format
+msgid "%(count)s host"
+msgid_plural "%(count)s hosts"
+msgstr[0] "%(count)s sunucu"
+msgstr[1] "%(count)s sunucu"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:11
 msgid "Theme"
@@ -1817,7 +1894,7 @@ msgstr "Ayar grupları"
 msgid "Appearance"
 msgstr "Görünüm"
 
-#: appsettings/templates/appsettings.html:35 templates/navbar.html:51
+#: appsettings/templates/appsettings.html:35 templates/navbar.html:52
 msgid "Language"
 msgstr "Dil"
 
@@ -1937,10 +2014,6 @@ msgstr "Kayıtlı, korumak için boş bırakın"
 #, python-format
 msgid "Add tag %(tag)s"
 msgstr "Etiket ekle: %(tag)s"
-
-#: computes/forms.py:48 instances/templates/instances/settings_tab.html:925
-msgid "Tags"
-msgstr "Etiketler"
 
 #: computes/forms.py:57
 msgid "A tag has at most 32 characters"
@@ -2618,26 +2691,9 @@ msgstr "Hipervizör üzerinde hiç sanal makine yok"
 msgid "VCPU"
 msgstr "VCPU"
 
-#: computes/templates/computes/instances.html:58
-#: computes/templates/computes/list.html:64
-#: instances/templates/allinstances_index_grouped.html:18
-#: instances/templates/allinstances_index_nongrouped.html:16
-#: instances/templates/instances/settings_tab.html:450
-#: instances/templates/instances/settings_tab.html:485
-#: networks/templates/network.html:146 networks/templates/network.html:204
-#: networks/templates/network.html:286 nwfilters/templates/nwfilter.html:56
-#: nwfilters/templates/nwfilter.html:100 nwfilters/templates/nwfilters.html:35
-#: storages/templates/storage.html:126 virtsecrets/templates/secrets.html:33
-msgid "Actions"
-msgstr "Eylemler"
-
 #: computes/templates/computes/list.html:20
 msgid "You don't have any computes"
 msgstr "Hiç sunucunuz yok"
-
-#: computes/templates/computes/list.html:27
-msgid "Hosts"
-msgstr "Sunucular"
 
 #: computes/templates/computes/list.html:29
 msgid "connected"
@@ -3237,7 +3293,7 @@ msgstr ""
 "'%(type)s' konsol tipi desteklenmiyor. Lütfen sanal makinenin grafik tipini "
 "VNC olarak değiştirin."
 
-#: instances/api/viewsets.py:157 instances/api/viewsets.py:175
+#: instances/api/viewsets.py:160 instances/api/viewsets.py:178
 #: instances/views.py:863 instances/views.py:885 instances/views.py:1875
 msgid "Templates cannot be started."
 msgstr "Şablon makineler başlatılamaz."
@@ -4613,7 +4669,7 @@ msgstr "Boyutlandır"
 msgid "Snapshot"
 msgstr "Anlık Görüntü"
 
-#: instances/templates/instance.html:103 templates/navbar.html:40
+#: instances/templates/instance.html:103 templates/navbar.html:41
 msgid "Settings"
 msgstr "Ayarlar"
 
@@ -9593,10 +9649,6 @@ msgstr ""
 msgid "Delete <strong>%(object)s</strong>?"
 msgstr "<strong>%(object)s</strong> silinsin mi?"
 
-#: templates/common/tag_filter.html:3
-msgid "Tag"
-msgstr "Etiket"
-
 #: templates/common/tag_filter.html:4
 msgid "All tags"
 msgstr "Tüm etiketler"
@@ -9617,11 +9669,11 @@ msgstr "Ana sayfa"
 msgid "Administration"
 msgstr "Yönetim"
 
-#: templates/navbar.html:39
+#: templates/navbar.html:40
 msgid "VM report (.xlsx)"
 msgstr "Sanal makine raporu (.xlsx)"
 
-#: templates/navbar.html:57
+#: templates/navbar.html:58
 msgid "Log Out"
 msgstr "Oturumu Kapat"
 

@@ -9,7 +9,7 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from vrtManager.create import wvmCreate
 
-from .serializers import ComputeSerializer
+from .serializers import TAG_PARAMETER, ComputeSerializer, with_tag
 
 
 class ComputeViewSet(viewsets.ModelViewSet):
@@ -21,6 +21,14 @@ class ComputeViewSet(viewsets.ModelViewSet):
     lookup_value_converter = "int"
     serializer_class = ComputeSerializer
     permission_classes = [IsSuperUser]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        return with_tag(queryset, self.request) if self.action == "list" else queryset
+
+    @extend_schema(parameters=[TAG_PARAMETER])
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     # checked and saved under hosts_lock, as on the web (Compute.clean)
     def create(self, request, *args, **kwargs):

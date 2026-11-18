@@ -1,3 +1,4 @@
+from computes.api.serializers import TAGS
 from computes.models import Compute
 from django.conf import settings
 from instances.models import Flavor, Instance
@@ -7,9 +8,11 @@ from rest_framework import serializers
 
 
 class InstanceSerializer(serializers.ModelSerializer):
+    tags = serializers.SlugRelatedField(**TAGS)
+
     class Meta:
         model = Instance
-        fields = ["id", "compute", "name", "uuid", "is_template", "created", "drbd"]
+        fields = ["id", "compute", "name", "uuid", "is_template", "created", "drbd", "tags"]
 
 
 # what a VM's device dicts tell of the host: its files and pools
@@ -18,6 +21,7 @@ HOST_KEYS = {"image", "storage", "path", "backing_file", "loader"}
 
 class InstanceDetailsSerializer(serializers.ModelSerializer):
     networks = serializers.SerializerMethodField()
+    tags = serializers.SlugRelatedField(**TAGS)
 
     def get_networks(self, instance) -> list[dict]:
         """Each NIC with its addresses (None: none known), which the VM page
@@ -58,6 +62,7 @@ class InstanceDetailsSerializer(serializers.ModelSerializer):
             "status",
             "uuid",
             "name",
+            "tags",
             "title",
             "description",
             "is_template",

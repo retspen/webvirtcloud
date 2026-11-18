@@ -2,11 +2,24 @@ from copy import copy
 
 from computes.models import Compute
 from computes.validators import validate_gstfsd_key
+from drf_spectacular.utils import OpenApiParameter
 from rest_framework import serializers
 from vrtManager.connection import CONN_SOCKET, CONN_SSH, CONN_TCP, CONN_TLS
 
 
+# a VM's or host's tags, by name: set on the web pages only
+TAGS = {"many": True, "read_only": True, "slug_field": "name"}
+TAG_PARAMETER = OpenApiParameter("tag", str, description="Only those with this tag")
+
+
+def with_tag(queryset, request):
+    """queryset's VMs or hosts with the ?tag= of request, all without one; their tags read at once."""
+    tag = request.query_params.get("tag")
+    return (queryset.filter(tags__name=tag) if tag else queryset).prefetch_related("tags")
+
+
 class ComputeSerializer(serializers.ModelSerializer):
+    tags = serializers.SlugRelatedField(**TAGS)
     password = serializers.CharField(
         style={"input_type": "password"},
         write_only=True,
@@ -48,4 +61,5 @@ class ComputeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Compute
-        fields = ["id", "name", "hostname", "login", "password", "type", "details", "migration_address", "gstfsd_key"]
+        fields = ["id", "name", "hostname", "login", "password", "type", "details", "migration_address", "gstfsd_key",
+                  "tags"]

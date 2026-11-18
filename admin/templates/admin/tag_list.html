@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load bootstrap_icons %}
+
+{% block title %}{% trans "Tags" %}{% endblock %}
+
+{% block page_heading %}{% trans "Tags" %}{% endblock page_heading %}
+
+{% block content %}
+<p class="text-body-secondary">{% trans "The tags of VMs and hosts. A tag is made when it is first given, on a VM's Options tab or a host's form." %}</p>
+{% if not tags %}
+    <div class="alert alert-info shadow-sm">{% bs_icon 'info-circle' %} {% trans "No tags yet" %}</div>
+{% else %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" data-sortable>
+            <thead>
+                <tr>
+                    <th scope="col">{% trans "Tag" %}</th>
+                    <th scope="col" data-sort-method="number">{% trans "VMs" %}</th>
+                    <th scope="col" data-sort-method="number">{% trans "Hosts" %}</th>
+                    <th scope="col" data-sort-method="none"><span class="visually-hidden">{% trans "Actions" %}</span></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for tag in tags %}
+                <tr>
+                    <td><span class="badge text-bg-light border">{% bs_icon 'tag' %} {{ tag }}</span></td>
+                    <td>{{ tag.vm_count }}</td>
+                    <td>{{ tag.host_count }}</td>
+                    <td class="text-end text-nowrap">
+                        <a class="btn btn-sm btn-outline-secondary" href="{% url 'admin:tag_update' tag.id %}">{% trans "Rename" %}</a>
+                        <a class="btn btn-sm btn-outline-danger" href="{% url 'admin:tag_delete' tag.id %}">{% trans "Delete" %}</a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+{% endblock content %}

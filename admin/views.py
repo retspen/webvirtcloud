@@ -16,8 +16,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import ngettext
 from django.views.decorators.http import require_POST
 from django.views.decorators.debug import sensitive_post_parameters
+from computes.models import Tag
 from instances.models import InstanceTombstone
 from instances.report import workbook
 from logs.audit import audit, changed_fields, snapshot
@@ -463,3 +465,57 @@ def tombstone_delete(request, pk):
          "consequence": _("Its owners no longer get the VM back if its UUID shows up again.")},
     )
 
+
+
+@superuser_only
+def tag_list(request):
+    """The tags of VMs and hosts, with how many of each have them."""
+    tags = Tag.objects.annotate(vm_count=Count("instances", distinct=True), host_count=Count("computes", distinct=True))
+    return render(request, "admin/tag_list.html", {"tags": list(tags)})
+
+
+def _retag_removed_vms(old, new):
+    """The removed VMs' kept tag old named new, or dropped with None: a name
+    made again later must not go to them. Under the ownership lock (computes.utils.forget)."""
+    for tombstone in InstanceTombstone.objects.all():
+        if old in tombstone.tags:
+            if new:
+                tombstone.tags = [new if name == old else name for name in tombstone.tags]
+            else:
+                tombstone.tags = [name for name in tombstone.tags if name != old]
+            tombstone.save(update_fields=["tags"])
+
+
+@superuser_only
+def tag_update(request, pk):
+    tag = get_object_or_404(Tag, pk=pk)
+    old = tag.name
+    form = forms.TagForm(request.POST or None, instance=tag)
+    if request.method == "POST" and form.is_valid():
+        if form.cleaned_data["name"] != old:
+            with audit(request, None, f"Tag {old}", f"rename to {form.cleaned_data['name']}"), transaction.atomic():
+                lock_ownership()
+                current = Tag.objects.values_list("name", flat=True).get(pk=pk)  # another rename may have come first
+                form.save()
+                _retag_removed_vms(current, tag.name)
+        return redirect("admin:tag_list")
+    return render(request, "common/form.html", {"form": form, "title": _("Rename tag %(tag)s") % {"tag": old}})
+
+
+@superuser_only
+def tag_delete(request, pk):
+    tag = get_object_or_404(Tag, pk=pk)
+    if request.method == "POST":
+        with audit(request, None, f"Tag {tag.name}", "delete"), transaction.atomic():
+            lock_ownership()
+            tag.delete()
+            _retag_removed_vms(tag.name, None)
+        messages.success(request, _("Tag %(tag)s deleted") % {"tag": tag.name})
+        return redirect("admin:tag_list")
+    vms, hosts = tag.instances.count(), tag.computes.count()
+    return render(request, "common/confirm_delete.html", {
+        "object": tag,
+        "consequence": _("It is taken off %(vms)s and %(hosts)s.") % {
+            "vms": ngettext("%(count)s VM", "%(count)s VMs", vms) % {"count": vms},
+            "hosts": ngettext("%(count)s host", "%(count)s hosts", hosts) % {"count": hosts}},
+    })

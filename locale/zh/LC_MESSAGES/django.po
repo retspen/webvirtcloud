@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 17:32+0000\n"
+"POT-Creation-Date: 2026-11-18 17:53+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -150,7 +150,7 @@ msgstr "最大磁盘大小（GiB）"
 msgid "max backup size (GiB)"
 msgstr "最大备份大小 (GiB)"
 
-#: accounts/models.py:88 admin/forms.py:23
+#: accounts/models.py:88 admin/forms.py:24
 msgid "Can change password"
 msgstr "可修改密码"
 
@@ -168,13 +168,13 @@ msgid "User Profile"
 msgstr "用户资料"
 
 #: accounts/templates/account.html:17 accounts/templates/profile.html:18
-#: admin/forms.py:92 admin/templates/admin/user_list.html:24
+#: admin/forms.py:102 admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:30
 msgid "Superuser"
 msgstr "超级用户"
 
 #: accounts/templates/account.html:19 accounts/templates/profile.html:20
-#: admin/forms.py:92 admin/templates/admin/user_list.html:24
+#: admin/forms.py:102 admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:32
 msgid "Template editor"
 msgstr "模板编辑者"
@@ -218,7 +218,8 @@ msgid "User sections"
 msgstr "用户页面导航"
 
 #: accounts/templates/account.html:50 accounts/templates/account.html:58
-#: admin/forms.py:210 computes/templates/computes/list.html:34
+#: admin/forms.py:220 admin/templates/admin/tag_list.html:19
+#: computes/templates/computes/list.html:34
 #: computes/templates/computes/list.html:61 computes/templates/overview.html:90
 #: instances/views.py:265 vmbackups/templates/vmbackups/policies.html:17
 msgid "VMs"
@@ -460,6 +461,7 @@ msgstr "API 令牌 %(name)s 的操作"
 #: accounts/templates/api_token_list.html:12
 #: accounts/templates/ssh_key_list.html:13
 #: admin/templates/admin/group_list.html:44
+#: admin/templates/admin/tag_list.html:32
 #: admin/templates/admin/tombstone_list.html:43
 #: admin/templates/admin/user_list.html:74
 #: admin/templates/admin/user_list.html:76
@@ -509,7 +511,7 @@ msgid "Signing in..."
 msgstr "正在登录…"
 
 #: accounts/templates/profile.html:6 accounts/templates/profile.html:8
-#: templates/navbar.html:53
+#: templates/navbar.html:54
 msgid "Profile"
 msgstr "个人资料"
 
@@ -676,56 +678,56 @@ msgstr "未设置用户邮箱，无法发送二维码"
 msgid "OTP of %(user)s was reset: a new QR code can be mailed."
 msgstr "%(user)s 的 OTP 已重置：可以邮寄新的二维码。"
 
-#: admin/forms.py:22
+#: admin/forms.py:23
 msgid "Can back up instances"
 msgstr "可以备份虚拟机"
 
-#: admin/forms.py:24
+#: admin/forms.py:25
 msgid "Can clone instances"
 msgstr "可克隆虚拟机"
 
-#: admin/forms.py:25 instances/models.py:438
+#: admin/forms.py:26 instances/models.py:438
 msgid "Can access console without password"
 msgstr "可无密码访问控制台"
 
-#: admin/forms.py:26
+#: admin/forms.py:27
 msgid "Can snapshot instances"
 msgstr "可为虚拟机创建快照"
 
-#: admin/forms.py:27
+#: admin/forms.py:28
 msgid "Can view instances"
 msgstr "可查看虚拟机"
 
-#: admin/forms.py:32
+#: admin/forms.py:33
 msgid ""
 "Back up the VMs they may change into targets open to VM owners, restore those"
 " backups over the VM or as a new VM, and delete the backups they took, within"
 " their quotas"
 msgstr "将其可修改的虚拟机备份到向虚拟机所有者开放的目标，将这些备份恢复到虚拟机上或恢复为新虚拟机，并删除自己创建的备份；均在其配额之内"
 
-#: admin/forms.py:34
+#: admin/forms.py:35
 msgid "Change their own password on their profile page"
 msgstr "在个人资料页修改自己的密码"
 
-#: admin/forms.py:35
+#: admin/forms.py:36
 msgid ""
 "Clone the VMs they may change and the templates they may view, within their "
 "quota"
 msgstr "在配额范围内克隆其可修改的虚拟机和可查看的模板"
 
-#: admin/forms.py:36
+#: admin/forms.py:37
 msgid "Open a console without the VM's console password"
 msgstr "无需虚拟机的控制台密码即可打开控制台"
 
-#: admin/forms.py:37
+#: admin/forms.py:38
 msgid "Take, revert and delete snapshots of the VMs they may change"
 msgstr "为其可修改的虚拟机创建、恢复和删除快照"
 
-#: admin/forms.py:38
+#: admin/forms.py:39
 msgid "See every VM and host in the lists, read-only"
 msgstr "在列表中查看所有虚拟机和主机（只读）"
 
-#: admin/forms.py:92 admin/templates/admin/logs.html:39
+#: admin/forms.py:102 admin/templates/admin/logs.html:39
 #: admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:34
 #: computes/templates/computes/instances.html:54
@@ -737,29 +739,29 @@ msgstr "在列表中查看所有虚拟机和主机（只读）"
 msgid "User"
 msgstr "用户"
 
-#: admin/forms.py:99 admin/templates/admin/group_form.html:31
+#: admin/forms.py:109 admin/templates/admin/group_form.html:31
 msgid "Permissions"
 msgstr "权限"
 
-#: admin/forms.py:106 admin/templates/admin/group_list.html:6
+#: admin/forms.py:116 admin/templates/admin/group_list.html:6
 #: admin/templates/admin/group_list.html:8
 #: admin/templates/admin/group_list.html:24
 #: admin/templates/admin/user_form.html:124 templates/navbar.html:36
 msgid "Groups"
 msgstr "用户组"
 
-#: admin/forms.py:160
+#: admin/forms.py:170
 #, python-format
 msgid "NEW_USER_DEFAULT_INSTANCES: %(name)s is not exactly one VM"
 msgstr "NEW_USER_DEFAULT_INSTANCES：%(name)s 不是唯一的一台虚拟机"
 
-#: admin/forms.py:163
+#: admin/forms.py:173
 #, python-format
 msgid ""
 "NEW_USER_DEFAULT_INSTANCES: %(name)s has an owner, and only one is allowed"
 msgstr "NEW_USER_DEFAULT_INSTANCES：%(name)s 已有所有者，且只允许一个所有者"
 
-#: admin/forms.py:211 computes/templates/computes/list.html:62
+#: admin/forms.py:221 computes/templates/computes/list.html:62
 #: computes/templates/overview.html:102 instances/forms.py:15
 #: instances/templates/allinstances_index_grouped.html:16
 #: instances/templates/allinstances_index_nongrouped.html:14
@@ -769,7 +771,7 @@ msgstr "NEW_USER_DEFAULT_INSTANCES：%(name)s 已有所有者，且只允许一�
 msgid "vCPUs"
 msgstr "vCPU"
 
-#: admin/forms.py:212 computes/templates/computes/balance.html:62
+#: admin/forms.py:222 computes/templates/computes/balance.html:62
 #: computes/templates/computes/bulk_migrate.html:67
 #: computes/templates/computes/instances.html:57
 #: computes/templates/computes/list.html:63
@@ -783,7 +785,7 @@ msgstr "vCPU"
 msgid "Memory"
 msgstr "内存"
 
-#: admin/forms.py:213 instances/models.py:241
+#: admin/forms.py:223 instances/models.py:241
 #: instances/templates/create_instance_w2.html:118
 #: instances/templates/instances/settings_tab.html:25
 #: instances/templates/instances/stats_tab.html:53 vmbackups/forms.py:57
@@ -791,7 +793,7 @@ msgstr "内存"
 msgid "Disk"
 msgstr "磁盘"
 
-#: admin/forms.py:214 instances/templates/instance.html:113
+#: admin/forms.py:224 instances/templates/instance.html:113
 #: templates/navbar.html:21 vmbackups/templates/vmbackups/index.html:8
 #: vmbackups/templates/vmbackups/index.html:10
 #: vmbackups/templates/vmbackups/policies.html:8
@@ -803,27 +805,27 @@ msgstr "磁盘"
 msgid "Backups"
 msgstr "备份"
 
-#: admin/forms.py:224
+#: admin/forms.py:234
 msgid "No limit"
 msgstr "不限"
 
-#: admin/forms.py:240
+#: admin/forms.py:250
 msgid "Enter a limit or choose No limit."
 msgstr "请输入限制值，或选择“不限”。"
 
-#: admin/forms.py:252
+#: admin/forms.py:262
 msgid "The user must change it at their next login"
 msgstr "用户必须在下次登录时修改密码"
 
-#: admin/forms.py:258
+#: admin/forms.py:268
 msgid "With a password"
 msgstr "使用密码"
 
-#: admin/forms.py:258
+#: admin/forms.py:268
 msgid "Without a password"
 msgstr "不使用密码"
 
-#: admin/forms.py:264
+#: admin/forms.py:274
 msgid "A user without a password cannot be made to change it"
 msgstr "没有密码的用户无法被要求修改密码"
 
@@ -978,22 +980,65 @@ msgstr "结果"
 msgid "IP"
 msgstr "IP"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:395 instances/states.py:19
+#: admin/templates/admin/logs.html:56 admin/views.py:397 instances/states.py:19
 #: instances/views.py:489 logs/views.py:18
 msgid "Unknown"
 msgstr "未知"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:395 logs/views.py:18
+#: admin/templates/admin/logs.html:56 admin/views.py:397 logs/views.py:18
 msgid "Done"
 msgstr "完成"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:395 logs/views.py:18
+#: admin/templates/admin/logs.html:56 admin/views.py:397 logs/views.py:18
 #: operations/templates/operations/job.html:110
 #: vmbackups/templates/vmbackups/index.html:34
 #: vmbackups/templates/vmbackups/policy.html:39
 #: vmbackups/templates/vmbackups/state.html:1
 msgid "Failed"
 msgstr "失败"
+
+#: admin/templates/admin/tag_list.html:5 admin/templates/admin/tag_list.html:7
+#: computes/forms.py:48 instances/templates/instances/settings_tab.html:925
+#: templates/navbar.html:39
+msgid "Tags"
+msgstr "标签"
+
+#: admin/templates/admin/tag_list.html:10
+msgid ""
+"The tags of VMs and hosts. A tag is made when it is first given, on a VM's "
+"Options tab or a host's form."
+msgstr "虚拟机和主机的标签。标签在首次于虚拟机的“选项”选项卡或主机表单中添加时创建。"
+
+#: admin/templates/admin/tag_list.html:12
+msgid "No tags yet"
+msgstr "还没有标签"
+
+#: admin/templates/admin/tag_list.html:18 templates/common/tag_filter.html:3
+msgid "Tag"
+msgstr "标签"
+
+#: admin/templates/admin/tag_list.html:20
+#: computes/templates/computes/list.html:27
+msgid "Hosts"
+msgstr "主机"
+
+#: admin/templates/admin/tag_list.html:21
+#: computes/templates/computes/instances.html:58
+#: computes/templates/computes/list.html:64
+#: instances/templates/allinstances_index_grouped.html:18
+#: instances/templates/allinstances_index_nongrouped.html:16
+#: instances/templates/instances/settings_tab.html:450
+#: instances/templates/instances/settings_tab.html:485
+#: networks/templates/network.html:146 networks/templates/network.html:204
+#: networks/templates/network.html:286 nwfilters/templates/nwfilter.html:56
+#: nwfilters/templates/nwfilter.html:100 nwfilters/templates/nwfilters.html:35
+#: storages/templates/storage.html:126 virtsecrets/templates/secrets.html:33
+msgid "Actions"
+msgstr "操作"
+
+#: admin/templates/admin/tag_list.html:31
+msgid "Rename"
+msgstr "重命名"
 
 #: admin/templates/admin/tombstone_list.html:6
 #: admin/templates/admin/tombstone_list.html:8
@@ -1121,7 +1166,7 @@ msgstr "创建用户"
 msgid "New user"
 msgstr "新建用户"
 
-#: admin/templates/admin/user_list.html:19 admin/views.py:179
+#: admin/templates/admin/user_list.html:19 admin/views.py:181
 #: instances/templates/instances/settings_tab.html:79 templates/navbar.html:35
 msgid "Users"
 msgstr "用户"
@@ -1179,62 +1224,89 @@ msgstr "使用此处设置的密码登录。"
 msgid "Signs in another way, such as LDAP. The current password is removed."
 msgstr "通过其他方式（如 LDAP）登录。当前密码将被移除。"
 
-#: admin/views.py:42
+#: admin/views.py:44
 #, python-format
 msgid ""
 "%(name)s was changed meanwhile: here it is as it is now; make your change "
 "again"
 msgstr "%(name)s 在此期间已更改：以下是其当前状态；请重新进行更改"
 
-#: admin/views.py:75
+#: admin/views.py:77
 msgid "Create Group"
 msgstr "创建用户组"
 
-#: admin/views.py:117
+#: admin/views.py:119
 msgid "Update Group"
 msgstr "更新用户组"
 
-#: admin/views.py:133
+#: admin/views.py:135
 msgid "Its members stay but lose the permissions it gave them."
 msgstr "其成员仍保留，但会失去该用户组授予的权限。"
 
-#: admin/views.py:139
+#: admin/views.py:141
 msgid "You cannot block, delete or demote your own account"
 msgstr "不能禁用、删除或降级你自己的账户"
 
-#: admin/views.py:140
+#: admin/views.py:142
 msgid "This would leave no active superuser"
 msgstr "这将导致没有可用的超级用户"
 
-#: admin/views.py:214
+#: admin/views.py:216
 msgid "Create User"
 msgstr "创建用户"
 
-#: admin/views.py:287
+#: admin/views.py:289
 msgid "Update User"
 msgstr "更新用户"
 
-#: admin/views.py:311
+#: admin/views.py:313
 #, python-format
 msgid "Password changed for %(user)s"
 msgstr "已为 %(user)s 修改密码"
 
-#: admin/views.py:338
+#: admin/views.py:340
 msgid "Their access to VMs, SSH keys and settings go; the VMs themselves stay."
 msgstr "其对虚拟机、SSH 密钥和设置的访问将被移除；虚拟机本身保留。"
 
-#: admin/views.py:444
+#: admin/views.py:446
 msgid "deleted user"
 msgstr "已删除的用户"
 
-#: admin/views.py:456
+#: admin/views.py:458
 #, python-format
 msgid "Removed VM %(name)s deleted"
 msgstr "已删除已移除的虚拟机 %(name)s"
 
-#: admin/views.py:463
+#: admin/views.py:465
 msgid "Its owners no longer get the VM back if its UUID shows up again."
 msgstr "若其 UUID 再次出现，其所有者将不再恢复对该虚拟机的所有权。"
+
+#: admin/views.py:502
+#, python-format
+msgid "Rename tag %(tag)s"
+msgstr "重命名标签 %(tag)s"
+
+#: admin/views.py:513
+#, python-format
+msgid "Tag %(tag)s deleted"
+msgstr "标签 %(tag)s 已删除"
+
+#: admin/views.py:518
+#, python-format
+msgid "It is taken off %(vms)s and %(hosts)s."
+msgstr "它将从 %(vms)s 和 %(hosts)s 上移除。"
+
+#: admin/views.py:519
+#, python-format
+msgid "%(count)s VM"
+msgid_plural "%(count)s VMs"
+msgstr[0] "%(count)s 个虚拟机"
+
+#: admin/views.py:520
+#, python-format
+msgid "%(count)s host"
+msgid_plural "%(count)s hosts"
+msgstr[0] "%(count)s 台主机"
 
 #: appsettings/migrations/0002_auto_20200527_1603.py:11
 msgid "Theme"
@@ -1752,7 +1824,7 @@ msgstr "设置分组"
 msgid "Appearance"
 msgstr "外观"
 
-#: appsettings/templates/appsettings.html:35 templates/navbar.html:51
+#: appsettings/templates/appsettings.html:35 templates/navbar.html:52
 msgid "Language"
 msgstr "语言"
 
@@ -1871,10 +1943,6 @@ msgstr "已保存，留空则保持不变"
 #, python-format
 msgid "Add tag %(tag)s"
 msgstr "添加标签：%(tag)s"
-
-#: computes/forms.py:48 instances/templates/instances/settings_tab.html:925
-msgid "Tags"
-msgstr "标签"
 
 #: computes/forms.py:57
 msgid "A tag has at most 32 characters"
@@ -2505,26 +2573,9 @@ msgstr "虚拟机管理程序中没有任何虚拟机"
 msgid "VCPU"
 msgstr "VCPU"
 
-#: computes/templates/computes/instances.html:58
-#: computes/templates/computes/list.html:64
-#: instances/templates/allinstances_index_grouped.html:18
-#: instances/templates/allinstances_index_nongrouped.html:16
-#: instances/templates/instances/settings_tab.html:450
-#: instances/templates/instances/settings_tab.html:485
-#: networks/templates/network.html:146 networks/templates/network.html:204
-#: networks/templates/network.html:286 nwfilters/templates/nwfilter.html:56
-#: nwfilters/templates/nwfilter.html:100 nwfilters/templates/nwfilters.html:35
-#: storages/templates/storage.html:126 virtsecrets/templates/secrets.html:33
-msgid "Actions"
-msgstr "操作"
-
 #: computes/templates/computes/list.html:20
 msgid "You don't have any computes"
 msgstr "您还没有任何计算节点"
-
-#: computes/templates/computes/list.html:27
-msgid "Hosts"
-msgstr "主机"
 
 #: computes/templates/computes/list.html:29
 msgid "connected"
@@ -3083,7 +3134,7 @@ msgid ""
 "VNC."
 msgstr "不支持控制台类型 '%(type)s'。请将虚拟机图形切换为 VNC。"
 
-#: instances/api/viewsets.py:157 instances/api/viewsets.py:175
+#: instances/api/viewsets.py:160 instances/api/viewsets.py:178
 #: instances/views.py:863 instances/views.py:885 instances/views.py:1875
 msgid "Templates cannot be started."
 msgstr "模板无法启动。"
@@ -4393,7 +4444,7 @@ msgstr "调整大小"
 msgid "Snapshot"
 msgstr "快照"
 
-#: instances/templates/instance.html:103 templates/navbar.html:40
+#: instances/templates/instance.html:103 templates/navbar.html:41
 msgid "Settings"
 msgstr "设置"
 
@@ -9036,10 +9087,6 @@ msgstr "请重新加载页面重试。如果问题持续出现，请将时间告
 msgid "Delete <strong>%(object)s</strong>?"
 msgstr "删除 <strong>%(object)s</strong>？"
 
-#: templates/common/tag_filter.html:3
-msgid "Tag"
-msgstr "标签"
-
 #: templates/common/tag_filter.html:4
 msgid "All tags"
 msgstr "所有标签"
@@ -9060,11 +9107,11 @@ msgstr "首页"
 msgid "Administration"
 msgstr "管理"
 
-#: templates/navbar.html:39
+#: templates/navbar.html:40
 msgid "VM report (.xlsx)"
 msgstr "虚拟机报告 (.xlsx)"
 
-#: templates/navbar.html:57
+#: templates/navbar.html:58
 msgid "Log Out"
 msgstr "退出登录"
 

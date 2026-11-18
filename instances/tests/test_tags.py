@@ -89,3 +89,40 @@ class VmListTagFilterTests(TestCase):
     def test_no_tags_no_tag_list(self):
         Tag.objects.all().delete()
         self.assertEqual(self.page(self.admin).xpath("//select[@id='tag-filter']"), [])
+
+
+class TagsApiTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.client.force_login(User.objects.create_superuser("ta-admin", "ta@example.com", "pw"))
+        self.compute = Compute.objects.create(name="ta", hostname="192.0.2.8", login="u", password="p", type=1)
+        Compute.objects.create(name="ta2", hostname="192.0.2.9", login="u", password="p", type=1)
+        prod = Tag.objects.create(name="prod")
+        self.compute.tags.add(prod)
+        self.vm = Instance.objects.create(compute=self.compute, name="web", uuid="12345678-0000-0000-0000-00000000ee01")
+        self.vm.tags.add(prod, Tag.objects.create(name="web"))
+        Instance.objects.create(compute=self.compute, name="db", uuid="12345678-0000-0000-0000-00000000ee02")
+
+    def get(self, url):
+        with patch("instances.api.viewsets.host_domain_states"), \
+                patch("instances.api.viewsets.utils.refresh_instance_database"):
+            return self.client.get(url).json()
+
+    def test_the_vm_lists_give_the_tags_and_filter_by_one(self):
+        for url in ("/api/v1/instances/", f"/api/v1/computes/{self.compute.id}/instances/"):
+            with self.subTest(url):
+                self.assertEqual(sorted((vm["name"], vm["tags"]) for vm in self.get(url)),
+                                 [("db", []), ("web", ["prod", "web"])])
+                self.assertEqual([vm["name"] for vm in self.get(url + "?tag=prod")], ["web"])
+
+    def test_the_hosts_give_the_tags_and_filter_by_one(self):
+        self.assertEqual([(c["name"], c["tags"]) for c in self.client.get("/api/v1/computes/").json()],
+                         [("ta", ["prod"]), ("ta2", [])])
+        self.assertEqual([c["name"] for c in self.client.get("/api/v1/computes/?tag=prod").json()], ["ta"])
+
+    def test_a_tag_asked_of_one_host_is_no_filter(self):
+        self.assertEqual(self.client.get(f"/api/v1/computes/{self.compute.id}/?tag=other").status_code, 200)
+
+    def test_the_tags_are_not_set_through_the_api(self):
+        self.client.patch(f"/api/v1/computes/{self.compute.id}/", {"tags": []}, content_type="application/json")
+        self.assertTrue(self.compute.tags.exists())

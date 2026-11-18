@@ -1,5 +1,6 @@
 from admin.permissions import IsSuperUser
 from computes import utils
+from computes.api.serializers import TAG_PARAMETER, with_tag
 from computes.models import Compute
 from django.contrib.messages import get_messages
 from django.http import Http404
@@ -57,6 +58,7 @@ class InstancesViewSet(viewsets.ViewSet):
     serializer_class = InstanceSerializer
     lookup_value_converter = "int"
 
+    @extend_schema(parameters=[TAG_PARAMETER])
     def list(self, request):
         # as the VM list: the hosts read first (all at once, one that does not answer
         # left as last read), so that VMs added, renamed or removed outside are seen
@@ -74,7 +76,7 @@ class InstancesViewSet(viewsets.ViewSet):
                 userinstance__user=request.user
             ).prefetch_related("userinstance_set")
         serializer = InstanceSerializer(
-            queryset, many=True, context={"request": request}
+            with_tag(queryset, request), many=True, context={"request": request}
         )
 
         return Response(serializer.data)
@@ -95,6 +97,7 @@ class InstanceViewSet(viewsets.ViewSet):
     serializer_class = InstanceSerializer
     lookup_value_converter = "int"
 
+    @extend_schema(parameters=[TAG_PARAMETER])
     def list(self, request, compute_pk=None):
         compute = get_object_or_404(Compute, pk=compute_pk)
 
@@ -119,7 +122,7 @@ class InstanceViewSet(viewsets.ViewSet):
                 compute=compute, userinstance__user=request.user
             ).prefetch_related("userinstance_set")
         serializer = InstanceSerializer(
-            queryset, many=True, context={"request": request}
+            with_tag(queryset, request), many=True, context={"request": request}
         )
 
         return Response(serializer.data)

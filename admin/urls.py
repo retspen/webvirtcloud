@@ -18,4 +18,7 @@ urlpatterns = [
     path("logs/export.xlsx", views.logs_export, name="logs_export"),
     path("removed-vms/", views.tombstone_list, name="tombstone_list"),
     path("removed-vms/<int:pk>/delete/", views.tombstone_delete, name="tombstone_delete"),
+    path("tags/", views.tag_list, name="tag_list"),
+    path("tags/<int:pk>/update/", views.tag_update, name="tag_update"),
+    path("tags/<int:pk>/delete/", views.tag_delete, name="tag_delete"),
 ]
