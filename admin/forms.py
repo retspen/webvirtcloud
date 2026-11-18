@@ -54,6 +54,7 @@ class TagForm(forms.ModelForm):
     class Meta:
         model = Tag
         fields = ["name"]
+        error_messages = {"name": {"unique": _("There is a tag with this name already")}}
 
     def clean_name(self):
         return self.cleaned_data["name"].strip().lower()

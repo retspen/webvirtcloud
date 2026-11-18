@@ -14,7 +14,7 @@ TAG_PARAMETER = OpenApiParameter("tag", str, description="Only those with this t
 
 def with_tag(queryset, request):
     """queryset's VMs or hosts with the ?tag= of request, all without one; their tags read at once."""
-    tag = request.query_params.get("tag")
+    tag = request.query_params.get("tag", "").lower()  # the names are kept in lower case
     return (queryset.filter(tags__name=tag) if tag else queryset).prefetch_related("tags")
 
 

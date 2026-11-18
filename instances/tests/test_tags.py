@@ -10,7 +10,7 @@ from django.contrib.auth import get_user_model
 from django.template.loader import render_to_string
 from django.test import TestCase
 from django.urls import reverse
-from instances.models import Instance
+from instances.models import Instance, InstanceTombstone
 from logs.models import Logs
 
 
@@ -49,6 +49,20 @@ class VmTagsTests(TestCase):
         self.assertEqual(self.post(self.owner, ["prod"]).status_code, 403)
         self.assertEqual(self.names(), [])
         self.assertFalse(Tag.objects.exists())
+
+    def test_a_vm_gone_meanwhile_keeps_its_removed_record(self):
+        from computes import utils
+        real = utils.lock_ownership
+
+        def lock():
+            utils.forget(Instance.objects.get(pk=self.vm.pk))  # the host no longer lists it
+            real()
+        self.vm.tags.add(Tag.objects.create(name="prod"))
+        with patch("instances.views.lock_ownership", side_effect=lock):
+            response = self.post(self.admin, ["db"])
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(InstanceTombstone.objects.get().tags, ["prod"])
+        self.assertFalse(Logs.objects.filter(message__startswith="VM vt-vm: tags").exists())
 
     def test_the_vm_list_shows_them(self):
         self.vm.tags.add(Tag.objects.create(name="prod"))
@@ -124,6 +138,7 @@ class TagsApiTests(TestCase):
         self.assertEqual([(c["name"], c["tags"]) for c in self.client.get("/api/v1/computes/").json()],
                          [("ta", ["prod"]), ("ta2", [])])
         self.assertEqual([c["name"] for c in self.client.get("/api/v1/computes/?tag=prod").json()], ["ta"])
+        self.assertEqual([c["name"] for c in self.client.get("/api/v1/computes/?tag=PROD").json()], ["ta"])
 
     def test_a_tag_asked_of_one_host_is_no_filter(self):
         self.assertEqual(self.client.get(f"/api/v1/computes/{self.compute.id}/?tag=other").status_code, 200)

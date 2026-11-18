@@ -2405,10 +2405,12 @@ def set_tags(request, pk):
         messages.error(request, " ".join(form.errors["tags"]))
         return _back(request, pk, "options")
     names = form.cleaned_data["tags"]
-    with audit_vm(request, instance, f"tags {', '.join(sorted(names)) or 'none'}"), transaction.atomic():
+    with audit_vm(request, instance, f"tags {', '.join(sorted(names)) or 'none'}") as entry, transaction.atomic():
         lock_ownership()  # not while the VM's tags are kept or given back (computes.utils.forget)
-        instance.tags.set(Tag.named(names))
-    return _back(request, pk, "options")
+        entry.skip = moved = _moved_meanwhile(pk, instance)  # its host's list may have dropped it meanwhile
+        if not moved:
+            instance.tags.set(Tag.named(names))
+    return _moved(request, pk) if moved else _back(request, pk, "options")
 
 
 # Buses for the empty CD-ROM of a new VM: fdc and virtio have no ejectable

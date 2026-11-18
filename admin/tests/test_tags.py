@@ -2,7 +2,10 @@
 
 from django.contrib.auth.models import User
 from django.test import TestCase
+from unittest.mock import patch
+
 from django.urls import reverse
+from django.utils import translation
 
 from computes.models import Compute, Tag
 from instances.models import Instance, InstanceTombstone
@@ -66,10 +69,44 @@ class TagAdminTests(TestCase):
         from vmbackups.models import BackupPolicy, BackupTarget
         BackupPolicy.objects.create(name="nightly", target=BackupTarget.objects.create(name="nfs"), tag=self.prod,
                                     time=datetime.time(2), keep=3)
+        # the confirm page is not shown, and a delete sent anyway (the schedule saved since) is refused
+        self.assertContains(self.client.get(reverse("admin:tag_delete", args=[self.prod.pk]), follow=True),
+                            "The backup schedule nightly backs up its VMs")
         response = self.client.post(reverse("admin:tag_delete", args=[self.prod.pk]), follow=True)
         self.assertContains(response, "The backup schedule nightly backs up its VMs")
         self.assertTrue(Tag.objects.filter(name="prod").exists())
-        self.assertEqual(self.messages(), [])
+
+    # what another request does while this one waits for the ownership lock
+    def meanwhile(self, change):
+        from computes import utils
+        real = utils.lock_ownership
+
+        def lock():
+            change()
+            real()
+        return patch("admin.views.lock_ownership", side_effect=lock)
+
+    def test_a_rename_meanwhile_is_cleaned_from_removed_vms_on_delete(self):
+        def rename():
+            Tag.objects.filter(pk=self.prod.pk).update(name="live")
+            InstanceTombstone.objects.filter(pk=self.tombstone.pk).update(tags=["live", "db"])
+        with self.meanwhile(rename):
+            self.client.post(reverse("admin:tag_delete", args=[self.prod.pk]))
+        self.tombstone.refresh_from_db()
+        self.assertEqual(self.tombstone.tags, ["db"])
+
+    def test_a_name_taken_meanwhile_is_refused(self):
+        with self.meanwhile(lambda: Tag.objects.create(name="live")):
+            response = self.client.post(reverse("admin:tag_update", args=[self.prod.pk]), {"name": "live"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["form"].errors["name"], ["There is a tag with this name already"])
+        self.assertEqual(Tag.objects.get(pk=self.prod.pk).name, "prod")
+
+    def test_a_name_taken_is_refused_in_the_reader_s_language(self):
+        Tag.objects.create(name="db")
+        response = self.client.post(reverse("admin:tag_update", args=[self.prod.pk]), {"name": "db"})
+        with translation.override("tr"):  # the message is read in the reader's language
+            self.assertEqual(list(response.context["form"].errors["name"]), ["Bu adla bir etiket zaten var"])
 
     def test_only_superusers(self):
         self.client.force_login(User.objects.create_user("tg-user", password="pw"))

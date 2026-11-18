@@ -10,8 +10,8 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.models import Group, Permission, User
 from django.core.paginator import Paginator
 from django.http import HttpResponse
-from django.db import transaction
-from django.db.models import Count, Exists, OuterRef, Q
+from django.db import IntegrityError, transaction
+from django.db.models import Count, Exists, OuterRef, ProtectedError, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
@@ -492,32 +492,46 @@ def tag_update(request, pk):
     old = tag.name
     form = forms.TagForm(request.POST or None, instance=tag)
     if request.method == "POST" and form.is_valid():
-        if form.cleaned_data["name"] != old:
+        if form.cleaned_data["name"] == old:
+            return redirect("admin:tag_list")
+        try:
             with audit(request, None, f"Tag {old}", f"rename to {form.cleaned_data['name']}"), transaction.atomic():
                 lock_ownership()
                 current = Tag.objects.values_list("name", flat=True).get(pk=pk)  # another rename may have come first
                 form.save()
                 _retag_removed_vms(current, tag.name)
-        return redirect("admin:tag_list")
+        except IntegrityError:  # the name was given to another tag meanwhile
+            form.add_error("name", form.fields["name"].error_messages["unique"])
+        else:
+            return redirect("admin:tag_list")
     return render(request, "common/form.html", {"form": form, "title": _("Rename tag %(tag)s") % {"tag": old}})
+
+
+def _refuse_used(request, schedules):
+    """Tells that the tag cannot go while the backup schedules back up its VMs (models.PROTECT)."""
+    messages.error(request, ngettext("The backup schedule %(schedules)s backs up its VMs: change it first",
+                                     "The backup schedules %(schedules)s back up its VMs: change them first",
+                                     len(schedules)) % {"schedules": ", ".join(schedules)})
+    return redirect("admin:tag_list")
 
 
 @superuser_only
 def tag_delete(request, pk):
     tag = get_object_or_404(Tag, pk=pk)
-    schedules = list(tag.backup_policies.values_list("name", flat=True))
-    if schedules:  # it would back up nothing (models.PROTECT)
-        messages.error(request, ngettext("The backup schedule %(schedules)s backs up its VMs: change it first",
-                                         "The backup schedules %(schedules)s back up its VMs: change them first",
-                                         len(schedules)) % {"schedules": ", ".join(schedules)})
-        return redirect("admin:tag_list")
     if request.method == "POST":
-        with audit(request, None, f"Tag {tag.name}", "delete"), transaction.atomic():
-            lock_ownership()
-            tag.delete()
-            _retag_removed_vms(tag.name, None)
+        try:
+            with audit(request, None, f"Tag {tag.name}", "delete"), transaction.atomic():
+                lock_ownership()
+                tag = get_object_or_404(Tag, pk=pk)  # its name now: another rename may have come first
+                tag.delete()
+                _retag_removed_vms(tag.name, None)
+        except ProtectedError as err:  # a schedule backs up its VMs, also one saved since the page was shown
+            return _refuse_used(request, sorted(policy.name for policy in err.protected_objects))
         messages.success(request, _("Tag %(tag)s deleted") % {"tag": tag.name})
         return redirect("admin:tag_list")
+    schedules = list(tag.backup_policies.values_list("name", flat=True))
+    if schedules:
+        return _refuse_used(request, schedules)
     vms, hosts = tag.instances.count(), tag.computes.count()
     return render(request, "common/confirm_delete.html", {
         "object": tag,

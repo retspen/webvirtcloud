@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 19:06+0000\n"
+"POT-Creation-Date: 2026-11-18 19:42+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -171,13 +171,13 @@ msgid "User Profile"
 msgstr "Kullanıcı Profili"
 
 #: accounts/templates/account.html:17 accounts/templates/profile.html:18
-#: admin/forms.py:102 admin/templates/admin/user_list.html:24
+#: admin/forms.py:103 admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:30
 msgid "Superuser"
 msgstr "Süperkullanıcı"
 
 #: accounts/templates/account.html:19 accounts/templates/profile.html:20
-#: admin/forms.py:102 admin/templates/admin/user_list.html:24
+#: admin/forms.py:103 admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:32
 msgid "Template editor"
 msgstr "Şablon düzenleyici"
@@ -223,7 +223,7 @@ msgid "User sections"
 msgstr "Kullanıcı bölümleri"
 
 #: accounts/templates/account.html:50 accounts/templates/account.html:58
-#: admin/forms.py:220 admin/templates/admin/tag_list.html:19
+#: admin/forms.py:221 admin/templates/admin/tag_list.html:19
 #: computes/templates/computes/list.html:34
 #: computes/templates/computes/list.html:61 computes/templates/overview.html:90
 #: instances/views.py:265 vmbackups/templates/vmbackups/policies.html:17
@@ -750,7 +750,11 @@ msgstr ""
 msgid "See every VM and host in the lists, read-only"
 msgstr "Listelerde tüm sanal makineleri ve sunucuları salt okunur görme"
 
-#: admin/forms.py:102 admin/templates/admin/logs.html:39
+#: admin/forms.py:57
+msgid "There is a tag with this name already"
+msgstr "Bu adla bir etiket zaten var"
+
+#: admin/forms.py:103 admin/templates/admin/logs.html:39
 #: admin/templates/admin/user_list.html:24
 #: admin/templates/admin/user_list.html:34
 #: computes/templates/computes/instances.html:54
@@ -762,24 +766,24 @@ msgstr "Listelerde tüm sanal makineleri ve sunucuları salt okunur görme"
 msgid "User"
 msgstr "Kullanıcı"
 
-#: admin/forms.py:109 admin/templates/admin/group_form.html:31
+#: admin/forms.py:110 admin/templates/admin/group_form.html:31
 msgid "Permissions"
 msgstr "İzinler"
 
-#: admin/forms.py:116 admin/templates/admin/group_list.html:6
+#: admin/forms.py:117 admin/templates/admin/group_list.html:6
 #: admin/templates/admin/group_list.html:8
 #: admin/templates/admin/group_list.html:24
 #: admin/templates/admin/user_form.html:124 templates/navbar.html:36
 msgid "Groups"
 msgstr "Gruplar"
 
-#: admin/forms.py:170
+#: admin/forms.py:171
 #, python-format
 msgid "NEW_USER_DEFAULT_INSTANCES: %(name)s is not exactly one VM"
 msgstr ""
 "NEW_USER_DEFAULT_INSTANCES: %(name)s tam olarak tek bir sanal makine değil"
 
-#: admin/forms.py:173
+#: admin/forms.py:174
 #, python-format
 msgid ""
 "NEW_USER_DEFAULT_INSTANCES: %(name)s has an owner, and only one is allowed"
@@ -787,7 +791,7 @@ msgstr ""
 "NEW_USER_DEFAULT_INSTANCES: %(name)s sanal makinesinin bir sahibi var ve "
 "yalnızca bir sahibe izin veriliyor"
 
-#: admin/forms.py:221 computes/templates/computes/list.html:62
+#: admin/forms.py:222 computes/templates/computes/list.html:62
 #: computes/templates/overview.html:102 instances/forms.py:15
 #: instances/templates/allinstances_index_grouped.html:16
 #: instances/templates/allinstances_index_nongrouped.html:14
@@ -797,7 +801,7 @@ msgstr ""
 msgid "vCPUs"
 msgstr "vCPU"
 
-#: admin/forms.py:222 computes/templates/computes/balance.html:62
+#: admin/forms.py:223 computes/templates/computes/balance.html:62
 #: computes/templates/computes/bulk_migrate.html:73
 #: computes/templates/computes/instances.html:57
 #: computes/templates/computes/list.html:63
@@ -811,7 +815,7 @@ msgstr "vCPU"
 msgid "Memory"
 msgstr "Bellek"
 
-#: admin/forms.py:223 instances/models.py:241
+#: admin/forms.py:224 instances/models.py:241
 #: instances/templates/create_instance_w2.html:118
 #: instances/templates/instances/settings_tab.html:25
 #: instances/templates/instances/stats_tab.html:53 vmbackups/forms.py:57
@@ -819,7 +823,7 @@ msgstr "Bellek"
 msgid "Disk"
 msgstr "Disk"
 
-#: admin/forms.py:224 instances/templates/instance.html:113
+#: admin/forms.py:225 instances/templates/instance.html:113
 #: templates/navbar.html:21 vmbackups/templates/vmbackups/index.html:8
 #: vmbackups/templates/vmbackups/index.html:10
 #: vmbackups/templates/vmbackups/policies.html:8
@@ -831,27 +835,27 @@ msgstr "Disk"
 msgid "Backups"
 msgstr "Yedekler"
 
-#: admin/forms.py:234
+#: admin/forms.py:235
 msgid "No limit"
 msgstr "Sınır yok"
 
-#: admin/forms.py:250
+#: admin/forms.py:251
 msgid "Enter a limit or choose No limit."
 msgstr "Bir sınır girin ya da Sınır yok'u seçin."
 
-#: admin/forms.py:262
+#: admin/forms.py:263
 msgid "The user must change it at their next login"
 msgstr "Kullanıcı bir sonraki girişinde onu değiştirmek zorundadır"
 
-#: admin/forms.py:268
+#: admin/forms.py:269
 msgid "With a password"
 msgstr "Parolayla"
 
-#: admin/forms.py:268
+#: admin/forms.py:269
 msgid "Without a password"
 msgstr "Parolasız"
 
-#: admin/forms.py:274
+#: admin/forms.py:275
 msgid "A user without a password cannot be made to change it"
 msgstr "Parolası olmayan bir kullanıcıya parola değiştirme zorunluluğu konamaz"
 
@@ -1323,12 +1327,12 @@ msgid "Its owners no longer get the VM back if its UUID shows up again."
 msgstr ""
 "UUID'si yeniden görünse bile sahipleri sanal makineyi artık geri almaz."
 
-#: admin/views.py:502
+#: admin/views.py:507
 #, python-format
 msgid "Rename tag %(tag)s"
 msgstr "%(tag)s etiketini yeniden adlandır"
 
-#: admin/views.py:510
+#: admin/views.py:512
 #, python-format
 msgid "The backup schedule %(schedules)s backs up its VMs: change it first"
 msgid_plural ""
@@ -1340,24 +1344,24 @@ msgstr[1] ""
 "%(schedules)s yedekleme zamanlamaları bu etiketin sanal makinelerini "
 "yedekliyor: önce onları değiştirin"
 
-#: admin/views.py:519
+#: admin/views.py:530
 #, python-format
 msgid "Tag %(tag)s deleted"
 msgstr "%(tag)s etiketi silindi"
 
-#: admin/views.py:524
+#: admin/views.py:538
 #, python-format
 msgid "It is taken off %(vms)s and %(hosts)s."
 msgstr "%(vms)s ve %(hosts)s üzerinden kaldırılır."
 
-#: admin/views.py:525
+#: admin/views.py:539
 #, python-format
 msgid "%(count)s VM"
 msgid_plural "%(count)s VMs"
 msgstr[0] "%(count)s sanal makine"
 msgstr[1] "%(count)s sanal makine"
 
-#: admin/views.py:526
+#: admin/views.py:540
 #, python-format
 msgid "%(count)s host"
 msgid_plural "%(count)s hosts"
@@ -3706,7 +3710,7 @@ msgstr ""
 msgid "Create VM"
 msgstr "Sanal makine oluştur"
 
-#: instances/jobs.py:928 instances/jobs.py:975 instances/views.py:2630
+#: instances/jobs.py:928 instances/jobs.py:975 instances/views.py:2632
 msgid "A virtual machine with this name already exists"
 msgstr "Bu isimde bir sanal makine mevcut"
 
@@ -4066,7 +4070,7 @@ msgid "Disk source"
 msgstr "Disk kaynağı"
 
 #: instances/templates/add_instance_volume.html:21
-#: instances/templates/create_instance_w2.html:134 instances/views.py:2660
+#: instances/templates/create_instance_w2.html:134 instances/views.py:2662
 msgid "New disk"
 msgstr "Yeni disk"
 
@@ -4467,7 +4471,7 @@ msgstr "Özel CPU modelleri"
 msgid "Size (GiB)"
 msgstr "Boyut (GiB)"
 
-#: instances/templates/create_instance_w2.html:161 instances/views.py:2661
+#: instances/templates/create_instance_w2.html:161 instances/views.py:2663
 msgid "Existing volumes"
 msgstr "Mevcut birimler"
 
@@ -4504,7 +4508,7 @@ msgstr "Aygıt"
 msgid "Remove"
 msgstr "Kaldır"
 
-#: instances/templates/create_instance_w2.html:194 instances/views.py:2662
+#: instances/templates/create_instance_w2.html:194 instances/views.py:2664
 msgid "Clone from template"
 msgstr "Şablondan klonla"
 
@@ -7164,7 +7168,7 @@ msgstr "Ön yükleme sırası başarıyla değiştirildi."
 msgid "The XML is empty"
 msgstr "XML boş"
 
-#: instances/views.py:1963 instances/views.py:2642
+#: instances/views.py:1963 instances/views.py:2644
 #, python-format
 msgid "The XML is not well-formed: %(error)s"
 msgstr "XML düzgün biçimlendirilmemiş: %(error)s"
@@ -7298,12 +7302,12 @@ msgstr "Sadece bir sahibe izin verilmiştir ve bir sahip zaten eklenmiş"
 msgid "%(user)s is already an owner"
 msgstr "%(user)s zaten bir sahip"
 
-#: instances/views.py:2455
+#: instances/views.py:2457
 #, python-format
 msgid "Console settings were not saved: %(errors)s"
 msgstr "Konsol ayarları kaydedilmedi: %(errors)s"
 
-#: instances/views.py:2477
+#: instances/views.py:2479
 msgid ""
 "Error setting console password. You should check that your instance have an "
 "graphic device."
@@ -7311,37 +7315,37 @@ msgstr ""
 "Konsol parolası ayarlanırken hata oluştu. Sanal makinenin bir grafik aygıtına"
 " sahip olduğundan emin olunuz."
 
-#: instances/views.py:2524
+#: instances/views.py:2526
 msgid "Shut the VM down to change whether it is a template."
 msgstr "Şablon olup olmadığını değiştirmek için sanal makineyi kapatın."
 
-#: instances/views.py:2530
+#: instances/views.py:2532
 #, python-format
 msgid "%(quota)s: '%(instance_name)s' stays a template."
 msgstr "%(quota)s: '%(instance_name)s' şablon olarak kalıyor."
 
-#: instances/views.py:2628
+#: instances/views.py:2630
 msgid "The XML has no name"
 msgstr "XML'de ad yok"
 
-#: instances/views.py:2646 webvirtcloud/middleware.py:157
+#: instances/views.py:2648 webvirtcloud/middleware.py:157
 #, python-format
 msgid "libvirt Error - %(exception)s"
 msgstr "libvirt Hatası - %(exception)s"
 
-#: instances/views.py:2660
+#: instances/views.py:2662
 msgid "An empty disk of the size you set"
 msgstr "Belirlediğiniz boyutta boş bir disk"
 
-#: instances/views.py:2661
+#: instances/views.py:2663
 msgid "Volumes already in a pool"
 msgstr "Bir havuzda zaten bulunan birimler"
 
-#: instances/views.py:2662
+#: instances/views.py:2664
 msgid "A copy of a template volume"
 msgstr "Bir şablon biriminin kopyası"
 
-#: instances/views.py:2752
+#: instances/views.py:2754
 msgid ""
 "This host has no running storage pool for the VM's disks: add or start one on"
 " its Storage page."
@@ -7349,29 +7353,29 @@ msgstr ""
 "Bu sunucuda sanal makinenin diskleri için çalışan bir depolama havuzu yok: "
 "Depolama sayfasından bir tane ekleyin ya da başlatın."
 
-#: instances/views.py:2754
+#: instances/views.py:2756
 msgid "This host has no network for the VM: add one on its Networks page."
 msgstr ""
 "Bu sunucuda sanal makine için ağ yok: Ağlar sayfasından bir tane ekleyin."
 
-#: instances/views.py:2786
+#: instances/views.py:2788
 #, python-format
 msgid "The machine type is q35, not %(machine)s: UEFI Secure Boot needs it"
 msgstr "Makine türü %(machine)s değil q35: UEFI Secure Boot bunu gerektiriyor"
 
-#: instances/views.py:2815
+#: instances/views.py:2817
 msgid "Flavor Created"
 msgstr "Flavor Oluşturuldu"
 
-#: instances/views.py:2823
+#: instances/views.py:2825
 msgid "Create Flavor"
 msgstr "Kullanıcı Oluştur"
 
-#: instances/views.py:2835
+#: instances/views.py:2837
 msgid "Flavor Deleted"
 msgstr "Flavor Silindi"
 
-#: instances/views.py:2841
+#: instances/views.py:2843
 msgid "Only the size template goes; VMs made from it keep their size."
 msgstr ""
 "Yalnızca boyut şablonu silinir; ondan oluşturulan sanal makineler boyutlarını"
