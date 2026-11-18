@@ -308,3 +308,12 @@ fieldset:not(:has(input[value="set"]:checked)) > .console-new-password {
 #tag-filter {
     max-width: 15rem;
 }
+/* a VM's or host's tags: smaller than other badges, so a row with several stays narrow */
+.tag-badge {
+    font-size: 0.65rem;
+    font-weight: 500;
+}
+.tag-badge svg {
+    width: 0.85em;
+    height: 0.85em;
+}

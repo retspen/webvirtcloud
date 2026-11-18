@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 20:12+0000\n"
+"POT-Creation-Date: 2026-11-18 20:30+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -9108,9 +9108,13 @@ msgstr "请重新加载页面重试。如果问题持续出现，请将时间告
 msgid "Delete <strong>%(object)s</strong>?"
 msgstr "删除 <strong>%(object)s</strong>？"
 
-#: templates/common/tag_badges.html:2
+#: templates/common/tag_badge.html:2
 msgid "Show only this tag"
 msgstr "只显示此标签"
+
+#: templates/common/tag_badges.html:6
+msgid "more tags"
+msgstr "更多标签"
 
 #: templates/common/tag_filter.html:4
 msgid "All tags"

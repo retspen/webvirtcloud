@@ -6,7 +6,8 @@
 // buttons and menus. With a state list, the row's [data-state] must
 // be the chosen state too; with a tag list (#tag-filter), the chosen tag
 // one of the row's data-tags (names split by spaces), or "-" none of them.
-// A tag's badge ([data-tag-filter]) chooses it in the list. In a grouped list a search for a group's host
+// A tag's badge ([data-tag-filter]) chooses it in the list; a row's "…"
+// ([data-show-tags]) shows its other tags. In a grouped list a search for a group's host
 // shows all of its rows, and its header row (data-group-header) shows while
 // any of its rows does. A page's #no-match shows while no row does. The
 // search is remembered for a day, per page, unless its box has data-forget.
@@ -129,6 +130,13 @@ if (typeof module !== "undefined") {
             filterTable(document);
         });
         document.addEventListener("click", function (event) {
+            var more = event.target.closest("[data-show-tags]");
+            if (more) {
+                more.hidden = true;
+                more.nextElementSibling.hidden = false;
+                more.nextElementSibling.querySelector("button").focus();  // the focus is not lost with the button
+                return;
+            }
             var badge = event.target.closest("[data-tag-filter]");
             if (badge) {
                 tags.value = badge.dataset.tagFilter;

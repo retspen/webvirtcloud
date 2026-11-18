@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 20:12+0000\n"
+"POT-Creation-Date: 2026-11-18 20:30+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -9675,9 +9675,13 @@ msgstr ""
 msgid "Delete <strong>%(object)s</strong>?"
 msgstr "<strong>%(object)s</strong> silinsin mi?"
 
-#: templates/common/tag_badges.html:2
+#: templates/common/tag_badge.html:2
 msgid "Show only this tag"
 msgstr "Yalnız bu etiketi göster"
+
+#: templates/common/tag_badges.html:6
+msgid "more tags"
+msgstr "diğer etiketler"
 
 #: templates/common/tag_filter.html:4
 msgid "All tags"

@@ -157,4 +157,10 @@ assert.deepStrictEqual(visible(turkish), ["Şişli"]);
     listeners.click({target: {closest: (s) => (s === "[data-tag-filter]" ? badge : null)}});
     assert.strictEqual(elements["tag-filter"].value, "web", "a badge chooses its tag");
     assert.strictEqual(stored["VMs_filter_tag"], "web", "and it is remembered");
+    // "…" shows a VM's other tags, and the first of them takes the focus
+    let focused = null;
+    const others = {hidden: true, querySelector: () => ({focus: () => { focused = "d4"; }})};
+    const ellipsis = {hidden: false, nextElementSibling: others};
+    listeners.click({target: {closest: (s) => (s === "[data-show-tags]" ? ellipsis : null)}});
+    assert.deepStrictEqual([others.hidden, ellipsis.hidden, focused], [false, true, "d4"]);
 }

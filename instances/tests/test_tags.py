@@ -82,6 +82,15 @@ class VmTagsTests(TestCase):
         html = render_to_string("instance_name_cell.html", {"instance": self.vm})
         self.assertIn("prod", html)
 
+    def test_the_vm_list_shows_three_and_the_others_behind_an_ellipsis(self):
+        self.vm.tags.add(*(Tag.objects.create(name=name) for name in ("a1", "b2", "c3", "d4", "e5")))
+        cell = lxml_html.fromstring(render_to_string("instance_name_cell.html", {"instance": self.vm}))
+        self.assertEqual(cell.xpath("//button[not(ancestor::*[@hidden])]/@data-tag-filter"), ["a1", "b2", "c3"])
+        # "…" names the others and shows them when pressed (table_filter.js), with the keyboard too
+        (more,) = cell.xpath("//button[@data-show-tags]")
+        self.assertEqual((more.get("title"), more.text_content().strip()), ("d4, e5", "… more tags"))
+        self.assertEqual(cell.xpath("//*[@hidden]//button/@data-tag-filter"), ["d4", "e5"])
+
 
 class VmListTagFilterTests(TestCase):
     def setUp(self):
