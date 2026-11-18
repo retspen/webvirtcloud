@@ -1,7 +1,7 @@
 """Tags of VMs and hosts: one list of names, kept with a VM that leaves its
 host for a while or moves out of band, and set on the host form."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from django import forms
 from django.contrib.auth import get_user_model
@@ -96,6 +96,23 @@ class HostTagsTests(TestCase):
                          {"name": "kvm1", "hostname": "192.0.2.1", "login": "wvc", "password": "", "details": ""})
         self.assertFalse(compute.tags.exists())
 
+    def test_a_tag_deleted_meanwhile_is_made_again(self):
+        compute = Compute.objects.create(name="kvm1", hostname="192.0.2.1", login="wvc", password="pw", type=1)
+        compute.tags.add(Tag.objects.create(name="gpu"))
+        from computes import utils
+        real = utils.lock_ownership
+
+        def lock():  # the Tags page deletes it while the form waits for the lock
+            Tag.objects.filter(name="gpu").delete()
+            real()
+        with patch("computes.forms.lock_ownership", side_effect=lock):
+            response = self.client.post(reverse("compute_update", args=[compute.id]),
+                                        {"name": "kvm1b", "hostname": "192.0.2.1", "login": "wvc", "password": "",
+                                         "details": "", "tags": ["gpu"]})
+        self.assertEqual(response.status_code, 302)
+        compute.refresh_from_db()
+        self.assertEqual((compute.name, list(compute.tags.values_list("name", flat=True))), ("kvm1b", ["gpu"]))
+
     def test_the_socket_form_has_them_too(self):
         self.client.post(reverse("add_socket_host"), {"name": "local", "hostname": "localhost", "details": "",
                                                       "tags": ["lab"]})
@@ -103,12 +120,13 @@ class HostTagsTests(TestCase):
 
     def test_the_hosts_list_shows_them(self):
         compute = Compute.objects.create(name="kvm1", hostname="192.0.2.1", login="wvc", password="pw", type=1)
-        compute.tags.add(Tag.objects.create(name="rack-1"))
+        compute.tags.add(*(Tag.objects.create(name=name) for name in ("rack-1", "gpu", "ssd", "lab")))
         response = self.client.get(reverse("computes"))
+        self.assertContains(response, 'data-show-tags title="ssd"')  # three, and "…" for the others
         self.assertContains(response, "rack-1")
         self.assertContains(response, '<option value="rack-1">rack-1 (1)</option>', html=True)
         self.assertContains(response, 'data-tag-filter="rack-1"')
         # a search and a tag that match no host: the page says so and clears them
         self.assertContains(response, 'id="no-match"')
         self.assertContains(response, 'id="clear-filters"')
-        self.assertContains(response, 'data-tags="rack-1"')
+        self.assertContains(response, 'data-tags="gpu lab rack-1 ssd"')

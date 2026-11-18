@@ -129,22 +129,23 @@ if (typeof module !== "undefined") {
             keep(tags.value, key + "_tag");
             filterTable(document);
         });
-        document.addEventListener("click", function (event) {
-            var more = event.target.closest("[data-show-tags]");
-            if (more) {
-                more.hidden = true;
-                more.nextElementSibling.hidden = false;
-                more.nextElementSibling.querySelector("button").focus();  // the focus is not lost with the button
-                return;
-            }
-            var badge = event.target.closest("[data-tag-filter]");
-            if (badge) {
-                tags.value = badge.dataset.tagFilter;
-                keep(tags.value, key + "_tag");
-                filterTable(document);
-            }
-        });
     }
+    document.addEventListener("click", function (event) {
+        var more = event.target.closest("[data-show-tags]");
+        if (more) {
+            more.hidden = true;
+            more.nextElementSibling.hidden = false;
+            // the focus is not lost with the button: the first tag shown takes it
+            more.nextElementSibling.querySelector("button, [tabindex]")?.focus();
+            return;
+        }
+        var badge = event.target.closest("[data-tag-filter]");
+        if (badge && tags) {
+            tags.value = badge.dataset.tagFilter;
+            keep(tags.value, key + "_tag");
+            filterTable(document);
+        }
+    });
     var pills = document.getElementById("state-pills");
     function chooseState(pill) {
         states.value = pill.dataset.pillState;

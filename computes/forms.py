@@ -1,8 +1,10 @@
 from django import forms
+from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from vrtManager.connection import CONN_SOCKET, CONN_SSH, CONN_TCP, CONN_TLS
 
 from computes.models import TAG_NAME, Compute, Tag
+from computes.utils import lock_ownership
 
 from .validators import validate_hostname
 
@@ -72,9 +74,12 @@ class ComputeTagsMixin:
             self.initial["tags"] = list(self.instance.tags.values_list("name", flat=True))
 
     def save(self, commit=True):
-        compute = super().save(commit)
-        if commit:
-            compute.tags.set(Tag.named(self.cleaned_data["tags"]))
+        # the host and its tags in one step, not while the Tags page deletes or renames one
+        with transaction.atomic():
+            lock_ownership()
+            compute = super().save(commit)
+            if commit:
+                compute.tags.set(Tag.named(self.cleaned_data["tags"]))
         return compute
 
 
