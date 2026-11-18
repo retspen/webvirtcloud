@@ -87,6 +87,30 @@ class DeleteBackupTests(TransactionTestCase):
         self.assertTrue(Backup.objects.filter(pk=self.backup.pk).exists())
         self.assertEqual(self.removed, [])
 
+    def test_retention_checks_keep_again_after_reaching_the_target(self):
+        import datetime
+
+        from vmbackups.models import BackupPolicy
+
+        policy = BackupPolicy.objects.create(name="n", target=self.target, time=datetime.time(2), keep=1)
+        Backup.objects.filter(pk=self.backup.pk).update(policy=policy)
+        Backup.objects.create(target=self.target, instance=self.vm, vm_uuid=self.vm.uuid, vm_name="vm1",
+                              compute_name="h1", state=Backup.READY, policy=policy)  # newer: self.backup is beyond keep
+        op = jobs.submit("backup.delete", self.admin, {"backup": str(self.backup.uuid), "retention": policy.pk},
+                         f"key-{uuid4().hex[:12]}")
+        acquire(WORKER, "wvc-test")
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker=WORKER)
+        op.refresh_from_db()
+
+        def reach(target):  # keep raised while the target was being reached
+            BackupPolicy.objects.filter(pk=policy.pk).update(keep=2)
+            return MagicMock(), self.pool
+
+        with patch("vmbackups.jobs._target_pool", side_effect=reach):
+            with self.assertRaisesMessage(OperationError, "is kept"):
+                self.run_job(op)
+        self.assertEqual(self.removed, [])
+
     def test_a_creating_backup_is_not_deleted(self):
         Backup.objects.filter(pk=self.backup.pk).update(state=Backup.CREATING)
         with self.assertRaisesMessage(OperationError, "being made"):
@@ -193,6 +217,17 @@ class IndexTests(TransactionTestCase):
         page = lxml_html.fromstring(self.client.get(reverse("vmbackups:index")).content)
         self.assertNotIn(reverse("vmbackups:restore_over", args=[ready.uuid]),
                          page.xpath("//table[@id='backups']//a/@href"))
+
+    def test_the_list_shows_fifty_a_page_and_keeps_the_filter(self):
+        vm = Instance.objects.get(name="web1")
+        for _n in range(60):
+            Backup.objects.create(target=self.t1, instance=vm, vm_uuid=vm.uuid, vm_name="web1", compute_name="h1",
+                                  state=Backup.READY)
+        self.assertEqual(len(self.rows("?vm=web1")), 50)
+        self.assertEqual(len(self.rows("?vm=web1&page=2")), 11)
+        self.client.force_login(self.admin)
+        page = lxml_html.fromstring(self.client.get(reverse("vmbackups:index") + "?vm=web1").content)
+        self.assertIn("vm=web1", " ".join(page.xpath("//ul[contains(@class, 'pagination')]//a/@href")))
 
     def test_only_superusers(self):
         user = get_user_model().objects.create_user("idx_user", password="pw")

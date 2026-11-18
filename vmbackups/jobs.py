@@ -638,11 +638,12 @@ class DeleteBackup(Kind):
     def run(self, op, ctx):
         backup = _backup(op.params)
         self._may_delete(op.user, backup)
+        _conn, pool = _target_pool(backup.target)
+        # after reaching the target, right before deleting: a schedule's keep may have been raised meanwhile
         if op.params.get("retention") and not _beyond_keep(backup, op.params["retention"]):
             raise util.OperationError(_("The backup is no longer beyond what its schedule keeps; it is kept"))
         if backup.depended_on():  # made since the deletion was queued: the target claim now holds it off
             raise util.OperationError(_("Later backups depend on this one; delete them first"))
-        _conn, pool = _target_pool(backup.target)
         ctx.record_intent(deleting=True)
         return self._delete(backup, pool)
 
@@ -1271,7 +1272,11 @@ class ImportBackups(Kind):
         conn, pool = _target_pool(target)
         added, incomplete, manifests = 0, [], []
         for name in manifest_names(pool):
-            data = get_file(conn, pool, name)
+            try:
+                data = get_file(conn, pool, name)
+            except libvirtError:  # unreadable (its permissions, a broken file): the others are still read
+                incomplete.append(name)
+                continue
             try:
                 manifests.append((parse_datetime(json.loads(data)["created_at"]), name, data))
             except (ValueError, KeyError, TypeError):
@@ -1290,6 +1295,9 @@ class ImportBackups(Kind):
                     parent = Backup.objects.filter(uuid=manifest["parent"]).first()
                     if parent is None:  # its base was not read: it cannot be restored
                         raise ValueError(manifest["parent"])
+                roles = [f["role"] for f in manifest["files"]]
+                if roles.count(BackupFile.DOMAIN) != 1 or BackupFile.DISK not in roles:
+                    raise ValueError(roles)  # a restore needs the definition and a disk
                 _check_files(conn, pool, manifest["files"])
                 files = [{k: f[k] for k in ("role", "dev", "volume", "format", "capacity", "size", "sha256")}
                          for f in manifest["files"]]

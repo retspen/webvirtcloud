@@ -2,6 +2,7 @@
 {% load i18n %}
 {% load static %}
 {% load bootstrap_icons %}
+{% load django_bootstrap5 %}
 {% load operations %}
 
 {% block title %}{% trans "Backups" %}{% endblock %}
@@ -69,6 +70,9 @@
             </tbody>
         </table>
     </div>
+    {% if page.has_other_pages %}
+        {% bootstrap_pagination page extra=page_query pages_to_show=5 extra_classes="flex-wrap" %}
+    {% endif %}
     {% elif vm or target or state %}
         <div class="alert alert-info">{% trans "No backup matches the filter." %}</div>
     {% else %}

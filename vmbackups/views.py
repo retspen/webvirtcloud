@@ -1,8 +1,11 @@
+from urllib.parse import urlencode
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.conf import settings
+from django.core.paginator import Paginator
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -17,6 +20,7 @@ from instances.models import Instance
 from instances.views import get_instance
 from logs.audit import audit
 from operations import claims, jobs
+from operations.models import Claim
 from operations.utils import busy_message
 from webvirtcloud.middleware import error_text, same_origin_referer
 from vrtManager.backup import pool_space, target_pool
@@ -80,12 +84,10 @@ def pool_state(row):
         return {"row": row, "error": str(err)}
 
 
-@superuser_only
-def target(request, target_id):
-    target = get_object_or_404(BackupTarget, pk=target_id)
-    subject = f"Backup target {target.name}"
-    form = TargetPoolForm(request.POST if "add_pool" in request.POST else None, target=target)
-    if request.method == "POST" and "delete" in request.POST:
+def _change_target(request, target, subject, form):
+    """Deletes the target, removes or adds a pool of it, as the form asks;
+    the page to go to, or None to show the add form's errors."""
+    if "delete" in request.POST:
         if target.backups.exists():
             messages.error(request, _("Backup target %(target)s has backups; delete them first") % {"target": target.name})
             return redirect("vmbackups:target", target.id)
@@ -95,24 +97,7 @@ def target(request, target_id):
         with audit(request, None, subject, "delete"):
             target.delete()
         return redirect("vmbackups:targets")
-    if request.method == "POST" and "owners" in request.POST:
-        target.owners = request.POST["owners"] == "1"
-        with audit(request, None, subject, "open to VM owners" if target.owners else "closed to VM owners"):
-            target.save(update_fields=["owners"])
-        messages.success(request, _("VM owners with the backup permission may now use %(target)s.") % {"target": target.name}
-                         if target.owners else _("Only superusers use %(target)s now.") % {"target": target.name})
-        return redirect("vmbackups:target", target.id)
-    if request.method == "POST" and "import" in request.POST:
-        try:
-            op = jobs.submit("backup.import", request.user, {"target": target.pk}, request.POST.get("submission_key", ""))
-        except claims.Busy as busy:
-            messages.error(request, busy_message(busy, request.user))
-        except (jobs.SubmissionConflict, libvirtError) as err:
-            messages.error(request, error_text(request, err))
-        else:
-            return redirect("operations:job", op.pk)
-        return redirect("vmbackups:target", target.id)
-    if request.method == "POST" and "remove_pool" in request.POST:
+    if "remove_pool" in request.POST:
         row = get_object_or_404(target.pools.select_related("compute"), pk=request.POST["remove_pool"])
         if target.backups.exists():
             messages.error(request, _("Backup target %(target)s has backups; delete them first") % {"target": target.name})
@@ -145,6 +130,40 @@ def target(request, target_id):
             form.add_error("pool", str(err))
         else:
             return redirect("vmbackups:target", target.id)
+    return None
+
+
+@superuser_only
+def target(request, target_id):
+    target = get_object_or_404(BackupTarget, pk=target_id)
+    subject = f"Backup target {target.name}"
+    form = TargetPoolForm(request.POST if "add_pool" in request.POST else None, target=target)
+    if request.method == "POST" and {"delete", "remove_pool", "add_pool"} & set(request.POST):
+        # a job into or out of the target holds it: its pools and the target do not change under it
+        try:
+            with claims.hold({claims.backup_target_key(target.pk): Claim.EXCLUSIVE}):
+                if (done := _change_target(request, target, subject, form)) is not None:
+                    return done
+        except claims.Busy as busy:
+            messages.error(request, busy_message(busy, request.user))
+            return redirect("vmbackups:target", target.id)
+    if request.method == "POST" and "owners" in request.POST:
+        target.owners = request.POST["owners"] == "1"
+        with audit(request, None, subject, "open to VM owners" if target.owners else "closed to VM owners"):
+            target.save(update_fields=["owners"])
+        messages.success(request, _("VM owners with the backup permission may now use %(target)s.") % {"target": target.name}
+                         if target.owners else _("Only superusers use %(target)s now.") % {"target": target.name})
+        return redirect("vmbackups:target", target.id)
+    if request.method == "POST" and "import" in request.POST:
+        try:
+            op = jobs.submit("backup.import", request.user, {"target": target.pk}, request.POST.get("submission_key", ""))
+        except claims.Busy as busy:
+            messages.error(request, busy_message(busy, request.user))
+        except (jobs.SubmissionConflict, libvirtError) as err:
+            messages.error(request, error_text(request, err))
+        else:
+            return redirect("operations:job", op.pk)
+        return redirect("vmbackups:target", target.id)
     pools = [pool_state(row) for row in target.pools.select_related("compute").order_by("compute__name")]
     return render(request, "vmbackups/target.html", {"target": target, "pools": pools, "form": form,
                                                      "backup_count": target.backups.count()})
@@ -185,9 +204,12 @@ def index(request):
         rows = rows.filter(target_id=int(target))
     if state in dict(Backup.STATES):
         rows = rows.filter(state=state)
+    # schedules add a backup of each VM a night: the list is read a page at a time, as the jobs are
+    page = Paginator(rows, 50).get_page(request.GET.get("page"))
     return render(request, "vmbackups/index.html", {
-        "rows": rows, "targets": BackupTarget.objects.order_by("name"),
+        "rows": page.object_list, "page": page, "targets": BackupTarget.objects.order_by("name"),
         "vm": vm, "target": target, "state": state, "pending_deletes": pending_deletes(),
+        "page_query": urlencode({k: v for k, v in request.GET.items() if k != "page"}),
     })
 
 

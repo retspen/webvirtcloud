@@ -133,6 +133,22 @@ class TargetPageTests(TestCase):
         response = self.client.post(url, {"delete": "1"})
         self.assertTrue(BackupTarget.objects.filter(pk=target.pk).exists())
 
+    def test_a_target_a_job_holds_keeps_its_pools(self, mock_pool, mock_conn):
+        # a read of the target (or a backup into it) runs: its pools and the target stay as they are
+        from operations import claims
+        from operations.models import Claim
+
+        target = self.add_target()
+        url = reverse("vmbackups:target", args=[target.id])
+        mock_pool.return_value = pool_mock()
+        claims.admit({claims.backup_target_key(target.pk): Claim.EXCLUSIVE}, holder="other")
+        for data in ({"remove_pool": target.pools.get().id}, {"delete": "1"}, {"add_pool": "1", "compute": self.c2.id, "pool": "b2"}):
+            response = self.client.post(url, data)
+            self.assertRedirects(response, url, fetch_redirect_response=False)
+        self.assertEqual(list(target.pools.values_list("pool", flat=True)), ["b1"])
+        self.assertTrue(BackupTarget.objects.filter(pk=target.pk).exists())
+        self.assertTrue(any("in progress on this resource" in str(m) for m in get_messages(response.wsgi_request)))
+
     def test_an_empty_target_is_deleted(self, mock_pool, mock_conn):
         target = self.add_target()
         response = self.client.post(reverse("vmbackups:target", args=[target.id]), {"delete": "1"})

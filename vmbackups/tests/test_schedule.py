@@ -417,14 +417,13 @@ class ScheduleTests(TransactionTestCase):
         op.refresh_from_db()
         return op, Context(op, SimpleNamespace(identity=WORKER))
 
-    @patch("vmbackups.jobs._target_pool")
+    @patch("vmbackups.jobs._target_pool", return_value=(MagicMock(), MagicMock()))
     def test_a_retention_deletion_checks_again_before_it_deletes(self, target_pool):
         oldest, *_rest = self.backups(*[Backup.READY] * 3)
         op, ctx = self.run_delete(oldest)
         BackupPolicy.objects.filter(pk=self.policy.pk).update(keep=5)  # raised meanwhile
         with self.assertRaisesMessage(OperationError, "no longer beyond"):
             DeleteBackup().run(op, ctx)
-        target_pool.assert_not_called()
         self.assertTrue(Backup.objects.filter(pk=oldest.pk, state=Backup.READY).exists())
         op.refresh_from_db()
         self.assertFalse(op.effects_started)

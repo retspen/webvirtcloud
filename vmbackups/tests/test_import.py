@@ -130,6 +130,27 @@ class ImportTests(TransactionTestCase):
         self.assertEqual(result["added"], 1)
         self.assertIn(f"wvc-{self.a}-manifest.json", result["warning"][0]["values"]["names"])
 
+    def test_a_manifest_without_its_definition_or_disks_is_not_read(self):
+        empty = manifest(self.a)
+        empty["files"] = []
+        self.files[f"wvc-{self.a}-manifest.json"] = json.dumps(empty).encode()
+        result = self.read()
+        self.assertEqual(result["added"], 1)  # only b
+        self.assertIn(f"wvc-{self.a}-manifest.json", result["warning"][0]["values"]["names"])
+
+    def test_an_unreadable_manifest_does_not_stop_the_others(self):
+        real = self.files.copy()
+
+        def get(conn, pool, name):
+            if name == f"wvc-{self.a}-manifest.json":
+                raise libvirt.libvirtError("Permission denied")
+            return real[name]
+
+        with patch("vmbackups.jobs.get_file", side_effect=get):
+            result = self.read()
+        self.assertEqual(result["added"], 1)
+        self.assertIn(f"wvc-{self.a}-manifest.json", result["warning"][0]["values"]["names"])
+
     def test_an_incremental_backup_without_its_base_is_incomplete(self):
         lonely = manifest(self.a)
         lonely["parent"] = str(uuid4())
