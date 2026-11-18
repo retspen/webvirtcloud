@@ -1,2 +1,2 @@
-{% load bootstrap_icons %}{# tags: a VM's or host's tags (or their names), as badges #}
-{% for tag in tags %}<span class="badge text-bg-light border">{% bs_icon 'tag' %} {{ tag }}</span>{% endfor %}
+{% load i18n %}{% load bootstrap_icons %}{# tags: a VM's or host's tags (or their names), as badges; with filter, each chooses its tag in the list's tag filter (table_filter.js) #}
+{% for tag in tags %}{% if filter %}<button type="button" class="badge text-bg-light border" data-tag-filter="{{ tag }}" title="{% trans "Show only this tag" %}">{% bs_icon 'tag' %} {{ tag }}</button>{% else %}<span class="badge text-bg-light border">{% bs_icon 'tag' %} {{ tag }}</span>{% endif %}{% endfor %}

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 18:30+0000\n"
+"POT-Creation-Date: 2026-11-18 19:06+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -154,8 +154,8 @@ msgstr "最大备份大小 (GiB)"
 msgid "Can change password"
 msgstr "可修改密码"
 
-#: accounts/models.py:98 appsettings/models.py:9 computes/models.py:25
-#: computes/models.py:44 instances/models.py:33
+#: accounts/models.py:98 appsettings/models.py:9 computes/models.py:26
+#: computes/models.py:52 instances/models.py:33
 msgid "name"
 msgstr "名称"
 
@@ -2061,43 +2061,43 @@ msgstr "均衡"
 msgid "%(compute)s is in maintenance: Balance leaves it out"
 msgstr "%(compute)s 正在维护：均衡不包括它"
 
-#: computes/models.py:19
+#: computes/models.py:20
 msgid ""
 "A tag is letters a-z, digits, dots, dashes and underscores, and begins with a"
 " letter or digit"
 msgstr "标签由字母 a-z、数字、点、短横线和下划线组成，并以字母或数字开头"
 
-#: computes/models.py:45
+#: computes/models.py:53
 msgid "hostname"
 msgstr "主机名"
 
-#: computes/models.py:46
+#: computes/models.py:54
 msgid "login"
 msgstr "登录名"
 
-#: computes/models.py:47
+#: computes/models.py:55
 msgid "password"
 msgstr "密码"
 
-#: computes/models.py:48
+#: computes/models.py:56
 msgid "details"
 msgstr "详情"
 
-#: computes/models.py:51
+#: computes/models.py:59
 msgid "migration address"
 msgstr "迁移地址"
 
-#: computes/models.py:57
+#: computes/models.py:65
 msgid ""
 "IP address or host name the other hosts send migrating VMs to; empty: the "
 "address the panel reaches the host at"
 msgstr "其他主机向此主机迁移虚拟机时使用的 IP 地址或主机名；留空：使用面板连接该主机的地址"
 
-#: computes/models.py:62 computes/templates/computes/form.html:38
+#: computes/models.py:70 computes/templates/computes/form.html:38
 msgid "gstfsd key"
 msgstr "gstfsd 密钥"
 
-#: computes/models.py:68
+#: computes/models.py:76
 msgid ""
 "GSTFSD_KEY in the host's /etc/default/webvirt-gstfsd: the panel sets the root"
 " password and SSH key of a shut-off VM with it; empty: they cannot be set "
@@ -2106,40 +2106,40 @@ msgstr ""
 "主机 /etc/default/webvirt-gstfsd 中的 GSTFSD_KEY：面板用它为已关机的虚拟机设置 root 密码和 SSH "
 "密钥；留空：无法在此设置"
 
-#: computes/models.py:82 instances/models.py:38
+#: computes/models.py:90 instances/models.py:38
 msgid "tags"
 msgstr "标签"
 
-#: computes/models.py:98 computes/templates/computes/instances.html:12
+#: computes/models.py:106 computes/templates/computes/instances.html:12
 #, python-format
 msgid "%(compute)s is in maintenance: no new VM or migration comes to it"
 msgstr "%(compute)s 正在维护：不会在其上创建新虚拟机，也不会迁移虚拟机到它"
 
-#: computes/models.py:104
+#: computes/models.py:112
 #, python-format
 msgid ""
 "%(compute)s is in maintenance: its VMs cannot be started there; migrate the "
 "VM to start it on another host"
 msgstr "%(compute)s 正在维护：其虚拟机无法在其上启动；请将虚拟机迁移到其他主机后再启动"
 
-#: computes/models.py:231
+#: computes/models.py:239
 #, python-format
 msgid "This host is already added as %(name)s"
 msgstr "此主机已作为 %(name)s 添加"
 
-#: computes/models.py:234
+#: computes/models.py:242
 #, python-format
 msgid ""
 "The panel cannot reach the host to tell that its VMs are there: %(error)s"
 msgstr "面板无法连接该主机，因此无法确认其虚拟机在那里：%(error)s"
 
-#: computes/models.py:241
+#: computes/models.py:249
 msgid ""
 "The host its VMs are on is not known yet: change the connection when the "
 "panel has reached the host at its current one"
 msgstr "其虚拟机所在的主机尚不明确：请在面板通过当前连接访问到该主机后再更改连接"
 
-#: computes/models.py:244
+#: computes/models.py:252
 msgid "This is another host than the one its VMs are on: add it as a new host"
 msgstr "这不是其虚拟机所在的主机：请将其添加为新主机"
 
@@ -9099,9 +9099,18 @@ msgstr "请重新加载页面重试。如果问题持续出现，请将时间告
 msgid "Delete <strong>%(object)s</strong>?"
 msgstr "删除 <strong>%(object)s</strong>？"
 
+#: templates/common/tag_badges.html:2
+msgid "Show only this tag"
+msgstr "只显示此标签"
+
 #: templates/common/tag_filter.html:4
 msgid "All tags"
 msgstr "所有标签"
+
+#: templates/common/tag_filter.html:5
+#, python-format
+msgid "No tag (%(untagged)s)"
+msgstr "无标签（%(untagged)s）"
 
 #: templates/error.html:13
 msgid "HTTP status"

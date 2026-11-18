@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 18:30+0000\n"
+"POT-Creation-Date: 2026-11-18 19:06+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -157,8 +157,8 @@ msgstr "en fazla yedek boyutu (GiB)"
 msgid "Can change password"
 msgstr "Parola değiştirebilir"
 
-#: accounts/models.py:98 appsettings/models.py:9 computes/models.py:25
-#: computes/models.py:44 instances/models.py:33
+#: accounts/models.py:98 appsettings/models.py:9 computes/models.py:26
+#: computes/models.py:52 instances/models.py:33
 msgid "name"
 msgstr "ad"
 
@@ -2143,7 +2143,7 @@ msgstr "Dengele"
 msgid "%(compute)s is in maintenance: Balance leaves it out"
 msgstr "%(compute)s bakımda: Dengele onu hesaba katmaz"
 
-#: computes/models.py:19
+#: computes/models.py:20
 msgid ""
 "A tag is letters a-z, digits, dots, dashes and underscores, and begins with a"
 " letter or digit"
@@ -2151,27 +2151,27 @@ msgstr ""
 "Etiket a-z harfleri, rakamlar, nokta, tire ve alt çizgiden oluşur ve harf ya "
 "da rakamla başlar"
 
-#: computes/models.py:45
+#: computes/models.py:53
 msgid "hostname"
 msgstr "sunucuadı"
 
-#: computes/models.py:46
+#: computes/models.py:54
 msgid "login"
 msgstr "kullanıcı"
 
-#: computes/models.py:47
+#: computes/models.py:55
 msgid "password"
 msgstr "parola"
 
-#: computes/models.py:48
+#: computes/models.py:56
 msgid "details"
 msgstr "detaylar"
 
-#: computes/models.py:51
+#: computes/models.py:59
 msgid "migration address"
 msgstr "taşıma adresi"
 
-#: computes/models.py:57
+#: computes/models.py:65
 msgid ""
 "IP address or host name the other hosts send migrating VMs to; empty: the "
 "address the panel reaches the host at"
@@ -2179,11 +2179,11 @@ msgstr ""
 "Diğer sunucuların taşınan sanal makineleri gönderdiği IP adresi veya ana "
 "bilgisayar adı; boş: panelin bu sunucuya ulaştığı adres"
 
-#: computes/models.py:62 computes/templates/computes/form.html:38
+#: computes/models.py:70 computes/templates/computes/form.html:38
 msgid "gstfsd key"
 msgstr "gstfsd anahtarı"
 
-#: computes/models.py:68
+#: computes/models.py:76
 msgid ""
 "GSTFSD_KEY in the host's /etc/default/webvirt-gstfsd: the panel sets the root"
 " password and SSH key of a shut-off VM with it; empty: they cannot be set "
@@ -2193,16 +2193,16 @@ msgstr ""
 "sanal makinenin root parolasını ve SSH anahtarını bununla ayarlar; boş: bu "
 "sunucuda ayarlanamazlar"
 
-#: computes/models.py:82 instances/models.py:38
+#: computes/models.py:90 instances/models.py:38
 msgid "tags"
 msgstr "etiketler"
 
-#: computes/models.py:98 computes/templates/computes/instances.html:12
+#: computes/models.py:106 computes/templates/computes/instances.html:12
 #, python-format
 msgid "%(compute)s is in maintenance: no new VM or migration comes to it"
 msgstr "%(compute)s bakımda: ona yeni sanal makine ya da taşıma gelmez"
 
-#: computes/models.py:104
+#: computes/models.py:112
 #, python-format
 msgid ""
 "%(compute)s is in maintenance: its VMs cannot be started there; migrate the "
@@ -2211,12 +2211,12 @@ msgstr ""
 "%(compute)s bakımda: sanal makineleri orada başlatılamaz; başka bir sunucuda "
 "başlatmak için sanal makineyi taşıyın"
 
-#: computes/models.py:231
+#: computes/models.py:239
 #, python-format
 msgid "This host is already added as %(name)s"
 msgstr "Bu sunucu zaten %(name)s olarak ekli"
 
-#: computes/models.py:234
+#: computes/models.py:242
 #, python-format
 msgid ""
 "The panel cannot reach the host to tell that its VMs are there: %(error)s"
@@ -2224,7 +2224,7 @@ msgstr ""
 "Panel sunucuya ulaşamadığı için VM'lerinin orada olduğunu doğrulayamıyor: "
 "%(error)s"
 
-#: computes/models.py:241
+#: computes/models.py:249
 msgid ""
 "The host its VMs are on is not known yet: change the connection when the "
 "panel has reached the host at its current one"
@@ -2232,7 +2232,7 @@ msgstr ""
 "VM'lerinin bulunduğu sunucu henüz bilinmiyor: bağlantıyı, panel sunucuya "
 "mevcut bağlantısından ulaştıktan sonra değiştirin"
 
-#: computes/models.py:244
+#: computes/models.py:252
 msgid "This is another host than the one its VMs are on: add it as a new host"
 msgstr ""
 "Bu, VM'lerinin bulunduğu sunucudan başka bir sunucu: yeni bir sunucu olarak "
@@ -9666,9 +9666,18 @@ msgstr ""
 msgid "Delete <strong>%(object)s</strong>?"
 msgstr "<strong>%(object)s</strong> silinsin mi?"
 
+#: templates/common/tag_badges.html:2
+msgid "Show only this tag"
+msgstr "Yalnız bu etiketi göster"
+
 #: templates/common/tag_filter.html:4
 msgid "All tags"
 msgstr "Tüm etiketler"
+
+#: templates/common/tag_filter.html:5
+#, python-format
+msgid "No tag (%(untagged)s)"
+msgstr "Etiketsiz (%(untagged)s)"
 
 #: templates/error.html:13
 msgid "HTTP status"

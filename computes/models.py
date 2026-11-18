@@ -1,3 +1,4 @@
+from collections import Counter
 from ipaddress import ip_address
 
 from django.core.exceptions import ValidationError
@@ -29,6 +30,13 @@ class Tag(Model):
 
     def __str__(self):
         return self.name
+
+    @staticmethod
+    def counts(rows):
+        """The tag list's choices for rows (VMs or hosts, their tags read):
+        [(name, how many have it)] by name, and how many have no tag."""
+        counts = Counter(tag.name for row in rows for tag in row.tags.all())
+        return sorted(counts.items()), sum(1 for row in rows if not row.tags.all())
 
     @classmethod
     def named(cls, names):

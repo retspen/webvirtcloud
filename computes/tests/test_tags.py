@@ -106,5 +106,6 @@ class HostTagsTests(TestCase):
         compute.tags.add(Tag.objects.create(name="rack-1"))
         response = self.client.get(reverse("computes"))
         self.assertContains(response, "rack-1")
-        self.assertContains(response, '<option value="rack-1">rack-1</option>', html=True)
+        self.assertContains(response, '<option value="rack-1">rack-1 (1)</option>', html=True)
+        self.assertContains(response, 'data-tag-filter="rack-1"')
         self.assertContains(response, 'data-tags="rack-1"')

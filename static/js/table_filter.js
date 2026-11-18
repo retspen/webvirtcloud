@@ -5,7 +5,8 @@
 // pattern. A row with data-search is searched in that text only, not in its
 // buttons and menus. With a state list, the row's [data-state] must
 // be the chosen state too; with a tag list (#tag-filter), the chosen tag
-// one of the row's data-tags (names split by spaces). In a grouped list a search for a group's host
+// one of the row's data-tags (names split by spaces), or "-" none of them.
+// A tag's badge ([data-tag-filter]) chooses it in the list. In a grouped list a search for a group's host
 // shows all of its rows, and its header row (data-group-header) shows while
 // any of its rows does. A page's #no-match shows while no row does. The
 // search is remembered for a day, per page, unless its box has data-forget.
@@ -42,8 +43,9 @@ function filterTable(doc) {
             }
             var mark = row.querySelector("[data-state]");
             var searched = row.dataset.search !== undefined ? row.dataset.search : row.textContent;
-            var found = (hostMatches || fold(searched).includes(text))
-                && (!tag || (row.dataset.tags || "").split(" ").indexOf(tag) >= 0);
+            var rowTags = row.dataset.tags || "";
+            var tagged = !tag || (tag === "-" ? rowTags === "" : rowTags.split(" ").indexOf(tag) >= 0);
+            var found = (hostMatches || fold(searched).includes(text)) && tagged;
             row.hidden = !((!state || (mark && mark.dataset.state === state)) && found);
             shown = shown || !row.hidden;
             if (mark) {
@@ -125,6 +127,14 @@ if (typeof module !== "undefined") {
         tags.addEventListener("change", function () {
             keep(tags.value, key + "_tag");
             filterTable(document);
+        });
+        document.addEventListener("click", function (event) {
+            var badge = event.target.closest("[data-tag-filter]");
+            if (badge) {
+                tags.value = badge.dataset.tagFilter;
+                keep(tags.value, key + "_tag");
+                filterTable(document);
+            }
         });
     }
     var pills = document.getElementById("state-pills");

@@ -1,7 +1,8 @@
-{% load i18n %}{# tags: the names of the listed rows' tags; table_filter.js shows the rows with the one chosen #}
-{% if tags %}
+{% load i18n %}{# tags: Tag.counts of the listed rows; table_filter.js shows the rows with the one chosen #}
+{% with names=tags.0 untagged=tags.1 %}{% if names %}
 <select id="tag-filter" class="form-select w-auto" aria-label="{% trans "Tag" %}">
     <option value="">{% trans "All tags" %}</option>
-    {% for tag in tags %}<option value="{{ tag }}">{{ tag }}</option>{% endfor %}
+    {% if untagged %}<option value="-">{% blocktrans %}No tag ({{ untagged }}){% endblocktrans %}</option>{% endif %}
+    {% for name, count in names %}<option value="{{ name }}">{{ name }} ({{ count }})</option>{% endfor %}
 </select>
-{% endif %}
+{% endif %}{% endwith %}

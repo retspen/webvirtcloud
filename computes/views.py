@@ -36,7 +36,7 @@ from computes.forms import (
     TcpComputeForm,
     TlsComputeForm,
 )
-from computes.models import ENDPOINT, Compute
+from computes.models import ENDPOINT, Compute, Tag
 
 from . import utils
 
@@ -180,7 +180,7 @@ def computes(request):
             totals["memory"] += given["memory"]
     return render(request, "computes/list.html",
                   {"computes": computes, "totals": totals, "job_resource": claims.bulk_migrate_key(),
-                   "tags": sorted({tag.name for compute in computes for tag in compute.tags.all()})})
+                   "tags": Tag.counts(computes)})
 
 
 @superuser_only

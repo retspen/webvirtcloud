@@ -129,7 +129,7 @@ def index(request):
          "reachable_computes": [c for c in computes if c.status is True and c.ram_usage is not None],
          "unreachable_computes": [c for c in computes if c.status is not True],
          "states": [label for label, _color in STATES.values()] + [UNKNOWN[0]],
-         "tags": sorted({tag.name for instance in instances for tag in instance.tags.all()}),
+         "tags": Tag.counts(instances),
          "states_url": reverse("instances:states"), "vm_states": vm_states},
     )
 

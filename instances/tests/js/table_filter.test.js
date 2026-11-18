@@ -115,6 +115,8 @@ filterInstances(page([group(tagged)], "", "", undefined, {tag: "pro"}));
 assert.deepStrictEqual(visible(tagged), [], "a tag is a whole name");
 filterInstances(page([group(tagged)], "", "", undefined, {tag: ""}));
 assert.deepStrictEqual(visible(tagged), ["web-1", "db-1", "web-2"], "no tag chosen: all");
+filterInstances(page([group(tagged)], "", "", undefined, {tag: "-"}));
+assert.deepStrictEqual(visible(tagged), ["web-2"], "-: the rows without a tag");
 const tagCounts = [count(""), count("Active"), count("Off")];
 filterInstances(page([group(tagged)], "", "Active", undefined, {tag: "prod", counts: tagCounts}));
 assert.deepStrictEqual(tagCounts.map((c) => c.textContent), [2, 1, 1], "the state counts follow the tag");
@@ -142,9 +144,17 @@ assert.deepStrictEqual(visible(turkish), ["Şişli"]);
         "state-pills": {querySelectorAll: () => pillList, querySelector: () => pillList[0], addEventListener() {}},
         "tag-filter": {value: "", options: [{value: ""}, {value: "prod"}], addEventListener() {}},
     };
-    const doc = {title: "VMs", getElementById: (id) => elements[id], querySelectorAll: () => []};
+    const listeners = {};
+    const doc = {title: "VMs", getElementById: (id) => elements[id], querySelectorAll: () => [],
+                 addEventListener: (name, fn) => { listeners[name] = fn; }};
     const storage = {getItem: (k) => stored[k] || null, setItem: (k, v) => { stored[k] = v; }, removeItem: (k) => { delete stored[k]; }};
     vmModule.runInNewContext(fs.readFileSync(process.argv[2], "utf8"), {document: doc, sessionStorage: storage});
     assert.strictEqual(elements["state-filter"].value, "Off");
     assert.strictEqual(elements["tag-filter"].value, "prod", "the chosen tag is remembered too");
+    // a tag's badge chooses it in the list
+    const badge = {dataset: {tagFilter: "web"}};
+    elements["tag-filter"].options.push({value: "web"});
+    listeners.click({target: {closest: (s) => (s === "[data-tag-filter]" ? badge : null)}});
+    assert.strictEqual(elements["tag-filter"].value, "web", "a badge chooses its tag");
+    assert.strictEqual(stored["VMs_filter_tag"], "web", "and it is remembered");
 }

@@ -76,10 +76,15 @@ class VmListTagFilterTests(TestCase):
                 patch.object(Compute, "status", new_callable=PropertyMock, return_value=True):
             return lxml_html.fromstring(self.client.get(reverse("instances:index")).content)
 
-    def test_the_tag_list_has_the_tags_of_the_vms_listed(self):
+    def test_the_tag_list_has_the_tags_of_the_vms_listed_with_how_many(self):
+        Instance.objects.create(compute=Compute.objects.get(), name="bare", uuid="12345678-0000-0000-0000-00000000cc03")
         doc = self.page(self.admin)
-        self.assertEqual(doc.xpath("//select[@id='tag-filter']/option/@value"), ["", "prod", "secret", "web"])
-        self.assertEqual(doc.xpath("//tr[@data-tags]/@data-tags"), ["prod web", "secret"])
+        self.assertEqual(doc.xpath("//select[@id='tag-filter']/option/@value"), ["", "-", "prod", "secret", "web"])
+        self.assertEqual([" ".join(o.split()) for o in doc.xpath("//select[@id='tag-filter']/option/text()")],
+                         ["All tags", "No tag (1)", "prod (1)", "secret (1)", "web (1)"])
+        self.assertEqual(doc.xpath("//tr[@data-tags]/@data-tags"), ["", "prod web", "secret"])
+        # a badge chooses its tag in the list
+        self.assertEqual(doc.xpath("//tr//button[@data-tag-filter]/@data-tag-filter"), ["prod", "web", "secret"])
 
     def test_an_owner_sees_only_the_tags_of_their_vms(self):
         doc = self.page(self.owner)
