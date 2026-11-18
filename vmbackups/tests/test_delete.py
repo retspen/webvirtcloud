@@ -111,10 +111,21 @@ class DeleteBackupTests(TransactionTestCase):
                 self.run_job(op)
         self.assertEqual(self.removed, [])
 
+    def creating(self, op_state):
+        maker = Operation.objects.create(kind="backup.create", username="del_admin", submission_key="k", resource="r",
+                                         resource_label="vm1", state=op_state)
+        Backup.objects.filter(pk=self.backup.pk).update(state=Backup.CREATING, operation=maker)
+
     def test_a_creating_backup_is_not_deleted(self):
-        Backup.objects.filter(pk=self.backup.pk).update(state=Backup.CREATING)
+        self.creating(Operation.RUNNING)
         with self.assertRaisesMessage(OperationError, "being made"):
             self.submit()
+
+    def test_a_backup_whose_job_ended_without_it_is_deleted(self):
+        # its job ended uncertain (its host unreachable) and was resolved: the row stays creating
+        self.creating(Operation.FAILED)
+        self.run_job(self.submit())
+        self.assertFalse(Backup.objects.filter(pk=self.backup.pk).exists())
 
     def test_a_backup_others_build_on_is_refused_until_they_go(self):
         child = Backup.objects.create(target=self.target, instance=self.vm, vm_uuid=self.vm.uuid, vm_name="vm1",

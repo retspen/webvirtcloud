@@ -5,7 +5,7 @@
 
 {% block title %}{% trans "Restore over the VM" %}{% endblock %}
 
-{% block page_heading %}<a href="{% url 'vmbackups:index' %}">{% trans "Backups" %}</a> / {% trans "Restore over the VM" %}{% endblock page_heading %}
+{% block page_heading %}<a href="{% if user.is_superuser %}{% url 'vmbackups:index' %}{% else %}{% url 'instances:instance' backup.instance_id %}#backups{% endif %}">{% trans "Backups" %}</a> / {% trans "Restore over the VM" %}{% endblock page_heading %}
 
 {% block content %}
     <p>{% blocktrans with vm=backup.vm_name time=backup.created_at|date:"Y-m-d H:i" target=backup.target.name %}The backup of {{ vm }} taken {{ time }}, in {{ target }}, is restored over the VM: its disks are copied as new volumes and the VM is switched to them. Its settings, MAC addresses and UUID stay.{% endblocktrans %}</p>

@@ -647,7 +647,7 @@ class DeleteBackup(Kind):
     def plan(self, user, params):
         backup = _backup(params)
         self._may_delete(user, backup)
-        if backup.state == Backup.CREATING:
+        if backup.being_made:
             raise util.OperationError(_("This backup is being made; cancel its job to stop it"))
         if backup.depended_on():
             raise util.OperationError(_("Later backups depend on this one; delete them first"))

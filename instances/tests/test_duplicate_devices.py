@@ -51,6 +51,21 @@ class DuplicateDeviceTests(TestCase):
         self.assertEqual(self.post("add_existing_vol", form), ["data.qcow2 is already a disk of this VM"])
         self.proxy.attach_disk.assert_called_once()
 
+    @patch("instances.views.wvmStorage")
+    def test_a_backup_volume_is_not_attached(self, storage):
+        # the VM would write into the backup, and its deletion would remove the VM's disk
+        from vmbackups.models import Backup, BackupTarget, BackupTargetPool
+
+        target = BackupTarget.objects.create(name="nfs1")
+        BackupTargetPool.objects.create(target=target, compute=self.vm.compute, pool="b1", pool_uuid="u1")
+        backup = Backup.objects.create(target=target, vm_uuid="u", vm_name="vm1", compute_name="dup-c")
+        name = f"{backup.prefix}-vda.qcow2"
+        storage.return_value.get_volumes.return_value = [name]
+        form = {"selected_storage": "b1", "vols": name, "bus": "virtio", "cache": "default"}
+        self.assertEqual(self.post("add_existing_vol", form),
+                         [f"Volume {name} belongs to a backup of vm1; delete the backup on the Backups page"])
+        self.proxy.attach_disk.assert_not_called()
+
     def test_a_nic_with_the_mac_of_another_is_not_added(self):
         form = {"add-net-network": "net:default", "add-net-mac": MAC, "add-net-model": "virtio"}
         self.post("add_network", form)

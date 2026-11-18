@@ -315,6 +315,9 @@ class OwnerTests(TransactionTestCase):
             page = lxml_html.fromstring(self.client.get(reverse("vmbackups:restore", args=[backup.uuid])).content)
         self.assertFalse(page.xpath("//select[@name='compute']|//input[@name='pool']"))
         self.assertIn("On h1, in storage pool default", page.text_content())
+        # the backups list is the superusers': the owner goes back to the VM's Backups tab
+        self.assertEqual(page.xpath("//a[normalize-space()='Backups']/@href"),
+                         [reverse("instances:instance", args=[self.vm.pk]) + "#backups"])
         with (patch("vmbackups.views._vm_pool", return_value="default"),
               patch("vmbackups.jobs._vm_pool", return_value="default"),
               patch("vmbackups.jobs.wvmConnect", return_value=MagicMock()),

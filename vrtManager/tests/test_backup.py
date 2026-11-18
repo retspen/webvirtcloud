@@ -104,6 +104,15 @@ class BackupPlanTestCase(unittest.TestCase):
     def test_an_nvram_outside_libvirts_directory_is_refused(self):
         self.refused(proxy(domain(os_extra="<nvram>/srv/vm1_VARS.fd</nvram>")), "/srv/vm1_VARS.fd")
 
+    def test_an_nvram_that_is_no_file_is_refused(self):
+        self.refused(proxy(domain(os_extra="<nvram type='block'><source dev='/dev/sdc'/></nvram>")), "/dev/sdc")
+        self.refused(proxy(domain(os_extra="<nvram type='network'><source protocol='iscsi' name='iqn.2013-07.com.example:iscsi-nopool/0'/></nvram>")),
+                     "iqn.2013-07.com.example:iscsi-nopool/0")
+
+    def test_a_memory_dimm_is_backed_up(self):
+        self.assertEqual(len(proxy(domain(QCOW + "<memory model='dimm'><target><size unit='KiB'>524288</size></target></memory>"))
+                             .backup_plan()["disks"]), 1)
+
     def test_refusals_name_the_reason_and_the_device(self):
         cases = {
             "encrypted": (
@@ -124,6 +133,10 @@ class BackupPlanTestCase(unittest.TestCase):
                 ("vda", "vmdk"),
             ),
             "filesystem": (QCOW + "<filesystem type='mount'><source dir='/srv'/><target dir='t'/></filesystem>", ("host directory",)),
+            "nvdimm": (QCOW + "<memory model='nvdimm'><source><path>/srv/nvdimm</path></source></memory>",
+                       ("persistent memory",)),
+            "virtio-pmem": (QCOW + "<memory model='virtio-pmem' access='shared'><source><path>/srv/pmem</path>"
+                            "</source></memory>", ("persistent memory",)),
             "host device": (QCOW + "<hostdev mode='subsystem' type='pci'/>", ("host device",)),
             "host device NIC": (QCOW + "<interface type='hostdev'><mac address='52:54:00:00:00:09'/></interface>",
                                 ("host device",)),

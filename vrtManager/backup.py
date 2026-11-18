@@ -69,6 +69,9 @@ class wvmBackup(wvmInstance):
             raise OperationError(gettext_noop("%(vm)s has TPM state; shut it down to back it up"), vm=name)
         if tree.find("devices/filesystem") is not None:
             raise OperationError(gettext_noop("%(vm)s shares a host directory (filesystem); it cannot be backed up"), vm=name)
+        if tree.xpath("devices/memory[@model='nvdimm' or @model='virtio-pmem']"):
+            raise OperationError(gettext_noop("%(vm)s has a persistent memory device (a host file); it cannot be backed up"),
+                                 vm=name)
         if tree.xpath("os/kernel|os/initrd|os/dtb"):
             raise OperationError(gettext_noop("%(vm)s boots a kernel file of the host; it cannot be backed up"), vm=name)
         if tree.xpath("devices/hostdev|devices/interface[@type='hostdev']"):
@@ -115,7 +118,9 @@ class wvmBackup(wvmInstance):
                 raise OperationError(gettext_noop("Disks %(devs)s change at the next start; back the VM up after it restarts"),
                               devs=", ".join(changed))
 
-        nvram = tree.xpath("string(os/nvram/source/@file)") or (tree.findtext("os/nvram") or "").strip() or None
+        # a block device's or network NVRAM is named too: it is refused below
+        nvram = (tree.xpath("string(os/nvram/source/@file|os/nvram/source/@dev|os/nvram/source/@name)")
+                 or (tree.findtext("os/nvram") or "").strip() or None)
         if nvram and os.path.dirname(nvram) != NVRAM_DIR:
             raise OperationError(gettext_noop("The NVRAM file %(path)s is not in libvirt's NVRAM directory %(dir)s and cannot be copied"),
                           path=nvram, dir=NVRAM_DIR)

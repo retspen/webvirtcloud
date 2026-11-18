@@ -196,7 +196,7 @@ def create(request, instance_id):
 @superuser_only
 def index(request):
     """Every backup, newest first; filtered by VM name, target and state."""
-    rows = Backup.objects.select_related("target", "instance", "policy")
+    rows = Backup.objects.select_related("target", "instance", "policy", "operation")
     vm, target, state = request.GET.get("vm", "").strip(), request.GET.get("target", ""), request.GET.get("state", "")
     if vm:
         rows = rows.filter(vm_name__icontains=vm)

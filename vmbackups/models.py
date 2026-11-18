@@ -116,6 +116,12 @@ class Backup(models.Model):
     class Meta:
         ordering = ["-created_at"]
 
+    @property
+    def being_made(self):
+        """Its job still runs. One that ended uncertain (its host unreachable) leaves the row creating: it is
+        deleted like a failed one."""
+        return self.state == self.CREATING and self.operation_id is not None and self.operation.state in Operation.ACTIVE
+
     def depended_on(self):
         """Whether a backup builds on this one: a failed one holds nothing."""
         return self.children.filter(state__in=self.LIVING).exists()

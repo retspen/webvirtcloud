@@ -67,7 +67,7 @@ from vrtManager.util import randomPasswd
 
 from instances.models import Instance
 from instances.templatetags.vm_states import disk_seen
-from vmbackups.utils import vm_tab
+from vmbackups.utils import refuse_backup_volume, vm_tab
 
 from . import addresses, report, utils
 from .api.serializers import DestroyOptionsSerializer, PowerOnSerializer
@@ -1467,6 +1467,11 @@ def add_existing_vol(request, pk):
     # out path traversal through the volume name.
     if name not in conn_create.get_volumes():
         return reject_disk_options(request, pk, ["vols"])
+    try:  # the VM would write into the backup, and the backup's deletion would remove its disk
+        refuse_backup_volume(instance.compute, storage, name)
+    except util.OperationError as err:
+        messages.error(request, str(err))
+        return _back(request, pk, "disks")
 
     pool_type = conn_create.get_type()
     format_type = util.vol_driver_type(conn_create.get_volume_format_type(name), pool_type)
