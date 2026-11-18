@@ -216,7 +216,7 @@ class OwnerTests(TransactionTestCase):
         from vmbackups.jobs import RestoreOver
 
         backup = self.ready_backup()
-        over = {"disks": {"vda": ["default", "vm1-vda-x.qcow2"]}, "old": {"vda": "/pool/a.qcow2"}, "nvram": None, "tpm": False}
+        over = {"disks": {"vda": "default"}, "old": {"vda": "/pool/a.qcow2"}, "nvram": None, "tpm": False}
         old_vol = MagicMock()
         self.proxy.get_volume_by_path.return_value = old_vol
         self.proxy.paths_used_by_other_domains.return_value = set()

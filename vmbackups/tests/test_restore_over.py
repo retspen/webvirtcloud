@@ -147,7 +147,7 @@ class RestoreOverTests(TransactionTestCase):
 
     def test_the_disks_are_copied_as_new_volumes_then_switched(self):
         op = self.submit()
-        self.assertEqual(op.intent["over"]["disks"], {"vda": ["default", "vm1-vda-20261117-1140.qcow2"]})
+        self.assertEqual((op.intent["over"]["disks"], op.intent["names"]), ({"vda": "default"}, {"vda": "vm1-vda-20261117-1140.qcow2"}))
         self.assertTrue(Claim.objects.filter(operation=op, resource=f"volume:{self.compute.pk}:default/vm1-vda-20261117-1140.qcow2",
                                              mode=Claim.EXCLUSIVE).exists())
         self.assertTrue(Claim.objects.filter(operation=op, resource=f"instance:{self.vm.uuid}", mode=Claim.EXCLUSIVE).exists())
@@ -218,10 +218,21 @@ class RestoreOverTests(TransactionTestCase):
         with self.assertRaisesMessage(OperationError, "new VM"):
             self.submit()
 
-    def test_a_taken_name_is_refused_and_nothing_removed(self):
-        self.dest.storageVolLookupByName.side_effect = None  # restored over from this backup before
-        self.refused("vm1-vda-20261117-1140.qcow2")
+    def test_a_name_taken_after_the_job_was_queued_is_refused_and_nothing_removed(self):
+        op = self.submit()
+        self.dest.storageVolLookupByName.side_effect = None
+        with self.assertRaisesMessage(OperationError, "vm1-vda-20261117-1140.qcow2"):
+            self.run_job(op)
+        self.storage.clone_volume.assert_not_called()
         self.assertEqual(self.removed, [])
+
+    def test_the_same_backup_restored_over_again_takes_the_next_free_name(self):
+        # the VM runs from the first restore's copy; an administrator's restore kept the disk before it too
+        self.dest.listVolumes.return_value = ["vm1.qcow2", "vm1-vda-20261117-1140.qcow2", "vm1-vda-20261117-1140-2.qcow2"]
+        op = self.submit()
+        self.assertEqual(op.intent["names"], {"vda": "vm1-vda-20261117-1140-3.qcow2"})
+        self.run_job(op)
+        self.assertEqual(self.defined().xpath("devices/disk/source/@file"), ["/pool/vm1-vda-20261117-1140-3.qcow2"])
 
     def test_disks_changed_after_the_job_was_queued_are_refused(self):
         op = self.submit()

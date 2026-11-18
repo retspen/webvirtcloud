@@ -28,7 +28,7 @@ from vrtManager.connection import wvmConnect
 from vrtManager.util import OperationError
 
 from .forms import PolicyForm, RestoreDiskForm, RestoreForm, TargetForm, TargetPoolForm
-from .jobs import _over_plan, _proxy, _vm_pool
+from .jobs import _over_names, _over_plan, _proxy, _vm_pool
 from .models import Backup, BackupPolicy, BackupTarget
 from .utils import inside_vm_pool, pending_deletes
 
@@ -283,11 +283,13 @@ def restore_over(request, uuid):
         return redirect("operations:job", op.pk)
     over, problem = None, None
     try:
-        over = _over_plan(backup, _proxy(backup.instance), owner=not request.user.is_superuser)
+        proxy = _proxy(backup.instance)
+        over = _over_plan(backup, proxy, owner=not request.user.is_superuser)
+        names = _over_names(backup, proxy, over)
     except (OperationError, libvirtError) as err:
         problem = error_text(request, err)
-    disks = [{"dev": dev, "old": over["old"][dev], "pool": pool, "name": name}
-             for dev, (pool, name) in sorted(over["disks"].items())] if over else []
+    disks = [{"dev": dev, "old": over["old"][dev], "pool": pool, "name": names[dev]}
+             for dev, pool in sorted(over["disks"].items())] if over else []
     return render(request, "vmbackups/restore_over.html", {"backup": backup, "disks": disks, "over": over,
                                                            "problem": problem})
 

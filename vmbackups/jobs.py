@@ -2,6 +2,7 @@
 
 import datetime
 import hashlib
+import itertools
 import json
 import os
 import re
@@ -961,8 +962,8 @@ class RestoreBackup(Kind):
 
 
 def _over_plan(backup, proxy, owner=False):
-    """What a restore over the backup's VM makes: {"disks": {dev: [pool,
-    volume name]}, "old": {dev: the disk's path now}, "nvram": the VM's NVRAM
+    """What a restore over the backup's VM replaces: {"disks": {dev: the
+    disk's pool}, "old": {dev: the disk's path now}, "nvram": the VM's NVRAM
     path or None, "tpm": bool}.
     Refuses a VM that is not shut off, has snapshots, or whose disks, UEFI
     firmware or TPM are not the backup's."""
@@ -985,10 +986,26 @@ def _over_plan(backup, proxy, owner=False):
         raise util.OperationError(_("The VM's UEFI firmware changed since the backup; restore it as a new VM"))
     if plan["tpm"] != (backup.manifest.get("tpm", "none") != "none"):
         raise util.OperationError(_("The VM's TPM changed since the backup; restore it as a new VM"))
-    time = timezone.localtime(backup.created_at).strftime("%Y%m%d-%H%M")
-    return {"disks": {dev: [now[dev]["pool"], f"{proxy.instance.name()}-{dev}-{time}.{'qcow2' if f.format == 'qcow2' else 'raw'}"]
-                      for dev, f in files.items()},
+    return {"disks": {dev: now[dev]["pool"] for dev in files},
             "old": {dev: now[dev]["path"] for dev in files}, "nvram": plan["nvram"], "tpm": plan["tpm"]}
+
+
+def _over_names(backup, proxy, over):
+    """The copies' volume names, {dev: name}: the VM's, the disk's and the
+    backup's time, numbered from 2 when its pool has that name (the backup
+    restored over the VM before, or another one of the same minute)."""
+    time = timezone.localtime(backup.created_at).strftime("%Y%m%d-%H%M")
+    pools = proxy.file_pools()
+    names = {}
+    for f in backup.files.filter(role=BackupFile.DISK):
+        pool = pools.get(over["disks"][f.dev])
+        if pool:
+            pool[0].refresh(0)
+        taken = set(pool[0].listVolumes()) if pool else set()
+        base, ext = f"{proxy.instance.name()}-{f.dev}-{time}", "qcow2" if f.format == "qcow2" else "raw"
+        names[f.dev] = next(name for name in itertools.chain([f"{base}.{ext}"], (f"{base}-{n}.{ext}" for n in itertools.count(2)))
+                            if name not in taken)
+    return names
 
 
 @register
@@ -1015,16 +1032,18 @@ class RestoreOver(Kind):
             raise util.OperationError(_("The backup's VM is no longer in the panel; restore it as a new VM"))
         _may_use(user, instance, backup.target)
         _target_row(backup.target, instance.compute)
-        over = _over_plan(backup, _proxy(instance), owner=not user.is_superuser)
+        proxy = _proxy(instance)
+        over = _over_plan(backup, proxy, owner=not user.is_superuser)
+        names = _over_names(backup, proxy, over)
         keys = {claims.compute_key(instance.compute_id): Claim.SHARED, claims.instance_key(instance.uuid): Claim.EXCLUSIVE,
                 claims.backup_key(backup.uuid): Claim.SHARED, claims.backup_target_key(backup.target_id): Claim.EXCLUSIVE}
-        for pool, name in over["disks"].values():  # no other job makes a volume of these names meanwhile
-            keys[claims.volume_key(instance.compute_id, pool, name)] = Claim.EXCLUSIVE
+        for dev, name in names.items():  # no other job makes a volume of these names meanwhile
+            keys[claims.volume_key(instance.compute_id, over["disks"][dev], name)] = Claim.EXCLUSIVE
         return Plan(
             claims=keys,
             resource=claims.instance_key(instance.uuid),
             label=f"{instance.compute.name}/{instance.name}",
-            intent={"compute": instance.compute_id, "uuid": instance.uuid, "over": over,
+            intent={"compute": instance.compute_id, "uuid": instance.uuid, "over": over, "names": names,
                     "time": timezone.localtime(backup.created_at).strftime("%Y-%m-%d %H:%M")},
         )
 
@@ -1043,20 +1062,22 @@ class RestoreOver(Kind):
         _tpm_files(backup)
         disks = {f.dev: f for f in backup.files.filter(role=BackupFile.DISK)}
         pools = proxy.file_pools()
-        for dev, (pool, name) in op.intent["over"]["disks"].items():
-            if pool not in pools:
-                raise util.OperationError(_("This host has no active directory storage pool %(pool)s"), pool=pool)
-            wvmInstance._refuse_taken(pools[pool][0], name)
-        for pool in {pool for pool, _name in op.intent["over"]["disks"].values()}:
-            check_target_space(pools[pool][0], [{"capacity": disks[dev].capacity} for dev, (p, _n) in
-                                                op.intent["over"]["disks"].items() if p == pool], **_free_space())
+        over, names = op.intent["over"], op.intent["names"]
+        for dev, name in names.items():
+            if over["disks"][dev] not in pools:
+                raise util.OperationError(_("This host has no active directory storage pool %(pool)s"),
+                                          pool=over["disks"][dev])
+            wvmInstance._refuse_taken(pools[over["disks"][dev]][0], name)
+        for pool in set(over["disks"].values()):
+            check_target_space(pools[pool][0], [{"capacity": disks[dev].capacity} for dev, p in over["disks"].items()
+                                                if p == pool], **_free_space())
 
         ctx.set_phase(_("Copying disks"))
         c = instance.compute
         paths = {}
-        for dev, (pool, name) in op.intent["over"]["disks"].items():
+        for dev, name in names.items():
             ctx.record_intent(copying=dev)
-            storage = wvmStorage(c.hostname, c.login, c.password, c.type, pool)
+            storage = wvmStorage(c.hostname, c.login, c.password, c.type, over["disks"][dev])
             try:
                 paths[dev] = storage.clone_volume(tpool.storageVolLookupByName(disks[dev].volume), name,
                                                   vol_fmt=disks[dev].format, disk_owner_uid=_owner()[0],
@@ -1148,14 +1169,14 @@ class RestoreOver(Kind):
             row = _target_row(backup.target, instance.compute)
             return Outcome(Operation.SUCCEEDED,
                            result=self._switch(op, backup, proxy, target_pool(proxy, row.pool, row.pool_uuid)))
-        volumes = {dev: name for dev, (_pool, name) in op.intent["over"]["disks"].items()}
+        volumes = op.intent["names"]
         if op.intent.get("copying"):  # libvirt's answer to that copy is unknown
             return Outcome(Operation.UNCERTAIN, error=say(_(
                 "A disk was being copied when the job stopped; check this volume, then resolve this job: %(volumes)s"),
                 volumes=volumes[op.intent["copying"]]))
         pools = proxy.file_pools()
         for dev in op.intent.get("copied", []):
-            pool = op.intent["over"]["disks"][dev][0]
+            pool = op.intent["over"]["disks"][dev]
             if pool not in pools:  # recovery waits: the copies are removed once it runs
                 raise util.OperationError(_("Storage pool %(pool)s is not active; the restore's copies in it are "
                                             "removed when it is"), pool=pool)
