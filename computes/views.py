@@ -235,7 +235,7 @@ def instances(request, compute_id):
     # read first: the poll's first answer then tells a change made while the page was read
     states = vm_states(request.user, [compute])
     utils.refresh_instance_database(compute)
-    instances = list(Instance.objects.filter(compute=compute).order_by("name").prefetch_related("userinstance_set"))
+    instances = list(Instance.objects.filter(compute=compute).order_by("name").prefetch_related("userinstance_set", "tags"))
     read_list_rows(instances, [compute])
 
     return render(

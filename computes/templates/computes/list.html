@@ -121,6 +121,11 @@
             </tbody>
         </table>
     </div>
+    {# table_filter.js shows it while no host matches #}
+    <div id="no-match" class="text-center text-body-secondary py-4" hidden>
+        {% trans "No host matches the filters." %}
+        <button type="button" class="btn btn-link" id="clear-filters">{% trans "Clear the filters" %}</button>
+    </div>
 {% endif %}
 {% endblock content %}
 

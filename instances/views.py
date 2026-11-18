@@ -238,9 +238,10 @@ def vm_report(request):
     owners = {}
     for owner in UserInstance.objects.select_related("user", "instance"):
         owners.setdefault((owner.instance.compute_id, owner.instance.uuid), []).append(owner.user.username)
+    tags = {(vm.compute_id, vm.uuid): [tag.name for tag in vm.tags.all()] for vm in Instance.objects.prefetch_related("tags")}
     # in the reader's language
     header = [_("VM"), _("State"), _("Host"), _("OS"), _("OS family"), _("vCPUs"), _("Memory (MiB)"), _("IP addresses"),
-              _("Address sources"), _("MAC addresses"), _("Owners"), _("In the panel")]
+              _("Address sources"), _("MAC addresses"), _("Owners"), _("Tags"), _("In the panel")]
     rows = []
     for vm in result["vms"]:
         key = (vm["compute_id"], vm["uuid"])
@@ -251,7 +252,8 @@ def vm_report(request):
         rows.append([vm["name"], str(state_label(vm["state"])[0]), hosts[vm["compute_id"]], vm["os"], vm["os_family"],
                      vm["vcpus"], vm["memory"], ", ".join(address for address, _sources in reported),
                      ", ".join(s for s in addresses.SOURCES.values() if s in found), ", ".join(vm["macs"]),
-                     ", ".join(sorted(owners.get(key, []))), _("yes") if key in known else _("no")])
+                     ", ".join(sorted(owners.get(key, []))), ", ".join(tags.get(key, [])),
+                     _("yes") if key in known else _("no")])
 
     notes = [_("Created: %(time)s") % {"time": f"{timezone.localtime():%Y-%m-%d %H:%M}"},
              _("VMs listed: %(n)s") % {"n": len(rows)},
@@ -2407,8 +2409,9 @@ def set_tags(request, pk):
     names = form.cleaned_data["tags"]
     with audit_vm(request, instance, f"tags {', '.join(sorted(names)) or 'none'}") as entry, transaction.atomic():
         lock_ownership()  # not while the VM's tags are kept or given back (computes.utils.forget)
-        entry.skip = moved = _moved_meanwhile(pk, instance)  # its host's list may have dropped it meanwhile
-        if not moved:
+        moved = _moved_meanwhile(pk, instance)  # its host's list may have dropped it meanwhile
+        entry.skip = moved or set(names) == set(instance.tags.values_list("name", flat=True))
+        if not entry.skip:
             instance.tags.set(Tag.named(names))
     return _moved(request, pk) if moved else _back(request, pk, "options")
 

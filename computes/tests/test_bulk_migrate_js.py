@@ -44,14 +44,17 @@ vm.runInNewContext(SCRIPT, vm.createContext({document: {
 }}));
 const ticked = () => boxes.filter((b) => b.checked).map((b) => b.name);
 const seen = [], counts = [[counter.textContent, button.disabled]];
+let tagChoice;
 for (const [id, checked, value] of STEPS) {
     const target = {id, checked, value, form: choose};
+    if (id === "bulk-migrate-tag") tagChoice = target;
     handlers[id]?.({target});
     handlers.document({target});  // the change bubbles to the page
     seen.push(ticked());
+    if (tagChoice === target) tagChoice = target.value;
     counts.push([counter.textContent, button.disabled]);
 }
-console.log(JSON.stringify({seen, submitted, counts, shownRemoved}));
+console.log(JSON.stringify({seen, submitted, counts, shownRemoved, tagChoice}));
 """
 
 
@@ -77,6 +80,7 @@ class BulkMigrateScriptTests(unittest.TestCase):
         result = self.run_script([["bulk-migrate-tag", False, "prod"], ["bulk-migrate-tag", False, ""],
                                   ["bulk-migrate-tag", False, "web"]])
         self.assertEqual(result["seen"], [["off"], ["off"], ["run", "off"]])  # "": the ticks stay
+        self.assertEqual(result["tagChoice"], "", "the list goes back to its title: the same tag can be chosen again")
 
     def test_the_button_counts_the_ticked_vms_and_is_off_without_one(self):
         self.assertEqual(self.run_script([["bulk-migrate-all", False], ["bulk-migrate-all", True]])["counts"],

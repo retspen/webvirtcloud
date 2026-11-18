@@ -40,6 +40,11 @@ class VmTagsTests(TestCase):
         self.assertEqual(list(Logs.objects.filter(message__startswith="VM").order_by("id").values_list("message", flat=True)),
                          ["VM vt-vm: tags new-one, prod", "VM vt-vm: tags none"])
 
+    def test_the_same_tags_again_are_no_change(self):
+        self.post(self.admin, ["prod"])
+        self.post(self.admin, ["PROD"])
+        self.assertEqual(Logs.objects.filter(message__startswith="VM vt-vm: tags").count(), 1)
+
     def test_a_bad_name_changes_nothing(self):
         self.vm.tags.add(Tag.objects.create(name="prod"))
         self.post(self.admin, ["two words"])
@@ -63,6 +68,14 @@ class VmTagsTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(InstanceTombstone.objects.get().tags, ["prod"])
         self.assertFalse(Logs.objects.filter(message__startswith="VM vt-vm: tags").exists())
+
+    def test_the_host_s_vm_list_and_the_user_s_vms_show_them(self):
+        self.vm.tags.add(Tag.objects.create(name="prod"))
+        self.client.force_login(self.admin)
+        with patch("computes.views.utils.refresh_instance_database"), patch("computes.views.vm_states", return_value={}), \
+                patch("computes.views.read_list_rows"):
+            self.assertContains(self.client.get(reverse("instances", args=[self.vm.compute_id])), "prod")
+        self.assertContains(self.client.get(reverse("accounts:account", args=[self.owner.id])), "prod")
 
     def test_the_vm_list_shows_them(self):
         self.vm.tags.add(Tag.objects.create(name="prod"))
@@ -138,11 +151,16 @@ class TagsApiTests(TestCase):
         self.assertEqual([(c["name"], c["tags"]) for c in self.client.get("/api/v1/computes/").json()],
                          [("ta", ["prod"]), ("ta2", [])])
         self.assertEqual([c["name"] for c in self.client.get("/api/v1/computes/?tag=prod").json()], ["ta"])
-        self.assertEqual([c["name"] for c in self.client.get("/api/v1/computes/?tag=PROD").json()], ["ta"])
+        self.assertEqual([c["name"] for c in self.client.get("/api/v1/computes/?tag=%20PROD%20").json()], ["ta"])
 
     def test_a_tag_asked_of_one_host_is_no_filter(self):
         self.assertEqual(self.client.get(f"/api/v1/computes/{self.compute.id}/?tag=other").status_code, 200)
 
     def test_the_tags_are_not_set_through_the_api(self):
-        self.client.patch(f"/api/v1/computes/{self.compute.id}/", {"tags": []}, content_type="application/json")
-        self.assertTrue(self.compute.tags.exists())
+        with patch("computes.models.Compute.clean"):  # the host is not reached
+            response = self.client.patch(f"/api/v1/computes/{self.compute.id}/", {"tags": [], "details": "rack 2"},
+                                         content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        self.compute.refresh_from_db()
+        self.assertEqual((self.compute.details, list(self.compute.tags.values_list("name", flat=True))),
+                         ("rack 2", ["prod"]))

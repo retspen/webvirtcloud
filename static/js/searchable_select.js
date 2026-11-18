@@ -21,7 +21,7 @@ document.querySelectorAll("select[data-tags]").forEach(function (select) {
         render: {
             // the page's own words (data-add): the library's are English
             option_create: function (data, escape) {
-                return '<div class="create">' + escape(select.dataset.add.replace("%(tag)s", data.input)) + "</div>";
+                return '<div class="create">' + escape(select.dataset.add.replace("%(tag)s", data.input.toLowerCase())) + "</div>";
             },
             no_results: null,
         },

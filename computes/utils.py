@@ -135,9 +135,9 @@ def _bury(inst):
     if owners or inst.is_template or tags:
         InstanceTombstone.objects.create(uuid=inst.uuid, name=inst.name, host=inst.compute.name,
                                          is_template=inst.is_template, owners=owners, tags=tags)
-        _log(inst, "owners kept on the Removed VMs page")
+        _log(inst, "owners and tags kept on the Removed VMs page")
     else:
-        _log(inst, "left the panel (no owners)")
+        _log(inst, "left the panel (no owners or tags)")
 
 
 def _restore(inst):
@@ -159,7 +159,7 @@ def _restore(inst):
         inst.is_template = True
         inst.save(update_fields=["is_template"])
     InstanceTombstone.objects.filter(uuid=inst.uuid).delete()
-    _log(inst, "owners restored")
+    _log(inst, "owners and tags restored")
 
 
 def _host_domains(compute):

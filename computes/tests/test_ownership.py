@@ -59,14 +59,14 @@ class OwnershipTestCase(TestCase):
         self.assertEqual(self.ownership(self.host_a), (True, [(self.owner, True, False, True)]))
         self.assertFalse(InstanceTombstone.objects.exists())
         self.assertEqual(self.rows(), [
-            ("-", "host-a", f"VM vm ({UUID}): owners kept on the Removed VMs page"),
-            ("-", "host-a", f"VM vm ({UUID}): owners restored"),
+            ("-", "host-a", f"VM vm ({UUID}): owners and tags kept on the Removed VMs page"),
+            ("-", "host-a", f"VM vm ({UUID}): owners and tags restored"),
         ])
 
     def test_an_ownerless_vm_leaves_a_row(self):
         Instance.objects.create(compute=self.host_a, name="vm", uuid=UUID)
         refresh_instance_database(self.host_a)
-        self.assertEqual(self.rows(), [("-", "host-a", f"VM vm ({UUID}): left the panel (no owners)")])
+        self.assertEqual(self.rows(), [("-", "host-a", f"VM vm ({UUID}): left the panel (no owners or tags)")])
 
     def test_move_seen_on_the_new_host_first(self):
         self.owned_vm(self.host_a)
@@ -164,7 +164,7 @@ class OwnershipTestCase(TestCase):
         self.assertEqual((tombstone.owners[0]["user"], tombstone.host), (self.owner.id, "host-a"))
         self.assertEqual(self.rows(), [
             ("cd-admin", "-", "Login"),
-            ("-", "host-a", f"VM vm ({UUID}): owners kept on the Removed VMs page"),
+            ("-", "host-a", f"VM vm ({UUID}): owners and tags kept on the Removed VMs page"),
             ("cd-admin", "host-a", "Compute host-a (host-a.example): delete"),
         ])
 

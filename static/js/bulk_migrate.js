@@ -39,6 +39,7 @@ document.getElementById("bulk-migrate-tag")?.addEventListener("change", function
         document.querySelectorAll(".bulk-migrate-vm:not(:disabled)").forEach(function (box) {
             box.checked = (box.dataset.tags || "").split(" ").includes(tag);
         });
+        event.target.value = "";  // back to its title: the same tag can be chosen again after other ticks
     }
 });
 document.addEventListener("change", function (event) {

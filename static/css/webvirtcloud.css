@@ -304,3 +304,7 @@ fieldset:not(:has(input[value="set"]:checked)) > .console-new-password {
 .form-section-fields:has(input[name="usable_password"][value="false"]:checked) > .with-password {
     display: none;
 }
+/* a list's tag filter: a long tag name does not widen it beyond a phone's width */
+#tag-filter {
+    max-width: 15rem;
+}

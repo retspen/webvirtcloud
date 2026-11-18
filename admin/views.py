@@ -462,7 +462,7 @@ def tombstone_delete(request, pk):
         request,
         "common/confirm_delete.html",
         {"object": tombstone,
-         "consequence": _("Its owners no longer get the VM back if its UUID shows up again.")},
+         "consequence": _("Its owners and tags no longer come back if its UUID shows up again.")},
     )
 
 

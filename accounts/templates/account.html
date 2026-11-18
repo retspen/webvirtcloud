@@ -66,6 +66,7 @@
                     <div class="col-12 col-md-6">
                         <a class="fw-semibold text-break" href="{% url 'instances:instance' inst.instance.id %}">{{ inst.instance.name }}</a>
                         <div class="small text-body-secondary text-break">{% trans "Host" %}: {{ inst.instance.compute.name }}</div>
+                        {% include 'common/tag_badges.html' with tags=inst.instance.tags.all %}
                     </div>
                     <div class="col-12 col-md-6 d-flex flex-wrap gap-1">
                         {# the rights as the VM's Users tab names them: every owner powers the VM and opens its console #}

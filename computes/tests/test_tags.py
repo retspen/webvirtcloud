@@ -108,4 +108,7 @@ class HostTagsTests(TestCase):
         self.assertContains(response, "rack-1")
         self.assertContains(response, '<option value="rack-1">rack-1 (1)</option>', html=True)
         self.assertContains(response, 'data-tag-filter="rack-1"')
+        # a search and a tag that match no host: the page says so and clears them
+        self.assertContains(response, 'id="no-match"')
+        self.assertContains(response, 'id="clear-filters"')
         self.assertContains(response, 'data-tags="rack-1"')
