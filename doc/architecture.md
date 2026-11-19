@@ -45,9 +45,9 @@ panel ── gstfsd on each compute, at the compute's hostname, port 16510 (HMAC
 | App | What it holds |
 |---|---|
 | `accounts` | users' VM permissions (`UserInstance`), quotas (`UserAttributes`), SSH keys, API tokens, OTP, login |
-| `admin` | users, groups and their permissions pages |
+| `admin` | users, groups and their permissions pages, the Tags page |
 | `appsettings` | settings stored in the database, themes, `manage.py backup` |
-| `computes` | compute hosts (`Compute`: hostname, type, login, password, gstfsd key, migration address), host overview and capacity |
+| `computes` | compute hosts (`Compute`: hostname, type, login, password, gstfsd key, migration address, maintenance), tags (`Tag`) of VMs and hosts, host overview and capacity, Bulk Migrate and Balance |
 | `instances` | VMs (`Instance`: compute, name, UUID), flavors, removed-VM records (`InstanceTombstone`), the VM pages and their jobs |
 | `storages`, `networks`, `interfaces`, `nwfilters`, `virtsecrets` | the host's pools and volumes, networks, interfaces, network filters and secrets, read from libvirt |
 | `nodedevs` | the host's PCI and USB devices and which VM has them |
@@ -55,7 +55,7 @@ panel ── gstfsd on each compute, at the compute's hostname, port 16510 (HMAC
 | `datasource` | cloud-init metadata (OpenStack format), a VM found by its client address |
 | `logs` | the audit log (`Logs`) and its page |
 | `operations` | jobs: `Operation`, `Claim`, `WorkerLease`, the worker and the Jobs pages |
-| `vmbackups` | VM backups: targets (a storage pool per compute), backups and their files, their jobs and pages |
+| `vmbackups` | VM backups: targets (a storage pool per compute), backups and their files, schedules (`BackupPolicy`), their jobs and pages |
 
 ## vrtManager
 
@@ -84,7 +84,8 @@ Long operations (create, clone, migrate and delete VMs, move disks, clone volume
 `/api/v1/` (session from the login form or an API token):
 
 - `computes/`, and per compute `instances/`, `instances/create/<arch>/<machine>/`, `networks/`, `interfaces/`, `storages/` (with `volumes/`), `archs/`
-- `instances/`, `flavor/`, `migrate/`, `operations/`
+- `instances/`, `flavor/`, `migrate/`, `operations/`, `backups/`
+- the VM and compute lists (also a compute's `instances/`) take `?tag=<name>`
 - schema at `/api/schema/`, Swagger at `/swagger/`, ReDoc at `/redoc/`
 
 Create, migrate and delete answer 202 with the job.

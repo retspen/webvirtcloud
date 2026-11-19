@@ -23,6 +23,7 @@ WebVirtCloud combines three kinds of access rights:
 | Delete the VM | ✅ | ✅ | `is_delete` | ❌ |
 | Disks and media (add, attach, edit, detach, delete volumes; CD-ROM/ISO) | ✅ | ❌ | — | ❌ |
 | Network interfaces, boot options, vCPU hotplug, autostart, guest agent, suspend/resume, migrate, raw XML, owners | ✅ | ❌ | — | ❌ |
+| Set tags (owners and `view_instances` see them) | ✅ | ❌ | — | ❌ |
 | Backups: back up, restore, delete; backup targets | ✅ | ❌ | — | ❌ |
 
 Notes:
