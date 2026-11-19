@@ -2,7 +2,7 @@ from collections import Counter
 from ipaddress import ip_address
 
 from django.core.exceptions import ValidationError
-from django.core.validators import RegexValidator
+from django.core.validators import MaxLengthValidator, RegexValidator
 from django.db import IntegrityError, transaction
 from django.db.models import CharField, DateTimeField, IntegerField, ManyToManyField, Model, Q, UniqueConstraint
 from django.utils.functional import cached_property
@@ -16,6 +16,9 @@ from vrtManager.connection import connection_manager
 from vrtManager.hostdetails import wvmHostDetails
 
 
+# a new or renamed tag's length, so its badge stays short in a list's row; the
+# column keeps 32: names made before the limit stay until renamed
+TAG_LENGTH = MaxLengthValidator(12, _("A tag has at most %(limit_value)d characters"))
 TAG_NAME = RegexValidator(r"^[a-z0-9][a-z0-9._-]*\Z",
                           _("A tag is letters a-z, digits, dots, dashes and underscores, and begins with a letter or digit"))
 
@@ -23,7 +26,7 @@ TAG_NAME = RegexValidator(r"^[a-z0-9][a-z0-9._-]*\Z",
 class Tag(Model):
     """A name given to VMs and hosts, kept in lower case: one name is one tag."""
 
-    name = CharField(_("name"), max_length=32, unique=True, validators=[TAG_NAME])
+    name = CharField(_("name"), max_length=32, unique=True, validators=[TAG_NAME, TAG_LENGTH])
 
     class Meta:
         ordering = ["name"]

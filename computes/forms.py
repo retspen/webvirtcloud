@@ -3,7 +3,7 @@ from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from vrtManager.connection import CONN_SOCKET, CONN_SSH, CONN_TCP, CONN_TLS
 
-from computes.models import TAG_NAME, Compute, Tag
+from computes.models import TAG_LENGTH, TAG_NAME, Compute, Tag
 from computes.utils import lock_ownership
 
 from .validators import validate_hostname
@@ -60,9 +60,10 @@ class TagsField(forms.Field):
         return set(self.to_python(initial)) != set(self.to_python(data))
 
     def validate(self, value):
+        existing = set(Tag.objects.filter(name__in=value).values_list("name", flat=True))
         for name in value:
-            if len(name) > 32:
-                raise forms.ValidationError(_("A tag has at most 32 characters"))
+            if name not in existing:  # a tag made before the limit can still be given
+                TAG_LENGTH(name)
             TAG_NAME(name)
 
 

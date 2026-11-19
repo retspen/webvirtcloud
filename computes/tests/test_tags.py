@@ -23,7 +23,11 @@ class TagsFieldTests(TestCase):
         self.assertEqual(TagsField().clean(["Prod", "db", "prod"]), ["prod", "db"])
 
     def test_a_name_is_letters_digits_and_dot_dash_underscore(self):
-        for bad in ("two words", "-lead", "ç", "x" * 33):
+        self.assertEqual(TagsField().clean(["x" * 12]), ["x" * 12])
+        # a tag made before the limit can still be given
+        Tag.objects.create(name="y" * 20)
+        self.assertEqual(TagsField().clean(["y" * 20]), ["y" * 20])
+        for bad in ("two words", "-lead", "ç", "x" * 13):
             with self.subTest(bad), self.assertRaises(forms.ValidationError):
                 TagsField().clean([bad])
 

@@ -314,6 +314,13 @@ fieldset:not(:has(input[value="set"]:checked)) > .console-new-password {
 .tag-badge {
     white-space: normal;
 }
+/* the tags "…" shows in a table's cell: below the others, within the cell's width as it is
+   (no width of their own), so the table's columns do not move */
+td .tag-more {
+    display: block;
+    width: 0;
+    min-width: 100%;
+}
 /* a VM's or host's tags: smaller than other badges, so a row with several stays narrow */
 .tag-badge {
     font-size: 0.65rem;

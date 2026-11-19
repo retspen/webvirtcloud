@@ -40,7 +40,7 @@ class TagAdminTests(TestCase):
 
     def test_a_name_taken_or_bad_is_refused(self):
         Tag.objects.create(name="db")
-        for name in ("DB", "two words"):
+        for name in ("DB", "two words", "x" * 13):
             with self.subTest(name):
                 response = self.client.post(reverse("admin:tag_update", args=[self.prod.pk]), {"name": name})
                 self.assertEqual(response.status_code, 200)

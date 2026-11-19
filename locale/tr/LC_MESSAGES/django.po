@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-19 05:32+0000\n"
+"POT-Creation-Date: 2026-11-19 06:32+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -157,8 +157,8 @@ msgstr "en fazla yedek boyutu (GiB)"
 msgid "Can change password"
 msgstr "Parola değiştirebilir"
 
-#: accounts/models.py:98 appsettings/models.py:9 computes/models.py:26
-#: computes/models.py:52 instances/models.py:33
+#: accounts/models.py:98 appsettings/models.py:9 computes/models.py:29
+#: computes/models.py:55 instances/models.py:33
 msgid "name"
 msgstr "ad"
 
@@ -2032,11 +2032,7 @@ msgstr "Kayıtlı, korumak için boş bırakın"
 msgid "Add tag %(tag)s"
 msgstr "Etiket ekle: %(tag)s"
 
-#: computes/forms.py:65
-msgid "A tag has at most 32 characters"
-msgstr "Bir etiket en fazla 32 karakterdir"
-
-#: computes/forms.py:96 computes/templates/computes/instances.html:53
+#: computes/forms.py:97 computes/templates/computes/instances.html:53
 #: instances/templates/instances/settings_tab.html:872
 #: instances/templates/instances/settings_tab.html:904
 #: instances/templates/instances/snapshots_tab.html:27
@@ -2044,43 +2040,43 @@ msgstr "Bir etiket en fazla 32 karakterdir"
 msgid "Description"
 msgstr "Tanım"
 
-#: computes/forms.py:97
+#: computes/forms.py:98
 msgid "Shown on the hosts list"
 msgstr "Sunucu listesinde gösterilir"
 
-#: computes/forms.py:98
+#: computes/forms.py:99
 msgid "SASL login"
 msgstr "SASL kullanıcı adı"
 
-#: computes/forms.py:98
+#: computes/forms.py:99
 msgid "SASL password"
 msgstr "SASL parolası"
 
-#: computes/forms.py:104 computes/templates/create_comp_block.html:10
+#: computes/forms.py:105 computes/templates/create_comp_block.html:10
 msgid "libvirt over TCP, with a SASL login"
 msgstr "TCP üzerinden libvirt, SASL girişiyle"
 
-#: computes/forms.py:118 computes/templates/create_comp_block.html:14
+#: computes/forms.py:119 computes/templates/create_comp_block.html:14
 msgid "libvirt over SSH, with the panel's SSH key"
 msgstr "SSH üzerinden libvirt, panelin SSH anahtarıyla"
 
-#: computes/forms.py:119
+#: computes/forms.py:120
 msgid "FQDN/IP"
 msgstr "FQDN/IP"
 
-#: computes/forms.py:124
+#: computes/forms.py:125
 msgid "SSH user"
 msgstr "SSH kullanıcısı"
 
-#: computes/forms.py:132 computes/templates/create_comp_block.html:18
+#: computes/forms.py:133 computes/templates/create_comp_block.html:18
 msgid "libvirt over TLS, with certificates"
 msgstr "TLS üzerinden libvirt, sertifikalarla"
 
-#: computes/forms.py:145 computes/templates/create_comp_block.html:21
+#: computes/forms.py:146 computes/templates/create_comp_block.html:21
 msgid "Local"
 msgstr "Yerel"
 
-#: computes/forms.py:146 computes/templates/create_comp_block.html:22
+#: computes/forms.py:147 computes/templates/create_comp_block.html:22
 msgid "the libvirt of the host the panel runs on, by its socket"
 msgstr "panelin çalıştığı sunucunun libvirt'i, soketi üzerinden"
 
@@ -2148,7 +2144,12 @@ msgstr "Dengele"
 msgid "%(compute)s is in maintenance: Balance leaves it out"
 msgstr "%(compute)s bakımda: Dengele onu hesaba katmaz"
 
-#: computes/models.py:20
+#: computes/models.py:21
+#, python-format
+msgid "A tag has at most %(limit_value)d characters"
+msgstr "Bir etiket en fazla %(limit_value)d karakterdir"
+
+#: computes/models.py:23
 msgid ""
 "A tag is letters a-z, digits, dots, dashes and underscores, and begins with a"
 " letter or digit"
@@ -2156,27 +2157,27 @@ msgstr ""
 "Etiket a-z harfleri, rakamlar, nokta, tire ve alt çizgiden oluşur ve harf ya "
 "da rakamla başlar"
 
-#: computes/models.py:53
+#: computes/models.py:56
 msgid "hostname"
 msgstr "sunucuadı"
 
-#: computes/models.py:54
+#: computes/models.py:57
 msgid "login"
 msgstr "kullanıcı"
 
-#: computes/models.py:55
+#: computes/models.py:58
 msgid "password"
 msgstr "parola"
 
-#: computes/models.py:56
+#: computes/models.py:59
 msgid "details"
 msgstr "detaylar"
 
-#: computes/models.py:59
+#: computes/models.py:62
 msgid "migration address"
 msgstr "taşıma adresi"
 
-#: computes/models.py:65
+#: computes/models.py:68
 msgid ""
 "IP address or host name the other hosts send migrating VMs to; empty: the "
 "address the panel reaches the host at"
@@ -2184,11 +2185,11 @@ msgstr ""
 "Diğer sunucuların taşınan sanal makineleri gönderdiği IP adresi veya ana "
 "bilgisayar adı; boş: panelin bu sunucuya ulaştığı adres"
 
-#: computes/models.py:70 computes/templates/computes/form.html:41
+#: computes/models.py:73 computes/templates/computes/form.html:41
 msgid "gstfsd key"
 msgstr "gstfsd anahtarı"
 
-#: computes/models.py:76
+#: computes/models.py:79
 msgid ""
 "GSTFSD_KEY in the host's /etc/default/webvirt-gstfsd: the panel sets the root"
 " password and SSH key of a shut-off VM with it; empty: they cannot be set "
@@ -2198,16 +2199,16 @@ msgstr ""
 "sanal makinenin root parolasını ve SSH anahtarını bununla ayarlar; boş: bu "
 "sunucuda ayarlanamazlar"
 
-#: computes/models.py:90 instances/models.py:38
+#: computes/models.py:93 instances/models.py:38
 msgid "tags"
 msgstr "etiketler"
 
-#: computes/models.py:106 computes/templates/computes/instances.html:12
+#: computes/models.py:109 computes/templates/computes/instances.html:12
 #, python-format
 msgid "%(compute)s is in maintenance: no new VM or migration comes to it"
 msgstr "%(compute)s bakımda: ona yeni sanal makine ya da taşıma gelmez"
 
-#: computes/models.py:112
+#: computes/models.py:115
 #, python-format
 msgid ""
 "%(compute)s is in maintenance: its VMs cannot be started there; migrate the "
@@ -2216,12 +2217,12 @@ msgstr ""
 "%(compute)s bakımda: sanal makineleri orada başlatılamaz; başka bir sunucuda "
 "başlatmak için sanal makineyi taşıyın"
 
-#: computes/models.py:239
+#: computes/models.py:242
 #, python-format
 msgid "This host is already added as %(name)s"
 msgstr "Bu sunucu zaten %(name)s olarak ekli"
 
-#: computes/models.py:242
+#: computes/models.py:245
 #, python-format
 msgid ""
 "The panel cannot reach the host to tell that its VMs are there: %(error)s"
@@ -2229,7 +2230,7 @@ msgstr ""
 "Panel sunucuya ulaşamadığı için VM'lerinin orada olduğunu doğrulayamıyor: "
 "%(error)s"
 
-#: computes/models.py:249
+#: computes/models.py:252
 msgid ""
 "The host its VMs are on is not known yet: change the connection when the "
 "panel has reached the host at its current one"
@@ -2237,7 +2238,7 @@ msgstr ""
 "VM'lerinin bulunduğu sunucu henüz bilinmiyor: bağlantıyı, panel sunucuya "
 "mevcut bağlantısından ulaştıktan sonra değiştirin"
 
-#: computes/models.py:252
+#: computes/models.py:255
 msgid "This is another host than the one its VMs are on: add it as a new host"
 msgstr ""
 "Bu, VM'lerinin bulunduğu sunucudan başka bir sunucu: yeni bir sunucu olarak "
