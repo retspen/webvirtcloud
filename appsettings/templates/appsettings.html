@@ -94,8 +94,12 @@
                     </div>
                 {% endfor %}
                 </div>
-                <div class="border-top mt-3 pt-3 text-end">
+                <div class="border-top mt-3 pt-3 d-flex flex-wrap justify-content-end gap-2">
+                    {# Save first: Enter in a field saves #}
                     <button type="submit" class="btn btn-primary">{% blocktrans %}Save {{ group_title }}{% endblocktrans %}</button>
+                    {% if title == "Alerts" %}{# to the addresses and webhook saved #}
+                    <button type="submit" name="test_alert" value="1" class="btn btn-outline-secondary order-first" formnovalidate>{% trans "Send a test alert" %}</button>
+                    {% endif %}
                 </div>
             </form>
         </section>

@@ -171,6 +171,22 @@ class AlertTests(TestCase):
         self.assertContains(self.client.get(reverse("appsettings")), 'maxlength="255"')
 
 
+    def test_a_test_alert_goes_at_once_to_each_channel_saved(self):
+        self.client.force_login(self.user)
+        channels("", "")
+        response = self.client.post(reverse("appsettings"), {"test_alert": "1"}, follow=True)
+        self.assertContains(response, "Set an alert e-mail address or webhook and save it first")
+        channels("ops@example.com", "https://hooks.example.com/x")
+        with patch("operations.alerts._post", side_effect=OSError("refused")):
+            response = self.client.post(reverse("appsettings"), {"test_alert": "1"}, follow=True)
+        self.assertContains(response, "E-mail: the test alert was sent")
+        self.assertContains(response, "Webhook: the test alert failed: refused")
+        self.assertEqual(mail.outbox[0].subject, "WebVirtCloud: Test alert")
+        self.assertFalse(Alert.objects.exists())  # not queued
+        page = self.client.get(reverse("appsettings")).content.decode()
+        self.assertLess(page.index("Save Alerts"), page.index('name="test_alert"'))  # Enter saves
+
+
 class HealthzTests(TestCase):
     def test_without_a_login_it_tells_whether_the_worker_runs(self):
         response = self.client.get(reverse("healthz"))

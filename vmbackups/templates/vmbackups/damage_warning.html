@@ -1,0 +1,7 @@
+{% load i18n %}{% load operations %}{% load bootstrap_icons %}{# a restore page: the backup or one it builds on found damaged #}
+{% with damaged=backup.damaged_in_chain %}{% if damaged %}
+<div class="alert alert-danger" role="alert">{% bs_icon 'exclamation-triangle' %}
+    {% if damaged == backup %}{% trans "A verification found this backup damaged:" %}{% else %}{% blocktrans with time=damaged.created_at|date:"Y-m-d H:i" %}It builds on the backup taken {{ time }}, which a verification found damaged:{% endblocktrans %}{% endif %}
+    {{ damaged.damage|words }} {% trans "The restored disks may be damaged too." %}
+</div>
+{% endif %}{% endwith %}

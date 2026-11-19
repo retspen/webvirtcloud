@@ -13,6 +13,7 @@ from django.shortcuts import render
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_noop
 from logs.audit import audit
+from operations import alerts
 from operations.utils import BOUNDS
 from vrtManager.util import OperationError
 
@@ -110,6 +111,17 @@ def appsettings(request):
     settings_by_key = {s.key: s for s in AppSettings.objects.exclude(key="BOOTSTRAP_THEME")}
 
     if request.method == "POST":
+        if "test_alert" in request.POST:  # with the settings saved
+            results = alerts.test()
+            if not results:
+                messages.error(request, _("Set an alert e-mail address or webhook and save it first"))
+            for channel, error in results.items():
+                name = _("E-mail") if channel == "mail" else _("Webhook")
+                if error is None:
+                    messages.success(request, _("%(channel)s: the test alert was sent") % {"channel": name})
+                else:
+                    messages.error(request, _("%(channel)s: the test alert failed: %(error)s") % {"channel": name, "error": error})
+            return HttpResponseRedirect(request.get_full_path())  # the results are at the top
         if "BOOTSTRAP_THEME" in request.POST:
             theme = request.POST.get("BOOTSTRAP_THEME", "")
             if theme not in themes_list:

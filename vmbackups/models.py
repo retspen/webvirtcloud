@@ -136,6 +136,14 @@ class Backup(models.Model):
         deleted like a failed one."""
         return self.state == self.CREATING and self.operation_id is not None and self.operation.state in Operation.ACTIVE
 
+    def damaged_in_chain(self):
+        """It, or the first backup it builds on, that a verification found damaged; None."""
+        backup, seen = self, set()
+        while backup is not None and not backup.damage and backup.pk not in seen:  # a broken chain may loop
+            seen.add(backup.pk)
+            backup = backup.parent
+        return backup if backup is not None and backup.damage else None
+
     def depended_on(self):
         """Whether a backup builds on this one: a failed one holds nothing."""
         return self.children.filter(state__in=self.LIVING).exists()

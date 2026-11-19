@@ -289,3 +289,18 @@ class VerifyBackupTests(TransactionTestCase):
         page = self.client.get(reverse("vmbackups:index"))
         self.assertContains(page, "Damaged")
         self.assertContains(page, "The backup&#x27;s file f is missing from the target")
+
+    def test_a_restore_page_tells_of_damage_in_the_chain(self):
+        self.client.force_login(self.admin)
+        damage = [{"text": "The backup's file %(name)s is missing from the target", "values": {"name": "base-vda.qcow2"}}]
+        page = self.client.get(reverse("vmbackups:restore_disk", args=[self.incremental.uuid]))
+        self.assertNotContains(page, "found damaged")
+        Backup.objects.filter(pk=self.full.pk).update(damage=damage)
+        self.assertEqual(Backup.objects.get(pk=self.incremental.pk).damaged_in_chain(), Backup.objects.get(pk=self.full.pk))
+        page = self.client.get(reverse("vmbackups:restore_disk", args=[self.incremental.uuid]))
+        self.assertContains(page, "which a verification found damaged")
+        self.assertContains(page, "base-vda.qcow2 is missing from the target")
+        page = self.client.get(reverse("vmbackups:index"))
+        self.assertContains(page, "base-vda.qcow2 is missing from the target")  # under the badge, not only a tooltip
+        Backup.objects.filter(pk=self.full.pk).update(damage=[], parent=self.incremental)  # a chain that loops
+        self.assertIsNone(Backup.objects.get(pk=self.incremental.pk).damaged_in_chain())

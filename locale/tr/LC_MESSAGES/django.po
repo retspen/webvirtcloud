@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-19 13:10+0000\n"
+"POT-Creation-Date: 2026-11-19 14:12+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -819,7 +819,7 @@ msgstr "Bellek"
 #: instances/templates/create_instance_w2.html:118
 #: instances/templates/instances/settings_tab.html:25
 #: instances/templates/instances/stats_tab.html:53 vmbackups/forms.py:57
-#: vmbackups/templates/vmbackups/restore_over.html:18
+#: vmbackups/templates/vmbackups/restore_over.html:19
 msgid "Disk"
 msgstr "Disk"
 
@@ -1961,103 +1961,129 @@ msgstr "Tüm kullanıcılar için"
 msgid "Change theme"
 msgstr "Temayı değiştir"
 
-#: appsettings/templates/appsettings.html:98
+#: appsettings/templates/appsettings.html:99
+msgid "Send a test alert"
+msgstr "Deneme uyarısı gönder"
+
+#: appsettings/templates/appsettings.html:101
 #, python-format
 msgid "Save %(group_title)s"
 msgstr "%(group_title)s kaydet"
 
-#: appsettings/views.py:45
+#: appsettings/views.py:46
 msgid "New VM defaults"
 msgstr "Yeni sanal makine varsayılanları"
 
-#: appsettings/views.py:48 instances/templates/instance.html:71
+#: appsettings/views.py:49 instances/templates/instance.html:71
 #: instances/templates/instances/destroy_instance_form.html:33
 #: instances/templates/instances/resize_tab.html:21
 #: instances/templates/instances/settings_tab.html:197
 msgid "Disks"
 msgstr "Diskler"
 
-#: appsettings/views.py:52
+#: appsettings/views.py:53
 msgid "Clones"
 msgstr "Klonlar"
 
-#: appsettings/views.py:53 console/templates/console-base.html:10
+#: appsettings/views.py:54 console/templates/console-base.html:10
 #: console/templates/console-base.html:23
 #: instances/templates/instance_actions.html:11
 #: instances/templates/instances/settings_tab.html:32
 msgid "Console"
 msgstr "Konsol"
 
-#: appsettings/views.py:54
+#: appsettings/views.py:55
 msgid "VM access and owners"
 msgstr "Sanal makine erişimi ve sahipleri"
 
-#: appsettings/views.py:56
+#: appsettings/views.py:57
 msgid "Snapshots and jobs"
 msgstr "Anlık görüntüler ve işler"
 
-#: appsettings/views.py:58
+#: appsettings/views.py:59
 msgid "Login"
 msgstr "Oturum açma"
 
-#: appsettings/views.py:59
+#: appsettings/views.py:60
 msgid "Alerts"
 msgstr "Uyarılar"
 
-#: appsettings/views.py:60
+#: appsettings/views.py:61
 msgid "Lists and pages"
 msgstr "Listeler ve sayfalar"
 
-#: appsettings/views.py:68
+#: appsettings/views.py:69
 #, python-format
 msgid "%(setting)s takes at most %(length)s characters"
 msgstr "%(setting)s en fazla %(length)s karakter alır"
 
-#: appsettings/views.py:73
+#: appsettings/views.py:74
 #, python-format
 msgid "%(setting)s must be a whole number between %(low)s and %(high)s"
 msgstr "%(setting)s, %(low)s ile %(high)s arasında bir tam sayı olmalıdır"
 
-#: appsettings/views.py:76
+#: appsettings/views.py:77
 #, python-format
 msgid "%(setting)s must be one of %(choices)s"
 msgstr "%(setting)s şunlardan biri olmalıdır: %(choices)s"
 
-#: appsettings/views.py:80
+#: appsettings/views.py:81
 #, python-format
 msgid "%(setting)s takes letters, digits and '-' only"
 msgstr "%(setting)s yalnızca harf, rakam ve '-' alır"
 
-#: appsettings/views.py:90
+#: appsettings/views.py:91
 #, python-format
 msgid "%(setting)s: %(value)s is not an e-mail address or an http(s) URL"
 msgstr "%(setting)s: %(value)s bir e-posta adresi ya da http(s) adresi değil"
 
-#: appsettings/views.py:99
+#: appsettings/views.py:100
 msgid "Disk I/O native needs disk cache none or directsync"
 msgstr ""
 "Disk G/Ç native, disk önbelleği none veya directsync olmasını gerektirir"
 
-#: appsettings/views.py:116
+#: appsettings/views.py:117
+msgid "Set an alert e-mail address or webhook and save it first"
+msgstr "Önce bir uyarı e-posta adresi ya da webhook girip kaydedin"
+
+#: appsettings/views.py:119
+msgid "E-mail"
+msgstr "E-posta"
+
+#: appsettings/views.py:119
+msgid "Webhook"
+msgstr "Webhook"
+
+#: appsettings/views.py:121
+#, python-format
+msgid "%(channel)s: the test alert was sent"
+msgstr "%(channel)s: deneme uyarısı gönderildi"
+
+#: appsettings/views.py:123
+#, python-format
+msgid "%(channel)s: the test alert failed: %(error)s"
+msgstr "%(channel)s: deneme uyarısı gönderilemedi: %(error)s"
+
+#: appsettings/views.py:128
 #, python-format
 msgid "Unknown theme: %(theme)s"
 msgstr "Bilinmeyen tema: %(theme)s"
 
-#: appsettings/views.py:122
+#: appsettings/views.py:134
 #, python-format
 msgid "Theme is changed. Now: %(theme)s"
 msgstr "Tema değiştirildi. Şimdi: %(theme)s"
 
-#: appsettings/views.py:159
+#: appsettings/views.py:171
 #, python-format
 msgid "Saved: %(settings)s"
 msgstr "Kaydedildi: %(settings)s"
 
-#: appsettings/views.py:161
+#: appsettings/views.py:173
 msgid "Nothing changed"
 msgstr "Hiçbir şey değişmedi"
 
-#: appsettings/views.py:168 vrtManager/nodedevs.py:294
+#: appsettings/views.py:180 vrtManager/nodedevs.py:294
 #: vrtManager/nodedevs.py:333
 msgid "Other"
 msgstr "Diğer"
@@ -2336,7 +2362,7 @@ msgstr "Bu sunucular bakımda ve hesaba katılmadı:"
 
 #: computes/templates/computes/balance.html:32
 #: instances/templates/instances/snapshots_tab.html:18
-#: vmbackups/templates/vmbackups/restore_over.html:18
+#: vmbackups/templates/vmbackups/restore_over.html:19
 msgid "Now"
 msgstr "Şimdi"
 
@@ -8722,6 +8748,14 @@ msgstr ""
 "Harfler, rakamlar, nokta, tire ve alt çizgi. Kopya, filtrenin kurallarını ve "
 "başvurularını içerir."
 
+#: operations/alerts.py:49
+msgid "Test alert"
+msgstr "Deneme uyarısı"
+
+#: operations/alerts.py:49
+msgid "WebVirtCloud sends its alerts here."
+msgstr "WebVirtCloud uyarılarını buraya gönderir."
+
 #: operations/api/serializers.py:37
 #, python-format
 msgid "%(phase)s (over its time limit)"
@@ -10520,10 +10554,25 @@ msgstr "Yalnızca dayandığı yedekten sonra değişenleri kopyalar"
 msgid "Incremental"
 msgstr "Artımlı"
 
+#: vmbackups/templates/vmbackups/damage_warning.html:4
+msgid "A verification found this backup damaged:"
+msgstr "Bir doğrulama bu yedeği hasarlı buldu:"
+
+#: vmbackups/templates/vmbackups/damage_warning.html:4
+#, python-format
+msgid ""
+"It builds on the backup taken %(time)s, which a verification found damaged:"
+msgstr ""
+"%(time)s tarihli yedeğe dayanıyor; bir doğrulama o yedeği hasarlı buldu:"
+
+#: vmbackups/templates/vmbackups/damage_warning.html:5
+msgid "The restored disks may be damaged too."
+msgstr "Geri yüklenen diskler de hasarlı olabilir."
+
 #: vmbackups/templates/vmbackups/delete_form.html:4
 #: vmbackups/templates/vmbackups/restore.html:9
-#: vmbackups/templates/vmbackups/restore.html:19
-#: vmbackups/templates/vmbackups/restore_disk.html:18
+#: vmbackups/templates/vmbackups/restore.html:20
+#: vmbackups/templates/vmbackups/restore_disk.html:19
 msgid "Restore"
 msgstr "Geri yükle"
 
@@ -10740,7 +10789,7 @@ msgstr ""
 "%(vm)s sanal makinesinin %(time)s tarihli, %(target)s hedefindeki yedeği "
 "kendi UUID'si ve MAC adresleriyle yeni bir sanal makine olarak geri yüklenir."
 
-#: vmbackups/templates/vmbackups/restore.html:17
+#: vmbackups/templates/vmbackups/restore.html:18
 #, python-format
 msgid ""
 "On %(compute)s, in storage pool %(pool)s: the VM's host and the pool of its "
@@ -10765,7 +10814,7 @@ msgstr ""
 
 #: vmbackups/templates/vmbackups/restore_over.html:6
 #: vmbackups/templates/vmbackups/restore_over.html:8
-#: vmbackups/templates/vmbackups/restore_over.html:34
+#: vmbackups/templates/vmbackups/restore_over.html:35
 msgid "Restore over the VM"
 msgstr "VM'in üzerine geri yükle"
 
@@ -10780,29 +10829,29 @@ msgstr ""
 "geri yüklenir: diskleri yeni birimler olarak kopyalanır ve VM bunlara "
 "geçirilir. Ayarları, MAC adresleri ve UUID'si aynı kalır."
 
-#: vmbackups/templates/vmbackups/restore_over.html:18
+#: vmbackups/templates/vmbackups/restore_over.html:19
 msgid "After the restore"
 msgstr "Geri yüklemeden sonra"
 
-#: vmbackups/templates/vmbackups/restore_over.html:26
+#: vmbackups/templates/vmbackups/restore_over.html:27
 msgid "The old volumes stay in their pools until you delete them."
 msgstr "Eski birimler siz silene kadar havuzlarında kalır."
 
-#: vmbackups/templates/vmbackups/restore_over.html:27
+#: vmbackups/templates/vmbackups/restore_over.html:28
 msgid ""
 "The disks the VM runs from now are deleted once it is switched to the new "
 "ones."
 msgstr "VM yeni disklere geçirilince şu an çalıştığı diskler silinir."
 
-#: vmbackups/templates/vmbackups/restore_over.html:28
+#: vmbackups/templates/vmbackups/restore_over.html:29
 msgid "The UEFI variables return to the backup's."
 msgstr "UEFI değişkenleri yedekteki haline döner."
 
-#: vmbackups/templates/vmbackups/restore_over.html:29
+#: vmbackups/templates/vmbackups/restore_over.html:30
 msgid "The TPM state returns to the backup's."
 msgstr "TPM durumu yedekteki haline döner."
 
-#: vmbackups/templates/vmbackups/restore_over.html:34
+#: vmbackups/templates/vmbackups/restore_over.html:35
 #, python-format
 msgid ""
 "Restore the backup over %(vm)s? What the VM wrote since the backup is no "

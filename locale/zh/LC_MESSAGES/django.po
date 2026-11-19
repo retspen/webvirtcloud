@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-19 13:10+0000\n"
+"POT-Creation-Date: 2026-11-19 14:12+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -793,7 +793,7 @@ msgstr "内存"
 #: instances/templates/create_instance_w2.html:118
 #: instances/templates/instances/settings_tab.html:25
 #: instances/templates/instances/stats_tab.html:53 vmbackups/forms.py:57
-#: vmbackups/templates/vmbackups/restore_over.html:18
+#: vmbackups/templates/vmbackups/restore_over.html:19
 msgid "Disk"
 msgstr "磁盘"
 
@@ -1883,102 +1883,128 @@ msgstr "对所有用户生效"
 msgid "Change theme"
 msgstr "更改主题"
 
-#: appsettings/templates/appsettings.html:98
+#: appsettings/templates/appsettings.html:99
+msgid "Send a test alert"
+msgstr "发送测试告警"
+
+#: appsettings/templates/appsettings.html:101
 #, python-format
 msgid "Save %(group_title)s"
 msgstr "保存%(group_title)s"
 
-#: appsettings/views.py:45
+#: appsettings/views.py:46
 msgid "New VM defaults"
 msgstr "新建虚拟机默认值"
 
-#: appsettings/views.py:48 instances/templates/instance.html:71
+#: appsettings/views.py:49 instances/templates/instance.html:71
 #: instances/templates/instances/destroy_instance_form.html:33
 #: instances/templates/instances/resize_tab.html:21
 #: instances/templates/instances/settings_tab.html:197
 msgid "Disks"
 msgstr "磁盘"
 
-#: appsettings/views.py:52
+#: appsettings/views.py:53
 msgid "Clones"
 msgstr "克隆"
 
-#: appsettings/views.py:53 console/templates/console-base.html:10
+#: appsettings/views.py:54 console/templates/console-base.html:10
 #: console/templates/console-base.html:23
 #: instances/templates/instance_actions.html:11
 #: instances/templates/instances/settings_tab.html:32
 msgid "Console"
 msgstr "控制台"
 
-#: appsettings/views.py:54
+#: appsettings/views.py:55
 msgid "VM access and owners"
 msgstr "虚拟机访问与所有者"
 
-#: appsettings/views.py:56
+#: appsettings/views.py:57
 msgid "Snapshots and jobs"
 msgstr "快照与任务"
 
-#: appsettings/views.py:58
+#: appsettings/views.py:59
 msgid "Login"
 msgstr "登录"
 
-#: appsettings/views.py:59
+#: appsettings/views.py:60
 msgid "Alerts"
 msgstr "告警"
 
-#: appsettings/views.py:60
+#: appsettings/views.py:61
 msgid "Lists and pages"
 msgstr "列表与页面"
 
-#: appsettings/views.py:68
+#: appsettings/views.py:69
 #, python-format
 msgid "%(setting)s takes at most %(length)s characters"
 msgstr "%(setting)s 最多 %(length)s 个字符"
 
-#: appsettings/views.py:73
+#: appsettings/views.py:74
 #, python-format
 msgid "%(setting)s must be a whole number between %(low)s and %(high)s"
 msgstr "%(setting)s 必须是 %(low)s 到 %(high)s 之间的整数"
 
-#: appsettings/views.py:76
+#: appsettings/views.py:77
 #, python-format
 msgid "%(setting)s must be one of %(choices)s"
 msgstr "%(setting)s 必须是以下之一：%(choices)s"
 
-#: appsettings/views.py:80
+#: appsettings/views.py:81
 #, python-format
 msgid "%(setting)s takes letters, digits and '-' only"
 msgstr "%(setting)s 只能包含字母、数字和 '-'"
 
-#: appsettings/views.py:90
+#: appsettings/views.py:91
 #, python-format
 msgid "%(setting)s: %(value)s is not an e-mail address or an http(s) URL"
 msgstr "%(setting)s：%(value)s 不是电子邮件地址或 http(s) URL"
 
-#: appsettings/views.py:99
+#: appsettings/views.py:100
 msgid "Disk I/O native needs disk cache none or directsync"
 msgstr "磁盘 I/O native 需要磁盘缓存为 none 或 directsync"
 
-#: appsettings/views.py:116
+#: appsettings/views.py:117
+msgid "Set an alert e-mail address or webhook and save it first"
+msgstr "请先设置并保存告警邮件地址或 Webhook"
+
+#: appsettings/views.py:119
+msgid "E-mail"
+msgstr "电子邮件"
+
+#: appsettings/views.py:119
+msgid "Webhook"
+msgstr "Webhook"
+
+#: appsettings/views.py:121
+#, python-format
+msgid "%(channel)s: the test alert was sent"
+msgstr "%(channel)s：测试告警已发送"
+
+#: appsettings/views.py:123
+#, python-format
+msgid "%(channel)s: the test alert failed: %(error)s"
+msgstr "%(channel)s：测试告警发送失败：%(error)s"
+
+#: appsettings/views.py:128
 #, python-format
 msgid "Unknown theme: %(theme)s"
 msgstr "未知主题：%(theme)s"
 
-#: appsettings/views.py:122
+#: appsettings/views.py:134
 #, python-format
 msgid "Theme is changed. Now: %(theme)s"
 msgstr "主题已更改。当前：%(theme)s"
 
-#: appsettings/views.py:159
+#: appsettings/views.py:171
 #, python-format
 msgid "Saved: %(settings)s"
 msgstr "已保存：%(settings)s"
 
-#: appsettings/views.py:161
+#: appsettings/views.py:173
 msgid "Nothing changed"
 msgstr "没有任何更改"
 
-#: appsettings/views.py:168 vrtManager/nodedevs.py:294
+#: appsettings/views.py:180 vrtManager/nodedevs.py:294
 #: vrtManager/nodedevs.py:333
 msgid "Other"
 msgstr "其他"
@@ -2229,7 +2255,7 @@ msgstr "这些主机正在维护，未计入："
 
 #: computes/templates/computes/balance.html:32
 #: instances/templates/instances/snapshots_tab.html:18
-#: vmbackups/templates/vmbackups/restore_over.html:18
+#: vmbackups/templates/vmbackups/restore_over.html:19
 msgid "Now"
 msgstr "现在"
 
@@ -8203,6 +8229,14 @@ msgid ""
 "rules and references."
 msgstr "字母、数字、点、短横线和下划线。副本包含该过滤器的规则和引用。"
 
+#: operations/alerts.py:49
+msgid "Test alert"
+msgstr "测试告警"
+
+#: operations/alerts.py:49
+msgid "WebVirtCloud sends its alerts here."
+msgstr "WebVirtCloud 会将告警发送到这里。"
+
 #: operations/api/serializers.py:37
 #, python-format
 msgid "%(phase)s (over its time limit)"
@@ -9899,10 +9933,24 @@ msgstr "只复制其所依赖的备份之后变化的部分"
 msgid "Incremental"
 msgstr "增量"
 
+#: vmbackups/templates/vmbackups/damage_warning.html:4
+msgid "A verification found this backup damaged:"
+msgstr "验证发现此备份已损坏："
+
+#: vmbackups/templates/vmbackups/damage_warning.html:4
+#, python-format
+msgid ""
+"It builds on the backup taken %(time)s, which a verification found damaged:"
+msgstr "它基于 %(time)s 的备份，验证发现该备份已损坏："
+
+#: vmbackups/templates/vmbackups/damage_warning.html:5
+msgid "The restored disks may be damaged too."
+msgstr "恢复的磁盘也可能已损坏。"
+
 #: vmbackups/templates/vmbackups/delete_form.html:4
 #: vmbackups/templates/vmbackups/restore.html:9
-#: vmbackups/templates/vmbackups/restore.html:19
-#: vmbackups/templates/vmbackups/restore_disk.html:18
+#: vmbackups/templates/vmbackups/restore.html:20
+#: vmbackups/templates/vmbackups/restore_disk.html:19
 msgid "Restore"
 msgstr "恢复"
 
@@ -10111,7 +10159,7 @@ msgid ""
 "with its own UUID and MAC addresses."
 msgstr "%(vm)s 在 %(time)s 的备份（位于 %(target)s）将恢复为一台拥有自己 UUID 和 MAC 地址的新虚拟机。"
 
-#: vmbackups/templates/vmbackups/restore.html:17
+#: vmbackups/templates/vmbackups/restore.html:18
 #, python-format
 msgid ""
 "On %(compute)s, in storage pool %(pool)s: the VM's host and the pool of its "
@@ -10132,7 +10180,7 @@ msgstr "%(vm)s 于 %(time)s 在 %(target)s 中的备份的一个磁盘将复制�
 
 #: vmbackups/templates/vmbackups/restore_over.html:6
 #: vmbackups/templates/vmbackups/restore_over.html:8
-#: vmbackups/templates/vmbackups/restore_over.html:34
+#: vmbackups/templates/vmbackups/restore_over.html:35
 msgid "Restore over the VM"
 msgstr "恢复到虚拟机上"
 
@@ -10146,29 +10194,29 @@ msgstr ""
 "%(vm)s 于 %(time)s 在 %(target)s 中的备份将恢复到该虚拟机上：其磁盘复制为新卷，虚拟机切换到这些卷。其设置、MAC 地址和 "
 "UUID 保持不变。"
 
-#: vmbackups/templates/vmbackups/restore_over.html:18
+#: vmbackups/templates/vmbackups/restore_over.html:19
 msgid "After the restore"
 msgstr "恢复之后"
 
-#: vmbackups/templates/vmbackups/restore_over.html:26
+#: vmbackups/templates/vmbackups/restore_over.html:27
 msgid "The old volumes stay in their pools until you delete them."
 msgstr "旧卷会保留在其存储池中，直到您删除它们。"
 
-#: vmbackups/templates/vmbackups/restore_over.html:27
+#: vmbackups/templates/vmbackups/restore_over.html:28
 msgid ""
 "The disks the VM runs from now are deleted once it is switched to the new "
 "ones."
 msgstr "虚拟机切换到新磁盘后，其当前运行的磁盘将被删除。"
 
-#: vmbackups/templates/vmbackups/restore_over.html:28
+#: vmbackups/templates/vmbackups/restore_over.html:29
 msgid "The UEFI variables return to the backup's."
 msgstr "UEFI 变量恢复为备份中的状态。"
 
-#: vmbackups/templates/vmbackups/restore_over.html:29
+#: vmbackups/templates/vmbackups/restore_over.html:30
 msgid "The TPM state returns to the backup's."
 msgstr "TPM 状态恢复为备份中的状态。"
 
-#: vmbackups/templates/vmbackups/restore_over.html:34
+#: vmbackups/templates/vmbackups/restore_over.html:35
 #, python-format
 msgid ""
 "Restore the backup over %(vm)s? What the VM wrote since the backup is no "

@@ -10,6 +10,7 @@
 
 {% block content %}
     <p>{% blocktrans with vm=backup.vm_name time=backup.created_at|date:"Y-m-d H:i" target=backup.target.name %}The backup of {{ vm }} taken {{ time }}, in {{ target }}, is restored as a new VM with its own UUID and MAC addresses.{% endblocktrans %}</p>
+    {% include "vmbackups/damage_warning.html" %}
     <div class="card" style="max-width: 40rem;">
         <div class="card-body">
             <form method="post">

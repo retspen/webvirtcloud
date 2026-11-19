@@ -12,6 +12,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone, translation
+from django.utils.translation import gettext
 
 from appsettings.models import AppSettings
 
@@ -40,6 +41,27 @@ def alert(subject, text):
                 Alert.objects.create(subject=subject, text=text)
     except Exception:
         logger.exception("queueing an alert failed")
+
+
+def test():
+    """A test notice sent at once to the channels saved: {channel: None when it took it, else the error}."""
+    emails, url = channels()
+    subject, text = gettext("Test alert"), gettext("WebVirtCloud sends its alerts here.")
+    results = {}
+    if emails:
+        results["mail"] = _attempt(lambda: send_mail(f"WebVirtCloud: {subject}", text, None, emails))
+    if url:
+        results["webhook"] = _attempt(lambda: _post(url, json.dumps(
+            {"subject": subject, "text": f"{subject}\n{text}", "time": timezone.now().isoformat()}).encode()))
+    return results
+
+
+def _attempt(deliver):
+    try:
+        deliver()
+    except Exception as err:
+        return safe_text(err)
+    return None
 
 
 def send():
