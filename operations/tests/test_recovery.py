@@ -149,6 +149,13 @@ class RecoveryTestCase(TransactionTestCase):
             self.run_due()
         self.assertEqual(words(self.reload(op).error), "resource busy: X")
 
+    def test_a_finding_that_repeats_the_raised_error_is_stored_once(self):
+        op = self.orphan({}, worker=self.worker.identity)
+        self.scheduler.inspect_now(op.pk, error=say("damaged: X"))
+        with patch.object(fakes.ScriptedKind, "reconcile", return_value=Outcome(Operation.FAILED, error=say("damaged: X"))):
+            self.run_due()
+        self.assertEqual(words(self.reload(op).error), "damaged: X")
+
     def test_progress_resets_the_stall_timer(self):
         op = self.orphan({})
         self.run_at(1000, Outcome(Operation.RUNNING, stalled=True))

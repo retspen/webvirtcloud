@@ -17,9 +17,9 @@ from django.urls import reverse
 from appsettings.settings import get_settings
 from computes.models import Compute
 from instances.models import Instance
-from operations import jobs
+from operations import claims, jobs
 from operations.jobs import Cancelled, Context
-from operations.models import Operation, acquire
+from operations.models import Claim, Operation, acquire
 from operations.utils import words
 from vmbackups.jobs import VerifyBackup
 from vmbackups.models import Backup, BackupFile, BackupTarget, BackupTargetPool
@@ -105,7 +105,10 @@ class VerifyBackupTests(TransactionTestCase):
         acquire(WORKER, "wvc-test")
         Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker=WORKER)
         op.refresh_from_db()
-        return VerifyBackup().run(op, Context(op, SimpleNamespace(identity=WORKER)))
+        try:
+            return VerifyBackup().run(op, Context(op, SimpleNamespace(identity=WORKER)))
+        finally:  # ended as far as the next verification's claims go
+            Claim.objects.filter(operation=op).delete()
 
     def damage(self):
         with self.assertRaises(OperationError) as raised:
@@ -135,6 +138,23 @@ class VerifyBackupTests(TransactionTestCase):
         self.verify()
         self.incremental.refresh_from_db()
         self.assertEqual(self.incremental.damage, [])
+
+    def test_damage_found_in_the_base_goes_on_the_base_too(self):
+        name = f"{self.full.prefix}-vda.qcow2"
+        del self.pool.volumes[name]
+        self.damage()
+        self.full.refresh_from_db()
+        self.assertTrue(self.full.verified_at)
+        self.assertIn(f"The backup's file {name} is missing from the target", words(self.full.damage))
+        # restoring the base alone warns too
+        self.assertEqual(self.full.damaged_in_chain(), self.full)
+
+    def test_damage_of_an_incremental_leaves_its_sound_base_verified_and_sound(self):
+        del self.pool.volumes[f"{self.incremental.prefix}-vda.qcow2"]
+        self.damage()
+        self.full.refresh_from_db()
+        self.assertTrue(self.full.verified_at)
+        self.assertEqual(self.full.damage, [])
 
     def test_a_file_missing_from_the_base(self):
         name = f"{self.full.prefix}-vda.qcow2"
@@ -179,15 +199,33 @@ class VerifyBackupTests(TransactionTestCase):
         self.incremental.refresh_from_db()
         self.assertEqual(self.incremental.damage, [])
 
+    def test_a_verification_of_a_backup_of_the_chain_waits_for_the_one_running(self):
+        jobs.submit("backup.verify", self.admin, {"backup": str(self.incremental.uuid)}, "key-verify0020")
+        with self.assertRaises(claims.Busy):
+            jobs.submit("backup.verify", self.admin, {"backup": str(self.full.uuid)}, "key-verify0021")
+
     def test_recovery_of_a_verification_that_found_damage_adds_nothing_to_it(self):
+        self.sound_disk = self.pool.volumes[f"{self.full.prefix}-vda.qcow2"]
         del self.pool.volumes[f"{self.full.prefix}-vda.qcow2"]
         self.damage()
         op = Operation.objects.get(kind="backup.verify")
         outcome = VerifyBackup().reconcile(op)
         self.assertEqual(outcome.state, Operation.FAILED)
         self.assertIn("is missing from the target", words(outcome.error))
+        # its own result: not what another verification wrote on the backup since, nor a cancel asked too late
         Backup.objects.filter(pk=self.incremental.pk).update(damage=[])
-        self.assertEqual(VerifyBackup().reconcile(op).state, Operation.SUCCEEDED)
+        Operation.objects.filter(pk=op.pk).update(cancel_requested=True)
+        op.refresh_from_db()
+        self.assertEqual(VerifyBackup().reconcile(op).state, Operation.FAILED)
+        self.pool.volumes[f"{self.full.prefix}-vda.qcow2"] = self.sound_disk
+        self.verify(self.full)
+        self.assertEqual(VerifyBackup().reconcile(Operation.objects.exclude(pk=op.pk).latest("created_at")).state,
+                         Operation.SUCCEEDED)
+        # recorded by the previous version, without its damage: the backup's row tells
+        Operation.objects.filter(pk=op.pk).update(intent={"recorded": True})
+        Backup.objects.filter(pk=self.incremental.pk).update(damage=[{"text": "x", "values": {}}])
+        op.refresh_from_db()
+        self.assertEqual(VerifyBackup().reconcile(op).state, Operation.FAILED)
         # another verification of the backup that ended: not this one's result
         other = jobs.submit("backup.verify", self.admin, {"backup": str(self.incremental.uuid)}, "key-verify0010")
         self.assertEqual(VerifyBackup().reconcile(other).state, Operation.FAILED)

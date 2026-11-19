@@ -88,6 +88,11 @@ def backup_key(uuid):
     return f"backup:{uuid}"
 
 
+def verify_key(uuid):
+    """A backup being verified: one verification at a time writes what it found on it."""
+    return f"verify:{uuid}"
+
+
 @cache
 def _node():
     """The installation's id (worker.host_identity): the same after a container

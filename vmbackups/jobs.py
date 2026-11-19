@@ -719,8 +719,9 @@ class VerifyBackup(Kind):
     """A ready backup's files read whole from its target, with those of the
     backups it builds on: each there, a disk at its size, in its format and on
     the file it builds on, every file with the SHA-256 it had when written or,
-    for a disk, at its first verification (recorded then). What is wrong goes
-    on the backup (Backup.damage) and fails the job; a target that cannot be
+    for a disk, at its first verification (recorded then). Each backup of the
+    chain is verified with it: what is wrong goes on the backups it reaches
+    (Backup.damage) and fails the job; a target that cannot be
     read fails it and leaves the backup as it was. A cancel is seen between
     two reads of VERIFY_STEP bytes: a read the target holds up waits for it,
     as any libvirt call."""
@@ -743,6 +744,8 @@ class VerifyBackup(Kind):
                 for compute_id in backup.target.pools.values_list("compute_id", flat=True)}
         # not deleted while read; backups go on being made into the target meanwhile
         keys.update({claims.backup_key(b.uuid): Claim.SHARED for b in chain})
+        # another verification of a backup of the chain would write over what this one found, or the reverse
+        keys.update({claims.verify_key(b.uuid): Claim.EXCLUSIVE for b in chain})
         return Plan(
             claims=keys,
             resource=claims.backup_key(backup.uuid),
@@ -760,11 +763,13 @@ class VerifyBackup(Kind):
             pool.refresh(0)  # another compute may have written the files
         except libvirtError as err:  # refused while a volume is copied into the pool here: its list as it is
             stale = err
-        files = [(b, f) for b in _chain(backup) for f in b.files.order_by("role", "dev")]
-        volumes = {f.volume: _volume(pool, f.volume) for _b, f in files}
+        chain = _chain(backup)[::-1]  # its base first
+        files = {b.pk: list(b.files.order_by("role", "dev")) for b in chain}
+        volumes = {f.volume: _volume(pool, f.volume) for fs in files.values() for f in fs}
         if stale is not None and None in volumes.values():
             raise stale  # a file another compute wrote may be missing from the list only: no damage told
-        disks = [volumes[f.volume] for _b, f in files if f.role == BackupFile.DISK and volumes[f.volume] is not None]
+        disks = [volumes[f.volume] for fs in files.values() for f in fs
+                 if f.role == BackupFile.DISK and volumes[f.volume] is not None]
         total = sum(vol.infoFlags(VIR_STORAGE_VOL_GET_PHYSICAL)[2] for vol in disks)
         read = {"done": 0, "step": 0}
         ctx.record_intent(done=0, total=total)
@@ -783,15 +788,20 @@ class VerifyBackup(Kind):
                 ctx.record_intent(done=read["done"])
                 cancelled()
 
-        damage = []
-        for b, f in files:
-            cancelled()
-            damage += self._damage(conn, b, f, volumes[f.volume], on_read)
-        for b in _chain(backup):
+        # each backup of the chain read whole: its damage is that of its files and of those it builds on
+        damage, found = [], {}
+        for b in chain:
+            for f in files[b.pk]:
+                cancelled()
+                damage += self._damage(conn, b, f, volumes[f.volume], on_read)
             damage += self._manifest_damage(conn, pool, b)
+            found[b.pk] = list(damage)
         cancelled()
-        Backup.objects.filter(pk=backup.pk).update(verified_at=timezone.now(), damage=damage)
-        ctx.record_intent(recorded=True)  # its own result: recovery tells it from another verification's
+        now = timezone.now()
+        with transaction.atomic():  # the rows and its own result together: recovery reads that
+            for b in reversed(chain):  # newest first, as a target check updates them: no deadlock between the two
+                Backup.objects.filter(pk=b.pk).update(verified_at=now, damage=found[b.pk])
+            ctx.record_intent(recorded=True, damage=damage)
         if damage:
             raise util.OperationError(_("The backup is damaged: %(damage)s"), damage=damage)
         return {}
@@ -851,13 +861,15 @@ class VerifyBackup(Kind):
         pass  # run stops at its next step
 
     def reconcile(self, op):
+        if op.intent.get("recorded"):  # it ended, a cancel asked meanwhile too late: what it found
+            # a run of the previous version recorded only that it ended: the backup's row tells
+            damage = op.intent["damage"] if "damage" in op.intent else \
+                Backup.objects.filter(uuid=op.params["backup"]).values_list("damage", flat=True).first()
+            if damage:
+                return Outcome(Operation.FAILED, error=say(_("The backup is damaged: %(damage)s"), damage=damage))
+            return Outcome(Operation.SUCCEEDED)
         if op.cancel_requested:
             return Outcome(Operation.CANCELLED)
-        backup = Backup.objects.filter(uuid=op.params["backup"]).first()
-        if backup is not None and op.intent.get("recorded"):  # it ended: what it found
-            if backup.damage:
-                return Outcome(Operation.FAILED, error=say(_("The backup is damaged: %(damage)s"), damage=backup.damage))
-            return Outcome(Operation.SUCCEEDED)
         return Outcome(Operation.FAILED, error=say(_("The verification stopped before it ended; verify the backup again")))
 
     def log_entry(self, op, state):

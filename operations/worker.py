@@ -478,8 +478,10 @@ class Scheduler:
         self._done(op.pk)
 
     def _error(self, op_id, finding):
-        """What an unproven end stores: the error the job raised, then what libvirt shows."""
-        return [*self.errors.get(op_id, ()), *finding]
+        """What an unproven end stores: the error the job raised, then what libvirt shows (a message the
+        raised error has already, once)."""
+        raised = list(self.errors.get(op_id, ()))
+        return [*raised, *(message for message in finding if message not in raised)]
 
     def _phase(self, op_id, text, progress=None):
         fields = {"phase": utils.safe_text(text)[:255]} if text else {}
