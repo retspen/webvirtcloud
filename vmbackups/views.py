@@ -231,6 +231,22 @@ def delete(request, uuid):
     return redirect(same_origin_referer(request, reverse("vmbackups:index")))
 
 
+@require_POST
+@superuser_only
+def verify(request, uuid):
+    """Verify a backup: a backup.verify job, followed on its page."""
+    backup = get_object_or_404(Backup, uuid=uuid)
+    try:
+        op = jobs.submit("backup.verify", request.user, {"backup": str(backup.uuid)}, request.POST.get("submission_key", ""))
+    except claims.Busy as busy:
+        messages.error(request, busy_message(busy, request.user))
+    except (jobs.SubmissionConflict, libvirtError) as err:
+        messages.error(request, error_text(request, err))
+    else:
+        return redirect("operations:job", op.pk)
+    return redirect(same_origin_referer(request, reverse("vmbackups:index")))
+
+
 @login_required
 def restore(request, uuid):
     """Restore a ready backup as a new VM: a backup.restore job, followed on

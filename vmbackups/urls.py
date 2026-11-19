@@ -7,6 +7,7 @@ app_name = "vmbackups"
 urlpatterns = [
     path("", views.index, name="index"),
     path("<uuid:uuid>/delete/", views.delete, name="delete"),
+    path("<uuid:uuid>/verify/", views.verify, name="verify"),
     path("<uuid:uuid>/restore/", views.restore, name="restore"),
     path("<uuid:uuid>/restore-over/", views.restore_over, name="restore_over"),
     path("<uuid:uuid>/restore-disk/", views.restore_disk, name="restore_disk"),

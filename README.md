@@ -600,6 +600,8 @@ VMs with a TPM of their own settings (encryption, a state path), host devices, s
 
 **Backups → Schedules** backs VMs up every day: chosen VMs, every VM of a compute or every VM with a chosen tag (not templates), into a target, at a time in the panel's time zone (`TZ`), keeping the newest backups of each VM up to a number. The job worker starts each VM's backup within 6 hours of the time, one copy at a time per target, and waits for a host in maintenance; a VM not started in that window waits for the next day. Older backups of a schedule are deleted; backups taken by hand are not. With "A full backup every N backups" above 1, a schedule's backups of a running VM with qcow2 disks between two full ones copy only what changed since the previous one; each is restored like a full one, and a chain of them is deleted once all of it is beyond the number kept. A migration, a restore over the VM or a shut-off VM's backup makes the next one full. Each target is checked once a day: a backup whose files are gone is marked missing.
 
+**Verify** (a ready backup's Restore menu, superusers) reads the backup's files whole from the target, with those of the backups it builds on: each must be there at its size and format, an incremental disk on its base's file, and every file with the SHA-256 it had when written or, for a disk, at its first verification (recorded then; a disk changed since is reported). What is wrong marks the backup **Damaged**; the job can be cancelled.
+
 The target must be:
 
 - on storage apart from the VMs' disks: a target on the same storage is lost with it;

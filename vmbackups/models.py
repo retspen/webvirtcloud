@@ -122,6 +122,10 @@ class Backup(models.Model):
     # whose job made it: a VM owner's own backups count in their backup quota
     taken_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+")
     prefix = models.CharField(max_length=128)  # every file of the backup in the target begins with it and "-"
+    # its last verification (backup.verify) that read the files: when, and what it found wrong with them or
+    # with those of the backups it builds on (messages, operations.utils.say); empty: nothing
+    verified_at = models.DateTimeField(null=True)
+    damage = models.JSONField(default=list)
 
     class Meta:
         ordering = ["-created_at"]

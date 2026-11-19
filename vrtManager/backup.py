@@ -1,5 +1,6 @@
 """VM backups: the target pools and what a VM's backup holds (app vmbackups)."""
 
+import contextlib
 import hashlib
 import os
 import re
@@ -260,6 +261,25 @@ def put_file(conn, pool, name, data, owner, mode="0644"):
 
 def get_file(conn, pool, name):
     return conn.download_volume(pool.storageVolLookupByName(name))
+
+
+def read_sha256(conn, vol, on_read):
+    """The SHA-256 of the file of vol, read whole through a libvirt stream
+    (holes as zeros); on_read(bytes) after each chunk, which may raise to
+    stop the read."""
+    digest = hashlib.sha256()
+    stream = conn.wvm.newStream(0)
+    try:
+        vol.download(stream, 0, 0, 0)
+        while data := stream.recv(1 << 20):
+            digest.update(data)
+            on_read(len(data))
+        stream.finish()
+    except BaseException:
+        with contextlib.suppress(libvirt.libvirtError):
+            stream.abort()
+        raise
+    return digest.hexdigest()
 
 
 def remove_files(pool, names):

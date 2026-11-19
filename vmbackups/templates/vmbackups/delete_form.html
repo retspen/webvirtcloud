@@ -5,7 +5,11 @@
     <ul class="dropdown-menu dropdown-menu-end shadow">
         <li><a class="dropdown-item" href="{% url 'vmbackups:restore' backup.uuid %}">{% trans "As a new VM" %}</a></li>
         {% if backup.instance_id %}<li><a class="dropdown-item" href="{% url 'vmbackups:restore_over' backup.uuid %}">{% trans "Over the VM" %}</a></li>{% endif %}
-        {% if user.is_superuser %}<li><a class="dropdown-item" href="{% url 'vmbackups:restore_disk' backup.uuid %}">{% trans "One disk" %}</a></li>{% endif %}
+        {% if user.is_superuser %}<li><a class="dropdown-item" href="{% url 'vmbackups:restore_disk' backup.uuid %}">{% trans "One disk" %}</a></li>
+        <li><hr class="dropdown-divider"></li>
+        {# reads its files whole: they are there and as written #}
+        <li><form method="post" action="{% url 'vmbackups:verify' backup.uuid %}">{% csrf_token %}{% submission_key %}
+            <button type="submit" class="dropdown-item">{% bs_icon 'check-circle' %} {% trans "Verify" %}</button></form></li>{% endif %}
     </ul>
 </div>{% endif %}{% if not backup.being_made %}{% if user.is_superuser or backup.taken_by_id == user.id and not backup.policy_id %}<form method="post" action="{% url 'vmbackups:delete' backup.uuid %}" class="d-inline">{% csrf_token %}{% submission_key %}
 <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans "Delete backup" %}" title="{% trans "Delete backup" %}"

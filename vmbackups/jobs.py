@@ -18,7 +18,8 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.utils.translation import gettext_noop as _
 from lxml import etree
-from libvirt import VIR_DOMAIN_PAUSED, VIR_DOMAIN_RUNNING, VIR_DOMAIN_SHUTOFF, VIR_ERR_NO_DOMAIN, VIR_ERR_NO_STORAGE_VOL, libvirtError
+from libvirt import (VIR_DOMAIN_PAUSED, VIR_DOMAIN_RUNNING, VIR_DOMAIN_SHUTOFF, VIR_ERR_NO_DOMAIN, VIR_ERR_NO_STORAGE_VOL,
+                     VIR_STORAGE_VOL_GET_PHYSICAL, libvirtError)
 
 from accounts.models import UserAttributes
 from appsettings.settings import app_settings
@@ -31,7 +32,7 @@ from operations.jobs import Cancelled, Kind, Outcome, Plan, register, register_p
 from operations.models import Claim, Operation
 from operations.utils import safe_text, say
 from vrtManager import util
-from vrtManager.backup import (backup_file_names, backup_prefix, check_restore_host, check_target_space, get_file, manifest_names, put_file,
+from vrtManager.backup import (backup_file_names, backup_prefix, check_restore_host, check_target_space, get_file, manifest_names, put_file, read_sha256,
                                remove_files, restore_definition, restore_over_definition, target_pool, volume_exists,
                                wvmBackup)
 from vrtManager.connection import NVRAM_DIR, wvmConnect
@@ -199,7 +200,8 @@ def _chain_parent(policy, instance, target, plan, proxy, pool):
     while backup is not None:
         chain.append(backup)
         backup = backup.parent
-    if not chain or len(chain) >= policy.full_every or any(b.state != Backup.READY for b in chain):
+    # a verification found damage: the next one is full
+    if not chain or len(chain) >= policy.full_every or any(b.state != Backup.READY or b.damage for b in chain):
         return None, None
     if chain[-1].manifest.get("parent"):  # its base's row is gone: the chain cannot be read whole
         return None, None
@@ -694,6 +696,183 @@ class DeleteBackup(Kind):
         backup = f"Backup {op.intent['time']} of {op.intent['vm']}"
         message = f"{backup} deleted" if state == Operation.SUCCEEDED else f"{backup}: delete ({state})"
         return op.intent["compute"], op.intent["vm"], op.intent["uuid"], message
+
+
+VERIFY_STEP = 64 << 20  # bytes read between two progress writes and cancel checks
+MANIFEST_LIMIT = 16 << 20  # a manifest is a few kB
+
+
+def _chain(backup):
+    """The backup and those it builds on, itself first; a chain whose base's row is gone is refused."""
+    chain = [backup]
+    while backup.parent_id is not None:
+        backup = backup.parent
+        chain.append(backup)
+    if backup.manifest.get("parent"):
+        raise util.OperationError(_("The backup taken %(time)s builds on a backup that is gone"),
+                                  time=timezone.localtime(backup.created_at).strftime("%Y-%m-%d %H:%M"))
+    return chain
+
+
+@register
+class VerifyBackup(Kind):
+    """A ready backup's files read whole from its target, with those of the
+    backups it builds on: each there, a disk at its size, in its format and on
+    the file it builds on, every file with the SHA-256 it had when written or,
+    for a disk, at its first verification (recorded then). What is wrong goes
+    on the backup (Backup.damage) and fails the job; a target that cannot be
+    read fails it and leaves the backup as it was. A cancel is seen between
+    two reads of VERIFY_STEP bytes: a read the target holds up waits for it,
+    as any libvirt call."""
+
+    name = "backup.verify"
+    label = _("Verify backup")
+    cancellable = True
+    progress_bytes = True
+
+    def normalize(self, raw):
+        return {"backup": str(UUID(str(raw["backup"])))}
+
+    def plan(self, user, params):
+        _superuser(user)
+        backup = _backup(params)
+        if backup.state != Backup.READY:
+            raise util.OperationError(_("Only a ready backup can be verified"))
+        chain = _chain(backup)
+        keys = {claims.compute_key(compute_id): Claim.SHARED
+                for compute_id in backup.target.pools.values_list("compute_id", flat=True)}
+        # not deleted while read; backups go on being made into the target meanwhile
+        keys.update({claims.backup_key(b.uuid): Claim.SHARED for b in chain})
+        return Plan(
+            claims=keys,
+            resource=claims.backup_key(backup.uuid),
+            label=f"{backup.vm_name} {timezone.localtime(backup.created_at):%Y-%m-%d %H:%M}",
+            intent={"compute": backup.compute_name, "vm": backup.vm_name, "uuid": backup.vm_uuid,
+                    "time": timezone.localtime(backup.created_at).strftime("%Y-%m-%d %H:%M")},
+        )
+
+    def run(self, op, ctx):
+        _superuser(op.user)
+        backup = _backup(op.params)
+        conn, pool = _target_pool(backup.target)
+        stale = None
+        try:
+            pool.refresh(0)  # another compute may have written the files
+        except libvirtError as err:  # refused while a volume is copied into the pool here: its list as it is
+            stale = err
+        files = [(b, f) for b in _chain(backup) for f in b.files.order_by("role", "dev")]
+        volumes = {f.volume: _volume(pool, f.volume) for _b, f in files}
+        if stale is not None and None in volumes.values():
+            raise stale  # a file another compute wrote may be missing from the list only: no damage told
+        disks = [volumes[f.volume] for _b, f in files if f.role == BackupFile.DISK and volumes[f.volume] is not None]
+        total = sum(vol.infoFlags(VIR_STORAGE_VOL_GET_PHYSICAL)[2] for vol in disks)
+        read = {"done": 0, "step": 0}
+        ctx.record_intent(done=0, total=total)
+        ctx.set_phase(_("Reading the backup's files"))
+
+        def cancelled():
+            op.refresh_from_db(fields=["cancel_requested"])
+            if op.cancel_requested:
+                raise Cancelled
+
+        def on_read(size):
+            read["done"] += size
+            read["step"] += size
+            if read["step"] >= VERIFY_STEP:
+                read["step"] = 0
+                ctx.record_intent(done=read["done"])
+                cancelled()
+
+        damage = []
+        for b, f in files:
+            cancelled()
+            damage += self._damage(conn, b, f, volumes[f.volume], on_read)
+        for b in _chain(backup):
+            damage += self._manifest_damage(conn, pool, b)
+        cancelled()
+        Backup.objects.filter(pk=backup.pk).update(verified_at=timezone.now(), damage=damage)
+        ctx.record_intent(recorded=True)  # its own result: recovery tells it from another verification's
+        if damage:
+            raise util.OperationError(_("The backup is damaged: %(damage)s"), damage=damage)
+        return {}
+
+    @staticmethod
+    def _damage(conn, backup, f, vol, on_read):
+        """What is wrong with the file f of backup (vol: its volume, None when missing): messages."""
+        if vol is None:
+            return say(_("The backup's file %(name)s is missing from the target"), name=f.volume)
+        if f.role != BackupFile.DISK:
+            # its length first: another file in its place is not read into memory
+            if vol.infoFlags(VIR_STORAGE_VOL_GET_PHYSICAL)[2] != f.capacity:
+                return say(_("The backup's file %(name)s differs from the one written"), name=f.volume)
+            if hashlib.sha256(conn.download_volume(vol)).hexdigest() != f.sha256:
+                return say(_("The backup's file %(name)s differs from the one written"), name=f.volume)
+            return []
+        tree = etree.fromstring(vol.XMLDesc(0))
+        if vol.info()[1] != f.capacity:
+            return say(_("The backup's file %(name)s differs from the one written"), name=f.volume)
+        fmt = tree.find("target/format")  # as libvirt reads it from the file's header
+        if f.format and fmt is not None and fmt.get("type") != f.format:
+            return say(_("The backup's file %(name)s is not a %(format)s file"), name=f.volume, format=f.format)
+        base = backup.parent.files.filter(role=BackupFile.DISK, dev=f.dev).first() if backup.parent_id else None
+        # the file beside it in the target, as libvirt resolves the backing file it names; a full backup's none
+        below = os.path.normpath(tree.findtext("backingStore/path") or "")
+        expected = os.path.join(os.path.dirname(vol.path()), base.volume) if base is not None else "."
+        if below != expected:
+            if base is None:
+                return say(_("The backup's file %(name)s builds on another file"), name=f.volume)
+            return say(_("The backup's file %(name)s does not build on %(base)s"), name=f.volume, base=base.volume)
+        sha256 = read_sha256(conn, vol, on_read)
+        # its first verification records it, unless another one did meanwhile: then that one's counts
+        if not BackupFile.objects.filter(pk=f.pk, sha256="").update(sha256=sha256) \
+                and sha256 != BackupFile.objects.get(pk=f.pk).sha256:
+            return say(_("The backup's file %(name)s changed since its first verification"), name=f.volume)
+        return []
+
+    @staticmethod
+    def _manifest_damage(conn, pool, backup):
+        """What is wrong with the backup's manifest in the target, which an import reads."""
+        name = f"{backup.prefix}-manifest.json"
+        vol = _volume(pool, name)
+        if vol is None:
+            return say(_("The backup's file %(name)s is missing from the target"), name=name)
+        if vol.infoFlags(VIR_STORAGE_VOL_GET_PHYSICAL)[2] > MANIFEST_LIMIT:  # another file in its place: not read
+            return say(_("The backup's file %(name)s differs from the one written"), name=name)
+        try:
+            same = json.loads(conn.download_volume(vol)) == backup.manifest
+        except ValueError:
+            same = False
+        return [] if same else say(_("The backup's file %(name)s differs from the one written"), name=name)
+
+    def progress(self, op):
+        return (op.intent["done"], op.intent["total"]) if "total" in op.intent else None
+
+    def cancel(self, op):
+        pass  # run stops at its next step
+
+    def reconcile(self, op):
+        if op.cancel_requested:
+            return Outcome(Operation.CANCELLED)
+        backup = Backup.objects.filter(uuid=op.params["backup"]).first()
+        if backup is not None and op.intent.get("recorded"):  # it ended: what it found
+            if backup.damage:
+                return Outcome(Operation.FAILED, error=say(_("The backup is damaged: %(damage)s"), damage=backup.damage))
+            return Outcome(Operation.SUCCEEDED)
+        return Outcome(Operation.FAILED, error=say(_("The verification stopped before it ended; verify the backup again")))
+
+    def log_entry(self, op, state):
+        backup = f"Backup {op.intent['time']} of {op.intent['vm']}"
+        message = f"{backup} verified" if state == Operation.SUCCEEDED else f"{backup}: verify ({state})"
+        return op.intent["compute"], op.intent["vm"], op.intent["uuid"], message
+
+
+def _volume(pool, name):
+    try:
+        return pool.storageVolLookupByName(name)
+    except libvirtError as err:
+        if err.get_error_code() != VIR_ERR_NO_STORAGE_VOL:
+            raise
+        return None
 
 
 def _connect(compute):

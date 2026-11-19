@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-19 12:17+0000\n"
+"POT-Creation-Date: 2026-11-19 13:08+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -3276,7 +3276,7 @@ msgstr "控制台监听的不只是 localhost；只有管理员可以移除其�
 msgid "The name of the virtual machine must not contain any special characters"
 msgstr "虚拟机名称不能包含任何特殊字符"
 
-#: instances/jobs.py:73 vmbackups/jobs.py:141
+#: instances/jobs.py:73 vmbackups/jobs.py:142
 msgid "The VM moved to another compute after the job was queued"
 msgstr "任务排队后，虚拟机已移到另一个计算节点"
 
@@ -3297,17 +3297,17 @@ msgstr "请从可用名称列表中选择克隆的名称"
 msgid "%(quota)s: cannot create '%(clone_name)s'."
 msgstr "%(quota)s：无法创建“%(clone_name)s”。"
 
-#: instances/jobs.py:206 instances/jobs.py:646 vmbackups/jobs.py:706
+#: instances/jobs.py:206 instances/jobs.py:646 vmbackups/jobs.py:885
 #, python-format
 msgid "Instance '%(clone_name)s' already exists!"
 msgstr "虚拟机 '%(clone_name)s' 已存在！"
 
-#: instances/jobs.py:208 vmbackups/jobs.py:708
+#: instances/jobs.py:208 vmbackups/jobs.py:887
 #, python-format
 msgid "Instance name '%(clone_name)s' is longer than 64 characters"
 msgstr "虚拟机名称“%(clone_name)s”超过 64 个字符"
 
-#: instances/jobs.py:211 vmbackups/jobs.py:710
+#: instances/jobs.py:211 vmbackups/jobs.py:889
 #, python-format
 msgid "Instance name '%(clone_name)s' contains invalid characters!"
 msgstr "虚拟机名称 '%(clone_name)s' 包含无效字符！"
@@ -3449,12 +3449,12 @@ msgid "Clone VM"
 msgstr "克隆虚拟机"
 
 #: instances/jobs.py:656 instances/jobs.py:663 instances/jobs.py:1005
-#: vmbackups/jobs.py:366 vmbackups/jobs.py:873 vmbackups/jobs.py:1075
-#: vmbackups/jobs.py:1250
+#: vmbackups/jobs.py:368 vmbackups/jobs.py:1052 vmbackups/jobs.py:1254
+#: vmbackups/jobs.py:1429
 msgid "Copying disks"
 msgstr "正在复制磁盘"
 
-#: instances/jobs.py:715 vmbackups/jobs.py:450
+#: instances/jobs.py:715 vmbackups/jobs.py:452
 msgid "libvirt has no result of the copy"
 msgstr "libvirt 没有复制的结果"
 
@@ -3465,7 +3465,7 @@ msgid ""
 "(%(thaw)s); thaw them with: virsh domfsthaw %(vm)s"
 msgstr "复制失败：%(error)s。无法解冻客户机的文件系统（%(thaw)s）；请用以下命令解冻：virsh domfsthaw %(vm)s"
 
-#: instances/jobs.py:729 instances/jobs.py:821 vmbackups/jobs.py:458
+#: instances/jobs.py:729 instances/jobs.py:821 vmbackups/jobs.py:460
 msgid "The copy failed"
 msgstr "复制失败"
 
@@ -3483,11 +3483,11 @@ msgid ""
 "this job: %(volumes)s"
 msgstr "克隆的一个卷正在创建中；请检查这些卷，然后处理此任务：%(volumes)s"
 
-#: instances/jobs.py:801 vmbackups/jobs.py:495
+#: instances/jobs.py:801 vmbackups/jobs.py:497
 msgid "The job stopped before the copy started"
 msgstr "任务在复制开始前停止"
 
-#: instances/jobs.py:808 vmbackups/jobs.py:543
+#: instances/jobs.py:808 vmbackups/jobs.py:545
 msgid "libvirt is still copying the disks"
 msgstr "libvirt 仍在复制磁盘"
 
@@ -3520,12 +3520,12 @@ msgstr "镜像已存在。请检查卷或更改虚拟机名称"
 msgid "Each network card needs a network"
 msgstr "每个网卡都需要一个网络"
 
-#: instances/jobs.py:868 vrtManager/backup.py:367 vrtManager/instance.py:2905
+#: instances/jobs.py:868 vrtManager/backup.py:387 vrtManager/instance.py:2905
 #, python-format
 msgid "This host has no network %(name)s"
 msgstr "此主机没有网络 %(name)s"
 
-#: instances/jobs.py:870 vrtManager/backup.py:371 vrtManager/instance.py:2907
+#: instances/jobs.py:870 vrtManager/backup.py:391 vrtManager/instance.py:2907
 #, python-format
 msgid "This host has no network filter %(name)s"
 msgstr "此主机没有网络过滤器 %(name)s"
@@ -9432,7 +9432,7 @@ msgstr "1：每次备份都是完整备份。大于 1 时，中间的备份只�
 msgid "Choose a compute, VMs or a tag: one of them"
 msgstr "选择一个计算节点、若干虚拟机或一个标签：只选其一"
 
-#: vmbackups/forms.py:113 vmbackups/jobs.py:113
+#: vmbackups/forms.py:113 vmbackups/jobs.py:114
 #, python-format
 msgid "Backup target %(target)s has no storage pool on %(compute)s"
 msgstr "备份目标 %(target)s 在 %(compute)s 上没有存储池"
@@ -9441,324 +9441,367 @@ msgstr "备份目标 %(target)s 在 %(compute)s 上没有存储池"
 msgid "Keep one backup at least"
 msgstr "至少保留一个备份"
 
-#: vmbackups/jobs.py:75
+#: vmbackups/jobs.py:76
 #, python-format
 msgid "Backup target %(target)s is not open to VM owners"
 msgstr "备份目标 %(target)s 未向虚拟机所有者开放"
 
-#: vmbackups/jobs.py:89
+#: vmbackups/jobs.py:90
 msgid ""
 "You have no backup quota; an administrator sets it with your user's quota"
 msgstr "您没有备份配额；管理员可在您的用户配额中设置"
 
-#: vmbackups/jobs.py:93
+#: vmbackups/jobs.py:94
 #, python-format
 msgid ""
 "The backup needs about %(needed)s GiB; %(used)s GiB of your %(limit)d GiB "
 "backup quota is used"
 msgstr "备份大约需要 %(needed)s GiB；您的 %(limit)d GiB 备份配额已使用 %(used)s GiB"
 
-#: vmbackups/jobs.py:123
+#: vmbackups/jobs.py:124
 msgid "The VM must be running, paused or shut off to be backed up"
 msgstr "虚拟机必须处于运行、暂停或关闭状态才能备份"
 
-#: vmbackups/jobs.py:127
+#: vmbackups/jobs.py:128
 msgid ""
 "A running VM's backup needs libvirt 11.10 or later; shut the VM down to back "
 "it up"
 msgstr "运行中虚拟机的备份需要 libvirt 11.10 或更高版本；请关闭虚拟机后再备份"
 
-#: vmbackups/jobs.py:129
+#: vmbackups/jobs.py:130
 msgid "A paused VM's file systems cannot be frozen"
 msgstr "无法冻结已暂停虚拟机的文件系统"
 
-#: vmbackups/jobs.py:131
+#: vmbackups/jobs.py:132
 msgid "The guest agent does not answer: the file systems cannot be frozen"
 msgstr "客户机代理没有响应：无法冻结文件系统"
 
-#: vmbackups/jobs.py:187
+#: vmbackups/jobs.py:188
 msgid ""
 "The VM's NVRAM file changed while it was backed up; back the VM up again"
 msgstr "虚拟机的 NVRAM 文件在备份期间发生了变化；请重新备份该虚拟机"
 
-#: vmbackups/jobs.py:237
+#: vmbackups/jobs.py:239
 msgid "The VM started while its disks were copied; back it up again"
 msgstr "虚拟机在复制磁盘期间被启动；请重新备份"
 
-#: vmbackups/jobs.py:303
+#: vmbackups/jobs.py:305
 msgid "Back up VM"
 msgstr "备份虚拟机"
 
-#: vmbackups/jobs.py:342
+#: vmbackups/jobs.py:344
 msgid "The schedule's window ended before the backup could start"
 msgstr "备份开始前计划的时间窗口已结束"
 
-#: vmbackups/jobs.py:344
+#: vmbackups/jobs.py:346
 #, python-format
 msgid ""
 "%(compute)s went into maintenance before the scheduled backup could start"
 msgstr "计划的备份开始前 %(compute)s 已进入维护"
 
-#: vmbackups/jobs.py:386 vmbackups/jobs.py:459
+#: vmbackups/jobs.py:388 vmbackups/jobs.py:461
 msgid "Writing the backup's files"
 msgstr "正在写入备份文件"
 
-#: vmbackups/jobs.py:471
+#: vmbackups/jobs.py:473
 msgid "The guest's file systems could not be thawed; trying again"
 msgstr "无法解冻客户机的文件系统；正在重试"
 
-#: vmbackups/jobs.py:520
+#: vmbackups/jobs.py:522
 #, python-format
 msgid ""
 "The VM is no longer on the compute the job ran on; check these volumes of the"
 " backup target, then resolve this job: %(volumes)s"
 msgstr "虚拟机已不在作业运行的计算节点上；请检查备份目标中的这些卷，然后解决此作业：%(volumes)s"
 
-#: vmbackups/jobs.py:537
+#: vmbackups/jobs.py:539
 #, python-format
 msgid ""
 "A disk was being copied when the job stopped; check these volumes of the "
 "backup target, then resolve this job: %(volumes)s"
 msgstr "作业停止时正在复制磁盘；请检查备份目标中的这些卷，然后解决此作业：%(volumes)s"
 
-#: vmbackups/jobs.py:547
+#: vmbackups/jobs.py:549
 #, python-format
 msgid ""
 "Another backup runs on the VM; check these volumes of the backup target, then"
 " resolve this job: %(volumes)s"
 msgstr "虚拟机上正在运行另一个备份；请检查备份目标中的这些卷，然后解决此作业：%(volumes)s"
 
-#: vmbackups/jobs.py:553
+#: vmbackups/jobs.py:555
 #, python-format
 msgid ""
 "libvirt has no result of the copy; check these volumes of the backup target, "
 "then resolve this job: %(volumes)s"
 msgstr "libvirt 没有复制的结果；请检查备份目标中的这些卷，然后解决此作业：%(volumes)s"
 
-#: vmbackups/jobs.py:561
+#: vmbackups/jobs.py:563
 msgid "The job stopped before the copy ended"
 msgstr "作业在复制结束前停止"
 
-#: vmbackups/jobs.py:568
+#: vmbackups/jobs.py:570
 #, python-format
 msgid "The backup's files could not be written: %(error)s"
 msgstr "无法写入备份文件：%(error)s"
 
-#: vmbackups/jobs.py:588
+#: vmbackups/jobs.py:590
 #, python-format
 msgid "No compute of backup target %(target)s reaches its storage pool"
 msgstr "备份目标 %(target)s 的计算节点都无法访问其存储池"
 
-#: vmbackups/jobs.py:631 vmbackups/templates/vmbackups/delete_form.html:11
+#: vmbackups/jobs.py:633 vmbackups/templates/vmbackups/delete_form.html:15
 msgid "Delete backup"
 msgstr "删除备份"
 
-#: vmbackups/jobs.py:651
+#: vmbackups/jobs.py:653
 msgid "This backup is being made; cancel its job to stop it"
 msgstr "此备份正在创建；要停止它，请取消其作业"
 
-#: vmbackups/jobs.py:653 vmbackups/jobs.py:670
+#: vmbackups/jobs.py:655 vmbackups/jobs.py:672
 msgid "Later backups depend on this one; delete them first"
 msgstr "后续备份依赖于此备份；请先删除它们"
 
-#: vmbackups/jobs.py:668
+#: vmbackups/jobs.py:670
 msgid "The backup is no longer beyond what its schedule keeps; it is kept"
 msgstr "该备份已不再超出其计划保留的数量；予以保留"
 
-#: vmbackups/jobs.py:687
+#: vmbackups/jobs.py:689
 msgid "The job stopped before the deletion began"
 msgstr "任务在删除开始前已停止"
 
-#: vmbackups/jobs.py:723
-#, python-format
-msgid "The backup's file %(name)s is missing from the target"
-msgstr "目标中缺少备份文件 %(name)s"
-
-#: vmbackups/jobs.py:726 vmbackups/jobs.py:728
-#, python-format
-msgid "The backup's file %(name)s differs from the one written"
-msgstr "备份文件 %(name)s 与写入的不同"
-
-#: vmbackups/jobs.py:739
+#: vmbackups/jobs.py:712 vmbackups/jobs.py:918
 #, python-format
 msgid "The backup taken %(time)s builds on a backup that is gone"
 msgstr "%(time)s 的备份所依赖的备份已不存在"
 
-#: vmbackups/jobs.py:753
+#: vmbackups/jobs.py:729
+msgid "Verify backup"
+msgstr "验证备份"
+
+#: vmbackups/jobs.py:740
+msgid "Only a ready backup can be verified"
+msgstr "只能验证就绪的备份"
+
+#: vmbackups/jobs.py:771
+msgid "Reading the backup's files"
+msgstr "正在读取备份文件"
+
+#: vmbackups/jobs.py:796 vmbackups/jobs.py:859
+#, python-format
+msgid "The backup is damaged: %(damage)s"
+msgstr "备份已损坏：%(damage)s"
+
+#: vmbackups/jobs.py:803 vmbackups/jobs.py:838 vmbackups/jobs.py:902
+#, python-format
+msgid "The backup's file %(name)s is missing from the target"
+msgstr "目标中缺少备份文件 %(name)s"
+
+#: vmbackups/jobs.py:807 vmbackups/jobs.py:809 vmbackups/jobs.py:813
+#: vmbackups/jobs.py:840 vmbackups/jobs.py:845 vmbackups/jobs.py:905
+#: vmbackups/jobs.py:907
+#, python-format
+msgid "The backup's file %(name)s differs from the one written"
+msgstr "备份文件 %(name)s 与写入的不同"
+
+#: vmbackups/jobs.py:816
+#, python-format
+msgid "The backup's file %(name)s is not a %(format)s file"
+msgstr "备份文件 %(name)s 不是 %(format)s 文件"
+
+#: vmbackups/jobs.py:823
+#, python-format
+msgid "The backup's file %(name)s builds on another file"
+msgstr "备份文件 %(name)s 基于另一个文件"
+
+#: vmbackups/jobs.py:824
+#, python-format
+msgid "The backup's file %(name)s does not build on %(base)s"
+msgstr "备份文件 %(name)s 不是基于 %(base)s"
+
+#: vmbackups/jobs.py:829
+#, python-format
+msgid "The backup's file %(name)s changed since its first verification"
+msgstr "备份文件 %(name)s 自首次验证以来已更改"
+
+#: vmbackups/jobs.py:861
+msgid "The verification stopped before it ended; verify the backup again"
+msgstr "验证在完成前停止；请重新验证备份"
+
+#: vmbackups/jobs.py:932
 #, python-format
 msgid "The backup's TPM state file %(name)s is not a plain file name"
 msgstr "备份的 TPM 状态文件 %(name)s 不是普通文件名"
 
-#: vmbackups/jobs.py:765 vmbackups/templates/vmbackups/restore.html:7
+#: vmbackups/jobs.py:944 vmbackups/templates/vmbackups/restore.html:7
 msgid "Restore backup"
 msgstr "恢复备份"
 
-#: vmbackups/jobs.py:799
+#: vmbackups/jobs.py:978
 #, python-format
 msgid "%(quota)s: cannot restore %(name)s"
 msgstr "%(quota)s：无法恢复 %(name)s"
 
-#: vmbackups/jobs.py:806 vmbackups/jobs.py:1028 vmbackups/jobs.py:1216
+#: vmbackups/jobs.py:985 vmbackups/jobs.py:1207 vmbackups/jobs.py:1395
 msgid "Only a ready backup is restored"
 msgstr "只能恢复就绪的备份"
 
-#: vmbackups/jobs.py:843
+#: vmbackups/jobs.py:1022
 #, python-format
 msgid "A VM named %(name)s exists on %(compute)s"
 msgstr "%(compute)s 上已存在名为 %(name)s 的虚拟机"
 
-#: vmbackups/jobs.py:851 vmbackups/jobs.py:1068 vmbackups/jobs.py:1246
+#: vmbackups/jobs.py:1030 vmbackups/jobs.py:1247 vmbackups/jobs.py:1425
 #, python-format
 msgid "This host has no active directory storage pool %(pool)s"
 msgstr "此主机没有名为 %(pool)s 的活动目录存储池"
 
-#: vmbackups/jobs.py:869
+#: vmbackups/jobs.py:1048
 #, python-format
 msgid "The NVRAM file %(path)s exists already"
 msgstr "NVRAM 文件 %(path)s 已存在"
 
-#: vmbackups/jobs.py:909 vmbackups/jobs.py:935
+#: vmbackups/jobs.py:1088 vmbackups/jobs.py:1114
 #, python-format
 msgid "The VM was restored; it did not start: %(error)s"
 msgstr "虚拟机已恢复；但未能启动：%(error)s"
 
-#: vmbackups/jobs.py:939 vmbackups/jobs.py:1175
+#: vmbackups/jobs.py:1118 vmbackups/jobs.py:1354
 #, python-format
 msgid ""
 "A disk was being copied when the job stopped; check this volume, then resolve"
 " this job: %(volumes)s"
 msgstr "作业停止时正在复制磁盘；请检查此卷，然后解决此作业：%(volumes)s"
 
-#: vmbackups/jobs.py:944 vmbackups/jobs.py:1181
+#: vmbackups/jobs.py:1123 vmbackups/jobs.py:1360
 #, python-format
 msgid ""
 "Storage pool %(pool)s is not active; the restore's copies in it are removed "
 "when it is"
 msgstr "存储池 %(pool)s 未激活；其中恢复的副本将在其激活后删除"
 
-#: vmbackups/jobs.py:958
+#: vmbackups/jobs.py:1137
 msgid "The VM was not defined; its copies were removed"
 msgstr "虚拟机未定义；其副本已删除"
 
-#: vmbackups/jobs.py:971
+#: vmbackups/jobs.py:1150
 msgid "Shut the VM down to restore a backup over it"
 msgstr "请先将虚拟机关机，再将备份恢复到其上"
 
-#: vmbackups/jobs.py:974
+#: vmbackups/jobs.py:1153
 msgid "The VM has snapshots; delete them to restore a backup over it"
 msgstr "虚拟机有快照；请删除它们后再将备份恢复到其上"
 
-#: vmbackups/jobs.py:979
+#: vmbackups/jobs.py:1158
 #, python-format
 msgid ""
 "The VM's disks (%(now)s) are not the backup's (%(then)s); restore it as a new"
 " VM or one disk"
 msgstr "虚拟机的磁盘（%(now)s）与备份的（%(then)s）不同；请恢复为新虚拟机或恢复单个磁盘"
 
-#: vmbackups/jobs.py:983
+#: vmbackups/jobs.py:1162
 #, python-format
 msgid ""
 "The backup's disk %(dev)s is larger than the VM's now; restore it as a new VM"
 msgstr "备份的磁盘 %(dev)s 比虚拟机当前的磁盘大；请恢复为新虚拟机"
 
-#: vmbackups/jobs.py:986
+#: vmbackups/jobs.py:1165
 msgid "The VM's UEFI firmware changed since the backup; restore it as a new VM"
 msgstr "备份之后虚拟机的 UEFI 固件已更改；请恢复为新虚拟机"
 
-#: vmbackups/jobs.py:988
+#: vmbackups/jobs.py:1167
 msgid "The VM's TPM changed since the backup; restore it as a new VM"
 msgstr "备份之后虚拟机的 TPM 已更改；请恢复为新虚拟机"
 
-#: vmbackups/jobs.py:1019
+#: vmbackups/jobs.py:1198
 msgid "Restore backup over the VM"
 msgstr "将备份恢复到虚拟机上"
 
-#: vmbackups/jobs.py:1032
+#: vmbackups/jobs.py:1211
 msgid "The backup's VM is no longer in the panel; restore it as a new VM"
 msgstr "备份的虚拟机已不在面板中；请恢复为新虚拟机"
 
-#: vmbackups/jobs.py:1058
+#: vmbackups/jobs.py:1237
 msgid "The VM's disks changed after the job was queued"
 msgstr "任务排队后虚拟机的磁盘已更改"
 
-#: vmbackups/jobs.py:1092
+#: vmbackups/jobs.py:1271
 msgid "The VM changed while its backup was copied; it keeps its disks"
 msgstr "复制备份期间虚拟机发生了变化；虚拟机保留其磁盘"
 
-#: vmbackups/jobs.py:1095
+#: vmbackups/jobs.py:1274
 msgid "Replacing the VM's disks"
 msgstr "正在替换虚拟机的磁盘"
 
-#: vmbackups/jobs.py:1155
+#: vmbackups/jobs.py:1334
 msgid ""
 "The VM moved to another compute; check its disks and the restore's copies, "
 "then resolve this job"
 msgstr "虚拟机已迁移到另一台计算节点；请检查其磁盘和恢复的副本，然后处理此任务"
 
-#: vmbackups/jobs.py:1168
+#: vmbackups/jobs.py:1347
 msgid ""
 "The VM was started while its disks were being replaced; check its disks, then"
 " resolve this job"
 msgstr "替换磁盘期间虚拟机被启动；请检查其磁盘，然后处理此任务"
 
-#: vmbackups/jobs.py:1186
+#: vmbackups/jobs.py:1365
 msgid "The VM keeps its disks; the restore's copies were removed"
 msgstr "虚拟机保留其磁盘；恢复的副本已删除"
 
-#: vmbackups/jobs.py:1198
+#: vmbackups/jobs.py:1377
 msgid "Restore a disk of a backup"
 msgstr "恢复备份的一个磁盘"
 
-#: vmbackups/jobs.py:1209
+#: vmbackups/jobs.py:1388
 #, python-format
 msgid "The backup has no disk %(dev)s"
 msgstr "备份中没有磁盘 %(dev)s"
 
-#: vmbackups/jobs.py:1219
+#: vmbackups/jobs.py:1398
 #, python-format
 msgid "%(name)s is not a volume name"
 msgstr "%(name)s 不是有效的卷名"
 
-#: vmbackups/jobs.py:1278
+#: vmbackups/jobs.py:1457
 #, python-format
 msgid ""
 "The disk was being copied when the job stopped; check this volume, then "
 "resolve this job: %(volume)s"
 msgstr "任务停止时磁盘正在复制；请检查此卷，然后处理此任务：%(volume)s"
 
-#: vmbackups/jobs.py:1281
+#: vmbackups/jobs.py:1460
 msgid "The disk was not restored"
 msgstr "磁盘未恢复"
 
-#: vmbackups/jobs.py:1302 vmbackups/templates/vmbackups/target.html:23
+#: vmbackups/jobs.py:1481 vmbackups/templates/vmbackups/target.html:23
 msgid "Read backups from target"
 msgstr "从目标读取备份"
 
-#: vmbackups/jobs.py:1371
+#: vmbackups/jobs.py:1550
 #, python-format
 msgid ""
 "Not read, as a file of the backup is missing, changed or unreadable: "
 "%(names)s"
 msgstr "由于备份的某个文件缺失、已更改或无法读取，未读取：%(names)s"
 
-#: vmbackups/jobs.py:1387
+#: vmbackups/jobs.py:1566
 msgid "Check backup target"
 msgstr "检查备份目标"
 
-#: vmbackups/jobs.py:1421
+#: vmbackups/jobs.py:1600
 #, python-format
 msgid "Files of these backups are missing from the target: %(backups)s"
 msgstr "以下备份的文件在目标中缺失：%(backups)s"
 
-#: vmbackups/schedule.py:29
+#: vmbackups/schedule.py:30
 msgid "Not started within 6 hours of its time"
 msgstr "未在计划时间后的 6 小时内启动"
 
-#: vmbackups/schedule.py:30
+#: vmbackups/schedule.py:31
 msgid "The host was in maintenance"
 msgstr "主机处于维护中"
 
-#: vmbackups/schedule.py:31
+#: vmbackups/schedule.py:32
 msgid "The schedule's owner is no longer an active superuser"
 msgstr "该计划的所有者已不再是活动的超级用户"
 
@@ -9802,6 +9845,10 @@ msgid "One disk"
 msgstr "单个磁盘"
 
 #: vmbackups/templates/vmbackups/delete_form.html:12
+msgid "Verify"
+msgstr "验证"
+
+#: vmbackups/templates/vmbackups/delete_form.html:16
 #, python-format
 msgid ""
 "Delete the backup of %(vm)s taken %(time)s? Its files are removed from "
@@ -10059,6 +10106,19 @@ msgid "Its deletion did not end; delete it again"
 msgstr "其删除未完成；请再次删除"
 
 #: vmbackups/templates/vmbackups/state.html:1
+msgid "Damaged"
+msgstr "已损坏"
+
+#: vmbackups/templates/vmbackups/state.html:1
+#, python-format
+msgid "Verified %(time)s"
+msgstr "于 %(time)s 验证"
+
+#: vmbackups/templates/vmbackups/state.html:1
+msgid "verified"
+msgstr "已验证"
+
+#: vmbackups/templates/vmbackups/state.html:1
 msgid "Files of the backup are missing from the target"
 msgstr "备份的文件在目标中缺失"
 
@@ -10231,110 +10291,110 @@ msgstr "请选择备份目标"
 msgid "The backup of %(vm)s taken %(time)s is being deleted."
 msgstr "正在删除 %(vm)s 于 %(time)s 的备份。"
 
-#: vmbackups/views.py:328 vmbackups/views.py:349
+#: vmbackups/views.py:344 vmbackups/views.py:365
 #, python-format
 msgid "Backup schedule %(name)s is saved."
 msgstr "备份计划 %(name)s 已保存。"
 
-#: vmbackups/views.py:340
+#: vmbackups/views.py:356
 #, python-format
 msgid "Backup schedule %(name)s is deleted; its backups stay."
 msgstr "备份计划 %(name)s 已删除；其备份保留。"
 
-#: vrtManager/backup.py:36
+#: vrtManager/backup.py:37
 #, python-format
 msgid ""
 "Storage pool %(pool)s is not an active directory or NFS pool of this host, or"
 " not the one the backup target registered"
 msgstr "存储池 %(pool)s 不是此主机上活动的目录或 NFS 存储池，或不是备份目标登记的那个存储池"
 
-#: vrtManager/backup.py:64
+#: vrtManager/backup.py:65
 #, python-format
 msgid "%(vm)s has a saved state; start it or remove the saved state first"
 msgstr "%(vm)s 有已保存的状态；请先启动它或删除已保存的状态"
 
-#: vrtManager/backup.py:67
+#: vrtManager/backup.py:68
 #, python-format
 msgid ""
 "%(vm)s has a TPM of its own settings (encryption, a state path or another "
 "backend); it cannot be backed up"
 msgstr "%(vm)s 的 TPM 有自己的设置（加密、状态路径或其他后端）；无法备份"
 
-#: vrtManager/backup.py:70
+#: vrtManager/backup.py:71
 #, python-format
 msgid "%(vm)s has TPM state; shut it down to back it up"
 msgstr "%(vm)s 有 TPM 状态；请将其关机后再备份"
 
-#: vrtManager/backup.py:72
+#: vrtManager/backup.py:73
 #, python-format
 msgid "%(vm)s shares a host directory (filesystem); it cannot be backed up"
 msgstr "%(vm)s 共享主机目录（filesystem）；无法备份"
 
-#: vrtManager/backup.py:74
+#: vrtManager/backup.py:75
 #, python-format
 msgid ""
 "%(vm)s has a persistent memory device (a host file); it cannot be backed up"
 msgstr "%(vm)s 有持久内存设备（主机文件）；无法备份"
 
-#: vrtManager/backup.py:77
+#: vrtManager/backup.py:78
 #, python-format
 msgid "%(vm)s boots a kernel file of the host; it cannot be backed up"
 msgstr "%(vm)s 从主机上的内核文件启动；无法备份"
 
-#: vrtManager/backup.py:79
+#: vrtManager/backup.py:80
 #, python-format
 msgid "%(vm)s has a host device; it cannot be backed up"
 msgstr "%(vm)s 有主机设备；无法备份"
 
-#: vrtManager/backup.py:85
+#: vrtManager/backup.py:86
 msgid "CD-ROM: not copied"
 msgstr "CD-ROM：不复制"
 
-#: vrtManager/backup.py:85
+#: vrtManager/backup.py:86
 msgid "Floppy: not copied"
 msgstr "软盘：不复制"
 
-#: vrtManager/backup.py:89
+#: vrtManager/backup.py:90
 #, python-format
 msgid "Disk %(dev)s is encrypted; it cannot be backed up"
 msgstr "磁盘 %(dev)s 已加密；无法备份"
 
-#: vrtManager/backup.py:92
+#: vrtManager/backup.py:93
 #, python-format
 msgid "Disk %(dev)s is not a file; it cannot be backed up"
 msgstr "磁盘 %(dev)s 不是文件；无法备份"
 
-#: vrtManager/backup.py:94
+#: vrtManager/backup.py:95
 #, python-format
 msgid "Disk %(dev)s is shareable; it cannot be backed up"
 msgstr "磁盘 %(dev)s 可共享；无法备份"
 
-#: vrtManager/backup.py:97
+#: vrtManager/backup.py:98
 #, python-format
 msgid "Disk %(dev)s is %(format)s; only qcow2 and raw disks are backed up"
 msgstr "磁盘 %(dev)s 是 %(format)s 格式；只备份 qcow2 和 raw 磁盘"
 
-#: vrtManager/backup.py:104
+#: vrtManager/backup.py:105
 #, python-format
 msgid ""
 "Disk %(dev)s (%(path)s) is in no storage pool of the host; it cannot be "
 "backed up"
 msgstr "磁盘 %(dev)s（%(path)s）不在主机的任何存储池中；无法备份"
 
-#: vrtManager/backup.py:119
+#: vrtManager/backup.py:120
 #, python-format
 msgid ""
 "Disks %(devs)s change at the next start; back the VM up after it restarts"
 msgstr "磁盘 %(devs)s 将在下次启动时更改；请在虚拟机重启后再备份"
 
-#: vrtManager/backup.py:126 vrtManager/instance.py:502
+#: vrtManager/backup.py:127 vrtManager/instance.py:502
 #, python-format
 msgid ""
 "The NVRAM file %(path)s is not in libvirt's NVRAM directory %(dir)s and "
 "cannot be copied"
 msgstr "NVRAM 文件 %(path)s 不在 libvirt 的 NVRAM 目录 %(dir)s 中，无法复制"
 
-#: vrtManager/backup.py:244
+#: vrtManager/backup.py:245
 #, python-format
 msgid ""
 "Storage pool %(pool)s has %(free).1f GiB free; the backup needs %(size).1f "
@@ -10343,31 +10403,31 @@ msgstr ""
 "存储池 %(pool)s 有 %(free).1f GiB 可用空间；备份需要 %(size).1f GiB（复制的磁盘，加上其 "
 "%(percent)g%%，至少 %(minimum)g GiB）"
 
-#: vrtManager/backup.py:257
+#: vrtManager/backup.py:258
 #, python-format
 msgid ""
 "The file %(name)s read back from the backup target differs from the one "
 "written"
 msgstr "从备份目标读回的文件 %(name)s 与写入的不同"
 
-#: vrtManager/backup.py:354
+#: vrtManager/backup.py:374
 #, python-format
 msgid ""
 "This host cannot run the VM's emulator %(emulator)s with machine type "
 "%(machine)s: %(error)s"
 msgstr "此主机无法以机器类型 %(machine)s 运行虚拟机的模拟器 %(emulator)s：%(error)s"
 
-#: vrtManager/backup.py:358
+#: vrtManager/backup.py:378
 #, python-format
 msgid "This host has no firmware %(loader)s"
 msgstr "此主机没有固件 %(loader)s"
 
-#: vrtManager/backup.py:364
+#: vrtManager/backup.py:384
 #, python-format
 msgid "This host offers no TPM 2.0 %(model)s: install swtpm on it"
 msgstr "此主机不提供 TPM 2.0 %(model)s：请在其上安装 swtpm"
 
-#: vrtManager/backup.py:369
+#: vrtManager/backup.py:389
 #, python-format
 msgid "This host has no bridge %(name)s"
 msgstr "此主机没有网桥 %(name)s"
