@@ -30,6 +30,14 @@ class TagAdminTests(TestCase):
         self.assertEqual([(t.name, t.vm_count, t.host_count) for t in response.context["tags"]], [("prod", 1, 1)])
         self.assertContains(response, 'class="badge tag-badge')  # as small as on the other pages
 
+    def test_the_list_is_in_name_order_and_searched(self):
+        Tag.objects.create(name="web")
+        Tag.objects.create(name="db")
+        response = self.client.get(reverse("admin:tag_list"))
+        self.assertEqual([t.name for t in response.context["tags"]], ["db", "prod", "web"])
+        self.assertContains(response, 'id="filter"')
+        self.assertContains(response, 'data-search="web"')
+
     def test_a_rename_keeps_the_tag_on_its_vms_hosts_and_removed_vms(self):
         self.client.post(reverse("admin:tag_update", args=[self.prod.pk]), {"name": "Live"})
         self.prod.refresh_from_db()

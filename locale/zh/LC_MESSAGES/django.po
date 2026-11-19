@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-19 08:03+0000\n"
+"POT-Creation-Date: 2026-11-19 10:35+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -218,7 +218,7 @@ msgid "User sections"
 msgstr "用户页面导航"
 
 #: accounts/templates/account.html:50 accounts/templates/account.html:58
-#: admin/forms.py:221 admin/templates/admin/tag_list.html:19
+#: admin/forms.py:221 admin/templates/admin/tag_list.html:25
 #: computes/templates/computes/list.html:33
 #: computes/templates/computes/list.html:61 computes/templates/overview.html:90
 #: instances/views.py:267 vmbackups/templates/vmbackups/policies.html:17
@@ -461,7 +461,7 @@ msgstr "API 令牌 %(name)s 的操作"
 #: accounts/templates/api_token_list.html:12
 #: accounts/templates/ssh_key_list.html:13
 #: admin/templates/admin/group_list.html:44
-#: admin/templates/admin/tag_list.html:32
+#: admin/templates/admin/tag_list.html:38
 #: admin/templates/admin/tombstone_list.html:43
 #: admin/templates/admin/user_list.html:74
 #: admin/templates/admin/user_list.html:76
@@ -858,7 +858,7 @@ msgstr "获得这些权限的用户。"
 
 #: admin/templates/admin/group_form.html:60
 #: admin/templates/admin/group_list.html:25 admin/templates/admin/logs.html:20
-#: admin/templates/admin/logs.html:26
+#: admin/templates/admin/logs.html:26 admin/templates/admin/tag_list.html:18
 #: admin/templates/admin/tombstone_list.html:20
 #: admin/templates/admin/user_list.html:20
 #: instances/templates/allinstances.html:11 networks/templates/network.html:130
@@ -1001,33 +1001,37 @@ msgstr "完成"
 msgid "Failed"
 msgstr "失败"
 
-#: admin/templates/admin/tag_list.html:5 admin/templates/admin/tag_list.html:7
-#: computes/forms.py:55 instances/templates/instances/settings_tab.html:925
-#: instances/views.py:244 templates/common/tag_filter.html:6
-#: templates/navbar.html:39
+#: admin/templates/admin/tag_list.html:6 admin/templates/admin/tag_list.html:8
+#: admin/templates/admin/tag_list.html:17 computes/forms.py:55
+#: instances/templates/instances/settings_tab.html:925 instances/views.py:244
+#: templates/common/tag_filter.html:6 templates/navbar.html:39
 msgid "Tags"
 msgstr "标签"
 
-#: admin/templates/admin/tag_list.html:10
+#: admin/templates/admin/tag_list.html:11
 msgid ""
 "The tags of VMs and hosts. A tag is made when it is first given, on a VM's "
 "Options tab or a host's form."
 msgstr "虚拟机和主机的标签。标签在首次于虚拟机的“选项”选项卡或主机表单中添加时创建。"
 
-#: admin/templates/admin/tag_list.html:12
+#: admin/templates/admin/tag_list.html:13
 msgid "No tags yet"
 msgstr "还没有标签"
 
 #: admin/templates/admin/tag_list.html:18
+msgid "Search tags"
+msgstr "搜索标签"
+
+#: admin/templates/admin/tag_list.html:24
 msgid "Tag"
 msgstr "标签"
 
-#: admin/templates/admin/tag_list.html:20
+#: admin/templates/admin/tag_list.html:26
 #: computes/templates/computes/list.html:26
 msgid "Hosts"
 msgstr "主机"
 
-#: admin/templates/admin/tag_list.html:21
+#: admin/templates/admin/tag_list.html:27
 #: computes/templates/computes/instances.html:58
 #: computes/templates/computes/list.html:64
 #: instances/templates/allinstances_index_grouped.html:18
@@ -1041,9 +1045,13 @@ msgstr "主机"
 msgid "Actions"
 msgstr "操作"
 
-#: admin/templates/admin/tag_list.html:31
+#: admin/templates/admin/tag_list.html:37
 msgid "Rename"
 msgstr "重命名"
+
+#: admin/templates/admin/tag_list.html:46
+msgid "No tag matches the search."
+msgstr "没有与搜索匹配的标签。"
 
 #: admin/templates/admin/tombstone_list.html:6
 #: admin/templates/admin/tombstone_list.html:8
@@ -1286,35 +1294,35 @@ msgstr "已删除已移除的虚拟机 %(name)s"
 msgid "Its owners and tags no longer come back if its UUID shows up again."
 msgstr "若其 UUID 再次出现，其所有者和标签将不再恢复。"
 
-#: admin/views.py:510
+#: admin/views.py:512
 #, python-format
 msgid "Rename tag %(tag)s"
 msgstr "重命名标签 %(tag)s"
 
-#: admin/views.py:515
+#: admin/views.py:517
 #, python-format
 msgid "The backup schedule %(schedules)s backs up its VMs: change it first"
 msgid_plural ""
 "The backup schedules %(schedules)s back up its VMs: change them first"
 msgstr[0] "备份计划 %(schedules)s 正在备份该标签的虚拟机：请先修改计划"
 
-#: admin/views.py:533
+#: admin/views.py:535
 #, python-format
 msgid "Tag %(tag)s deleted"
 msgstr "标签 %(tag)s 已删除"
 
-#: admin/views.py:541
+#: admin/views.py:543
 #, python-format
 msgid "It is taken off %(vms)s and %(hosts)s."
 msgstr "它将从 %(vms)s 和 %(hosts)s 上移除。"
 
-#: admin/views.py:542
+#: admin/views.py:544
 #, python-format
 msgid "%(count)s VM"
 msgid_plural "%(count)s VMs"
 msgstr[0] "%(count)s 个虚拟机"
 
-#: admin/views.py:543
+#: admin/views.py:545
 #, python-format
 msgid "%(count)s host"
 msgid_plural "%(count)s hosts"

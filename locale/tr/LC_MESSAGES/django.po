@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-19 08:03+0000\n"
+"POT-Creation-Date: 2026-11-19 10:35+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -223,7 +223,7 @@ msgid "User sections"
 msgstr "Kullanıcı bölümleri"
 
 #: accounts/templates/account.html:50 accounts/templates/account.html:58
-#: admin/forms.py:221 admin/templates/admin/tag_list.html:19
+#: admin/forms.py:221 admin/templates/admin/tag_list.html:25
 #: computes/templates/computes/list.html:33
 #: computes/templates/computes/list.html:61 computes/templates/overview.html:90
 #: instances/views.py:267 vmbackups/templates/vmbackups/policies.html:17
@@ -468,7 +468,7 @@ msgstr "%(name)s API anahtarı için işlemler"
 #: accounts/templates/api_token_list.html:12
 #: accounts/templates/ssh_key_list.html:13
 #: admin/templates/admin/group_list.html:44
-#: admin/templates/admin/tag_list.html:32
+#: admin/templates/admin/tag_list.html:38
 #: admin/templates/admin/tombstone_list.html:43
 #: admin/templates/admin/user_list.html:74
 #: admin/templates/admin/user_list.html:76
@@ -884,7 +884,7 @@ msgstr "Bu izinleri kimlerin alacağı."
 
 #: admin/templates/admin/group_form.html:60
 #: admin/templates/admin/group_list.html:25 admin/templates/admin/logs.html:20
-#: admin/templates/admin/logs.html:26
+#: admin/templates/admin/logs.html:26 admin/templates/admin/tag_list.html:18
 #: admin/templates/admin/tombstone_list.html:20
 #: admin/templates/admin/user_list.html:20
 #: instances/templates/allinstances.html:11 networks/templates/network.html:130
@@ -1029,14 +1029,14 @@ msgstr "Tamamlandı"
 msgid "Failed"
 msgstr "Başarısız"
 
-#: admin/templates/admin/tag_list.html:5 admin/templates/admin/tag_list.html:7
-#: computes/forms.py:55 instances/templates/instances/settings_tab.html:925
-#: instances/views.py:244 templates/common/tag_filter.html:6
-#: templates/navbar.html:39
+#: admin/templates/admin/tag_list.html:6 admin/templates/admin/tag_list.html:8
+#: admin/templates/admin/tag_list.html:17 computes/forms.py:55
+#: instances/templates/instances/settings_tab.html:925 instances/views.py:244
+#: templates/common/tag_filter.html:6 templates/navbar.html:39
 msgid "Tags"
 msgstr "Etiketler"
 
-#: admin/templates/admin/tag_list.html:10
+#: admin/templates/admin/tag_list.html:11
 msgid ""
 "The tags of VMs and hosts. A tag is made when it is first given, on a VM's "
 "Options tab or a host's form."
@@ -1045,20 +1045,24 @@ msgstr ""
 "makinenin Seçenekler sekmesinde ya da bir sunucunun formunda verildiğinde "
 "oluşur."
 
-#: admin/templates/admin/tag_list.html:12
+#: admin/templates/admin/tag_list.html:13
 msgid "No tags yet"
 msgstr "Henüz etiket yok"
 
 #: admin/templates/admin/tag_list.html:18
+msgid "Search tags"
+msgstr "Etiket ara"
+
+#: admin/templates/admin/tag_list.html:24
 msgid "Tag"
 msgstr "Etiket"
 
-#: admin/templates/admin/tag_list.html:20
+#: admin/templates/admin/tag_list.html:26
 #: computes/templates/computes/list.html:26
 msgid "Hosts"
 msgstr "Sunucular"
 
-#: admin/templates/admin/tag_list.html:21
+#: admin/templates/admin/tag_list.html:27
 #: computes/templates/computes/instances.html:58
 #: computes/templates/computes/list.html:64
 #: instances/templates/allinstances_index_grouped.html:18
@@ -1072,9 +1076,13 @@ msgstr "Sunucular"
 msgid "Actions"
 msgstr "Eylemler"
 
-#: admin/templates/admin/tag_list.html:31
+#: admin/templates/admin/tag_list.html:37
 msgid "Rename"
 msgstr "Yeniden adlandır"
+
+#: admin/templates/admin/tag_list.html:46
+msgid "No tag matches the search."
+msgstr "Aramayla eşleşen etiket yok."
 
 #: admin/templates/admin/tombstone_list.html:6
 #: admin/templates/admin/tombstone_list.html:8
@@ -1328,12 +1336,12 @@ msgid "Its owners and tags no longer come back if its UUID shows up again."
 msgstr ""
 "UUID'si yeniden görünse bile sahipleri ve etiketleri artık geri gelmez."
 
-#: admin/views.py:510
+#: admin/views.py:512
 #, python-format
 msgid "Rename tag %(tag)s"
 msgstr "%(tag)s etiketini yeniden adlandır"
 
-#: admin/views.py:515
+#: admin/views.py:517
 #, python-format
 msgid "The backup schedule %(schedules)s backs up its VMs: change it first"
 msgid_plural ""
@@ -1345,24 +1353,24 @@ msgstr[1] ""
 "%(schedules)s yedekleme zamanlamaları bu etiketin sanal makinelerini "
 "yedekliyor: önce onları değiştirin"
 
-#: admin/views.py:533
+#: admin/views.py:535
 #, python-format
 msgid "Tag %(tag)s deleted"
 msgstr "%(tag)s etiketi silindi"
 
-#: admin/views.py:541
+#: admin/views.py:543
 #, python-format
 msgid "It is taken off %(vms)s and %(hosts)s."
 msgstr "%(vms)s ve %(hosts)s üzerinden kaldırılır."
 
-#: admin/views.py:542
+#: admin/views.py:544
 #, python-format
 msgid "%(count)s VM"
 msgid_plural "%(count)s VMs"
 msgstr[0] "%(count)s sanal makine"
 msgstr[1] "%(count)s sanal makine"
 
-#: admin/views.py:543
+#: admin/views.py:545
 #, python-format
 msgid "%(count)s host"
 msgid_plural "%(count)s hosts"

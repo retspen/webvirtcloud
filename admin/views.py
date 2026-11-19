@@ -470,7 +470,9 @@ def tombstone_delete(request, pk):
 @superuser_only
 def tag_list(request):
     """The tags of VMs and hosts, with how many of each have them."""
-    tags = Tag.objects.annotate(vm_count=Count("instances", distinct=True), host_count=Count("computes", distinct=True))
+    # in name order: a query that counts leaves the model's ordering out
+    tags = Tag.objects.annotate(vm_count=Count("instances", distinct=True),
+                                host_count=Count("computes", distinct=True)).order_by("name")
     return render(request, "admin/tag_list.html", {"tags": list(tags)})
 
 
