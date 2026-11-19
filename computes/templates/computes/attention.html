@@ -1,0 +1,36 @@
+{% load i18n %}{% load bootstrap_icons %}{# what wants a look: views.attention, each with a link to where it is handled #}
+{% if attention %}
+<div class="alert alert-warning" role="status">
+    <h2 class="h6">{% bs_icon 'exclamation-triangle' %} {% trans "Needs attention" %}</h2>
+    <ul class="mb-0 small">
+        {% for compute in attention.hosts %}
+        <li><a href="{% url 'overview' compute.pk %}">{{ compute.name }}</a>: {% trans "not answering" %}</li>
+        {% endfor %}
+        {% for compute, pool in attention.pools %}
+        <li><a href="{% url 'storage' compute.pk pool.name %}">{{ compute.name }} / {{ pool.name }}</a>: {% blocktrans with percent=pool.percent %}{{ percent }}% full{% endblocktrans %}</li>
+        {% endfor %}
+        {% for compute, vm, snapshots in attention.snapshots %}
+        <li>{% if vm %}<a href="{% url 'instances:instance' vm.pk %}{% if not vm.is_template %}#snapshots{% endif %}">{{ compute.name }} / {{ vm.name }}</a>{% else %}{{ compute.name }} / {{ snapshots.vm }}{% endif %}:
+            {% blocktrans count counter=snapshots.count %}{{ counter }} snapshot older than 30 days{% plural %}{{ counter }} snapshots older than 30 days{% endblocktrans %}</li>
+        {% endfor %}
+        {% if attention.failed %}
+        <li><a href="{% url 'operations:jobs' %}?kind=backup.create&amp;state=failed">{% blocktrans count counter=attention.failed %}{{ counter }} backup failed in the last 7 days{% plural %}{{ counter }} backups failed in the last 7 days{% endblocktrans %}</a></li>
+        {% endif %}
+        {% for policy, count in attention.not_taken %}
+        <li><a href="{% url 'vmbackups:policy' policy.pk %}">{{ policy.name }}</a>: {% blocktrans count counter=count %}{{ counter }} scheduled backup not taken in the last 7 days{% plural %}{{ counter }} scheduled backups not taken in the last 7 days{% endblocktrans %}</li>
+        {% endfor %}
+        {% if attention.missing %}
+        <li><a href="{% url 'vmbackups:index' %}?state=missing">{% blocktrans count counter=attention.missing %}{{ counter }} backup missing from its target{% plural %}{{ counter }} backups missing from their targets{% endblocktrans %}</a></li>
+        {% endif %}
+        {% if attention.damaged %}
+        <li><a href="{% url 'vmbackups:index' %}?state=damaged">{% blocktrans count counter=attention.damaged %}{{ counter }} backup damaged{% plural %}{{ counter }} backups damaged{% endblocktrans %}</a></li>
+        {% endif %}
+        {% if attention.uncertain %}
+        <li><a href="{% url 'operations:jobs' %}?state=uncertain">{% blocktrans count counter=attention.uncertain %}{{ counter }} job ended uncertain{% plural %}{{ counter }} jobs ended uncertain{% endblocktrans %}</a></li>
+        {% endif %}
+        {% if attention.waiting %}
+        <li><a href="{% url 'operations:jobs' %}?state=queued">{% blocktrans count counter=attention.waiting %}{{ counter }} job queued for over an hour{% plural %}{{ counter }} jobs queued for over an hour{% endblocktrans %}</a></li>
+        {% endif %}
+    </ul>
+</div>
+{% endif %}

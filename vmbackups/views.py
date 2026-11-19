@@ -205,6 +205,8 @@ def index(request):
         rows = rows.filter(target_id=int(target))
     if state in dict(Backup.STATES):
         rows = rows.filter(state=state)
+    elif state == "damaged":  # ready, but a verification found damage
+        rows = rows.filter(state=Backup.READY).exclude(damage=[])
     # schedules add a backup of each VM a night: the list is read a page at a time, as the jobs are
     page = Paginator(rows, 50).get_page(request.GET.get("page"))
     return render(request, "vmbackups/index.html", {

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-19 19:01+0000\n"
+"POT-Creation-Date: 2026-11-19 19:29+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -219,8 +219,8 @@ msgstr "用户页面导航"
 
 #: accounts/templates/account.html:50 accounts/templates/account.html:58
 #: admin/forms.py:221 admin/templates/admin/tag_list.html:25
-#: computes/templates/computes/list.html:33
-#: computes/templates/computes/list.html:61 computes/templates/overview.html:90
+#: computes/templates/computes/list.html:34
+#: computes/templates/computes/list.html:62 computes/templates/overview.html:90
 #: instances/views.py:267 vmbackups/templates/vmbackups/policies.html:17
 msgid "VMs"
 msgstr "虚拟机"
@@ -241,7 +241,7 @@ msgstr "添加虚拟机"
 
 #: accounts/templates/account.html:68 admin/templates/admin/logs.html:40
 #: computes/templates/computes/balance.html:109
-#: computes/templates/computes/list.html:60
+#: computes/templates/computes/list.html:61
 #: instances/templates/allinstances.html:109
 #: instances/templates/allinstances_index_nongrouped.html:8
 #: instances/templates/create_steps.html:6
@@ -255,7 +255,7 @@ msgstr "主机"
 msgid "Power and console only"
 msgstr "仅电源和控制台"
 
-#: accounts/templates/account.html:81 computes/templates/computes/list.html:109
+#: accounts/templates/account.html:81 computes/templates/computes/list.html:110
 #: instances/templates/instance_actions.html:9
 #: storages/templates/storage.html:140
 #, python-format
@@ -766,7 +766,7 @@ msgid ""
 "NEW_USER_DEFAULT_INSTANCES: %(name)s has an owner, and only one is allowed"
 msgstr "NEW_USER_DEFAULT_INSTANCES：%(name)s 已有所有者，且只允许一个所有者"
 
-#: admin/forms.py:222 computes/templates/computes/list.html:62
+#: admin/forms.py:222 computes/templates/computes/list.html:63
 #: computes/templates/overview.html:102 instances/forms.py:15
 #: instances/templates/allinstances_index_grouped.html:16
 #: instances/templates/allinstances_index_nongrouped.html:14
@@ -779,7 +779,7 @@ msgstr "vCPU"
 #: admin/forms.py:223 computes/templates/computes/balance.html:62
 #: computes/templates/computes/bulk_migrate.html:73
 #: computes/templates/computes/instances.html:57
-#: computes/templates/computes/list.html:63
+#: computes/templates/computes/list.html:64
 #: computes/templates/overview.html:110 computes/templates/overview.html:194
 #: instances/templates/allinstances_index_grouped.html:17
 #: instances/templates/allinstances_index_nongrouped.html:15
@@ -1028,13 +1028,13 @@ msgid "Tag"
 msgstr "标签"
 
 #: admin/templates/admin/tag_list.html:26
-#: computes/templates/computes/list.html:26
+#: computes/templates/computes/list.html:27
 msgid "Hosts"
 msgstr "主机"
 
 #: admin/templates/admin/tag_list.html:27
 #: computes/templates/computes/instances.html:58
-#: computes/templates/computes/list.html:64
+#: computes/templates/computes/list.html:65
 #: instances/templates/allinstances_index_grouped.html:18
 #: instances/templates/allinstances_index_nongrouped.html:16
 #: instances/templates/instances/settings_tab.html:450
@@ -2233,6 +2233,61 @@ msgid ""
 "A disk file is not on storage both hosts share: migrate it from its page"
 msgstr "有磁盘文件不在两台主机共享的存储上：请在该虚拟机的页面上迁移它"
 
+#: computes/templates/computes/attention.html:4
+msgid "Needs attention"
+msgstr "需要关注"
+
+#: computes/templates/computes/attention.html:7
+msgid "not answering"
+msgstr "无响应"
+
+#: computes/templates/computes/attention.html:10
+#, python-format
+msgid "%(percent)s%% full"
+msgstr "已用 %(percent)s%%"
+
+#: computes/templates/computes/attention.html:14
+#, python-format
+msgid "%(counter)s snapshot older than 30 days"
+msgid_plural "%(counter)s snapshots older than 30 days"
+msgstr[0] "%(counter)s 个超过 30 天的快照"
+
+#: computes/templates/computes/attention.html:17
+#, python-format
+msgid "%(counter)s backup failed in the last 7 days"
+msgid_plural "%(counter)s backups failed in the last 7 days"
+msgstr[0] "最近 7 天有 %(counter)s 个备份失败"
+
+#: computes/templates/computes/attention.html:20
+#, python-format
+msgid "%(counter)s scheduled backup not taken in the last 7 days"
+msgid_plural "%(counter)s scheduled backups not taken in the last 7 days"
+msgstr[0] "最近 7 天有 %(counter)s 个计划备份未执行"
+
+#: computes/templates/computes/attention.html:23
+#, python-format
+msgid "%(counter)s backup missing from its target"
+msgid_plural "%(counter)s backups missing from their targets"
+msgstr[0] "%(counter)s 个备份在目标中缺失"
+
+#: computes/templates/computes/attention.html:26
+#, python-format
+msgid "%(counter)s backup damaged"
+msgid_plural "%(counter)s backups damaged"
+msgstr[0] "%(counter)s 个备份已损坏"
+
+#: computes/templates/computes/attention.html:29
+#, python-format
+msgid "%(counter)s job ended uncertain"
+msgid_plural "%(counter)s jobs ended uncertain"
+msgstr[0] "%(counter)s 个任务以不确定状态结束"
+
+#: computes/templates/computes/attention.html:32
+#, python-format
+msgid "%(counter)s job queued for over an hour"
+msgid_plural "%(counter)s jobs queued for over an hour"
+msgstr[0] "%(counter)s 个任务排队超过一小时"
+
 #: computes/templates/computes/balance.html:11
 #: computes/templates/computes/list.html:6
 #: computes/templates/computes/list.html:14 templates/navbar.html:18
@@ -2275,7 +2330,7 @@ msgstr[0] "%(counter)s 个 vCPU"
 #: computes/templates/computes/balance.html:33
 #: computes/templates/computes/balance.html:36
 #: computes/templates/computes/capacity_vcpus.html:4
-#: computes/templates/computes/list.html:42
+#: computes/templates/computes/list.html:43
 #, python-format
 msgid "on %(counter)s CPU"
 msgid_plural "on %(counter)s CPUs"
@@ -2446,7 +2501,7 @@ msgid_plural ""
 msgstr[0] "已分配给虚拟机：%(counter)s 个 vCPU（%(ratio)s:1），%(assigned)s 内存。"
 
 #: computes/templates/computes/capacity_line.txt:4
-#: computes/templates/computes/list.html:102
+#: computes/templates/computes/list.html:103
 #: computes/templates/overview.html:127
 msgid "The capacity could not be read."
 msgstr "无法读取容量。"
@@ -2477,7 +2532,7 @@ msgstr "占主机 %(memory)s 中的 %(stopped)s"
 
 #: computes/templates/computes/capacity_memory.html:18
 #: computes/templates/computes/capacity_vcpus.html:18
-#: computes/templates/computes/list.html:93
+#: computes/templates/computes/list.html:94
 #, python-format
 msgid "%(running)s running"
 msgstr "运行中 %(running)s"
@@ -2589,7 +2644,7 @@ msgstr "主机栏目"
 
 #: computes/templates/computes/host_nav.html:7
 #: computes/templates/computes/host_nav.html:8
-#: computes/templates/computes/list.html:111 computes/templates/overview.html:7
+#: computes/templates/computes/list.html:112 computes/templates/overview.html:7
 msgid "Overview"
 msgstr "概览"
 
@@ -2662,7 +2717,7 @@ msgid "Problem occurred with host %(name)s: %(error)s"
 msgstr "主机 %(name)s 出现问题：%(error)s"
 
 #: computes/templates/computes/instances.html:44
-#: computes/templates/computes/list.html:19
+#: computes/templates/computes/list.html:20
 msgid "Warning"
 msgstr "警告"
 
@@ -2674,32 +2729,32 @@ msgstr "虚拟机管理程序中没有任何虚拟机"
 msgid "VCPU"
 msgstr "VCPU"
 
-#: computes/templates/computes/list.html:19
+#: computes/templates/computes/list.html:20
 msgid "You don't have any computes"
 msgstr "您还没有任何计算节点"
 
-#: computes/templates/computes/list.html:28
+#: computes/templates/computes/list.html:29
 msgid "connected"
 msgstr "已连接"
 
-#: computes/templates/computes/list.html:35
+#: computes/templates/computes/list.html:36
 msgid "running"
 msgstr "运行中"
 
-#: computes/templates/computes/list.html:40
+#: computes/templates/computes/list.html:41
 msgid "vCPUs given"
 msgstr "已分配 vCPU"
 
-#: computes/templates/computes/list.html:47
+#: computes/templates/computes/list.html:48
 msgid "Memory given"
 msgstr "已分配内存"
 
-#: computes/templates/computes/list.html:49
+#: computes/templates/computes/list.html:50
 #, python-format
 msgid "of %(memory)s"
 msgstr "共 %(memory)s"
 
-#: computes/templates/computes/list.html:75 computes/templates/overview.html:34
+#: computes/templates/computes/list.html:76 computes/templates/overview.html:34
 #: console/templates/console-vnc.html:13
 #: console/templates/console-xterm.html:16
 #: instances/templates/allinstances_index_grouped.html:36
@@ -2708,38 +2763,38 @@ msgstr "共 %(memory)s"
 msgid "Connected"
 msgstr "已连接"
 
-#: computes/templates/computes/list.html:77 computes/templates/overview.html:36
+#: computes/templates/computes/list.html:78 computes/templates/overview.html:36
 #: instances/templates/allinstances_index_grouped.html:38
 msgid "Not connected"
 msgstr "未连接"
 
-#: computes/templates/computes/list.html:80
+#: computes/templates/computes/list.html:81
 msgid "In maintenance"
 msgstr "维护中"
 
-#: computes/templates/computes/list.html:80
+#: computes/templates/computes/list.html:81
 msgid "Maintenance requested"
 msgstr "已请求维护"
 
-#: computes/templates/computes/list.html:102
+#: computes/templates/computes/list.html:103
 msgid "No capacity while the host cannot be reached."
 msgstr "无法连接主机时不显示容量。"
 
-#: computes/templates/computes/list.html:112
+#: computes/templates/computes/list.html:113
 #: computes/templates/overview.html:24 computes/templates/overview.html:78
 msgid "Edit connection"
 msgstr "编辑连接"
 
-#: computes/templates/computes/list.html:114
+#: computes/templates/computes/list.html:115
 #: computes/templates/overview.html:25
 msgid "Remove from panel"
 msgstr "从面板中移除"
 
-#: computes/templates/computes/list.html:126
+#: computes/templates/computes/list.html:127
 msgid "No host matches the filters."
 msgstr "没有主机匹配这些筛选条件。"
 
-#: computes/templates/computes/list.html:127
+#: computes/templates/computes/list.html:128
 #: instances/templates/allinstances.html:71
 msgid "Clear the filters"
 msgstr "清除筛选"
@@ -2972,21 +3027,21 @@ msgid ""
 "/etc/default/webvirt-gstfsd"
 msgstr "请输入主机 /etc/default/webvirt-gstfsd 中 GSTFSD_KEY 的 64 个十六进制字符"
 
-#: computes/views.py:155
+#: computes/views.py:168
 #, python-format
 msgid "The host did not answer within %(seconds)s seconds"
 msgstr "主机未在 %(seconds)s 秒内响应"
 
-#: computes/views.py:360
+#: computes/views.py:396
 msgid "No other host has room for it"
 msgstr "没有其他主机能容纳它"
 
-#: computes/views.py:439
+#: computes/views.py:475
 #, python-format
 msgid "The host was saved, but the panel cannot connect to it: %(error)s"
 msgstr "主机已保存，但面板无法连接到它：%(error)s"
 
-#: computes/views.py:512
+#: computes/views.py:548
 #, python-format
 msgid ""
 "Its VMs keep running on the host and leave the panel; their owners are kept "

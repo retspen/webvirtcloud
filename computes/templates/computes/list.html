@@ -14,6 +14,7 @@
         <h3 class="mb-3">{% trans "Computes" %}</h3>
     </div>
 </div>
+{% include "computes/attention.html" %}
 {% if not computes %}
     <div class="alert alert-warning shadow-sm">
         {% bs_icon 'exclamation-triangle'%} <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any computes" %}

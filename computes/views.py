@@ -2,6 +2,8 @@ import json
 import logging
 import threading
 import time
+from collections import Counter
+from datetime import timedelta
 from contextlib import suppress
 from copy import copy
 
@@ -25,7 +27,9 @@ from libvirt import libvirtError
 from logs.audit import audit, changed_fields, snapshot
 from operations import claims, jobs
 from operations.models import Operation
-from operations.utils import busy_message
+from operations.utils import busy_message, say
+from vmbackups.models import Backup, BackupRun
+from vmbackups.schedule import IN_MAINTENANCE
 from vrtManager.connection import CONN_SOCKET, CONN_SSH, CONN_TCP, CONN_TLS
 from vrtManager.hostdetails import wvmHostDetails
 from vrtManager.storage import wvmStorages
@@ -93,6 +97,11 @@ CONNECTIONS = {CONN_TCP: "TCP", CONN_SSH: "SSH", CONN_TLS: "TLS", CONN_SOCKET: "
 LIST_WAIT = 10
 
 
+# what the box above the hosts tells of: a pool this full (percent), a snapshot this old
+POOL_FULL = 85
+SNAPSHOT_OLD = timedelta(days=30)
+
+
 def _read_host(compute):
     """Whether the panel reaches the compute, why not, its capacity
     (shown_capacity) and, for one whose host UUID is not kept yet, that UUID
@@ -104,22 +113,34 @@ def _read_host(compute):
     return compute.status, compute.connection_error, shown_capacity(compute), uuid
 
 
-class _HostRead(threading.Thread):
-    """One read of a host (_read_host) on a daemon thread: one stuck on its
-    host does not hold the process when it exits."""
+def _read_attention(compute):
+    """The compute's full pools and old snapshots (get_attention); None when
+    they cannot be read."""
+    if compute.status is True:
+        with suppress(libvirtError):
+            return compute.proxy.get_attention(POOL_FULL, timezone.now() - SNAPSHOT_OLD)
+    return None
 
-    def __init__(self, compute):
+
+class _HostRead(threading.Thread):
+    """One read of a host (read: _read_host or _read_attention) on a daemon
+    thread: one stuck on its host does not hold the process when it exits."""
+
+    def __init__(self, compute, read):
         super().__init__(daemon=True, name=f"wvc-host-{compute.pk}")
-        self.compute, self.result = compute, None
+        self.compute, self.read, self.result = compute, read, None
 
     def run(self):
-        self.result = _read_host(self.compute)
+        self.result = self.read(self.compute)
 
 
 # the reads of the Computes pages of this process, one of a host at a time: a host that
 # hangs holds one thread however often the page is loaded, and no other host's
-_reading = {}  # (compute pk, its connection settings): its last read
+_reading = {}  # (its kind, compute pk, its connection settings): its last read
 _reading_lock = threading.Lock()
+
+# the box's reads (_read_attention) are waited for this long at most: one slow does not hold the page
+ATTENTION_WAIT = 2
 
 
 def _read_key(compute):
@@ -128,30 +149,42 @@ def _read_key(compute):
     return (compute.pk, *(getattr(compute, field) for field in ENDPOINT))
 
 
-def read_hosts(computes):
+def _start(compute, kind):
+    """compute's read of kind ("host": _read_host, "attention": _read_attention): one of an earlier load
+    still running, else a new one. Callers hold _reading_lock."""
+    key = (kind, *_read_key(compute))
+    if key not in _reading or not _reading[key].is_alive():
+        _reading[key] = _HostRead(copy(compute), _read_host if kind == "host" else _read_attention)
+        _reading[key].start()
+    return _reading[key]
+
+
+def read_hosts(computes, attention=False):
     """Reads each of computes (_read_host) on its own thread: a slow host
     holds back only itself, and one not read within LIST_WAIT is shown as
     not answering. A host whose read of an earlier load still runs is not
     read again: that read is waited for. Each thread reads a copy: one still
-    running later does not change what the page shows."""
+    running later does not change what the page shows. With attention, each
+    one's full pools and old snapshots too (_read_attention, compute.attention),
+    waited for up to ATTENTION_WAIT: None for one that comes later."""
     with _reading_lock:
-        keys = {compute: _read_key(compute) for compute in computes}
+        keys = {(kind, *_read_key(compute)) for compute in computes for kind in ("host", "attention")}
         # reads ended of computes deleted or changed since: their copies (and credentials) go
-        for key in [key for key, read in _reading.items() if key not in keys.values() and not read.is_alive()]:
+        for key in [key for key, read in _reading.items() if key not in keys and not read.is_alive()]:
             del _reading[key]
-        for compute, key in keys.items():
-            if key not in _reading or not _reading[key].is_alive():
-                _reading[key] = _HostRead(copy(compute))
-                _reading[key].start()
-        reads = {compute: _reading[key] for compute, key in keys.items()}
-    deadline = time.monotonic() + LIST_WAIT
+        reads = {compute: _start(compute, "host") for compute in computes}
+        scans = {compute: _start(compute, "attention") for compute in computes} if attention else {}
+    started = time.monotonic()
     for read in reads.values():
-        read.join(max(0, deadline - time.monotonic()))
+        read.join(max(0, started + LIST_WAIT - time.monotonic()))
+    for scan in scans.values():
+        scan.join(max(0, started + ATTENTION_WAIT - time.monotonic()))
     for compute, read in reads.items():
+        compute.attention = scans[compute].result if compute in scans else None
         if read.result is not None:
             compute.status, compute.connection_error, compute.shown_capacity, compute.read_uuid = read.result
         else:
-            compute.status, compute.shown_capacity, compute.read_uuid = False, None, ""
+            compute.status, compute.shown_capacity, compute.read_uuid, compute.attention = False, None, "", None
             compute.connection_error = _("The host did not answer within %(seconds)s seconds") % {"seconds": LIST_WAIT}
 
 
@@ -162,7 +195,7 @@ def computes(request):
     computes = list(Compute.objects.order_by("name").prefetch_related("tags"))
     totals = {"hosts": len(computes), "connected": 0, "vms": 0, "running": 0,
               "vcpus": 0, "cpus": 0, "assigned": 0, "memory": 0}
-    read_hosts(computes)
+    read_hosts(computes, attention=True)
     for compute in computes:
         compute.connection_name = CONNECTIONS.get(compute.type, "")
         if compute.read_uuid:
@@ -180,7 +213,31 @@ def computes(request):
             totals["memory"] += given["memory"]
     return render(request, "computes/list.html",
                   {"computes": computes, "totals": totals, "job_resource": claims.bulk_migrate_key(),
-                   "tags": Tag.counts(computes)})
+                   "tags": Tag.counts(computes), "attention": attention(computes)})
+
+
+def attention(computes):
+    """What wants a look, for the box above the hosts; empty when nothing: the
+    computes not answering, their full pools and old snapshots (_read_attention),
+    the backup jobs that failed and the backups a schedule did not take in the last 7 days
+    (not for a host in maintenance: the operator's choice), the backups missing
+    or damaged, and the jobs that ended uncertain or wait for over an hour."""
+    week = timezone.now() - timedelta(days=7)
+    vms = {(vm.compute_id, vm.name): vm for vm in Instance.objects.filter(compute__in=computes)}
+    found = {
+        "hosts": [c for c in computes if c.status is not True],
+        "pools": [(c, pool) for c in computes for pool in (c.attention or {}).get("pools", [])],
+        "snapshots": [(c, vms.get((c.pk, s["vm"])), s) for c in computes for s in (c.attention or {}).get("snapshots", [])],
+        "failed": Operation.objects.filter(kind="backup.create", state=Operation.FAILED, finished_at__gte=week).count(),
+        "not_taken": sorted(Counter(run.policy for run in BackupRun.objects.filter(
+            day__gte=timezone.localtime(week).date(), state__in=(BackupRun.SKIPPED, BackupRun.FAILED)
+        ).select_related("policy") if run.note != say(IN_MAINTENANCE)).items(), key=lambda item: item[0].name),
+        "missing": Backup.objects.filter(state=Backup.MISSING).count(),
+        "damaged": Backup.objects.filter(state=Backup.READY).exclude(damage=[]).count(),
+        "uncertain": Operation.objects.filter(state=Operation.UNCERTAIN).count(),
+        "waiting": Operation.objects.filter(state=Operation.QUEUED, created_at__lt=timezone.now() - timedelta(hours=1)).count(),
+    }
+    return found if any(found.values()) else {}
 
 
 @superuser_only

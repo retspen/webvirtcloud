@@ -1,8 +1,12 @@
 import time
+from contextlib import suppress
+from datetime import datetime, timezone
 
 from libvirt import (
     libvirtError,
     VIR_CONNECT_GET_ALL_DOMAINS_STATS_NOWAIT,
+    VIR_CONNECT_LIST_DOMAINS_HAS_SNAPSHOT,
+    VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE,
     VIR_ERR_NO_DOMAIN,
     VIR_DOMAIN_BLOCKED,
     VIR_DOMAIN_PAUSED,
@@ -51,6 +55,31 @@ def cpu_version(doc):
 
 
 class wvmHostDetails(wvmConnect):
+    def get_attention(self, pool_percent, snapshot_before):
+        """What wants a look on the host: its active pools filled to
+        pool_percent or more, as last measured (a refresh scans each pool),
+        and per VM the count of its snapshots taken before snapshot_before
+        (aware). A VM gone meanwhile is passed over."""
+        pools = []
+        for pool in self.wvm.listAllStoragePools(VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE):
+            try:
+                _state, capacity, allocation, _available = pool.info()
+            except libvirtError:  # undefined meanwhile
+                continue
+            if capacity and allocation * 100 / capacity >= pool_percent:
+                pools.append({"name": pool.name(), "percent": round(allocation * 100 / capacity)})
+        snapshots = []
+        for domain in self.wvm.listAllDomains(VIR_CONNECT_LIST_DOMAINS_HAS_SNAPSHOT):
+            count = 0
+            with suppress(libvirtError):  # the VM gone meanwhile
+                for snap in domain.listAllSnapshots(0):
+                    with suppress(libvirtError):  # the snapshot deleted meanwhile
+                        taken = int(etree.fromstring(snap.getXMLDesc(0)).findtext("creationTime"))
+                        count += datetime.fromtimestamp(taken, timezone.utc) < snapshot_before
+            if count:
+                snapshots.append({"vm": domain.name(), "count": count})
+        return {"pools": pools, "snapshots": snapshots}
+
     def get_memory_usage(self):
         """
         Function return memory usage on node.

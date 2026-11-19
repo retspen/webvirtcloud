@@ -52,7 +52,7 @@ class ComputesPageTests(TestCase):
         found = {c1.id: {"cpus": 16, "memory": 64 * GIB, "vcpus": {"all": 40, "running": 24},
                          "assigned": {"all": 48 * GIB, "running": 32 * GIB}, "ratio": 2.5, "vms": VMS}}
         with patch.object(Compute, "capacity", new=property(lambda c: found.get(c.id))), \
-                patch.object(Compute, "status", new=True):
+                patch.object(Compute, "status", new=True), patch("computes.views._read_attention", return_value=None):
             page = html.fromstring(self.client.get(reverse("computes")).content)
         headers = [" ".join(th.text_content().split()) for th in page.xpath("//thead//th")]
         # no pools: measuring their space scans each pool of each host (views.host_pools)

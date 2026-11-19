@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-19 19:01+0000\n"
+"POT-Creation-Date: 2026-11-19 19:29+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -224,8 +224,8 @@ msgstr "Kullanıcı bölümleri"
 
 #: accounts/templates/account.html:50 accounts/templates/account.html:58
 #: admin/forms.py:221 admin/templates/admin/tag_list.html:25
-#: computes/templates/computes/list.html:33
-#: computes/templates/computes/list.html:61 computes/templates/overview.html:90
+#: computes/templates/computes/list.html:34
+#: computes/templates/computes/list.html:62 computes/templates/overview.html:90
 #: instances/views.py:267 vmbackups/templates/vmbackups/policies.html:17
 msgid "VMs"
 msgstr "Sanal makineler"
@@ -246,7 +246,7 @@ msgstr "Sanal makine ekle"
 
 #: accounts/templates/account.html:68 admin/templates/admin/logs.html:40
 #: computes/templates/computes/balance.html:109
-#: computes/templates/computes/list.html:60
+#: computes/templates/computes/list.html:61
 #: instances/templates/allinstances.html:109
 #: instances/templates/allinstances_index_nongrouped.html:8
 #: instances/templates/create_steps.html:6
@@ -260,7 +260,7 @@ msgstr "Sunucu"
 msgid "Power and console only"
 msgstr "Yalnızca güç ve konsol"
 
-#: accounts/templates/account.html:81 computes/templates/computes/list.html:109
+#: accounts/templates/account.html:81 computes/templates/computes/list.html:110
 #: instances/templates/instance_actions.html:9
 #: storages/templates/storage.html:140
 #, python-format
@@ -792,7 +792,7 @@ msgstr ""
 "NEW_USER_DEFAULT_INSTANCES: %(name)s sanal makinesinin bir sahibi var ve "
 "yalnızca bir sahibe izin veriliyor"
 
-#: admin/forms.py:222 computes/templates/computes/list.html:62
+#: admin/forms.py:222 computes/templates/computes/list.html:63
 #: computes/templates/overview.html:102 instances/forms.py:15
 #: instances/templates/allinstances_index_grouped.html:16
 #: instances/templates/allinstances_index_nongrouped.html:14
@@ -805,7 +805,7 @@ msgstr "vCPU"
 #: admin/forms.py:223 computes/templates/computes/balance.html:62
 #: computes/templates/computes/bulk_migrate.html:73
 #: computes/templates/computes/instances.html:57
-#: computes/templates/computes/list.html:63
+#: computes/templates/computes/list.html:64
 #: computes/templates/overview.html:110 computes/templates/overview.html:194
 #: instances/templates/allinstances_index_grouped.html:17
 #: instances/templates/allinstances_index_nongrouped.html:15
@@ -1059,13 +1059,13 @@ msgid "Tag"
 msgstr "Etiket"
 
 #: admin/templates/admin/tag_list.html:26
-#: computes/templates/computes/list.html:26
+#: computes/templates/computes/list.html:27
 msgid "Hosts"
 msgstr "Sunucular"
 
 #: admin/templates/admin/tag_list.html:27
 #: computes/templates/computes/instances.html:58
-#: computes/templates/computes/list.html:64
+#: computes/templates/computes/list.html:65
 #: instances/templates/allinstances_index_grouped.html:18
 #: instances/templates/allinstances_index_nongrouped.html:16
 #: instances/templates/instances/settings_tab.html:450
@@ -2337,6 +2337,68 @@ msgstr ""
 "Bir disk dosyası iki sunucunun paylaştığı depolamada değil: sanal makineyi "
 "kendi sayfasından taşıyın"
 
+#: computes/templates/computes/attention.html:4
+msgid "Needs attention"
+msgstr "Dikkat gerekiyor"
+
+#: computes/templates/computes/attention.html:7
+msgid "not answering"
+msgstr "yanıt vermiyor"
+
+#: computes/templates/computes/attention.html:10
+#, python-format
+msgid "%(percent)s%% full"
+msgstr "%%%(percent)s dolu"
+
+#: computes/templates/computes/attention.html:14
+#, python-format
+msgid "%(counter)s snapshot older than 30 days"
+msgid_plural "%(counter)s snapshots older than 30 days"
+msgstr[0] "30 günden eski %(counter)s snapshot"
+msgstr[1] "30 günden eski %(counter)s snapshot"
+
+#: computes/templates/computes/attention.html:17
+#, python-format
+msgid "%(counter)s backup failed in the last 7 days"
+msgid_plural "%(counter)s backups failed in the last 7 days"
+msgstr[0] "Son 7 günde %(counter)s yedek başarısız oldu"
+msgstr[1] "Son 7 günde %(counter)s yedek başarısız oldu"
+
+#: computes/templates/computes/attention.html:20
+#, python-format
+msgid "%(counter)s scheduled backup not taken in the last 7 days"
+msgid_plural "%(counter)s scheduled backups not taken in the last 7 days"
+msgstr[0] "Son 7 günde zamanlanmış %(counter)s yedek alınmadı"
+msgstr[1] "Son 7 günde zamanlanmış %(counter)s yedek alınmadı"
+
+#: computes/templates/computes/attention.html:23
+#, python-format
+msgid "%(counter)s backup missing from its target"
+msgid_plural "%(counter)s backups missing from their targets"
+msgstr[0] "Hedefinde eksik %(counter)s yedek"
+msgstr[1] "Hedeflerinde eksik %(counter)s yedek"
+
+#: computes/templates/computes/attention.html:26
+#, python-format
+msgid "%(counter)s backup damaged"
+msgid_plural "%(counter)s backups damaged"
+msgstr[0] "%(counter)s yedek hasarlı"
+msgstr[1] "%(counter)s yedek hasarlı"
+
+#: computes/templates/computes/attention.html:29
+#, python-format
+msgid "%(counter)s job ended uncertain"
+msgid_plural "%(counter)s jobs ended uncertain"
+msgstr[0] "%(counter)s iş belirsiz bitti"
+msgstr[1] "%(counter)s iş belirsiz bitti"
+
+#: computes/templates/computes/attention.html:32
+#, python-format
+msgid "%(counter)s job queued for over an hour"
+msgid_plural "%(counter)s jobs queued for over an hour"
+msgstr[0] "%(counter)s iş bir saatten uzun kuyrukta bekliyor"
+msgstr[1] "%(counter)s iş bir saatten uzun kuyrukta bekliyor"
+
 #: computes/templates/computes/balance.html:11
 #: computes/templates/computes/list.html:6
 #: computes/templates/computes/list.html:14 templates/navbar.html:18
@@ -2383,7 +2445,7 @@ msgstr[1] "%(counter)s vCPU"
 #: computes/templates/computes/balance.html:33
 #: computes/templates/computes/balance.html:36
 #: computes/templates/computes/capacity_vcpus.html:4
-#: computes/templates/computes/list.html:42
+#: computes/templates/computes/list.html:43
 #, python-format
 msgid "on %(counter)s CPU"
 msgid_plural "on %(counter)s CPUs"
@@ -2571,7 +2633,7 @@ msgstr[1] ""
 "bellek."
 
 #: computes/templates/computes/capacity_line.txt:4
-#: computes/templates/computes/list.html:102
+#: computes/templates/computes/list.html:103
 #: computes/templates/overview.html:127
 msgid "The capacity could not be read."
 msgstr "Kapasite okunamadı."
@@ -2604,7 +2666,7 @@ msgstr "Sunucunun %(memory)s belleğinden %(stopped)s"
 
 #: computes/templates/computes/capacity_memory.html:18
 #: computes/templates/computes/capacity_vcpus.html:18
-#: computes/templates/computes/list.html:93
+#: computes/templates/computes/list.html:94
 #, python-format
 msgid "%(running)s running"
 msgstr "%(running)s çalışıyor"
@@ -2719,7 +2781,7 @@ msgstr "Sunucu bölümleri"
 
 #: computes/templates/computes/host_nav.html:7
 #: computes/templates/computes/host_nav.html:8
-#: computes/templates/computes/list.html:111 computes/templates/overview.html:7
+#: computes/templates/computes/list.html:112 computes/templates/overview.html:7
 msgid "Overview"
 msgstr "Genel Bakış"
 
@@ -2792,7 +2854,7 @@ msgid "Problem occurred with host %(name)s: %(error)s"
 msgstr "%(name)s sunucusuyla ilgili bir sorun oluştu: %(error)s"
 
 #: computes/templates/computes/instances.html:44
-#: computes/templates/computes/list.html:19
+#: computes/templates/computes/list.html:20
 msgid "Warning"
 msgstr "Uyarı"
 
@@ -2804,32 +2866,32 @@ msgstr "Hipervizör üzerinde hiç sanal makine yok"
 msgid "VCPU"
 msgstr "VCPU"
 
-#: computes/templates/computes/list.html:19
+#: computes/templates/computes/list.html:20
 msgid "You don't have any computes"
 msgstr "Hiç sunucunuz yok"
 
-#: computes/templates/computes/list.html:28
+#: computes/templates/computes/list.html:29
 msgid "connected"
 msgstr "bağlı"
 
-#: computes/templates/computes/list.html:35
+#: computes/templates/computes/list.html:36
 msgid "running"
 msgstr "çalışıyor"
 
-#: computes/templates/computes/list.html:40
+#: computes/templates/computes/list.html:41
 msgid "vCPUs given"
 msgstr "Verilen vCPU"
 
-#: computes/templates/computes/list.html:47
+#: computes/templates/computes/list.html:48
 msgid "Memory given"
 msgstr "Atanan bellek"
 
-#: computes/templates/computes/list.html:49
+#: computes/templates/computes/list.html:50
 #, python-format
 msgid "of %(memory)s"
 msgstr "/ %(memory)s"
 
-#: computes/templates/computes/list.html:75 computes/templates/overview.html:34
+#: computes/templates/computes/list.html:76 computes/templates/overview.html:34
 #: console/templates/console-vnc.html:13
 #: console/templates/console-xterm.html:16
 #: instances/templates/allinstances_index_grouped.html:36
@@ -2838,38 +2900,38 @@ msgstr "/ %(memory)s"
 msgid "Connected"
 msgstr "Bağlı"
 
-#: computes/templates/computes/list.html:77 computes/templates/overview.html:36
+#: computes/templates/computes/list.html:78 computes/templates/overview.html:36
 #: instances/templates/allinstances_index_grouped.html:38
 msgid "Not connected"
 msgstr "Bağlı değil"
 
-#: computes/templates/computes/list.html:80
+#: computes/templates/computes/list.html:81
 msgid "In maintenance"
 msgstr "Bakımda"
 
-#: computes/templates/computes/list.html:80
+#: computes/templates/computes/list.html:81
 msgid "Maintenance requested"
 msgstr "Bakım istendi"
 
-#: computes/templates/computes/list.html:102
+#: computes/templates/computes/list.html:103
 msgid "No capacity while the host cannot be reached."
 msgstr "Sunucuya ulaşılamadığı sürece kapasite gösterilmez."
 
-#: computes/templates/computes/list.html:112
+#: computes/templates/computes/list.html:113
 #: computes/templates/overview.html:24 computes/templates/overview.html:78
 msgid "Edit connection"
 msgstr "Bağlantıyı düzenle"
 
-#: computes/templates/computes/list.html:114
+#: computes/templates/computes/list.html:115
 #: computes/templates/overview.html:25
 msgid "Remove from panel"
 msgstr "Panelden kaldır"
 
-#: computes/templates/computes/list.html:126
+#: computes/templates/computes/list.html:127
 msgid "No host matches the filters."
 msgstr "Filtrelerle eşleşen sunucu yok."
 
-#: computes/templates/computes/list.html:127
+#: computes/templates/computes/list.html:128
 #: instances/templates/allinstances.html:71
 msgid "Clear the filters"
 msgstr "Filtreleri temizle"
@@ -3125,21 +3187,21 @@ msgstr ""
 "Sunucudaki /etc/default/webvirt-gstfsd içindeki GSTFSD_KEY değerinin 64 "
 "onaltılık karakterini girin"
 
-#: computes/views.py:155
+#: computes/views.py:168
 #, python-format
 msgid "The host did not answer within %(seconds)s seconds"
 msgstr "Sunucu %(seconds)s saniye içinde yanıt vermedi"
 
-#: computes/views.py:360
+#: computes/views.py:396
 msgid "No other host has room for it"
 msgstr "Başka hiçbir sunucuda ona yer yok"
 
-#: computes/views.py:439
+#: computes/views.py:475
 #, python-format
 msgid "The host was saved, but the panel cannot connect to it: %(error)s"
 msgstr "Sunucu kaydedildi, ancak panel ona bağlanamıyor: %(error)s"
 
-#: computes/views.py:512
+#: computes/views.py:548
 #, python-format
 msgid ""
 "Its VMs keep running on the host and leave the panel; their owners are kept "
