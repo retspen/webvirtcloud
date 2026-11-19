@@ -225,6 +225,16 @@ class MigrationModeTestCase(unittest.TestCase):
         # asked while it ran, then shut down: it moves offline, the tuning options unused
         self.assertEqual(self.migrate(5, live=True, autoconverge=True, compress=True), ("offline", None))
 
+    def test_tls_encrypts_what_carries_memory_or_disks(self):
+        tls = libvirt.VIR_MIGRATE_TLS
+        for state, request, mode in ((1, {"live": True}, "live, TLS"), (1, {}, "non-live, TLS"), (3, {}, "non-live, TLS")):
+            with self.subTest(state=state, request=request):
+                got, flags = self.migrate(state, tls=True, **request)
+                self.assertEqual((got, flags & tls), (mode, tls))
+                self.assertEqual(self.migrate(state, **request)[1] & tls, 0)
+        # a shut-off VM's definition alone: no data to encrypt
+        self.assertEqual(self.migrate(5, tls=True), ("offline", None))
+
 
 FILE_DISK = "<disk type='file' device='disk'><source file='/pool/vm.qcow2'/><target dev='vda'/></disk>"
 

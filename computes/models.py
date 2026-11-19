@@ -4,7 +4,7 @@ from ipaddress import ip_address
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxLengthValidator, RegexValidator
 from django.db import IntegrityError, transaction
-from django.db.models import CharField, DateTimeField, IntegerField, ManyToManyField, Model, Q, UniqueConstraint
+from django.db.models import BooleanField, CharField, DateTimeField, IntegerField, ManyToManyField, Model, Q, UniqueConstraint
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import gettext_noop
@@ -67,6 +67,14 @@ class Compute(Model):
         help_text=_(
             "IP address or host name the other hosts send migrating VMs to; "
             "empty: the address the panel reaches the host at"
+        ),
+    )
+    migration_tls = BooleanField(
+        _("encrypt migrations (TLS)"),
+        default=False,
+        help_text=_(
+            "A VM migrating between two hosts that both have this sends its memory and disks over TLS; "
+            "each host needs QEMU's certificates in /etc/pki/qemu"
         ),
     )
     gstfsd_key = CharField(

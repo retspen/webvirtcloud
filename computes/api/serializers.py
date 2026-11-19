@@ -61,5 +61,5 @@ class ComputeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Compute
-        fields = ["id", "name", "hostname", "login", "password", "type", "details", "migration_address", "gstfsd_key",
-                  "tags"]
+        fields = ["id", "name", "hostname", "login", "password", "type", "details", "migration_address", "migration_tls",
+                  "gstfsd_key", "tags"]

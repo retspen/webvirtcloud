@@ -50,6 +50,13 @@ class MigrationAddressTests(TestCase):
         self.client.post(reverse("compute_update", args=[compute.id]), {**data, "migration_address": "tcp://x"})
         compute.refresh_from_db()
         self.assertEqual(compute.migration_address, "198.51.100.9")
+        self.assertFalse(compute.migration_tls)
+        page = self.client.get(reverse("compute_update", args=[compute.id]))
+        self.assertContains(page, 'name="migration_tls"')
+        self.client.post(reverse("compute_update", args=[compute.id]), {**data, "migration_tls": "on"})
+        compute.refresh_from_db()
+        self.assertTrue(compute.migration_tls)
+        self.assertContains(self.client.get(reverse("compute_update", args=[compute.id])), "migrations over TLS")
 
     def test_a_migration_uses_the_destination_address(self):
         source = Compute.objects.create(name="ma-src", hostname="10.0.0.8", login="root", password="", type=2)

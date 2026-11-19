@@ -344,6 +344,7 @@ def migrate_instance(
             autoconverge,
             compress,
             uri=new_compute.migration_uri,
+            tls=source.migration_tls and new_compute.migration_tls,
             pools=disk_pools,
             on_copy=on_copy,
             running_only=running_only,

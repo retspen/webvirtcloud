@@ -284,6 +284,23 @@ class MigrateJobTestCase(TransactionTestCase):
                 Operation.objects.all().delete()
                 Claim.objects.all().delete()
 
+    def test_tls_only_when_both_hosts_encrypt_migrations(self):
+        for source_tls, dest_tls, key in ((True, False, "key-mig00021"), (True, True, "key-mig00022")):
+            with self.subTest(source=source_tls, dest=dest_tls):
+                Compute.objects.filter(pk=self.source.pk).update(migration_tls=source_tls)
+                Compute.objects.filter(pk=self.dest.pk).update(migration_tls=dest_tls)
+                self.vm.compute = self.source  # back where the last one moved it from
+                self.vm.save()
+                self.client.post(reverse("instances:migrate", args=[self.vm.pk]),
+                                 {"compute_id": self.dest.pk, "submission_key": key, "live_migrate": "true"})
+                op = Operation.objects.latest("created_at")
+                ctx = self.start(op)
+                get_kind(op.kind).precheck(op, ctx)
+                get_kind(op.kind).run(op, ctx)
+                self.assertEqual(self.dest_conn.moveto.call_args.kwargs["tls"], source_tls and dest_tls)
+                Operation.objects.all().delete()
+                Claim.objects.all().delete()
+
     def test_cancel_and_progress_ask_the_source_vm(self):
         op = self.queue(live_migrate="true")
         with patch("instances.jobs.wvmInstance") as proxy:

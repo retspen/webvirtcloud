@@ -38,6 +38,7 @@ from libvirt import (
     VIR_STORAGE_VOL_FILE,
     VIR_MIGRATE_AUTO_CONVERGE,
     VIR_MIGRATE_COMPRESSED,
+    VIR_MIGRATE_TLS,
     VIR_MIGRATE_LIVE,
     VIR_MIGRATE_NON_SHARED_DISK,
     VIR_MIGRATE_OFFLINE,
@@ -159,7 +160,7 @@ class wvmInstances(wvmConnect):
         return sorted(missing), sorted(unlike)
 
     def moveto(self, conn, name, live, unsafe, offline, autoconverge=False, compress=False, uri=None,
-               pools=None, on_copy=None, running_only=False):
+               pools=None, on_copy=None, running_only=False, tls=False):
         """Migrates the VM of conn (a wvmInstance on the source) here.
 
         The mode follows the VM's state, read once: a running VM migrates
@@ -173,7 +174,9 @@ class wvmInstances(wvmConnect):
         libvirt copies into those pools during the migration (disk_copies);
         the other disks must be on storage both hosts share. on_copy is
         called with the copies ({pool, dest}: a pool here and its path) before
-        libvirt makes them. Returns the mode and options used, for the log,
+        libvirt makes them. tls: QEMU sends the memory and disks over TLS (the
+        hosts' certificates in /etc/pki/qemu); a shut-off VM's definition alone
+        sends none. Returns the mode and options used, for the log,
         and each copied disk's path and the path of its copy here."""
         state = conn.get_status()
         if running_only and state != 1:
@@ -253,6 +256,9 @@ class wvmInstances(wvmConnect):
 
         # the TPM state is a file of the source host: a live migration carries it
         tpm_state = etree.fromstring(definitions[0]).xpath("devices/tpm/backend[@type='emulator']")
+        if tls and (state != 5 or copies or tpm_state):
+            flags |= VIR_MIGRATE_TLS
+            mode.append("TLS")
         if copies or (state == 5 and tpm_state):
             if copies and on_copy is not None:
                 on_copy([{"pool": copy["pool"].name(), "dest": copy["dest"]} for copy in copies])

@@ -154,4 +154,4 @@ class SocketComputeForm(ComputeTagsMixin, KeepSecretsMixin, forms.ModelForm):
         widgets = SECRET_WIDGETS
         labels = DETAILS
         help_texts = DETAILS_HELP
-        fields = ["name", "details", "hostname", "migration_address", "gstfsd_key"]
+        fields = ["name", "details", "hostname", "migration_address", "migration_tls", "gstfsd_key"]

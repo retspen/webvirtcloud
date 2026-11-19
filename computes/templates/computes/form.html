@@ -33,16 +33,18 @@
                 </div>
             </div>
             {# open when one of them is set or refused #}
-            <details class="border-top pt-3"{% if form.migration_address.value or form.migration_address.errors or form.gstfsd_key.errors %} open{% endif %}>
+            <details class="border-top pt-3"{% if form.migration_address.value or form.migration_address.errors or form.migration_tls.value or form.gstfsd_key.errors %} open{% endif %}>
                 <summary>
                     <span class="fw-semibold">{% trans "Advanced" %}</span>
                     <span class="d-block small text-body-secondary text-break ms-3">
                         {% trans "Migration address" %}: {{ form.migration_address.value|default:_("the host name") }}
+                        {% if form.migration_tls.value %}&middot; {% trans "migrations over TLS" %}{% endif %}
                         &middot; {% trans "gstfsd key" %}: {% if form.instance.gstfsd_key %}{% trans "stored" %}{% else %}{% trans "none" %}{% endif %}
                     </span>
                 </summary>
                 <div class="mt-3">
                     {% bootstrap_field form.migration_address %}
+                    {% bootstrap_field form.migration_tls %}
                     {% bootstrap_field form.gstfsd_key %}
                 </div>
             </details>
