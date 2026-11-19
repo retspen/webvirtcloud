@@ -24,7 +24,7 @@
                     <td>{% if policy.compute %}{% blocktrans with compute=policy.compute.name %}Every VM of {{ compute }}{% endblocktrans %}{% elif policy.tag %}{% blocktrans with tag=policy.tag.name %}VMs tagged {{ tag }}{% endblocktrans %}{% else %}{% blocktrans count counter=policy.vm_count %}{{ counter }} VM{% plural %}{{ counter }} VMs{% endblocktrans %}{% endif %}</td>
                     <td>{{ policy.target.name }}</td>
                     <td>{{ policy.time|time:"H:i" }}</td>
-                    <td class="text-end">{{ policy.keep }}</td>
+                    <td class="text-end">{{ policy.keep }}{% if policy.keep_weekly %} {% blocktrans with n=policy.keep_weekly %}+ {{ n }} weekly{% endblocktrans %}{% endif %}{% if policy.keep_monthly %} {% blocktrans with n=policy.keep_monthly %}+ {{ n }} monthly{% endblocktrans %}{% endif %}</td>
                     <td>{% if policy.full_every == 1 %}{% trans "Every backup" %}{% else %}{% blocktrans with n=policy.full_every %}Every {{ n }} backups{% endblocktrans %}{% endif %}</td>
                     <td>{% if policy.enabled %}<span class="badge text-bg-success">{% trans "Enabled" %}</span>{% else %}<span class="badge text-bg-secondary">{% trans "Disabled" %}</span>{% endif %}</td>
                 </tr>

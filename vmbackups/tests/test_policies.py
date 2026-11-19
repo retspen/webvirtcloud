@@ -28,7 +28,8 @@ class PolicyPageTests(TestCase):
         BackupTargetPool.objects.create(target=self.target, compute=self.c1, pool="b1", pool_uuid="u")
 
     def post(self, **fields):
-        data = {"name": "nightly", "target": self.target.pk, "time": "02:00", "keep": "7", "full_every": "1", "enabled": "on",
+        data = {"name": "nightly", "target": self.target.pk, "time": "02:00", "keep": "7", "keep_weekly": "0", "keep_monthly": "0",
+                "full_every": "1", "enabled": "on",
                 **fields}
         return self.client.post(reverse("vmbackups:policy_new"), data)
 
@@ -102,11 +103,14 @@ class PolicyPageTests(TestCase):
         url = reverse("vmbackups:policy", args=[policy.pk])
         page = self.client.get(url)
         self.assertContains(page, "The host was in maintenance")
-        self.client.post(url, {"name": "nightly", "target": self.target.pk, "time": "03:30", "keep": "3", "full_every": "1",
-                               "instances": [self.vm1.pk]})
+        self.client.post(url, {"name": "nightly", "target": self.target.pk, "time": "03:30", "keep": "3", "keep_weekly": "4",
+                               "keep_monthly": "6", "full_every": "1", "instances": [self.vm1.pk]})
         policy.refresh_from_db()
-        self.assertEqual((policy.time, policy.keep, policy.enabled), (datetime.time(3, 30), 3, False))
-        self.assertContains(self.client.get(reverse("vmbackups:policies")), "Backup schedule nightly is saved.")
+        self.assertEqual((policy.time, policy.keep, policy.keep_weekly, policy.keep_monthly, policy.enabled),
+                         (datetime.time(3, 30), 3, 4, 6, False))
+        page = self.client.get(reverse("vmbackups:policies"))
+        self.assertContains(page, "Backup schedule nightly is saved.")
+        self.assertContains(page, "3 + 4 weekly + 6 monthly")
 
     def test_delete_keeps_the_backups(self):
         policy = self.schedule()

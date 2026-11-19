@@ -52,6 +52,9 @@ class BackupPolicy(models.Model):
     tag = models.ForeignKey(Tag, on_delete=models.PROTECT, null=True, blank=True, related_name="backup_policies")
     time = models.TimeField()  # in the panel's time zone
     keep = models.PositiveSmallIntegerField()
+    # also kept: the newest backup of each of the newest N weeks and months that have one (0: none)
+    keep_weekly = models.PositiveSmallIntegerField(default=0)
+    keep_monthly = models.PositiveSmallIntegerField(default=0)
     full_every = models.PositiveSmallIntegerField(default=1)  # a full backup every N; the others incremental
     frozen = models.BooleanField(default=False)
     enabled = models.BooleanField(default=True)

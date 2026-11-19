@@ -21,7 +21,7 @@ from operations.utils import words
 from vmbackups import schedule
 from appsettings.models import AppSettings
 from operations.models import Alert
-from vmbackups.jobs import CheckTarget, DeleteBackup, _beyond_keep
+from vmbackups.jobs import CheckTarget, DeleteBackup, _beyond_keep, beyond_keep
 from vmbackups.models import Backup, BackupFile, BackupPolicy, BackupRun, BackupTarget, BackupTargetPool
 from vrtManager.util import OperationError
 
@@ -442,6 +442,38 @@ class ScheduleTests(TransactionTestCase):
         Backup.objects.filter(pk=oldest.pk).delete()
         schedule.retain()
         self.assertEqual(self.deletes()[-1].params["backup"], str(older.uuid))
+
+    def test_retention_keeps_the_newest_of_each_week_and_month_too(self):
+        # daily backups from 2026-09-28 to 2026-11-15; keep 2, 2 weekly, 3 monthly
+        days = [at(2026, 9, 28, 12) + datetime.timedelta(days=n) for n in range(49)]
+        for day in days:
+            (backup,) = self.backups(Backup.READY)
+            Backup.objects.filter(pk=backup.pk).update(created_at=day)
+        BackupPolicy.objects.filter(pk=self.policy.pk).update(keep=2, keep_weekly=2, keep_monthly=3)
+        self.policy.refresh_from_db()
+        kept = {b.created_at.date() for b in Backup.objects.filter(policy=self.policy)} - {
+            b.created_at.date() for b in beyond_keep(self.policy, self.vm1.pk)}
+        self.assertEqual(sorted(kept), [
+            datetime.date(2026, 9, 30),  # September's newest
+            datetime.date(2026, 10, 31),  # October's
+            datetime.date(2026, 11, 8),  # the newest of the week before
+            datetime.date(2026, 11, 14), datetime.date(2026, 11, 15),  # the newest two (this week's and November's)
+        ])
+        # a missing incremental before the newest two goes, though monthly ones are older: it pins its base
+        (missing,) = self.backups(Backup.MISSING)
+        Backup.objects.filter(pk=missing.pk).update(created_at=at(2026, 11, 10, 12))
+        self.assertIn(missing, beyond_keep(self.policy, self.vm1.pk))
+
+    def test_a_missing_chain_goes_when_every_ready_backup_is_a_monthly_one(self):
+        BackupPolicy.objects.filter(pk=self.policy.pk).update(keep=1, keep_monthly=2)
+        self.policy.refresh_from_db()
+        full, inc = self.backups(Backup.MISSING, Backup.MISSING)
+        self.chained(full, inc)
+        september, november = self.backups(Backup.READY, Backup.READY)
+        for backup, day in ((september, at(2026, 9, 30, 12)), (full, at(2026, 10, 5, 12)), (inc, at(2026, 10, 6, 12)),
+                            (november, at(2026, 11, 15, 12))):
+            Backup.objects.filter(pk=backup.pk).update(created_at=day)
+        self.assertEqual(beyond_keep(self.policy, self.vm1.pk), [inc, full])
 
     def test_retention_reads_each_vm_once(self):
         self.backups(*[Backup.READY] * 4)

@@ -606,14 +606,24 @@ def _backup(params):
 
 def beyond_keep(policy, instance_id):
     """A schedule's backups of a VM beyond what it keeps, newest first: the
-    ready ones past keep, and the missing ones older than the oldest kept
-    (keep counts ready ones only; a missing one would pin its chain)."""
+    ready ones that are neither among the newest keep nor the newest of one
+    of the newest keep_weekly weeks or keep_monthly months that have one (in
+    the panel's time zone), and the missing ones older than the oldest of the
+    newest keep (it keeps ready ones only; a missing one would pin its chain)."""
     rows = list(Backup.objects.filter(policy=policy, instance_id=instance_id, state__in=(Backup.READY, Backup.MISSING))
                 .order_by("-created_at"))
     ready = [b for b in rows if b.state == Backup.READY]
-    if len(ready) <= policy.keep:
+    kept = ready[:policy.keep]
+    for count, period in ((policy.keep_weekly, lambda day: day.isocalendar()[:2]),
+                          (policy.keep_monthly, lambda day: (day.year, day.month))):
+        newest = {}  # a period's first backup, newest first, is its newest
+        for b in ready:
+            newest.setdefault(period(timezone.localtime(b.created_at)), b)
+        kept += list(newest.values())[:count]
+    if len(ready) <= policy.keep:  # fewer than keep: the missing ones stay too
         return []
-    return [b for b in rows if b.created_at < ready[policy.keep - 1].created_at]
+    oldest = ready[:policy.keep][-1].created_at
+    return [b for b in rows if b not in kept and (b.state == Backup.READY or b.created_at < oldest)]
 
 
 def _beyond_keep(backup, policy_id):

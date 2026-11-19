@@ -77,9 +77,11 @@ class PolicyForm(forms.ModelForm):
 
     class Meta:
         model = BackupPolicy
-        fields = ["name", "target", "compute", "instances", "tag", "time", "keep", "full_every", "frozen", "enabled"]
+        fields = ["name", "target", "compute", "instances", "tag", "time", "keep", "keep_weekly", "keep_monthly", "full_every",
+                  "frozen", "enabled"]
         labels = {"name": _("Name"), "target": _("Backup target"), "compute": _("Every VM of a compute"),
                   "instances": _("Or these VMs"), "tag": _("Or every VM with a tag"), "time": _("Daily at"), "keep": _("Backups kept per VM"),
+                  "keep_weekly": _("Weekly backups kept"), "keep_monthly": _("Monthly backups kept"),
                   "full_every": _("A full backup every N backups"),
                   "frozen": _("Require frozen file systems"), "enabled": _("Enabled")}
         widgets = {"time": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
@@ -93,6 +95,10 @@ class PolicyForm(forms.ModelForm):
         for name in ("keep", "full_every"):
             self.fields[name].validators.append(_min_one)
             self.fields[name].widget.attrs["min"] = 1
+        for name in ("keep_weekly", "keep_monthly"):
+            self.fields[name].widget.attrs["min"] = 0
+        self.fields["keep_weekly"].help_text = _("Also the newest backup of each of the N newest weeks that have one; 0: none")
+        self.fields["keep_monthly"].help_text = _("Also the newest backup of each of the N newest months that have one; 0: none")
         self.fields["full_every"].help_text = _("1: every backup is full. Above 1, the backups between copy only what "
                                                 "changed (running VMs with qcow2 disks).")
 
