@@ -4,9 +4,9 @@
 // shows when its text contains the search, in any case: plain text, not a
 // pattern. A row with data-search is searched in that text only, not in its
 // buttons and menus. With a state list, the row's [data-state] must
-// be the chosen state too; with a tag list (#tag-filter), the chosen tag
+// be the chosen state too; with tag pills (#tag-pills, #tag-filter), the chosen tag
 // one of the row's data-tags (names split by spaces), or "-" none of them.
-// A tag's badge ([data-tag-filter]) chooses it in the list; a row's "…"
+// A tag's badge ([data-tag-filter]) chooses its pill; a row's "…"
 // ([data-show-tags]) shows its other tags. In a grouped list a search for a group's host
 // shows all of its rows, and its header row (data-group-header) shows while
 // any of its rows does. A page's #no-match shows while no row does. The
@@ -114,24 +114,50 @@ if (typeof module !== "undefined") {
             filterTable(document);
         });
     }
-    var tags = document.getElementById("tag-filter");
-    if (tags) {
-        try {
-            var keptTag = sessionStorage.getItem(key + "_tag") || "";
-            // a tag no row has any longer is forgotten: made again later, it is not chosen by itself
-            if (Array.prototype.some.call(tags.options, function (option) { return option.value === keptTag; })) {
-                tags.value = keptTag;
-            } else {
-                keep("", key + "_tag");
-            }
-        } catch (e) {
-            // storage turned off: all tags
-        }
-        tags.addEventListener("change", function () {
-            keep(tags.value, key + "_tag");
+    // a row of pills (data-pill="value"): the one pressed sets its filter (a hidden
+    // input) and is remembered under which, as the search is; the value kept is chosen
+    // again, or forgotten when no pill has it any longer (a tag made again later is
+    // not chosen by itself). Gives the function that chooses a value's pill.
+    function pillRow(pills, input, which) {
+        var all = pills.querySelectorAll("[data-pill]");
+        function choose(pill) {
+            input.value = pill.dataset.pill;
+            keep(input.value, which);
+            all.forEach(function (other) {
+                other.classList.toggle("active", other === pill);
+                other.setAttribute("aria-pressed", other === pill);
+            });
             filterTable(document);
+        }
+        function chooseValue(value) {
+            var pill = Array.prototype.find.call(all, function (one) { return one.dataset.pill === value; });
+            if (pill) {
+                choose(pill);
+            }
+            return pill;
+        }
+        pills.addEventListener("click", function (event) {
+            var pill = event.target.closest("[data-pill]");
+            if (pill) {
+                choose(pill);
+            }
         });
-    } else {
+        var kept = "";
+        try {
+            kept = sessionStorage.getItem(which) || "";
+        } catch (e) {
+            // storage turned off: all
+        }
+        if (kept && !chooseValue(kept)) {
+            keep("", which);
+        }
+        return chooseValue;
+    }
+    var statePills = document.getElementById("state-pills");
+    var chooseState = statePills && pillRow(statePills, states, key + "_state");
+    var tagPills = document.getElementById("tag-pills");
+    var chooseTag = tagPills && pillRow(tagPills, document.getElementById("tag-filter"), key + "_tag");
+    if (!tagPills) {
         keep("", key + "_tag");  // no row has a tag: none is kept to come back later
     }
     document.addEventListener("click", function (event) {
@@ -145,53 +171,20 @@ if (typeof module !== "undefined") {
             return;
         }
         var badge = event.target.closest("[data-tag-filter]");
-        if (badge && tags) {
-            tags.value = badge.dataset.tagFilter;
-            keep(tags.value, key + "_tag");
-            filterTable(document);
+        if (badge && chooseTag) {
+            chooseTag(badge.dataset.tagFilter);
         }
     });
-    var pills = document.getElementById("state-pills");
-    function chooseState(pill) {
-        states.value = pill.dataset.pillState;
-        keep(states.value, key + "_state");
-        pills.querySelectorAll("[data-pill-state]").forEach(function (other) {
-            other.classList.toggle("active", other === pill);
-            other.setAttribute("aria-pressed", other === pill);
-        });
-        filterTable(document);
-    }
-    if (pills) {
-        var kept = "";
-        try {
-            kept = sessionStorage.getItem(key + "_state") || "";
-        } catch (e) {
-            // storage turned off: all states
-        }
-        var keptPill = kept && Array.prototype.find.call(pills.querySelectorAll("[data-pill-state]"), function (pill) {
-            return pill.dataset.pillState === kept;
-        });
-        if (keptPill) {
-            chooseState(keptPill);
-        }
-        pills.addEventListener("click", function (event) {
-            var pill = event.target.closest("[data-pill-state]");
-            if (pill) {
-                chooseState(pill);
-            }
-        });
-    }
     var clear = document.getElementById("clear-filters");
     if (clear) {
         clear.addEventListener("click", function () {
             search.value = "";
             keep("");
-            if (tags) {
-                tags.value = "";
-                keep("", key + "_tag");
+            if (chooseTag) {
+                chooseTag("");
             }
-            if (pills) {
-                chooseState(pills.querySelector('[data-pill-state=""]'));
+            if (chooseState) {
+                chooseState("");
             } else if (states) {
                 states.value = "";
             }

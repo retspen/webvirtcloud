@@ -1,8 +1,20 @@
-{% load i18n %}{# tags: Tag.counts of the listed rows; table_filter.js shows the rows with the one chosen #}
+{% load i18n %}{% load bootstrap_icons %}
+{# tags: Tag.counts of the listed rows; the pills as the VM states' (table_filter.js): the rows with the one pressed show #}
 {% with names=tags.0 untagged=tags.1 %}{% if names %}
-<select id="tag-filter" class="form-select w-auto" aria-label="{% trans "Tag" %}">
-    <option value="">{% trans "All tags" %}</option>
-    {% if untagged %}<option value="-">{% blocktrans %}No tag ({{ untagged }}){% endblocktrans %}</option>{% endif %}
-    {% for name, count in names %}<option value="{{ name }}">{{ name }} ({{ count }})</option>{% endfor %}
-</select>
+<input type="hidden" id="tag-filter" value="">
+<nav class="mb-3" aria-label="{% trans "Tags" %}">
+    <div class="nav nav-pills flex-wrap gap-1" id="tag-pills">
+        <button type="button" class="nav-link active py-1 px-2" data-pill="" aria-pressed="true">{% bs_icon 'tag' %} {% trans "All tags" %}</button>
+        {% if untagged %}
+        <button type="button" class="nav-link py-1 px-2" data-pill="-" aria-pressed="false">
+            {% trans "No tag" %} <span class="badge text-bg-light ms-1">{{ untagged }}</span>
+        </button>
+        {% endif %}
+        {% for name, count in names %}
+        <button type="button" class="nav-link py-1 px-2" data-pill="{{ name }}" aria-pressed="false">
+            {{ name }} <span class="badge text-bg-light ms-1">{{ count }}</span>
+        </button>
+        {% endfor %}
+    </div>
+</nav>
 {% endif %}{% endwith %}

@@ -11,7 +11,6 @@
         {% include 'create_comp_block.html' %}
         {% if computes|length > 1 %}<a href="{% url 'balance' %}" class="btn btn-outline-primary mt-1 ms-1 float-end">{% trans "Balance" %}</a>{% endif %}
         {% include 'search_block.html' %}
-        <div class="float-end m-1">{% include 'common/tag_filter.html' %}</div>
         <h3 class="mb-3">{% trans "Computes" %}</h3>
     </div>
 </div>
@@ -52,6 +51,7 @@
         </div>
     </div>
 
+    {% include 'common/tag_filter.html' %}
     {# position-relative: the hidden status texts are positioned within it, not the page #}
     <div class="table-responsive position-relative">
         <table class="table table-hover align-middle" data-sortable>

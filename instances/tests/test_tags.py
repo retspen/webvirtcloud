@@ -142,21 +142,23 @@ class VmListTagFilterTests(TestCase):
     def test_the_tag_list_has_the_tags_of_the_vms_listed_with_how_many(self):
         Instance.objects.create(compute=Compute.objects.get(), name="bare", uuid="12345678-0000-0000-0000-00000000cc03")
         doc = self.page(self.admin)
-        self.assertEqual(doc.xpath("//select[@id='tag-filter']/option/@value"), ["", "-", "prod", "secret", "web"])
-        self.assertEqual([" ".join(o.split()) for o in doc.xpath("//select[@id='tag-filter']/option/text()")],
-                         ["All tags", "No tag (1)", "prod (1)", "secret (1)", "web (1)"])
+        # pills as the states', below them
+        pills = doc.xpath("//nav[preceding-sibling::nav//div[@id='state-pills']]//div[@id='tag-pills']/button")
+        self.assertEqual([pill.get("data-pill") for pill in pills], ["", "-", "prod", "secret", "web"])
+        self.assertEqual([" ".join(pill.text_content().split()) for pill in pills],
+                         ["All tags", "No tag 1", "prod 1", "secret 1", "web 1"])
         self.assertEqual(doc.xpath("//tr[@data-tags]/@data-tags"), ["", "prod web", "secret"])
         # a badge chooses its tag in the list
         self.assertEqual(doc.xpath("//tr//button[@data-tag-filter]/@data-tag-filter"), ["prod", "web", "secret"])
 
     def test_an_owner_sees_only_the_tags_of_their_vms(self):
         doc = self.page(self.owner)
-        self.assertEqual(doc.xpath("//select[@id='tag-filter']/option/@value"), ["", "prod", "web"])
+        self.assertEqual(doc.xpath("//div[@id='tag-pills']/button/@data-pill"), ["", "prod", "web"])
         self.assertEqual(doc.xpath("//tr[@data-tags]/@data-tags"), ["prod web"])
 
     def test_no_tags_no_tag_list(self):
         Tag.objects.all().delete()
-        self.assertEqual(self.page(self.admin).xpath("//select[@id='tag-filter']"), [])
+        self.assertEqual(self.page(self.admin).xpath("//*[@id='tag-pills' or @id='tag-filter']"), [])
 
 
 class TagsApiTests(TestCase):

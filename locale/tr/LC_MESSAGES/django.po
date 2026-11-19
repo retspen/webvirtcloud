@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 20:30+0000\n"
+"POT-Creation-Date: 2026-11-19 05:32+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -224,7 +224,7 @@ msgstr "Kullanıcı bölümleri"
 
 #: accounts/templates/account.html:50 accounts/templates/account.html:58
 #: admin/forms.py:221 admin/templates/admin/tag_list.html:19
-#: computes/templates/computes/list.html:34
+#: computes/templates/computes/list.html:33
 #: computes/templates/computes/list.html:61 computes/templates/overview.html:90
 #: instances/views.py:267 vmbackups/templates/vmbackups/policies.html:17
 msgid "VMs"
@@ -300,7 +300,7 @@ msgstr "Burada oturumunuz açık kalır; diğer oturumlarınız kapanır."
 #: admin/templates/admin/group_form.html:73
 #: admin/templates/admin/user_form.html:160
 #: admin/templates/admin/user_password_form.html:48
-#: computes/templates/computes/form.html:49
+#: computes/templates/computes/form.html:52
 #: console/templates/console-vnc.html:86
 #: instances/templates/add_instance_cdrom.html:38
 #: instances/templates/add_instance_network_block.html:55
@@ -887,7 +887,7 @@ msgstr "Bu izinleri kimlerin alacağı."
 #: admin/templates/admin/logs.html:26
 #: admin/templates/admin/tombstone_list.html:20
 #: admin/templates/admin/user_list.html:20
-#: instances/templates/allinstances.html:12 networks/templates/network.html:130
+#: instances/templates/allinstances.html:11 networks/templates/network.html:130
 #: nodedevs/templates/nodedevs.html:22 nwfilters/templates/nwfilters.html:23
 #: templates/search_block.html:3 virtsecrets/templates/secrets.html:23
 msgid "Search"
@@ -1030,8 +1030,9 @@ msgid "Failed"
 msgstr "Başarısız"
 
 #: admin/templates/admin/tag_list.html:5 admin/templates/admin/tag_list.html:7
-#: computes/forms.py:48 instances/templates/instances/settings_tab.html:925
-#: instances/views.py:244 templates/navbar.html:39
+#: computes/forms.py:53 instances/templates/instances/settings_tab.html:925
+#: instances/views.py:244 templates/common/tag_filter.html:5
+#: templates/navbar.html:39
 msgid "Tags"
 msgstr "Etiketler"
 
@@ -1048,12 +1049,12 @@ msgstr ""
 msgid "No tags yet"
 msgstr "Henüz etiket yok"
 
-#: admin/templates/admin/tag_list.html:18 templates/common/tag_filter.html:3
+#: admin/templates/admin/tag_list.html:18
 msgid "Tag"
 msgstr "Etiket"
 
 #: admin/templates/admin/tag_list.html:20
-#: computes/templates/computes/list.html:27
+#: computes/templates/computes/list.html:26
 msgid "Hosts"
 msgstr "Sunucular"
 
@@ -1327,12 +1328,12 @@ msgid "Its owners and tags no longer come back if its UUID shows up again."
 msgstr ""
 "UUID'si yeniden görünse bile sahipleri ve etiketleri artık geri gelmez."
 
-#: admin/views.py:507
+#: admin/views.py:510
 #, python-format
 msgid "Rename tag %(tag)s"
 msgstr "%(tag)s etiketini yeniden adlandır"
 
-#: admin/views.py:512
+#: admin/views.py:515
 #, python-format
 msgid "The backup schedule %(schedules)s backs up its VMs: change it first"
 msgid_plural ""
@@ -1344,24 +1345,24 @@ msgstr[1] ""
 "%(schedules)s yedekleme zamanlamaları bu etiketin sanal makinelerini "
 "yedekliyor: önce onları değiştirin"
 
-#: admin/views.py:530
+#: admin/views.py:533
 #, python-format
 msgid "Tag %(tag)s deleted"
 msgstr "%(tag)s etiketi silindi"
 
-#: admin/views.py:538
+#: admin/views.py:541
 #, python-format
 msgid "It is taken off %(vms)s and %(hosts)s."
 msgstr "%(vms)s ve %(hosts)s üzerinden kaldırılır."
 
-#: admin/views.py:539
+#: admin/views.py:542
 #, python-format
 msgid "%(count)s VM"
 msgid_plural "%(count)s VMs"
 msgstr[0] "%(count)s sanal makine"
 msgstr[1] "%(count)s sanal makine"
 
-#: admin/views.py:540
+#: admin/views.py:543
 #, python-format
 msgid "%(count)s host"
 msgid_plural "%(count)s hosts"
@@ -2022,20 +2023,20 @@ msgstr "Hiçbir şey değişmedi"
 msgid "Other"
 msgstr "Diğer"
 
-#: computes/forms.py:21
+#: computes/forms.py:23
 msgid "Stored, leave empty to keep"
 msgstr "Kayıtlı, korumak için boş bırakın"
 
-#: computes/forms.py:35
+#: computes/forms.py:37
 #, python-format
 msgid "Add tag %(tag)s"
 msgstr "Etiket ekle: %(tag)s"
 
-#: computes/forms.py:57
+#: computes/forms.py:65
 msgid "A tag has at most 32 characters"
 msgstr "Bir etiket en fazla 32 karakterdir"
 
-#: computes/forms.py:82 computes/templates/computes/instances.html:53
+#: computes/forms.py:96 computes/templates/computes/instances.html:53
 #: instances/templates/instances/settings_tab.html:872
 #: instances/templates/instances/settings_tab.html:904
 #: instances/templates/instances/snapshots_tab.html:27
@@ -2043,43 +2044,43 @@ msgstr "Bir etiket en fazla 32 karakterdir"
 msgid "Description"
 msgstr "Tanım"
 
-#: computes/forms.py:83
+#: computes/forms.py:97
 msgid "Shown on the hosts list"
 msgstr "Sunucu listesinde gösterilir"
 
-#: computes/forms.py:84
+#: computes/forms.py:98
 msgid "SASL login"
 msgstr "SASL kullanıcı adı"
 
-#: computes/forms.py:84
+#: computes/forms.py:98
 msgid "SASL password"
 msgstr "SASL parolası"
 
-#: computes/forms.py:90 computes/templates/create_comp_block.html:10
+#: computes/forms.py:104 computes/templates/create_comp_block.html:10
 msgid "libvirt over TCP, with a SASL login"
 msgstr "TCP üzerinden libvirt, SASL girişiyle"
 
-#: computes/forms.py:104 computes/templates/create_comp_block.html:14
+#: computes/forms.py:118 computes/templates/create_comp_block.html:14
 msgid "libvirt over SSH, with the panel's SSH key"
 msgstr "SSH üzerinden libvirt, panelin SSH anahtarıyla"
 
-#: computes/forms.py:105
+#: computes/forms.py:119
 msgid "FQDN/IP"
 msgstr "FQDN/IP"
 
-#: computes/forms.py:110
+#: computes/forms.py:124
 msgid "SSH user"
 msgstr "SSH kullanıcısı"
 
-#: computes/forms.py:118 computes/templates/create_comp_block.html:18
+#: computes/forms.py:132 computes/templates/create_comp_block.html:18
 msgid "libvirt over TLS, with certificates"
 msgstr "TLS üzerinden libvirt, sertifikalarla"
 
-#: computes/forms.py:131 computes/templates/create_comp_block.html:21
+#: computes/forms.py:145 computes/templates/create_comp_block.html:21
 msgid "Local"
 msgstr "Yerel"
 
-#: computes/forms.py:132 computes/templates/create_comp_block.html:22
+#: computes/forms.py:146 computes/templates/create_comp_block.html:22
 msgid "the libvirt of the host the panel runs on, by its socket"
 msgstr "panelin çalıştığı sunucunun libvirt'i, soketi üzerinden"
 
@@ -2183,7 +2184,7 @@ msgstr ""
 "Diğer sunucuların taşınan sanal makineleri gönderdiği IP adresi veya ana "
 "bilgisayar adı; boş: panelin bu sunucuya ulaştığı adres"
 
-#: computes/models.py:70 computes/templates/computes/form.html:38
+#: computes/models.py:70 computes/templates/computes/form.html:41
 msgid "gstfsd key"
 msgstr "gstfsd anahtarı"
 
@@ -2251,7 +2252,7 @@ msgstr ""
 
 #: computes/templates/computes/balance.html:11
 #: computes/templates/computes/list.html:6
-#: computes/templates/computes/list.html:15 templates/navbar.html:18
+#: computes/templates/computes/list.html:14 templates/navbar.html:18
 msgid "Computes"
 msgstr "Sunucular"
 
@@ -2295,7 +2296,7 @@ msgstr[1] "%(counter)s vCPU"
 #: computes/templates/computes/balance.html:33
 #: computes/templates/computes/balance.html:36
 #: computes/templates/computes/capacity_vcpus.html:4
-#: computes/templates/computes/list.html:43
+#: computes/templates/computes/list.html:42
 #, python-format
 msgid "on %(counter)s CPU"
 msgid_plural "on %(counter)s CPUs"
@@ -2582,31 +2583,31 @@ msgstr "Sunucuyu düzenle: %(name)s"
 msgid "Connection"
 msgstr "Bağlantı"
 
-#: computes/templates/computes/form.html:35
+#: computes/templates/computes/form.html:38
 #: instances/templates/create_instance_w2.html:258
 msgid "Advanced"
 msgstr "Gelişmiş"
 
-#: computes/templates/computes/form.html:37
+#: computes/templates/computes/form.html:40
 msgid "Migration address"
 msgstr "Taşıma adresi"
 
-#: computes/templates/computes/form.html:37
+#: computes/templates/computes/form.html:40
 msgid "the host name"
 msgstr "sunucu adı"
 
-#: computes/templates/computes/form.html:38
+#: computes/templates/computes/form.html:41
 msgid "stored"
 msgstr "kayıtlı"
 
-#: computes/templates/computes/form.html:38
+#: computes/templates/computes/form.html:41
 #: instances/templates/instances/edit_instance_volume.html:82
 #: instances/templates/instances/settings_tab.html:375
 #: networks/templates/networks.html:63
 msgid "none"
 msgstr "hiçbiri"
 
-#: computes/templates/computes/form.html:50
+#: computes/templates/computes/form.html:53
 #: instances/templates/instances/edit_instance_volume.html:112
 #: instances/templates/instances/nic_qos_form.html:23
 #: instances/templates/instances/settings_tab.html:413
@@ -2700,7 +2701,7 @@ msgid "Problem occurred with host %(name)s: %(error)s"
 msgstr "%(name)s sunucusuyla ilgili bir sorun oluştu: %(error)s"
 
 #: computes/templates/computes/instances.html:44
-#: computes/templates/computes/list.html:20
+#: computes/templates/computes/list.html:19
 msgid "Warning"
 msgstr "Uyarı"
 
@@ -2712,27 +2713,27 @@ msgstr "Hipervizör üzerinde hiç sanal makine yok"
 msgid "VCPU"
 msgstr "VCPU"
 
-#: computes/templates/computes/list.html:20
+#: computes/templates/computes/list.html:19
 msgid "You don't have any computes"
 msgstr "Hiç sunucunuz yok"
 
-#: computes/templates/computes/list.html:29
+#: computes/templates/computes/list.html:28
 msgid "connected"
 msgstr "bağlı"
 
-#: computes/templates/computes/list.html:36
+#: computes/templates/computes/list.html:35
 msgid "running"
 msgstr "çalışıyor"
 
-#: computes/templates/computes/list.html:41
+#: computes/templates/computes/list.html:40
 msgid "vCPUs given"
 msgstr "Verilen vCPU"
 
-#: computes/templates/computes/list.html:48
+#: computes/templates/computes/list.html:47
 msgid "Memory given"
 msgstr "Atanan bellek"
 
-#: computes/templates/computes/list.html:50
+#: computes/templates/computes/list.html:49
 #, python-format
 msgid "of %(memory)s"
 msgstr "/ %(memory)s"
@@ -3215,7 +3216,7 @@ msgstr "Bağlan"
 #: instances/templates/add_instance_network_block.html:11
 #: instances/templates/add_instance_owner_block.html:11
 #: instances/templates/add_instance_volume.html:15
-#: instances/templates/allinstances.html:33
+#: instances/templates/allinstances.html:32
 #: instances/templates/allinstances.html:91
 #: instances/templates/create_inst_block.html:12
 #: instances/templates/create_instance_w2.html:367
@@ -4148,26 +4149,26 @@ msgstr "Önce bir havuz seçin"
 msgid "Cache mode"
 msgstr "Önbellek modu"
 
-#: instances/templates/allinstances.html:14
+#: instances/templates/allinstances.html:13
 msgid "Find IP / MAC"
 msgstr "IP / MAC bul"
 
-#: instances/templates/allinstances.html:27
+#: instances/templates/allinstances.html:26
 #, python-format
 msgid "The panel cannot reach %(counter)s host:"
 msgid_plural "The panel cannot reach %(counter)s hosts:"
 msgstr[0] "Panel %(counter)s sunucuya ulaşamıyor:"
 msgstr[1] "Panel %(counter)s sunucuya ulaşamıyor:"
 
-#: instances/templates/allinstances.html:38
+#: instances/templates/allinstances.html:37
 msgid "A host of some of your virtual machines cannot be reached right now."
 msgstr "Bazı sanal makinelerinizin bir sunucusuna şu anda ulaşılamıyor."
 
-#: instances/templates/allinstances.html:46
+#: instances/templates/allinstances.html:45
 msgid "VM states"
 msgstr "Sanal makine durumları"
 
-#: instances/templates/allinstances.html:49
+#: instances/templates/allinstances.html:48
 msgid "All"
 msgstr "Tümü"
 
@@ -9683,14 +9684,13 @@ msgstr "Yalnız bu etiketi göster"
 msgid "more tags"
 msgstr "diğer etiketler"
 
-#: templates/common/tag_filter.html:4
+#: templates/common/tag_filter.html:7
 msgid "All tags"
 msgstr "Tüm etiketler"
 
-#: templates/common/tag_filter.html:5
-#, python-format
-msgid "No tag (%(untagged)s)"
-msgstr "Etiketsiz (%(untagged)s)"
+#: templates/common/tag_filter.html:10
+msgid "No tag"
+msgstr "Etiketsiz"
 
 #: templates/error.html:13
 msgid "HTTP status"

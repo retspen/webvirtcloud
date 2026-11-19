@@ -121,7 +121,7 @@ class StateTests(TestCase):
         AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value="grouped")
         page = html.fromstring(self.get(self.admin, reverse("instances:index")))
         # a pill for all and for each state, every state kept (table_filter.js hides the empty ones)
-        pills = page.xpath("//div[@id='state-pills']/button/@data-pill-state")
+        pills = page.xpath("//div[@id='state-pills']/button/@data-pill")
         self.assertEqual(pills, ["", *LABELS.values(), "Unknown"])
         marks = page.xpath("//tbody[@data-host='st']//tr//@data-state")
         self.assertEqual(marks, list(LABELS.values()))

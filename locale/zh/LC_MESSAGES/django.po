@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 20:30+0000\n"
+"POT-Creation-Date: 2026-11-19 05:32+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -219,7 +219,7 @@ msgstr "用户页面导航"
 
 #: accounts/templates/account.html:50 accounts/templates/account.html:58
 #: admin/forms.py:221 admin/templates/admin/tag_list.html:19
-#: computes/templates/computes/list.html:34
+#: computes/templates/computes/list.html:33
 #: computes/templates/computes/list.html:61 computes/templates/overview.html:90
 #: instances/views.py:267 vmbackups/templates/vmbackups/policies.html:17
 msgid "VMs"
@@ -295,7 +295,7 @@ msgstr "您在此处保持登录；您的其他会话将结束。"
 #: admin/templates/admin/group_form.html:73
 #: admin/templates/admin/user_form.html:160
 #: admin/templates/admin/user_password_form.html:48
-#: computes/templates/computes/form.html:49
+#: computes/templates/computes/form.html:52
 #: console/templates/console-vnc.html:86
 #: instances/templates/add_instance_cdrom.html:38
 #: instances/templates/add_instance_network_block.html:55
@@ -861,7 +861,7 @@ msgstr "获得这些权限的用户。"
 #: admin/templates/admin/logs.html:26
 #: admin/templates/admin/tombstone_list.html:20
 #: admin/templates/admin/user_list.html:20
-#: instances/templates/allinstances.html:12 networks/templates/network.html:130
+#: instances/templates/allinstances.html:11 networks/templates/network.html:130
 #: nodedevs/templates/nodedevs.html:22 nwfilters/templates/nwfilters.html:23
 #: templates/search_block.html:3 virtsecrets/templates/secrets.html:23
 msgid "Search"
@@ -1002,8 +1002,9 @@ msgid "Failed"
 msgstr "失败"
 
 #: admin/templates/admin/tag_list.html:5 admin/templates/admin/tag_list.html:7
-#: computes/forms.py:48 instances/templates/instances/settings_tab.html:925
-#: instances/views.py:244 templates/navbar.html:39
+#: computes/forms.py:53 instances/templates/instances/settings_tab.html:925
+#: instances/views.py:244 templates/common/tag_filter.html:5
+#: templates/navbar.html:39
 msgid "Tags"
 msgstr "标签"
 
@@ -1017,12 +1018,12 @@ msgstr "虚拟机和主机的标签。标签在首次于虚拟机的“选项”
 msgid "No tags yet"
 msgstr "还没有标签"
 
-#: admin/templates/admin/tag_list.html:18 templates/common/tag_filter.html:3
+#: admin/templates/admin/tag_list.html:18
 msgid "Tag"
 msgstr "标签"
 
 #: admin/templates/admin/tag_list.html:20
-#: computes/templates/computes/list.html:27
+#: computes/templates/computes/list.html:26
 msgid "Hosts"
 msgstr "主机"
 
@@ -1285,35 +1286,35 @@ msgstr "已删除已移除的虚拟机 %(name)s"
 msgid "Its owners and tags no longer come back if its UUID shows up again."
 msgstr "若其 UUID 再次出现，其所有者和标签将不再恢复。"
 
-#: admin/views.py:507
+#: admin/views.py:510
 #, python-format
 msgid "Rename tag %(tag)s"
 msgstr "重命名标签 %(tag)s"
 
-#: admin/views.py:512
+#: admin/views.py:515
 #, python-format
 msgid "The backup schedule %(schedules)s backs up its VMs: change it first"
 msgid_plural ""
 "The backup schedules %(schedules)s back up its VMs: change them first"
 msgstr[0] "备份计划 %(schedules)s 正在备份该标签的虚拟机：请先修改计划"
 
-#: admin/views.py:530
+#: admin/views.py:533
 #, python-format
 msgid "Tag %(tag)s deleted"
 msgstr "标签 %(tag)s 已删除"
 
-#: admin/views.py:538
+#: admin/views.py:541
 #, python-format
 msgid "It is taken off %(vms)s and %(hosts)s."
 msgstr "它将从 %(vms)s 和 %(hosts)s 上移除。"
 
-#: admin/views.py:539
+#: admin/views.py:542
 #, python-format
 msgid "%(count)s VM"
 msgid_plural "%(count)s VMs"
 msgstr[0] "%(count)s 个虚拟机"
 
-#: admin/views.py:540
+#: admin/views.py:543
 #, python-format
 msgid "%(count)s host"
 msgid_plural "%(count)s hosts"
@@ -1946,20 +1947,20 @@ msgstr "没有任何更改"
 msgid "Other"
 msgstr "其他"
 
-#: computes/forms.py:21
+#: computes/forms.py:23
 msgid "Stored, leave empty to keep"
 msgstr "已保存，留空则保持不变"
 
-#: computes/forms.py:35
+#: computes/forms.py:37
 #, python-format
 msgid "Add tag %(tag)s"
 msgstr "添加标签：%(tag)s"
 
-#: computes/forms.py:57
+#: computes/forms.py:65
 msgid "A tag has at most 32 characters"
 msgstr "标签最多 32 个字符"
 
-#: computes/forms.py:82 computes/templates/computes/instances.html:53
+#: computes/forms.py:96 computes/templates/computes/instances.html:53
 #: instances/templates/instances/settings_tab.html:872
 #: instances/templates/instances/settings_tab.html:904
 #: instances/templates/instances/snapshots_tab.html:27
@@ -1967,43 +1968,43 @@ msgstr "标签最多 32 个字符"
 msgid "Description"
 msgstr "描述"
 
-#: computes/forms.py:83
+#: computes/forms.py:97
 msgid "Shown on the hosts list"
 msgstr "显示在主机列表中"
 
-#: computes/forms.py:84
+#: computes/forms.py:98
 msgid "SASL login"
 msgstr "SASL 登录名"
 
-#: computes/forms.py:84
+#: computes/forms.py:98
 msgid "SASL password"
 msgstr "SASL 密码"
 
-#: computes/forms.py:90 computes/templates/create_comp_block.html:10
+#: computes/forms.py:104 computes/templates/create_comp_block.html:10
 msgid "libvirt over TCP, with a SASL login"
 msgstr "通过 TCP 连接 libvirt，使用 SASL 登录"
 
-#: computes/forms.py:104 computes/templates/create_comp_block.html:14
+#: computes/forms.py:118 computes/templates/create_comp_block.html:14
 msgid "libvirt over SSH, with the panel's SSH key"
 msgstr "通过 SSH 连接 libvirt，使用面板的 SSH 密钥"
 
-#: computes/forms.py:105
+#: computes/forms.py:119
 msgid "FQDN/IP"
 msgstr "FQDN/IP"
 
-#: computes/forms.py:110
+#: computes/forms.py:124
 msgid "SSH user"
 msgstr "SSH 用户"
 
-#: computes/forms.py:118 computes/templates/create_comp_block.html:18
+#: computes/forms.py:132 computes/templates/create_comp_block.html:18
 msgid "libvirt over TLS, with certificates"
 msgstr "通过 TLS 连接 libvirt，使用证书"
 
-#: computes/forms.py:131 computes/templates/create_comp_block.html:21
+#: computes/forms.py:145 computes/templates/create_comp_block.html:21
 msgid "Local"
 msgstr "本地"
 
-#: computes/forms.py:132 computes/templates/create_comp_block.html:22
+#: computes/forms.py:146 computes/templates/create_comp_block.html:22
 msgid "the libvirt of the host the panel runs on, by its socket"
 msgstr "面板所在主机的 libvirt，通过其套接字连接"
 
@@ -2097,7 +2098,7 @@ msgid ""
 "address the panel reaches the host at"
 msgstr "其他主机向此主机迁移虚拟机时使用的 IP 地址或主机名；留空：使用面板连接该主机的地址"
 
-#: computes/models.py:70 computes/templates/computes/form.html:38
+#: computes/models.py:70 computes/templates/computes/form.html:41
 msgid "gstfsd key"
 msgstr "gstfsd 密钥"
 
@@ -2154,7 +2155,7 @@ msgstr "有磁盘文件不在两台主机共享的存储上：请在该虚拟机
 
 #: computes/templates/computes/balance.html:11
 #: computes/templates/computes/list.html:6
-#: computes/templates/computes/list.html:15 templates/navbar.html:18
+#: computes/templates/computes/list.html:14 templates/navbar.html:18
 msgid "Computes"
 msgstr "计算节点"
 
@@ -2194,7 +2195,7 @@ msgstr[0] "%(counter)s 个 vCPU"
 #: computes/templates/computes/balance.html:33
 #: computes/templates/computes/balance.html:36
 #: computes/templates/computes/capacity_vcpus.html:4
-#: computes/templates/computes/list.html:43
+#: computes/templates/computes/list.html:42
 #, python-format
 msgid "on %(counter)s CPU"
 msgid_plural "on %(counter)s CPUs"
@@ -2459,31 +2460,31 @@ msgstr "编辑主机：%(name)s"
 msgid "Connection"
 msgstr "连接"
 
-#: computes/templates/computes/form.html:35
+#: computes/templates/computes/form.html:38
 #: instances/templates/create_instance_w2.html:258
 msgid "Advanced"
 msgstr "高级"
 
-#: computes/templates/computes/form.html:37
+#: computes/templates/computes/form.html:40
 msgid "Migration address"
 msgstr "迁移地址"
 
-#: computes/templates/computes/form.html:37
+#: computes/templates/computes/form.html:40
 msgid "the host name"
 msgstr "主机名"
 
-#: computes/templates/computes/form.html:38
+#: computes/templates/computes/form.html:41
 msgid "stored"
 msgstr "已保存"
 
-#: computes/templates/computes/form.html:38
+#: computes/templates/computes/form.html:41
 #: instances/templates/instances/edit_instance_volume.html:82
 #: instances/templates/instances/settings_tab.html:375
 #: networks/templates/networks.html:63
 msgid "none"
 msgstr "无"
 
-#: computes/templates/computes/form.html:50
+#: computes/templates/computes/form.html:53
 #: instances/templates/instances/edit_instance_volume.html:112
 #: instances/templates/instances/nic_qos_form.html:23
 #: instances/templates/instances/settings_tab.html:413
@@ -2577,7 +2578,7 @@ msgid "Problem occurred with host %(name)s: %(error)s"
 msgstr "主机 %(name)s 出现问题：%(error)s"
 
 #: computes/templates/computes/instances.html:44
-#: computes/templates/computes/list.html:20
+#: computes/templates/computes/list.html:19
 msgid "Warning"
 msgstr "警告"
 
@@ -2589,27 +2590,27 @@ msgstr "虚拟机管理程序中没有任何虚拟机"
 msgid "VCPU"
 msgstr "VCPU"
 
-#: computes/templates/computes/list.html:20
+#: computes/templates/computes/list.html:19
 msgid "You don't have any computes"
 msgstr "您还没有任何计算节点"
 
-#: computes/templates/computes/list.html:29
+#: computes/templates/computes/list.html:28
 msgid "connected"
 msgstr "已连接"
 
-#: computes/templates/computes/list.html:36
+#: computes/templates/computes/list.html:35
 msgid "running"
 msgstr "运行中"
 
-#: computes/templates/computes/list.html:41
+#: computes/templates/computes/list.html:40
 msgid "vCPUs given"
 msgstr "已分配 vCPU"
 
-#: computes/templates/computes/list.html:48
+#: computes/templates/computes/list.html:47
 msgid "Memory given"
 msgstr "已分配内存"
 
-#: computes/templates/computes/list.html:50
+#: computes/templates/computes/list.html:49
 #, python-format
 msgid "of %(memory)s"
 msgstr "共 %(memory)s"
@@ -3064,7 +3065,7 @@ msgstr "连接"
 #: instances/templates/add_instance_network_block.html:11
 #: instances/templates/add_instance_owner_block.html:11
 #: instances/templates/add_instance_volume.html:15
-#: instances/templates/allinstances.html:33
+#: instances/templates/allinstances.html:32
 #: instances/templates/allinstances.html:91
 #: instances/templates/create_inst_block.html:12
 #: instances/templates/create_instance_w2.html:367
@@ -3934,25 +3935,25 @@ msgstr "请先选择存储池"
 msgid "Cache mode"
 msgstr "缓存模式"
 
-#: instances/templates/allinstances.html:14
+#: instances/templates/allinstances.html:13
 msgid "Find IP / MAC"
 msgstr "查找 IP / MAC"
 
-#: instances/templates/allinstances.html:27
+#: instances/templates/allinstances.html:26
 #, python-format
 msgid "The panel cannot reach %(counter)s host:"
 msgid_plural "The panel cannot reach %(counter)s hosts:"
 msgstr[0] "面板无法连接 %(counter)s 台主机："
 
-#: instances/templates/allinstances.html:38
+#: instances/templates/allinstances.html:37
 msgid "A host of some of your virtual machines cannot be reached right now."
 msgstr "您的部分虚拟机所在的主机当前无法连接。"
 
-#: instances/templates/allinstances.html:46
+#: instances/templates/allinstances.html:45
 msgid "VM states"
 msgstr "虚拟机状态"
 
-#: instances/templates/allinstances.html:49
+#: instances/templates/allinstances.html:48
 msgid "All"
 msgstr "全部"
 
@@ -9116,14 +9117,13 @@ msgstr "只显示此标签"
 msgid "more tags"
 msgstr "更多标签"
 
-#: templates/common/tag_filter.html:4
+#: templates/common/tag_filter.html:7
 msgid "All tags"
 msgstr "所有标签"
 
-#: templates/common/tag_filter.html:5
-#, python-format
-msgid "No tag (%(untagged)s)"
-msgstr "无标签（%(untagged)s）"
+#: templates/common/tag_filter.html:10
+msgid "No tag"
+msgstr "无标签"
 
 #: templates/error.html:13
 msgid "HTTP status"

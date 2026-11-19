@@ -6,7 +6,6 @@
 
 {% block page_heading_extra %}
     <div class="d-flex flex-wrap justify-content-end gap-2 mt-1">
-        {% include 'common/tag_filter.html' %}
         {# the list's search and the address search, as one control #}
         <div class="input-group w-auto">
             <input id="filter" class="form-control" type="text" placeholder="{% trans 'Search' %}" aria-label="{% trans 'Search' %}">
@@ -43,18 +42,19 @@
         {% if instances %}
             {# the state filter: table_filter.js counts each state's VMs the search finds #}
             <input type="hidden" id="state-filter" value="">
-            <nav class="mb-3" aria-label="{% trans "VM states" %}">
+            <nav class="mb-2" aria-label="{% trans "VM states" %}">
                 <div class="nav nav-pills flex-wrap gap-1" id="state-pills">
-                    <button type="button" class="nav-link active py-1 px-2" data-pill-state="" aria-pressed="true">
+                    <button type="button" class="nav-link active py-1 px-2" data-pill="" aria-pressed="true">
                         {% trans "All" %} <span class="badge text-bg-light ms-1" data-count-state=""></span>
                     </button>
                     {% for state in states %}
-                    <button type="button" class="nav-link py-1 px-2" data-pill-state="{{ state }}" aria-pressed="false" hidden>
+                    <button type="button" class="nav-link py-1 px-2" data-pill="{{ state }}" aria-pressed="false" hidden>
                         {{ state }} <span class="badge text-bg-light ms-1" data-count-state="{{ state }}"></span>
                     </button>
                     {% endfor %}
                 </div>
             </nav>
+            {% include 'common/tag_filter.html' %}
             <div id="filter-status" class="visually-hidden" role="status" data-text="{% trans "%(shown)s of %(all)s VMs match" %}"></div>
         {% endif %}
         {% if not instances %}

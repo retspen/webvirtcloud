@@ -304,9 +304,15 @@ fieldset:not(:has(input[value="set"]:checked)) > .console-new-password {
 .form-section-fields:has(input[name="usable_password"][value="false"]:checked) > .with-password {
     display: none;
 }
-/* a list's tag filter: a long tag name does not widen it beyond a phone's width */
-#tag-filter {
-    max-width: 15rem;
+/* a list's tag pills and a row's tag badges: a long tag name breaks within, not beyond a phone's width */
+#tag-pills .nav-link,
+.tag-badge {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    text-align: start;
+}
+.tag-badge {
+    white-space: normal;
 }
 /* a VM's or host's tags: smaller than other badges, so a row with several stays narrow */
 .tag-badge {

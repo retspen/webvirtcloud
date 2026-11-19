@@ -155,7 +155,9 @@ class HostTagsTests(TestCase):
         response = self.client.get(reverse("computes"))
         self.assertContains(response, 'data-show-tags title="ssd"')  # three, and "…" for the others
         self.assertContains(response, "rack-1")
-        self.assertContains(response, '<option value="rack-1">rack-1 (1)</option>', html=True)
+        self.assertContains(response, '<button type="button" class="nav-link py-1 px-2" data-pill="rack-1" '
+                                      'aria-pressed="false">rack-1 <span class="badge text-bg-light ms-1">1</span></button>',
+                            html=True)
         self.assertContains(response, 'data-tag-filter="rack-1"')
         # a search and a tag that match no host: the page says so and clears them
         self.assertContains(response, 'id="no-match"')
