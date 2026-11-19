@@ -24,7 +24,7 @@
             <tbody>
             {% for tag in tags %}
                 <tr>
-                    <td><span class="badge text-bg-light border">{% bs_icon 'tag' %} {{ tag }}</span></td>
+                    <td>{% include 'common/tag_badge.html' with tag=tag.name %}</td>
                     <td>{{ tag.vm_count }}</td>
                     <td>{{ tag.host_count }}</td>
                     <td class="text-end text-nowrap">

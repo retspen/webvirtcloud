@@ -28,6 +28,7 @@ class TagAdminTests(TestCase):
     def test_the_list_counts_each_tag_s_vms_and_hosts(self):
         response = self.client.get(reverse("admin:tag_list"))
         self.assertEqual([(t.name, t.vm_count, t.host_count) for t in response.context["tags"]], [("prod", 1, 1)])
+        self.assertContains(response, 'class="badge tag-badge')  # as small as on the other pages
 
     def test_a_rename_keeps_the_tag_on_its_vms_hosts_and_removed_vms(self):
         self.client.post(reverse("admin:tag_update", args=[self.prod.pk]), {"name": "Live"})
