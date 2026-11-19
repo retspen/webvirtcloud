@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from computes.models import Compute
 from instances.models import Instance
+from operations.utils import words
 
 from .models import Backup, BackupFile, BackupTarget
 
@@ -15,12 +16,19 @@ class BackupFileSerializer(serializers.ModelSerializer):
 class BackupSerializer(serializers.ModelSerializer):
     target = serializers.SlugRelatedField(slug_field="name", read_only=True)
     files = BackupFileSerializer(many=True, read_only=True)
+    # what a verification found wrong with it or, else, with the first backup it builds on (a restore reads
+    # those too); empty: nothing
+    damage = serializers.SerializerMethodField()
 
     class Meta:
         model = Backup
         fields = ["uuid", "target", "instance", "vm_uuid", "vm_name", "compute_name", "created_at", "finished_at",
-                  "state", "consistency", "size", "files", "operation"]
+                  "state", "consistency", "size", "files", "operation", "verified_at", "damage"]
         read_only_fields = fields
+
+    def get_damage(self, backup) -> str:
+        damaged = backup.damaged_in_chain()
+        return words(damaged.damage) if damaged else ""
 
 
 class CreateBackupSerializer(serializers.Serializer):

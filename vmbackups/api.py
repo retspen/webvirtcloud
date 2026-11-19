@@ -20,8 +20,8 @@ def _accepted(request, op):
 
 
 class BackupViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
-    """VM backups: list, read, back a VM up and delete a backup (jobs,
-    answered 202)."""
+    """VM backups: list, read, back a VM up, verify, restore and delete a
+    backup (jobs, answered 202)."""
 
     permission_classes = [IsSuperUser]
     serializer_class = BackupSerializer
@@ -44,6 +44,15 @@ class BackupViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.G
         serializer.is_valid(raise_exception=True)
         key = serializer.validated_data["submission_key"]
         return _accepted(request, jobs.submit("backup.delete", request.user, {"backup": str(backup.uuid)}, key))
+
+    @extend_schema(request=SubmissionSerializer, responses={202: OperationSerializer, 400: dict, 409: ErrorSerializer})
+    @action(detail=True, methods=["post"])
+    def verify(self, request, uuid=None):
+        backup = self.get_object()
+        serializer = SubmissionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        key = serializer.validated_data["submission_key"]
+        return _accepted(request, jobs.submit("backup.verify", request.user, {"backup": str(backup.uuid)}, key))
 
     @extend_schema(request=RestoreBackupSerializer, responses={202: OperationSerializer, 400: dict, 409: ErrorSerializer})
     @action(detail=True, methods=["post"])

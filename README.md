@@ -490,7 +490,7 @@ The QR code is mailed as a link to a page that shows it, good for one hour: the 
 
 On the Settings page (Alerts), **Alert e-mail addresses** get a mail, through the server's SMTP settings (`EMAIL_HOST` and the others, as for OTP), and **Alert webhook** a JSON POST (`subject`, `text`, `time`; Slack, Mattermost and ntfy take it) when a backup job fails, a scheduled backup is not taken (not for a host in maintenance), the daily target check finds backups missing, a verification finds a backup damaged, or a job ends uncertain. The job worker sends them within a minute and tries a failed channel again for ten minutes.
 
-`/healthz`, without a login, answers 200 while the database answers and the job worker runs, 503 otherwise: point a monitor at it.
+`/healthz`, without a login, answers 200 while the database answers and the job worker runs, 503 otherwise: point a monitor at it. The Docker image's health check reads it too.
 
 ### Serial console
 

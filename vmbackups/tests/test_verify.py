@@ -13,6 +13,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.test import TransactionTestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from appsettings.settings import get_settings
 from computes.models import Compute
@@ -327,6 +328,23 @@ class VerifyBackupTests(TransactionTestCase):
         page = self.client.get(reverse("vmbackups:index"))
         self.assertContains(page, "Damaged")
         self.assertContains(page, "The backup&#x27;s file f is missing from the target")
+
+    def test_the_api_verifies_and_tells_what_was_found(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(f"/api/v1/backups/{self.full.uuid}/verify/", {"submission_key": "key-api-ver1"},
+                                    content_type="application/json")
+        self.assertEqual(response.status_code, 202, response.content)
+        self.assertEqual(response.json()["kind"], "backup.verify")
+        Backup.objects.filter(pk=self.full.pk).update(verified_at=timezone.now(), damage=[
+            {"text": "The backup's file %(name)s is missing from the target", "values": {"name": "f"}}])
+        backup = self.client.get(f"/api/v1/backups/{self.full.uuid}/").json()
+        self.assertTrue(backup["verified_at"])
+        self.assertEqual(backup["damage"], "The backup's file f is missing from the target")
+        # an incremental restores its base's files too
+        self.assertEqual(self.client.get(f"/api/v1/backups/{self.incremental.uuid}/").json()["damage"],
+                         "The backup's file f is missing from the target")
+        Backup.objects.filter(pk=self.full.pk).update(damage=[])
+        self.assertEqual(self.client.get(f"/api/v1/backups/{self.incremental.uuid}/").json()["damage"], "")
 
     def test_a_restore_page_tells_of_damage_in_the_chain(self):
         self.client.force_login(self.admin)
