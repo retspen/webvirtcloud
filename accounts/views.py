@@ -37,7 +37,7 @@ from .utils import OTP_LINK, OTP_LINK_MAX_AGE, get_existing_totp_device, get_use
 
 
 def profile(request):
-    publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
+    publickeys = UserSSHKey.objects.filter(user_id=request.user.id).order_by("keyname")
     profile_form = ProfileForm(request.POST or None, instance=request.user)
     ssh_key_form = UserSSHKeyForm()
 
@@ -192,8 +192,9 @@ def ssh_key_delete(request, pk, user_id=None):
 @superuser_only
 def account(request, user_id):
     user = get_object_or_404(User, id=user_id)
-    user_insts = UserInstance.objects.filter(user_id=user_id).select_related("instance__compute").prefetch_related("instance__tags")
-    publickeys = UserSSHKey.objects.filter(user_id=user_id)
+    user_insts = UserInstance.objects.filter(user_id=user_id).select_related("instance__compute").prefetch_related(
+        "instance__tags").order_by("instance__name")
+    publickeys = UserSSHKey.objects.filter(user_id=user_id).order_by("keyname")
 
     return render(
         request,

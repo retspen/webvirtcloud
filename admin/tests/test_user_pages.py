@@ -32,6 +32,13 @@ class UserPagesTests(TestCase):
                 **changes}
         return {key: value for key, value in data.items() if value != ""}
 
+    def test_the_list_is_in_name_order(self):
+        get_user_model().objects.create_user("up-bob")
+        get_user_model().objects.create_user("up-adam")
+        users = self.client.get(reverse("admin:user_list")).context["users"]
+        self.assertTrue(users.ordered)  # SQLite keeps the name order without asking; PostgreSQL does not
+        self.assertEqual([user.username for user in users], sorted(user.username for user in users))
+
     def test_an_administrator_cannot_block_delete_or_demote_themselves(self):
         own = self.admin.pk
         for response in (self.client.post(reverse("admin:user_block", args=[own])),

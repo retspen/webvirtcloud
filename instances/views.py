@@ -307,7 +307,7 @@ def _instance_page(request, pk, instance, compute):
     computes_count = computes.count()
     # the add-owner choices: users who are not owners yet; a superuser can use every VM
     users = User.objects.filter(is_superuser=False).exclude(userinstance__instance=instance).order_by("username")
-    publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
+    publickeys = UserSSHKey.objects.filter(user_id=request.user.id).order_by("keyname")
     # The console form renders the VNC password, so only users who may manage
     # console settings get the form (and the password) at all.
     can_manage_console = utils.can_manage_console(request.user, instance)

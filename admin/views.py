@@ -172,7 +172,7 @@ def user_list(request):
     users = User.objects.annotate(
         api_tokens=Count("auth_token_set", filter=live),
         can_clone=Exists(clone.filter(Q(user=OuterRef("pk")) | Q(group__user=OuterRef("pk")))),
-    ).prefetch_related("groups")
+    ).order_by("username").prefetch_related("groups")
     return render(
         request,
         "admin/user_list.html",
