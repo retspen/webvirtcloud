@@ -184,6 +184,8 @@ def refresh_instance_database(compute):
         UserInstance permission relationships (matched by UUID).
       - If libvirt is unreachable (connection/network error), the database is left
         untouched to avoid false deletions.
+    True when the database matches the host's VMs afterwards; None when it was
+    not synchronized (host not answering, busy or changed meanwhile).
     """
     compute_pk = getattr(compute, "pk", getattr(compute, "id", None))
     if not compute_pk:
@@ -202,7 +204,7 @@ def refresh_instance_database(compute):
     cutoff = timezone.now() - timedelta(days=retention)
     if (dict(Instance.objects.filter(compute_id=compute_pk).values_list("uuid", "name")) == host_domains
             and not InstanceTombstone.objects.filter(removed__lt=cutoff).exists()):
-        return
+        return True
 
     try:
         # The compute shared: VM operations and jobs on it go on; changes of
@@ -260,6 +262,7 @@ def refresh_instance_database(compute):
                         )
                         if created and not Instance.objects.filter(uuid=uuid).exclude(compute=compute).exists():
                             _restore(inst)
+        return True
     except claims.Busy:
         logger.debug("Compute %s is busy; not synchronized now", compute_pk)
         return

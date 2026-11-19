@@ -40,21 +40,21 @@ class Inline:
         self.hold = False
         self.queued = []
 
-    def submit(self, fn, compute_id, items):
+    def submit(self, fn, compute_id, *args):
         future = Future()
         if compute_id in self.pending:
             return future  # never done: a hung host
         if self.hold:
-            self.queued.append((fn, compute_id, items, future))
+            self.queued.append((fn, compute_id, args, future))
             return future
-        fn(compute_id, items)
+        fn(compute_id, *args)
         future.set_result(None)
         return future
 
     def run_queued(self, now):
         with patch("django.utils.timezone.now", return_value=now):
-            for fn, compute_id, items, future in self.queued:
-                fn(compute_id, items)
+            for fn, compute_id, args, future in self.queued:
+                fn(compute_id, *args)
                 future.set_result(None)
 
 
@@ -88,6 +88,8 @@ class ScheduleTests(TransactionTestCase):
         target_pool.info.return_value = [2, 1 << 40, 0, 1 << 40]
         for name, value in (("vmbackups.schedule._pool", self.pool),
                             ("vmbackups.schedule._tasks", {}),
+                            ("vmbackups.schedule._read", set()),
+                            ("vmbackups.schedule.refresh_instance_database", MagicMock(return_value=True)),
                             ("vmbackups.jobs.wvmBackup", MagicMock(return_value=self.proxy)),
                             ("vmbackups.jobs.target_pool", MagicMock(return_value=target_pool))):
             patcher = patch(name, value)
@@ -300,6 +302,65 @@ class ScheduleTests(TransactionTestCase):
         self.finish_all()
         self.pass_at(at(2026, 11, 17, 3, 1))
         self.assertEqual(sorted(BackupRun.objects.values_list("instance__name", flat=True)), ["vm1", "vm2"])
+
+    def host_schedule(self, time=datetime.time(3), name="host", created=at(2026, 11, 17)):
+        whole = BackupPolicy.objects.create(name=name, target=self.target, compute=self.c1, time=time, keep=1,
+                                            owner=self.admin)
+        BackupPolicy.objects.filter(pk=whole.pk).update(created_at=created)
+        return whole
+
+    def test_a_compute_schedule_reads_the_host_s_vms_once_a_day(self):
+        # a VM made with virsh is in the database only once a page read the host: the schedule reads it itself
+        self.host_schedule()
+        BackupPolicy.objects.filter(pk=self.policy.pk).update(enabled=False)
+
+        def made_outside(compute):
+            Instance.objects.get_or_create(compute=compute, name="virsh-vm", uuid="71717171-0000-4000-8000-000000000009")
+            return True
+
+        with patch("vmbackups.schedule.refresh_instance_database", side_effect=made_outside) as refresh:
+            self.pass_at(at(2026, 11, 17, 2, 59))
+            self.assertEqual(refresh.call_count, 0)  # not before its time
+            for minute in range(4):  # one copy at a time per target
+                self.pass_at(at(2026, 11, 17, 3, minute))
+                self.finish_all()
+        self.assertEqual(refresh.call_count, 1)
+        self.assertEqual(refresh.call_args.args[0].pk, self.c1.pk)
+        self.assertEqual(sorted(BackupRun.objects.values_list("instance__name", flat=True)), ["virsh-vm", "vm1", "vm2"])
+
+    def test_a_read_that_did_not_sync_is_tried_again_and_the_known_vms_still_go(self):
+        self.host_schedule()
+        BackupPolicy.objects.filter(pk=self.policy.pk).update(enabled=False)
+        # not answering or busy (None), then failing outright: the known VMs are backed up meanwhile
+        with patch("vmbackups.schedule.refresh_instance_database", side_effect=[None, RuntimeError("db"), True]) as refresh:
+            for minute in range(4):
+                self.pass_at(at(2026, 11, 17, 3, minute))
+                self.finish_all()
+        self.assertEqual(refresh.call_count, 3)
+        self.assertEqual(sorted(BackupRun.objects.values_list("instance__name", flat=True)), ["vm1", "vm2"])
+
+    def test_two_schedules_across_midnight_read_the_host_once_each(self):
+        self.host_schedule(datetime.time(23), "late", at(2026, 11, 16))
+        self.host_schedule(datetime.time(1), "early", at(2026, 11, 16))
+        BackupPolicy.objects.filter(pk=self.policy.pk).update(enabled=False)
+        with patch("vmbackups.schedule.refresh_instance_database", return_value=True) as refresh:
+            self.pass_at(at(2026, 11, 16, 23, 0))
+            for minute in range(3):
+                self.pass_at(at(2026, 11, 17, 1, minute))
+        self.assertEqual(refresh.call_count, 2)
+
+    def test_a_host_in_maintenance_is_not_read(self):
+        self.host_schedule()
+        Compute.objects.filter(pk=self.c1.pk).update(maintenance_since=at(2026, 11, 17))
+        with patch("vmbackups.schedule.refresh_instance_database", return_value=True) as refresh:
+            self.pass_at(at(2026, 11, 17, 3, 0))
+            # nor one put in maintenance while its task waited for a thread
+            Compute.objects.filter(pk=self.c1.pk).update(maintenance_since=None)
+            self.pool.hold = True
+            self.pass_at(at(2026, 11, 17, 3, 1))
+            Compute.objects.filter(pk=self.c1.pk).update(maintenance_since=at(2026, 11, 17, 3, 1))
+            self.pool.run_queued(at(2026, 11, 17, 3, 1))
+        self.assertEqual(refresh.call_count, 0)
 
     def test_a_hung_host_stops_no_other_hosts_schedule(self):
         vm3 = Instance.objects.create(compute=self.c2, name="vm3", uuid="71717171-0000-4000-8000-000000000003")

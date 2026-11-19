@@ -15,6 +15,7 @@ from django.utils.translation import gettext_noop as _
 from libvirt import libvirtError
 
 from computes.models import Compute
+from computes.utils import refresh_instance_database
 from operations import claims, jobs
 from operations.models import Operation
 from operations.utils import safe_text, said, say
@@ -36,14 +37,20 @@ RETRY_AFTER = datetime.timedelta(hours=1)  # a deletion or check that failed is 
 THREADS = 64
 _pool = ThreadPoolExecutor(THREADS, thread_name_prefix="wvc-schedule")
 _tasks = {}  # compute id -> the future of its last task
+_read = set()  # (compute id, local day) whose VMs an "every VM of" schedule has read from the host
 
 
 def run_schedules(now=None):
     now = now or timezone.now()
     due = {}  # compute id -> [(policy, vm, day)]
-    for policy in BackupPolicy.objects.filter(enabled=True).select_related("owner"):
+    # computes whose VMs an "every VM of" schedule reads from the host first, once a day: a VM made
+    # with virsh is in the database only once a page has read the host (its backup comes a pass later)
+    read = {}
+    for policy in BackupPolicy.objects.filter(enabled=True).select_related("owner", "compute"):
         for day, start in occurrences(policy, now):
             open_ = now < start + WINDOW
+            if open_ and policy.compute_id and (policy.compute_id, day) not in _read and not policy.compute.maintenance:
+                read[policy.compute_id] = day
             done = set(BackupRun.objects.filter(policy=policy, day=day).values_list("instance_id", flat=True))
             for vm in policy.vms():
                 if vm.pk in done:
@@ -53,10 +60,10 @@ def run_schedules(now=None):
                     _record(policy, vm, day, BackupRun.SKIPPED, say(IN_MAINTENANCE if in_maintenance else NOT_STARTED))
                 elif not in_maintenance:  # deferred while the window lasts
                     due.setdefault(vm.compute_id, []).append((policy.pk, vm.pk, day, start))
-    for compute_id, items in due.items():
+    for compute_id in due.keys() | read.keys():
         task = _tasks.get(compute_id)
         if task is None or task.done():
-            _tasks[compute_id] = _pool.submit(_submit_all, compute_id, items)
+            _tasks[compute_id] = _pool.submit(_submit_all, compute_id, due.get(compute_id, []), read.get(compute_id))
     retain()
     check_targets(now)
 
@@ -84,11 +91,19 @@ def _active_superuser(user):
     return user is not None and user.is_active and user.is_superuser
 
 
-def _submit_all(compute_id, items):
+def _submit_all(compute_id, items, read_day=None):
     """One compute's due backups, one after another, each checked again as
     it comes: the task may have waited for a thread. A busy target or an
-    unreachable host is tried again at the next pass."""
+    unreachable host is tried again at the next pass. With read_day, the host's
+    VMs are read into the database first; a read that did not sync them is
+    tried again at the next pass."""
     try:
+        compute = Compute.objects.filter(pk=compute_id, maintenance_since__isnull=True).first() if read_day else None
+        try:
+            if compute is not None and refresh_instance_database(compute):
+                _read.add((compute_id, read_day))
+        except Exception:  # the backups of the VMs known still go
+            logger.exception("Reading the VMs of compute %s for its backup schedule failed", compute_id)
         for policy_id, vm_id, day, start in items:
             _submit(policy_id, vm_id, day, start)
     finally:
