@@ -86,7 +86,7 @@
                                    min="{{ setting.bounds.0 }}" max="{{ setting.bounds.1 }}" step="1" required aria-describedby="help-{{ setting.key }}">
                         {% else %}
                             <input id="setting-{{ setting.key }}" class="form-control" type="text" name="{{ setting.key }}" value="{{ setting.value }}"
-                                   maxlength="25" aria-describedby="help-{{ setting.key }}">
+                                   maxlength="255" aria-describedby="help-{{ setting.key }}">
                         {% endif %}
                     {% endif %}
                         <input type="hidden" name="was-{{ setting.key }}" value="{{ setting.value }}">

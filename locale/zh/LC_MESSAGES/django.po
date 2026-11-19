@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-19 13:08+0000\n"
+"POT-Creation-Date: 2026-11-19 13:10+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -1814,6 +1814,25 @@ msgstr "VNC 控制台启动时裁剪到窗口大小，不缩放"
 msgid "Network card model chosen first for a new VM (default: VirtIO)"
 msgstr "新建虚拟机默认选择的网卡型号（默认：VirtIO）"
 
+#: appsettings/migrations/0027_alert_settings.py:6
+msgid "Alert e-mail addresses"
+msgstr "告警邮件地址"
+
+#: appsettings/migrations/0027_alert_settings.py:7
+msgid ""
+"Comma-separated; mailed when a backup fails, is skipped, missing or damaged, "
+"or a job is uncertain"
+msgstr "逗号分隔；备份失败、被跳过、丢失或损坏，或作业状态不确定时发送邮件"
+
+#: appsettings/migrations/0027_alert_settings.py:8
+msgid "Alert webhook"
+msgstr "告警 Webhook"
+
+#: appsettings/migrations/0027_alert_settings.py:8
+msgid ""
+"An http(s) URL that gets the same alerts as a JSON POST (subject, text, time)"
+msgstr "以 JSON POST 接收相同告警的 http(s) URL（subject、text、time）"
+
 #: appsettings/models.py:10
 msgid "key"
 msgstr "键"
@@ -1869,88 +1888,97 @@ msgstr "更改主题"
 msgid "Save %(group_title)s"
 msgstr "保存%(group_title)s"
 
-#: appsettings/views.py:39
+#: appsettings/views.py:45
 msgid "New VM defaults"
 msgstr "新建虚拟机默认值"
 
-#: appsettings/views.py:42 instances/templates/instance.html:71
+#: appsettings/views.py:48 instances/templates/instance.html:71
 #: instances/templates/instances/destroy_instance_form.html:33
 #: instances/templates/instances/resize_tab.html:21
 #: instances/templates/instances/settings_tab.html:197
 msgid "Disks"
 msgstr "磁盘"
 
-#: appsettings/views.py:46
+#: appsettings/views.py:52
 msgid "Clones"
 msgstr "克隆"
 
-#: appsettings/views.py:47 console/templates/console-base.html:10
+#: appsettings/views.py:53 console/templates/console-base.html:10
 #: console/templates/console-base.html:23
 #: instances/templates/instance_actions.html:11
 #: instances/templates/instances/settings_tab.html:32
 msgid "Console"
 msgstr "控制台"
 
-#: appsettings/views.py:48
+#: appsettings/views.py:54
 msgid "VM access and owners"
 msgstr "虚拟机访问与所有者"
 
-#: appsettings/views.py:50
+#: appsettings/views.py:56
 msgid "Snapshots and jobs"
 msgstr "快照与任务"
 
-#: appsettings/views.py:52
+#: appsettings/views.py:58
 msgid "Login"
 msgstr "登录"
 
-#: appsettings/views.py:53
+#: appsettings/views.py:59
+msgid "Alerts"
+msgstr "告警"
+
+#: appsettings/views.py:60
 msgid "Lists and pages"
 msgstr "列表与页面"
 
-#: appsettings/views.py:61
+#: appsettings/views.py:68
 #, python-format
 msgid "%(setting)s takes at most %(length)s characters"
 msgstr "%(setting)s 最多 %(length)s 个字符"
 
-#: appsettings/views.py:66
+#: appsettings/views.py:73
 #, python-format
 msgid "%(setting)s must be a whole number between %(low)s and %(high)s"
 msgstr "%(setting)s 必须是 %(low)s 到 %(high)s 之间的整数"
 
-#: appsettings/views.py:69
+#: appsettings/views.py:76
 #, python-format
 msgid "%(setting)s must be one of %(choices)s"
 msgstr "%(setting)s 必须是以下之一：%(choices)s"
 
-#: appsettings/views.py:73
+#: appsettings/views.py:80
 #, python-format
 msgid "%(setting)s takes letters, digits and '-' only"
 msgstr "%(setting)s 只能包含字母、数字和 '-'"
 
-#: appsettings/views.py:82
+#: appsettings/views.py:90
+#, python-format
+msgid "%(setting)s: %(value)s is not an e-mail address or an http(s) URL"
+msgstr "%(setting)s：%(value)s 不是电子邮件地址或 http(s) URL"
+
+#: appsettings/views.py:99
 msgid "Disk I/O native needs disk cache none or directsync"
 msgstr "磁盘 I/O native 需要磁盘缓存为 none 或 directsync"
 
-#: appsettings/views.py:99
+#: appsettings/views.py:116
 #, python-format
 msgid "Unknown theme: %(theme)s"
 msgstr "未知主题：%(theme)s"
 
-#: appsettings/views.py:105
+#: appsettings/views.py:122
 #, python-format
 msgid "Theme is changed. Now: %(theme)s"
 msgstr "主题已更改。当前：%(theme)s"
 
-#: appsettings/views.py:140
+#: appsettings/views.py:159
 #, python-format
 msgid "Saved: %(settings)s"
 msgstr "已保存：%(settings)s"
 
-#: appsettings/views.py:142
+#: appsettings/views.py:161
 msgid "Nothing changed"
 msgstr "没有任何更改"
 
-#: appsettings/views.py:149 vrtManager/nodedevs.py:294
+#: appsettings/views.py:168 vrtManager/nodedevs.py:294
 #: vrtManager/nodedevs.py:333
 msgid "Other"
 msgstr "其他"
@@ -8196,15 +8224,46 @@ msgstr "此任务开始后无法取消"
 msgid "The job has already ended"
 msgstr "任务已经结束"
 
-#: operations/jobs.py:275
+#: operations/jobs.py:278
+#, python-format
+msgid "%(kind)s: %(resource)s"
+msgstr "%(kind)s：%(resource)s"
+
+#: operations/jobs.py:283
+msgid "No reason was given"
+msgstr "未给出原因"
+
+#: operations/jobs.py:285
+#, python-format
+msgid "Job ended uncertain: %(job)s"
+msgstr "作业以不确定状态结束：%(job)s"
+
+#: operations/jobs.py:286
+#, python-format
+msgid ""
+"Job #%(id)s (%(job)s) ended uncertain; it keeps what it holds until a "
+"superuser resolves it on its page. %(error)s"
+msgstr "作业 #%(id)s（%(job)s）以不确定状态结束；在超级用户于其页面上处理之前，它会保留所占用的资源。%(error)s"
+
+#: operations/jobs.py:289
+#, python-format
+msgid "Job failed: %(job)s"
+msgstr "作业失败：%(job)s"
+
+#: operations/jobs.py:290
+#, python-format
+msgid "Job #%(id)s (%(job)s) failed: %(error)s"
+msgstr "作业 #%(id)s（%(job)s）失败：%(error)s"
+
+#: operations/jobs.py:297
 msgid "Choose succeeded or failed"
 msgstr "请选择成功或失败"
 
-#: operations/jobs.py:278
+#: operations/jobs.py:300
 msgid "Write a note on what was checked"
 msgstr "请写下检查了哪些内容"
 
-#: operations/jobs.py:282
+#: operations/jobs.py:304
 msgid "Only an uncertain job can be resolved"
 msgstr "只能处理状态不确定的任务"
 
@@ -9788,7 +9847,12 @@ msgstr "由于备份的某个文件缺失、已更改或无法读取，未读取
 msgid "Check backup target"
 msgstr "检查备份目标"
 
-#: vmbackups/jobs.py:1600
+#: vmbackups/jobs.py:1603
+#, python-format
+msgid "Backups missing from %(target)s"
+msgstr "%(target)s 中缺少备份"
+
+#: vmbackups/jobs.py:1604 vmbackups/jobs.py:1606
 #, python-format
 msgid "Files of these backups are missing from the target: %(backups)s"
 msgstr "以下备份的文件在目标中缺失：%(backups)s"
@@ -9804,6 +9868,16 @@ msgstr "主机处于维护中"
 #: vmbackups/schedule.py:32
 msgid "The schedule's owner is no longer an active superuser"
 msgstr "该计划的所有者已不再是活动的超级用户"
+
+#: vmbackups/schedule.py:92
+#, python-format
+msgid "Scheduled backup not taken: %(vm)s"
+msgstr "未执行计划备份：%(vm)s"
+
+#: vmbackups/schedule.py:93
+#, python-format
+msgid "The schedule %(schedule)s did not back up %(vm)s on %(day)s: %(reason)s"
+msgstr "计划 %(schedule)s 未在 %(day)s 备份 %(vm)s：%(reason)s"
 
 #: vmbackups/templates/vmbackups/consistency.html:1
 msgid "While shut off"

@@ -19,6 +19,8 @@ from operations.jobs import Context
 from operations.models import Operation, acquire
 from operations.utils import words
 from vmbackups import schedule
+from appsettings.models import AppSettings
+from operations.models import Alert
 from vmbackups.jobs import CheckTarget, DeleteBackup, _beyond_keep
 from vmbackups.models import Backup, BackupFile, BackupPolicy, BackupRun, BackupTarget, BackupTargetPool
 from vrtManager.util import OperationError
@@ -212,11 +214,24 @@ class ScheduleTests(TransactionTestCase):
         self.assertEqual(self.creates(), [])
 
     def test_a_run_not_started_in_its_window_is_skipped(self):
+        AppSettings.objects.update_or_create(key="ALERT_EMAILS", defaults={"value": "ops@example.com"})
         self.pass_at(at(2026, 11, 17, 8, 1))  # the worker was down from before 02:00
         run = BackupRun.objects.get()
         self.assertEqual(run.state, BackupRun.SKIPPED)
         self.assertIn("6 hours", words(run.note))
         self.assertEqual(self.creates(), [])
+        (notice,) = Alert.objects.all()  # once, with the reason
+        self.assertEqual(words(notice.subject), "Scheduled backup not taken: vm1")
+        self.assertIn("6 hours", words(notice.text))
+        self.pass_at(at(2026, 11, 17, 8, 2))
+        self.assertEqual(Alert.objects.count(), 1)
+
+    def test_a_skip_for_a_host_in_maintenance_is_no_alert(self):
+        AppSettings.objects.update_or_create(key="ALERT_EMAILS", defaults={"value": "ops@example.com"})
+        Compute.objects.filter(pk=self.c1.pk).update(maintenance_since=at(2026, 11, 16))
+        self.pass_at(at(2026, 11, 17, 8, 1))
+        self.assertEqual(BackupRun.objects.get().state, BackupRun.SKIPPED)
+        self.assertFalse(Alert.objects.exists())
 
     def test_a_new_schedule_does_not_skip_the_times_before_it(self):
         BackupPolicy.objects.filter(pk=self.policy.pk).update(created_at=at(2026, 11, 17, 10))
@@ -576,8 +591,13 @@ class ScheduleTests(TransactionTestCase):
         Backup.objects.filter(pk=top.pk).update(parent=base)
         for b in (base, top):
             BackupFile.objects.create(backup=b, role=BackupFile.DISK, dev="vda", volume=f"{b.prefix}-vda.qcow2")
+        AppSettings.objects.update_or_create(key="ALERT_EMAILS", defaults={"value": "ops@example.com"})
         self.run_check([f"{base.prefix}-manifest.json", f"{top.prefix}-vda.qcow2", f"{top.prefix}-manifest.json"])
         self.assertEqual(Backup.objects.get(pk=top.pk).state, Backup.MISSING)
+        (notice,) = Alert.objects.all()  # found missing now: told once
+        self.assertEqual(words(notice.subject), "Backups missing from nfs1")
+        self.run_check([f"{base.prefix}-manifest.json", f"{top.prefix}-vda.qcow2", f"{top.prefix}-manifest.json"])
+        self.assertEqual(Alert.objects.count(), 1)
 
     def test_a_check_that_reaches_no_pool_marks_nothing(self):
         (backup,) = self.backups(Backup.READY)

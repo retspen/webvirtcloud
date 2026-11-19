@@ -138,3 +138,17 @@ def fenced(holder):
         if not WorkerLease.objects.select_for_update().filter(name="worker", holder=holder).exists():
             raise LeaseLost(holder)
         yield
+
+
+class Alert(models.Model):
+    """A notice for the operator (operations.alerts), sent by the worker's periodic pass: by mail to the alert
+    addresses and as a POST to the alert webhook of the Settings page."""
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    subject = models.JSONField()  # messages (operations.utils.say)
+    text = models.JSONField()
+    mailed = models.BooleanField(default=False)
+    posted = models.BooleanField(default=False)
+    sent_at = models.DateTimeField(null=True)  # every channel set took it
+    tries = models.PositiveSmallIntegerField(default=0)
+    error = models.TextField(blank=True)  # the last try's

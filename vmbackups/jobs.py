@@ -27,7 +27,7 @@ from computes.models import Compute
 from instances.jobs import MOVED, PAUSED_FROZEN, THAW_FAILED, _instance, _log, _snapshot_free_space, record_vm, vm_claims
 from instances.utils import QUOTA_UNVERIFIED, paths_used_on_other_computes, QUOTA_UNVERIFIED_TEXT, check_user_quota, get_random_mac_address, quota_message
 from instances.models import Instance
-from operations import claims
+from operations import alerts, claims
 from operations.jobs import Cancelled, Kind, Outcome, Plan, register, register_periodic
 from operations.models import Claim, Operation
 from operations.utils import safe_text, say
@@ -1581,21 +1581,27 @@ class CheckTarget(Kind):
         pool.refresh(0)
         present = set(pool.listVolumes())
         settled = timezone.now() - CHECK_SETTLE
-        missing = []
-        for backup in target.backups.filter(state__in=(Backup.READY, Backup.MISSING)).prefetch_related("files"):
-            needed = {f.volume for f in backup.files.all()} | {f"{backup.prefix}-manifest.json"}
-            try:
-                needed |= {f["volume"] for f in _base_files(backup)}  # a restore copies the chain flat
-                state = Backup.READY if needed <= present else Backup.MISSING
-            except util.OperationError:  # its base's row is gone
-                state = Backup.MISSING
-            if state == Backup.MISSING and backup.state == Backup.READY and (backup.finished_at or settled) > settled:
-                continue  # just written through another compute: this one may not list its files yet (NFS)
-            if state == Backup.MISSING:
-                missing.append(f"{backup.vm_name} {timezone.localtime(backup.created_at):%Y-%m-%d %H:%M}")
-            # only from the state read: a deletion begun meanwhile is left alone
-            Backup.objects.filter(pk=backup.pk, state=backup.state).update(state=state)
-        BackupTarget.objects.filter(pk=target.pk).update(checked_at=timezone.now())
+        missing, lost = [], []  # lost: found missing at this check
+        # the states and their alert together: a worker stopped between them loses no alert
+        with transaction.atomic():
+            for backup in target.backups.filter(state__in=(Backup.READY, Backup.MISSING)).prefetch_related("files"):
+                needed = {f.volume for f in backup.files.all()} | {f"{backup.prefix}-manifest.json"}
+                try:
+                    needed |= {f["volume"] for f in _base_files(backup)}  # a restore copies the chain flat
+                    state = Backup.READY if needed <= present else Backup.MISSING
+                except util.OperationError:  # its base's row is gone
+                    state = Backup.MISSING
+                if state == Backup.MISSING and backup.state == Backup.READY and (backup.finished_at or settled) > settled:
+                    continue  # just written through another compute: this one may not list its files yet (NFS)
+                if state == Backup.MISSING:
+                    missing.append(f"{backup.vm_name} {timezone.localtime(backup.created_at):%Y-%m-%d %H:%M}")
+                # only from the state read: a deletion begun meanwhile is left alone
+                if Backup.objects.filter(pk=backup.pk, state=backup.state).update(state=state) and backup.state != state == Backup.MISSING:
+                    lost.append(missing[-1])
+            BackupTarget.objects.filter(pk=target.pk).update(checked_at=timezone.now())
+            if lost:
+                alerts.alert(say(_("Backups missing from %(target)s"), target=target.name),
+                             say(_("Files of these backups are missing from the target: %(backups)s"), backups=", ".join(lost)))
         if missing:
             return {"warning": say(_("Files of these backups are missing from the target: %(backups)s"),
                                    backups=", ".join(missing))}

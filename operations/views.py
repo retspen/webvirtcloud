@@ -1,11 +1,14 @@
 from urllib.parse import urlencode
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_not_required
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.http import Http404
+from django.db import Error as DatabaseError
+from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from vrtManager.util import OperationError
 
@@ -84,3 +87,16 @@ def resolve(request, pk):
     except OperationError as err:
         messages.error(request, words(said(err)))
     return redirect("operations:job", pk=op.pk)
+
+
+@login_not_required
+@never_cache
+def healthz(request):
+    """For a monitor, without a login: 200 while the database answers and the job worker runs, 503 otherwise."""
+    try:
+        seen = last_seen()
+    except DatabaseError:
+        return JsonResponse({"database": False, "worker": False}, status=503)
+    running = not worker_gone(seen)
+    return JsonResponse({"database": True, "worker": running, "worker_seen": seen and seen.isoformat()},
+                        status=200 if running else 503)

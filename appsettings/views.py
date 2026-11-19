@@ -1,8 +1,11 @@
 import re
+from urllib.parse import urlsplit
 from pathlib import Path
 
 from admin.decorators import superuser_only
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator, validate_email
 from django.contrib import messages
 from django.db import DatabaseError, transaction
 from django.http import HttpResponseRedirect
@@ -33,6 +36,9 @@ NUMBERS = {
 }
 
 
+# settings whose values the audit log does not show
+SECRET_SETTINGS = {"ALERT_WEBHOOK"}
+
 # the Settings page's groups, in order; a setting in none shows under Other. The
 # titles stay English here: the page links them by slug and translates them
 GROUPS = [
@@ -50,6 +56,7 @@ GROUPS = [
     (gettext_noop("Snapshots and jobs"), ["SNAPSHOT_FREE_SPACE_PERCENT", "SNAPSHOT_FREE_SPACE_MIN_GIB",
                                "WORKER_CONCURRENCY", "JOB_RETENTION_DAYS"]),
     (gettext_noop("Login"), ["LOGIN_FAILURE_LIMIT", "LOGIN_LOCKOUT_MINUTES"]),
+    (gettext_noop("Alerts"), ["ALERT_EMAILS", "ALERT_WEBHOOK"]),
     (gettext_noop("Lists and pages"), ["VIEW_INSTANCES_LIST_STYLE", "VM_DRBD_STATUS", "LOGS_PER_PAGE",
                                          "LOG_RETENTION_DAYS"]),
 ]
@@ -71,6 +78,16 @@ def refusal(setting, value):
     elif setting.key == "CLONE_INSTANCE_DEFAULT_PREFIX" and not re.fullmatch(r"[a-zA-Z0-9-]+", value):
         # a clone's name is the prefix and a number, and takes only these
         return _("%(setting)s takes letters, digits and '-' only") % {"setting": setting.name}
+    try:
+        if setting.key == "ALERT_EMAILS":
+            for address in filter(None, (a.strip() for a in value.split(","))):
+                validate_email(address)
+        elif setting.key == "ALERT_WEBHOOK" and value.strip():
+            URLValidator(schemes=["http", "https"])(value.strip())
+            if "@" in urlsplit(value.strip()).netloc:  # urllib would take user:password@ for the host
+                raise ValidationError("credentials in the URL")
+    except ValidationError:
+        return _("%(setting)s: %(value)s is not an e-mail address or an http(s) URL") % {"setting": setting.name, "value": value}
     return None
 
 
@@ -121,7 +138,9 @@ def appsettings(request):
         for refused in refusals:
             messages.error(request, refused)
         if changed and not refusals:
-            action = "change " + ", ".join(f"{s.name} to {value}" for s, value in changed)
+            # a webhook URL is a secret of its own (Slack's): not in the log
+            action = "change " + ", ".join(f"{s.name} to {'(not shown)' if s.key in SECRET_SETTINGS else value}"
+                                           for s, value in changed)
             try:
                 # one row, and all of the group or none of it
                 with audit(request, None, "Settings", action), transaction.atomic():

@@ -8,7 +8,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 
 from django.contrib.auth import get_user_model
-from django.db import close_old_connections
+from django.db import close_old_connections, transaction
 from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 from django.utils.translation import gettext_noop as _
@@ -16,7 +16,7 @@ from libvirt import libvirtError
 
 from computes.models import Compute
 from computes.utils import refresh_instance_database
-from operations import claims, jobs
+from operations import alerts, claims, jobs
 from operations.models import Operation
 from operations.utils import safe_text, said, say
 from vrtManager.util import ConnectionFailed
@@ -57,7 +57,8 @@ def run_schedules(now=None):
                     continue
                 in_maintenance = Compute.objects.filter(pk=vm.compute_id, maintenance_since__isnull=False).exists()
                 if not open_:
-                    _record(policy, vm, day, BackupRun.SKIPPED, say(IN_MAINTENANCE if in_maintenance else NOT_STARTED))
+                    _record(policy, vm, day, BackupRun.SKIPPED, say(IN_MAINTENANCE if in_maintenance else NOT_STARTED),
+                            quiet=in_maintenance)  # the operator put the host in maintenance
                 elif not in_maintenance:  # deferred while the window lasts
                     due.setdefault(vm.compute_id, []).append((policy.pk, vm.pk, day, start))
     for compute_id in due.keys() | read.keys():
@@ -82,9 +83,15 @@ def occurrences(policy, now):
             yield day, start
 
 
-def _record(policy, vm, day, state, note=(), operation=None):
-    BackupRun.objects.get_or_create(policy=policy, instance=vm, day=day,
-                                    defaults={"state": state, "note": list(note), "operation": operation})
+def _record(policy, vm, day, state, note=(), operation=None, quiet=False):
+    """The run of the day; one not submitted is an alert unless quiet."""
+    with transaction.atomic():  # the run and its alert together: a worker stopped between them loses neither
+        _run, made = BackupRun.objects.get_or_create(policy=policy, instance=vm, day=day,
+                                                     defaults={"state": state, "note": list(note), "operation": operation})
+        if made and state != BackupRun.SUBMITTED and not quiet:
+            alerts.alert(say(_("Scheduled backup not taken: %(vm)s"), vm=vm.name),
+                         say(_("The schedule %(schedule)s did not back up %(vm)s on %(day)s: %(reason)s"),
+                             schedule=policy.name, vm=vm.name, day=day.isoformat(), reason=list(note)))
 
 
 def _active_superuser(user):
