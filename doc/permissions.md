@@ -24,7 +24,9 @@ WebVirtCloud combines three kinds of access rights:
 | Disks and media (add, attach, edit, detach, delete volumes; CD-ROM/ISO) | ✅ | ❌ | — | ❌ |
 | Network interfaces, boot options, vCPU hotplug, autostart, guest agent, suspend/resume, migrate, raw XML, owners | ✅ | ❌ | — | ❌ |
 | Set tags (owners and `view_instances` see them) | ✅ | ❌ | — | ❌ |
-| Backups: back up, restore, delete; backup targets | ✅ | ❌ | — | ❌ |
+| Backups: back up (within the backup quota), restore over the VM or as a new VM (within the VM quota), into and from targets open to VM owners | ✅ | ✅ | `is_change` and `instances.backup_instances` | ❌ |
+| Delete a backup one took by hand (not a schedule's) on a target open to VM owners | ✅ | ✅ | `instances.backup_instances` (ownership not needed) | ❌ |
+| Backup targets and schedules | ✅ | ❌ | — | ❌ |
 
 Notes:
 
