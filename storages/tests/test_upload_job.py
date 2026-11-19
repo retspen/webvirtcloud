@@ -673,7 +673,7 @@ class UploadViewTests(LocalPool, UploadTestCase):
         self.post(0, total=2, size="6")
         response = self.post(0, total=2, size="6", key="upload-key-0002")
         self.assertEqual(response.status_code, 400)
-        self.assertIn("Upload ISO image is running on this resource", response.json()["error"])
+        self.assertRegex(response.json()["error"], r"^Upload ISO image \(.+\) is running on this resource")
 
     def test_submission_keys_are_per_user(self):
         self.post(0, total=2, size="6")

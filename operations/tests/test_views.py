@@ -28,6 +28,20 @@ class BusyMessageTestCase(SimpleTestCase):
         self.assertIn(" çalışıyor ", text)
         self.assertNotIn("running", text)
 
+    def test_the_job_in_the_way_is_named_with_what_it_works_on_to_who_may_see_it(self):
+        from types import SimpleNamespace
+
+        from operations.utils import busy_message
+        op = Operation(kind="backup.verify", state=Operation.RUNNING, created_at=django_timezone.now(), user_id=2,
+                       username="admin", resource_label="vm1 2026-11-19 16:00")
+        text = busy_message(SimpleNamespace(blocker=op), SimpleNamespace(is_superuser=True, pk=1))
+        self.assertTrue(text.startswith("Verify backup (vm1 2026-11-19 16:00) is running on this resource"), text)
+        text = busy_message(SimpleNamespace(blocker=op), SimpleNamespace(is_superuser=False, pk=1))
+        self.assertTrue(text.startswith("Verify backup is running on this resource"), text)
+        # kept in an audit row, which a VM's owner may read
+        text = busy_message(SimpleNamespace(blocker=op), SimpleNamespace(is_superuser=True, pk=1), named=False)
+        self.assertTrue(text.startswith("Verify backup is running on this resource"), text)
+
 
 class StateColorsTestCase(SimpleTestCase):
     def test_every_state_has_its_colour(self):

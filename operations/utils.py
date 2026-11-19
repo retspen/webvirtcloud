@@ -191,12 +191,16 @@ def summary(op, user):
     return base
 
 
-def busy_message(busy, user):
+def busy_message(busy, user, named=True):
+    """Why busy refused user. named: with what the job in the way works on; not in a text kept where others
+    read it (an audit row, a job's error)."""
     op = busy.blocker
     if op is None:
         return _("A short operation is in progress on this resource; try again in a moment.")
     values = {"label": _(jobs.label_of(op.kind)), "state": pgettext("job state", op.state), "since": timesince(op.created_at, timezone.now())}
     if may_see(op, user):
+        if named and op.resource_label:  # which backup, VM or volume it works on: one in the way may be another
+            values["label"] = f"{values['label']} ({shown_label(op, user)})"
         return _("%(label)s is %(state)s on this resource (started by %(user)s, %(since)s ago); "
                  "see the Jobs page.") % {**values, "user": op.username}
     return _("%(label)s is %(state)s on this resource (since %(since)s).") % values

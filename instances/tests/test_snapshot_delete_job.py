@@ -1,6 +1,7 @@
 """External snapshot delete is a job: the request queues it; the worker
 deletes through libvirt; recovery follows the reconcile table."""
 
+import re
 from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -72,7 +73,7 @@ class SnapshotDeleteJobTestCase(TransactionTestCase):
         self.post(key="key-00000001")
         response = self.post(key="key-00000002")
         self.assertEqual(Operation.objects.count(), 1)
-        self.assertTrue(any("Delete snapshot is queued" in str(m) for m in response.wsgi_request._messages))
+        self.assertTrue(any(re.match(r"Delete snapshot \(.+\) is queued", str(m)) for m in response.wsgi_request._messages))
 
     def test_a_long_name_is_kept_whole(self):
         # its truncated prefix could name another snapshot

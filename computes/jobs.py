@@ -110,7 +110,7 @@ class Migrations(Kind):
                 except claims.Busy as busy:
                     if busy.blocker is not None and busy.blocker.state == Operation.UNCERTAIN:
                         # it holds its claims until someone resolves it
-                        refused.append(f"{names[vm]}: {utils.busy_message(busy, op.user)}")
+                        refused.append(f"{names[vm]}: {utils.busy_message(busy, op.user, named=False)}")
                     else:
                         waiting.append(move)  # another job holds the VM or a host: asked again on the next round
                 except Exception as err:
