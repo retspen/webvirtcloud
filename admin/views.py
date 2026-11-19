@@ -483,7 +483,10 @@ def _retag_removed_vms(old, new):
                 tombstone.tags = [new if name == old else name for name in tombstone.tags]
             else:
                 tombstone.tags = [name for name in tombstone.tags if name != old]
-            tombstone.save(update_fields=["tags"])
+            if tombstone.tags or tombstone.owners or tombstone.is_template:
+                tombstone.save(update_fields=["tags"])
+            else:  # kept only for the tag (computes.utils._bury)
+                tombstone.delete()
 
 
 @superuser_only
@@ -497,7 +500,7 @@ def tag_update(request, pk):
         try:
             with audit(request, None, f"Tag {old}", f"rename to {form.cleaned_data['name']}"), transaction.atomic():
                 lock_ownership()
-                current = Tag.objects.values_list("name", flat=True).get(pk=pk)  # another rename may have come first
+                current = get_object_or_404(Tag, pk=pk).name  # another rename or a delete may have come first
                 form.save()
                 _retag_removed_vms(current, tag.name)
         except IntegrityError:  # the name was given to another tag meanwhile

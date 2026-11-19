@@ -27,7 +27,10 @@
                 {% if "login" in form.fields %}<div class="col-md-6">{% bootstrap_field form.login %}</div>{% endif %}
                 {% if "password" in form.fields %}<div class="col-md-6">{% bootstrap_field form.password %}</div>{% endif %}
                 <div class="col-12">{% bootstrap_field form.details %}</div>
-                <div class="col-12">{% bootstrap_field form.tags %}</div>
+                <div class="col-12">{% bootstrap_field form.tags %}
+                    {# the tags shown, sent back to tell them from a change (TagsField); bootstrap_field leaves them out #}
+                    {% for name in form.tags.initial %}<input type="hidden" name="{{ form.tags.html_initial_name }}" value="{{ name }}">{% endfor %}
+                </div>
             </div>
             {# open when one of them is set or refused #}
             <details class="border-top pt-3"{% if form.migration_address.value or form.migration_address.errors or form.gstfsd_key.errors %} open{% endif %}>

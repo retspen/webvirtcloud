@@ -42,16 +42,22 @@ class TagsWidget(forms.SelectMultiple):
 
 
 class TagsField(forms.Field):
-    """Tag names, each once and in lower case; the tags are made when saved (Tag.named)."""
+    """Tag names, each once and in lower case; the tags are made when saved (Tag.named).
+    The form carries the names it showed: sent back unchanged, they are not set again,
+    so a form shown before a tag was renamed or deleted does not undo that."""
 
     widget = TagsWidget
+    hidden_widget = forms.MultipleHiddenInput
 
     def __init__(self, **kwargs):
-        super().__init__(required=False, label=_("Tags"), **kwargs)
+        super().__init__(required=False, label=_("Tags"), show_hidden_initial=True, **kwargs)
 
     def to_python(self, value):
         names = [str(name).strip().lower() for name in value or ()]
         return list(dict.fromkeys(name for name in names if name))
+
+    def has_changed(self, initial, data):
+        return set(self.to_python(initial)) != set(self.to_python(data))
 
     def validate(self, value):
         for name in value:
@@ -70,7 +76,10 @@ class ComputeTagsMixin:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["tags"] = TagsField()
-        if self.instance.pk:
+        if self.is_bound:  # shown again (an error): the tags first shown, still to tell them from a change
+            self.initial["tags"] = self["tags"].field.hidden_widget().value_from_datadict(
+                self.data, self.files, self["tags"].html_initial_name)
+        elif self.instance.pk:
             self.initial["tags"] = list(self.instance.tags.values_list("name", flat=True))
 
     def save(self, commit=True):
@@ -78,7 +87,7 @@ class ComputeTagsMixin:
         with transaction.atomic():
             lock_ownership()
             compute = super().save(commit)
-            if commit:
+            if commit and "tags" in self.changed_data:
                 compute.tags.set(Tag.named(self.cleaned_data["tags"]))
         return compute
 

@@ -93,8 +93,39 @@ class HostTagsTests(TestCase):
         self.assertEqual(sorted(compute.tags.values_list("name", flat=True)), ["gpu", "rack-1"])
 
         self.client.post(reverse("compute_update", args=[compute.id]),
-                         {"name": "kvm1", "hostname": "192.0.2.1", "login": "wvc", "password": "", "details": ""})
+                         {"name": "kvm1", "hostname": "192.0.2.1", "login": "wvc", "password": "", "details": "",
+                          "initial-tags": ["gpu", "rack-1"]})
         self.assertFalse(compute.tags.exists())
+
+    def test_a_form_shown_before_a_rename_keeps_the_new_name(self):
+        compute = Compute.objects.create(name="kvm1", hostname="192.0.2.1", login="wvc", password="pw", type=1)
+        compute.tags.add(Tag.objects.create(name="prod"))
+        # the form carries the tags it showed, and sends them back unchanged
+        self.assertContains(self.client.get(reverse("compute_update", args=[compute.id])),
+                            '<input type="hidden" name="initial-tags" value="prod">', html=True)
+        Tag.objects.filter(name="prod").update(name="production")  # the Tags page renames it meanwhile
+        self.client.post(reverse("compute_update", args=[compute.id]),
+                         {"name": "kvm1b", "hostname": "192.0.2.1", "login": "wvc", "password": "", "details": "",
+                          "tags": ["prod"], "initial-tags": ["prod"]})
+        compute.refresh_from_db()
+        self.assertEqual((compute.name, list(compute.tags.values_list("name", flat=True))), ("kvm1b", ["production"]))
+        self.assertFalse(Tag.objects.filter(name="prod").exists())
+
+    def test_a_form_shown_again_with_an_error_carries_the_tags_first_shown(self):
+        compute = Compute.objects.create(name="kvm1", hostname="192.0.2.1", login="wvc", password="pw", type=1)
+        compute.tags.add(Tag.objects.create(name="production"))  # renamed from prod since the form was shown
+        response = self.client.post(reverse("compute_update", args=[compute.id]),
+                                    {"name": "kvm1", "hostname": "bad host", "login": "wvc", "password": "",
+                                     "details": "", "tags": ["prod"], "initial-tags": ["prod"]})
+        self.assertContains(response, '<input type="hidden" name="initial-tags" value="prod">', html=True)
+
+    def test_the_same_tags_in_another_order_are_no_change(self):
+        compute = Compute.objects.create(name="kvm1", hostname="192.0.2.1", login="wvc", password="pw", type=1)
+        compute.tags.add(Tag.objects.create(name="production"))
+        self.client.post(reverse("compute_update", args=[compute.id]),
+                         {"name": "kvm1", "hostname": "192.0.2.1", "login": "wvc", "password": "", "details": "",
+                          "tags": ["b", "a"], "initial-tags": ["a", "b"]})
+        self.assertEqual(list(compute.tags.values_list("name", flat=True)), ["production"])
 
     def test_a_tag_deleted_meanwhile_is_made_again(self):
         compute = Compute.objects.create(name="kvm1", hostname="192.0.2.1", login="wvc", password="pw", type=1)

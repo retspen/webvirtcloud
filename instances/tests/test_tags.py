@@ -23,10 +23,13 @@ class VmTagsTests(TestCase):
         self.vm = Instance.objects.create(compute=compute, name="vt-vm", uuid="12345678-0000-0000-0000-00000000bbbb")
         UserInstance.objects.create(user=self.owner, instance=self.vm, is_change=True)
 
-    def post(self, user, tags):
+    def post(self, user, tags, shown=None):
+        """tags sent from a form that showed shown (the VM's tags now if None)"""
         self.client.force_login(user)
+        if shown is None:
+            shown = self.names()
         with patch("instances.models.wvmInstance"):
-            return self.client.post(reverse("instances:set_tags", args=[self.vm.id]), {"tags": tags})
+            return self.client.post(reverse("instances:set_tags", args=[self.vm.id]), {"tags": tags, "initial-tags": shown})
 
     def names(self):
         return sorted(self.vm.tags.values_list("name", flat=True))
@@ -44,6 +47,18 @@ class VmTagsTests(TestCase):
         self.post(self.admin, ["prod"])
         self.post(self.admin, ["PROD"])
         self.assertEqual(Logs.objects.filter(message__startswith="VM vt-vm: tags").count(), 1)
+
+    def test_a_form_shown_before_a_rename_keeps_the_new_name(self):
+        self.vm.tags.add(Tag.objects.create(name="prod"))
+        Tag.objects.filter(name="prod").update(name="production")  # the Tags page renames it meanwhile
+        self.post(self.admin, ["prod"], shown=["prod"])
+        self.assertEqual(self.names(), ["production"])
+        self.assertFalse(Tag.objects.filter(name="prod").exists())
+        self.assertFalse(Logs.objects.filter(message__startswith="VM vt-vm: tags").exists())
+
+    def test_the_form_carries_the_tags_it_showed(self):
+        from computes.forms import TagsForm
+        self.assertIn('name="initial-tags" value="prod"', str(TagsForm(initial={"tags": ["prod"]})["tags"]))
 
     def test_a_bad_name_changes_nothing(self):
         self.vm.tags.add(Tag.objects.create(name="prod"))

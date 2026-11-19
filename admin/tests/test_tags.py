@@ -95,6 +95,16 @@ class TagAdminTests(TestCase):
         self.tombstone.refresh_from_db()
         self.assertEqual(self.tombstone.tags, ["db"])
 
+    def test_a_tag_deleted_while_its_rename_waits_is_not_found(self):
+        with self.meanwhile(lambda: Tag.objects.filter(pk=self.prod.pk).delete()):
+            response = self.client.post(reverse("admin:tag_update", args=[self.prod.pk]), {"name": "live"})
+        self.assertEqual(response.status_code, 404)
+
+    def test_a_removed_vm_kept_only_for_the_deleted_tag_goes(self):
+        InstanceTombstone.objects.create(uuid="12345678-0000-0000-0000-00000000dd03", name="tagged-only", tags=["prod"])
+        self.client.post(reverse("admin:tag_delete", args=[self.prod.pk]))
+        self.assertEqual(list(InstanceTombstone.objects.values_list("name", flat=True)), ["gone"])
+
     def test_a_name_taken_meanwhile_is_refused(self):
         with self.meanwhile(lambda: Tag.objects.create(name="live")):
             response = self.client.post(reverse("admin:tag_update", args=[self.prod.pk]), {"name": "live"})

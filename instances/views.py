@@ -2410,7 +2410,7 @@ def set_tags(request, pk):
     with audit_vm(request, instance, f"tags {', '.join(sorted(names)) or 'none'}") as entry, transaction.atomic():
         lock_ownership()  # not while the VM's tags are kept or given back (computes.utils.forget)
         moved = _moved_meanwhile(pk, instance)  # its host's list may have dropped it meanwhile
-        entry.skip = moved or set(names) == set(instance.tags.values_list("name", flat=True))
+        entry.skip = moved or not form.has_changed() or set(names) == set(instance.tags.values_list("name", flat=True))
         if not entry.skip:
             instance.tags.set(Tag.named(names))
     return _moved(request, pk) if moved else _back(request, pk, "options")

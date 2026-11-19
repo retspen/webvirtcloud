@@ -118,9 +118,11 @@ if (typeof module !== "undefined") {
     if (tags) {
         try {
             var keptTag = sessionStorage.getItem(key + "_tag") || "";
-            // a tag no row has any longer is not chosen
+            // a tag no row has any longer is forgotten: made again later, it is not chosen by itself
             if (Array.prototype.some.call(tags.options, function (option) { return option.value === keptTag; })) {
                 tags.value = keptTag;
+            } else {
+                keep("", key + "_tag");
             }
         } catch (e) {
             // storage turned off: all tags
@@ -129,6 +131,8 @@ if (typeof module !== "undefined") {
             keep(tags.value, key + "_tag");
             filterTable(document);
         });
+    } else {
+        keep("", key + "_tag");  // no row has a tag: none is kept to come back later
     }
     document.addEventListener("click", function (event) {
         var more = event.target.closest("[data-show-tags]");

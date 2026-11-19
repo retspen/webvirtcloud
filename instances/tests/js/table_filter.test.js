@@ -164,3 +164,23 @@ assert.deepStrictEqual(visible(turkish), ["Şişli"]);
     listeners.click({target: {closest: (s) => (s === "[data-show-tags]" ? ellipsis : null)}});
     assert.deepStrictEqual([others.hidden, ellipsis.hidden, focused], [false, true, "d4"]);
 }
+
+// a kept tag the list no longer has is forgotten: made again later, it is not chosen by itself
+{
+    const vmModule = require("vm");
+    const fs = require("fs");
+    const stored = {"VMs_filter_tag": "prod"};
+    const elements = {
+        filter: {value: "", hasAttribute: () => false, addEventListener() {}},
+        "tag-filter": {value: "", options: [{value: ""}], addEventListener() {}},
+    };
+    const doc = {title: "VMs", getElementById: (id) => elements[id], querySelectorAll: () => [], addEventListener() {}};
+    const storage = {getItem: (k) => stored[k] || null, setItem: (k, v) => { stored[k] = v; }, removeItem: (k) => { delete stored[k]; }};
+    vmModule.runInNewContext(fs.readFileSync(process.argv[2], "utf8"), {document: doc, sessionStorage: storage});
+    assert.deepStrictEqual([elements["tag-filter"].value, stored], ["", {}]);
+    // nor when the list has no tag left to offer (no tag list on the page)
+    stored["VMs_filter_tag"] = "prod";
+    delete elements["tag-filter"];
+    vmModule.runInNewContext(fs.readFileSync(process.argv[2], "utf8"), {document: doc, sessionStorage: storage});
+    assert.deepStrictEqual(stored, {});
+}
