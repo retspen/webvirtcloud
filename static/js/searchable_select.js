@@ -8,23 +8,32 @@ document.querySelectorAll("select[data-searchable]").forEach(function (select) {
 });
 
 // A <select multiple data-tags>: the tags there are, and a new one typed (the
-// server checks it), in lower case as the tags are kept: "Prod" is "prod";
-// a new one of at most 12 characters (computes.models.TAG_LENGTH).
+// server checks it) of at most 12 characters (computes.models.TAG_LENGTH), as
+// the tags are kept: without the spaces a paste brings, in lower case ("Prod"
+// is "prod"). A name that cannot be a tag gets the rule (data-rule), not silence.
+function tagName(input) {
+    return input.trim().toLowerCase();
+}
+function isTagName(input) {
+    return /^[a-z0-9][a-z0-9._-]{0,11}$/.test(tagName(input));
+}
 document.querySelectorAll("select[data-tags]").forEach(function (select) {
     new TomSelect(select, {
         create: function (input) {
-            return {value: input.toLowerCase(), text: input.toLowerCase()};
+            return {value: tagName(input), text: tagName(input)};
         },
         createFilter: function (input) {
-            return /^[A-Za-z0-9][A-Za-z0-9._-]{0,11}$/.test(input) && !this.options[input.toLowerCase()];
+            return isTagName(input) && !Object.hasOwn(this.options, tagName(input));
         },
         persist: false,
         render: {
-            // the page's own words (data-add): the library's are English
+            // the page's own words (data-add, data-rule): the library's are English
             option_create: function (data, escape) {
-                return '<div class="create">' + escape(select.dataset.add.replace("%(tag)s", data.input.toLowerCase())) + "</div>";
+                return '<div class="create">' + escape(select.dataset.add.replace("%(tag)s", tagName(data.input))) + "</div>";
             },
-            no_results: null,
+            no_results: function (data, escape) {
+                return isTagName(data.input) ? null : '<div class="no-results">' + escape(select.dataset.rule) + "</div>";
+            },
         },
     });
 });

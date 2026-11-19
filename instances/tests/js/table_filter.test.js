@@ -150,7 +150,7 @@ function run(elements, stored) {
     return listeners.click;
 }
 const listPage = () => ({
-    filter: {value: "", hasAttribute: () => false, addEventListener() {}},
+    filter: {value: "", hasAttribute: () => false, addEventListener() {}, focus() { this.focused = true; }},
     "state-filter": {value: "", addEventListener() {}},
     "state-pills": pillRow(["", "Active", "Off"]),
     "tag-filter": {value: ""},
@@ -180,6 +180,15 @@ const listPage = () => ({
     const plain = {hidden: true, querySelector: () => null, focus: () => { focused = "plain"; }};
     click({target: {closest: (s) => (s === "[data-show-tags]" ? {hidden: false, nextElementSibling: plain} : null)}});
     assert.strictEqual(focused, "plain");
+}
+
+// "Clear the filters" hides with the message it is in: the search box takes the focus
+{
+    const elements = listPage();
+    elements["clear-filters"] = {addEventListener: (name, fn) => { elements["clear-filters"].click = fn; }};
+    run(elements, {"VMs_filter_tag": "prod"});
+    elements["clear-filters"].click();
+    assert.deepStrictEqual([elements["tag-filter"].value, elements.filter.focused], ["", true]);
 }
 
 // a kept tag no pill has any longer is forgotten: made again later, it is not chosen by itself

@@ -33,8 +33,10 @@ class TagsWidget(forms.SelectMultiple):
     """The tags there are and those given, to choose from or add to (Tom Select)."""
 
     def __init__(self):
-        # Tom Select's line for a new name typed (searchable_select.js)
-        super().__init__(attrs={"data-tags": "", "data-add": _("Add tag %(tag)s")})
+        # Tom Select's line for a new name typed, and for one that cannot be a tag (searchable_select.js)
+        super().__init__(attrs={"data-tags": "", "data-add": _("Add tag %(tag)s"), "data-rule": _(
+            "A new tag: letters a-z, digits, dots, dashes and underscores, beginning with a letter or digit; "
+            "at most 12 characters")})
 
     def optgroups(self, name, value, attrs=None):
         self.choices = [(n, n) for n in sorted(set(Tag.objects.values_list("name", flat=True)) | set(value))]

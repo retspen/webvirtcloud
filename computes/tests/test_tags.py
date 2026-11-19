@@ -35,6 +35,9 @@ class TagsFieldTests(TestCase):
         with translation.override("tr"):
             html = TagsForm().as_p()
         self.assertIn('data-add="Etiket ekle: %(tag)s"', html)
+        # and what a new name may be, shown when the one typed cannot be a tag
+        self.assertIn('data-rule="Yeni etiket: a-z harfleri, rakamlar, nokta, tire ve alt çizgi, harf ya da rakamla başlar; '
+                      'en fazla 12 karakter"', html)
 
     def test_the_tags_are_made_when_saved(self):
         Tag.objects.create(name="prod")

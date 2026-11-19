@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-19 06:32+0000\n"
+"POT-Creation-Date: 2026-11-19 07:03+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -1030,7 +1030,7 @@ msgid "Failed"
 msgstr "Başarısız"
 
 #: admin/templates/admin/tag_list.html:5 admin/templates/admin/tag_list.html:7
-#: computes/forms.py:53 instances/templates/instances/settings_tab.html:925
+#: computes/forms.py:55 instances/templates/instances/settings_tab.html:925
 #: instances/views.py:244 templates/common/tag_filter.html:5
 #: templates/navbar.html:39
 msgid "Tags"
@@ -2032,7 +2032,15 @@ msgstr "Kayıtlı, korumak için boş bırakın"
 msgid "Add tag %(tag)s"
 msgstr "Etiket ekle: %(tag)s"
 
-#: computes/forms.py:97 computes/templates/computes/instances.html:53
+#: computes/forms.py:38
+msgid ""
+"A new tag: letters a-z, digits, dots, dashes and underscores, beginning with "
+"a letter or digit; at most 12 characters"
+msgstr ""
+"Yeni etiket: a-z harfleri, rakamlar, nokta, tire ve alt çizgi, harf ya da "
+"rakamla başlar; en fazla 12 karakter"
+
+#: computes/forms.py:99 computes/templates/computes/instances.html:53
 #: instances/templates/instances/settings_tab.html:872
 #: instances/templates/instances/settings_tab.html:904
 #: instances/templates/instances/snapshots_tab.html:27
@@ -2040,43 +2048,43 @@ msgstr "Etiket ekle: %(tag)s"
 msgid "Description"
 msgstr "Tanım"
 
-#: computes/forms.py:98
+#: computes/forms.py:100
 msgid "Shown on the hosts list"
 msgstr "Sunucu listesinde gösterilir"
 
-#: computes/forms.py:99
+#: computes/forms.py:101
 msgid "SASL login"
 msgstr "SASL kullanıcı adı"
 
-#: computes/forms.py:99
+#: computes/forms.py:101
 msgid "SASL password"
 msgstr "SASL parolası"
 
-#: computes/forms.py:105 computes/templates/create_comp_block.html:10
+#: computes/forms.py:107 computes/templates/create_comp_block.html:10
 msgid "libvirt over TCP, with a SASL login"
 msgstr "TCP üzerinden libvirt, SASL girişiyle"
 
-#: computes/forms.py:119 computes/templates/create_comp_block.html:14
+#: computes/forms.py:121 computes/templates/create_comp_block.html:14
 msgid "libvirt over SSH, with the panel's SSH key"
 msgstr "SSH üzerinden libvirt, panelin SSH anahtarıyla"
 
-#: computes/forms.py:120
+#: computes/forms.py:122
 msgid "FQDN/IP"
 msgstr "FQDN/IP"
 
-#: computes/forms.py:125
+#: computes/forms.py:127
 msgid "SSH user"
 msgstr "SSH kullanıcısı"
 
-#: computes/forms.py:133 computes/templates/create_comp_block.html:18
+#: computes/forms.py:135 computes/templates/create_comp_block.html:18
 msgid "libvirt over TLS, with certificates"
 msgstr "TLS üzerinden libvirt, sertifikalarla"
 
-#: computes/forms.py:146 computes/templates/create_comp_block.html:21
+#: computes/forms.py:148 computes/templates/create_comp_block.html:21
 msgid "Local"
 msgstr "Yerel"
 
-#: computes/forms.py:147 computes/templates/create_comp_block.html:22
+#: computes/forms.py:149 computes/templates/create_comp_block.html:22
 msgid "the libvirt of the host the panel runs on, by its socket"
 msgstr "panelin çalıştığı sunucunun libvirt'i, soketi üzerinden"
 

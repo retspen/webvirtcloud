@@ -189,6 +189,7 @@ if (typeof module !== "undefined") {
                 states.value = "";
             }
             filterTable(document);
+            search.focus();  // the button hid with the message it is in
         });
     }
     filterTable(document);
