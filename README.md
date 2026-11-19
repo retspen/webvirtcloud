@@ -49,6 +49,7 @@ WebVirtCloud and `virt-manager`/`virsh` can manage the same libvirt host **concu
 * SSH public key and root password management (guest agent for a running VM, gstfsd for a shut-off one)
 * Finding VMs by IP or MAC address, and a VM report as an Excel file
 * Tags on VMs and hosts, set by superusers: the lists filter by them, Bulk Migrate chooses VMs by them and a backup schedule backs up every VM with a chosen tag (templates left out)
+* Protected VMs, set by superusers on the VM's Settings tab: not deleted and not restored over until the protection is turned off
 * An audit log of who changed what, with its result
 * Cloud-init datasource interface (OpenStack metadata compatible) and NoCloud seed media
 * REST API — OpenAPI 3.0 (Swagger & ReDoc), with API tokens

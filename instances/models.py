@@ -33,6 +33,8 @@ class Instance(models.Model):
     name = models.CharField(_("name"), max_length=255, db_index=True)
     uuid = models.CharField(_("uuid"), max_length=36, db_index=True)
     is_template = models.BooleanField(_("is template"), default=False)
+    # not deleted nor restored over until a superuser turns it off (instances.jobs.unprotected)
+    protected = models.BooleanField(_("protected"), default=False)
     created = models.DateTimeField(_("created"), auto_now_add=True)
     drbd = models.CharField(_("drbd"), max_length=24, default="None")
     tags = models.ManyToManyField("computes.Tag", blank=True, related_name="instances", verbose_name=_("tags"))

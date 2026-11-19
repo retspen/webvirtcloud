@@ -78,6 +78,7 @@ urlpatterns = [
     path("<int:pk>/update_console/", views.update_console, name="update_console"),
     path("<int:pk>/change_options/", views.change_options, name="change_options"),
     path("<int:pk>/set_template/", views.set_template, name="set_template"),
+    path("<int:pk>/set_protected/", views.set_protected, name="set_protected"),
     path("<int:pk>/set_tags/", views.set_tags, name="set_tags"),
     path(
         "<int:pk>/getvvfile/", views.getvvfile, name="getvvfile"

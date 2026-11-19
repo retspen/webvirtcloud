@@ -9,6 +9,10 @@
 
 {% block content %}
 <p class="small">{% trans "The VM's definition, saved state and snapshot records are removed. A running VM is forced off first; what the guest has not written to disk is lost." %}</p>
+{% if instance.protected %}
+<div class="alert alert-warning" role="status">{% trans "This VM is protected: an administrator turns its protection off on the Settings tab first." %}</div>
+<a class="btn btn-secondary" href="{% url 'instances:instance' instance.id %}">{% trans "Cancel" %}</a>
+{% else %}
 <form action="{% url 'instances:destroy' instance.id %}" method="post" id="delete_form">{% csrf_token %}{% submission_key %}
     <fieldset class="mb-3">
         <legend class="h6">{% trans "What should happen to the files?" %}</legend>
@@ -53,4 +57,5 @@
         <button class="btn btn-danger" type="submit" name="delete">{% trans "Destroy VM" %}</button>
     </div>
 </form>
+{% endif %}
 {% endblock content %}

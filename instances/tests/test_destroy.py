@@ -66,6 +66,24 @@ class DestroyOrderTestCase(TransactionTestCase):
             (f"compute:{self.instance.compute_id}", "exclusive"), (f"instance:{UUID}", "exclusive")})
         self.assertEqual(self.proxy.mock_calls, [])
 
+    def test_a_protected_vm_is_not_deleted(self):
+        Instance.objects.filter(pk=self.instance.pk).update(protected=True)
+        response = self.client.post(reverse("instances:destroy", args=[self.instance.id]),
+                                    {"submission_key": "key-destroy01"}, follow=True)
+        self.assertContains(response, "destroy-vm is protected")
+        url = f"/api/v1/computes/{self.instance.compute_id}/instances/{self.instance.id}/"
+        response = self.client.delete(url, {"submission_key": "key-api00003"}, content_type="application/json")
+        self.assertContains(response, "destroy-vm is protected", status_code=400)
+        self.assertFalse(Operation.objects.exists())
+        # protected after the delete was queued: refused before any effect
+        Instance.objects.filter(pk=self.instance.pk).update(protected=False)
+        op = self.queue()
+        Instance.objects.filter(pk=self.instance.pk).update(protected=True)
+        self.proxy.reset_mock()  # what the pages read
+        with self.assertRaisesMessage(OperationError, "destroy-vm is protected"):
+            self.run_job(op)
+        self.assertEqual(self.proxy.mock_calls, [])
+
     def test_backup_checkpoints_go_with_the_vm(self):
         # libvirt refuses to undefine a VM that has checkpoints without this flag
         self.run_job(self.queue())

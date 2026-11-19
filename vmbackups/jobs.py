@@ -24,7 +24,8 @@ from libvirt import (VIR_DOMAIN_PAUSED, VIR_DOMAIN_RUNNING, VIR_DOMAIN_SHUTOFF, 
 from accounts.models import UserAttributes
 from appsettings.settings import app_settings
 from computes.models import Compute
-from instances.jobs import MOVED, PAUSED_FROZEN, THAW_FAILED, _instance, _log, _snapshot_free_space, record_vm, vm_claims
+from instances.jobs import (MOVED, PAUSED_FROZEN, THAW_FAILED, _instance, _log, _snapshot_free_space, record_vm, unprotected,
+                           vm_claims)
 from instances.utils import QUOTA_UNVERIFIED, paths_used_on_other_computes, QUOTA_UNVERIFIED_TEXT, check_user_quota, get_random_mac_address, quota_message
 from instances.models import Instance
 from operations import alerts, claims
@@ -1222,6 +1223,7 @@ class RestoreOver(Kind):
             _may_use(user)
             raise util.OperationError(_("The backup's VM is no longer in the panel; restore it as a new VM"))
         _may_use(user, instance, backup.target)
+        unprotected(instance)
         _target_row(backup.target, instance.compute)
         proxy = _proxy(instance)
         over = _over_plan(backup, proxy, owner=not user.is_superuser)
@@ -1237,6 +1239,9 @@ class RestoreOver(Kind):
             intent={"compute": instance.compute_id, "uuid": instance.uuid, "over": over, "names": names,
                     "time": timezone.localtime(backup.created_at).strftime("%Y-%m-%d %H:%M")},
         )
+
+    def precheck(self, op, ctx):
+        unprotected(_instance(_backup(op.params).instance_id))  # protected since it was queued
 
     def run(self, op, ctx):
         backup = _backup(op.params)

@@ -37,7 +37,7 @@ class OwnershipTestCase(TestCase):
         compute.proxy.wvm.listAllDomains.return_value = [Domain(n, u) for n, u in domains]
 
     def owned_vm(self, compute):
-        vm = Instance.objects.create(compute=compute, name="vm", uuid=UUID, is_template=True)
+        vm = Instance.objects.create(compute=compute, name="vm", uuid=UUID, is_template=True, protected=True)
         UserInstance.objects.create(instance=vm, user=self.owner, is_change=True, is_vnc=True)
         return vm
 
@@ -77,6 +77,7 @@ class OwnershipTestCase(TestCase):
         refresh_instance_database(self.host_a)  # gone from A: it moved to B
 
         self.assertEqual(self.ownership(self.host_b), (True, [(self.owner, True, False, True)]))
+        self.assertTrue(Instance.objects.get(compute=self.host_b).protected)
         self.assertFalse(Instance.objects.filter(compute=self.host_a).exists())
         self.assertEqual(self.rows(), [("-", "host-a", f"VM vm ({UUID}): owners moved to host-b")])
 

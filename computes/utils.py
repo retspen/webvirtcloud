@@ -87,7 +87,8 @@ def _log(inst, what):
 
 
 def move_ownership(source, target):
-    """Give target the owners, tags, template flag, backups and schedules of source; a user's rights are merged."""
+    """Give target the owners, tags, template and protected flags, backups and schedules of source; a user's rights
+    are merged."""
     target.tags.add(*source.tags.all())
     Backup.objects.filter(instance=source).update(instance=target)
     for policy in source.backup_policies.all():
@@ -106,9 +107,11 @@ def move_ownership(source, target):
             if getattr(ui, flag):
                 setattr(existing, flag, True)
         existing.save()
-    if source.is_template and not target.is_template:
-        target.is_template = True
-        target.save(update_fields=["is_template"])
+    flags = [flag for flag in ("is_template", "protected") if getattr(source, flag) and not getattr(target, flag)]
+    for flag in flags:
+        setattr(target, flag, True)
+    if flags:
+        target.save(update_fields=flags)
 
 
 def forget(inst):

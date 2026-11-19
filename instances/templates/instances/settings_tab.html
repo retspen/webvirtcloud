@@ -919,6 +919,15 @@
                             {% if not request.user.is_superuser and not request.user.is_staff %}{% trans "Only administrators and staff can change this." %}
                             {% elif instance.status != 5 %}{% trans "Shut the VM down to change this." %}{% endif %}</p>
                     </form>
+                    <form class="border-top mt-3 pt-3" action="{% url 'instances:set_protected' instance.id %}" method="post">{% csrf_token %}
+                        <div class="form-check form-switch mb-1">
+                            <input class="form-check-input" type="checkbox" role="switch" name="protected" value="True" id="protected" aria-describedby="protected-help"
+                                   {% if instance.protected %}checked{% endif %}{% if not request.user.is_superuser %} disabled{% endif %} data-submit-on-change>
+                            <label class="form-check-label" for="protected">{% trans "Protected" %}</label>
+                        </div>
+                        <p class="small text-body-secondary mb-0" id="protected-help">{% trans "A protected VM is not deleted and no backup is restored over it." %}
+                            {% if not request.user.is_superuser %}{% trans "Only administrators can change this." %}{% endif %}</p>
+                    </form>
                 </div>
                 {% if tags_form %}
                 <div class="list-group-item p-3 p-md-4">

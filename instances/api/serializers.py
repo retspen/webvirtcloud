@@ -12,7 +12,8 @@ class InstanceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Instance
-        fields = ["id", "compute", "name", "uuid", "is_template", "created", "drbd", "tags"]
+        fields = ["id", "compute", "name", "uuid", "is_template", "protected", "created", "drbd", "tags"]
+        read_only_fields = ["protected"]  # a superuser changes it on the VM's page
 
 
 # what a VM's device dicts tell of the host: its files and pools
@@ -66,6 +67,7 @@ class InstanceDetailsSerializer(serializers.ModelSerializer):
             "title",
             "description",
             "is_template",
+            "protected",
             "created",
             "drbd",
             "arch",

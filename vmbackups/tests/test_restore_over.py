@@ -17,6 +17,7 @@ from lxml import etree
 
 from appsettings.settings import get_settings
 from computes.models import Compute
+from django.urls import reverse
 from instances.models import Instance
 from operations import jobs
 from operations.jobs import Context
@@ -192,6 +193,20 @@ class RestoreOverTests(TransactionTestCase):
         self.proxy.get_status.return_value = libvirt.VIR_DOMAIN_RUNNING
         with self.assertRaisesMessage(OperationError, "Shut the VM down"):
             self.submit()
+
+    def test_a_protected_vm_is_not_restored_over(self):
+        Instance.objects.filter(pk=self.backup.instance_id).update(protected=True)
+        with self.assertRaisesMessage(OperationError, "vm1 is protected"):
+            self.submit()
+        self.client.force_login(self.admin)
+        page = self.client.get(reverse("vmbackups:restore_over", args=[self.backup.uuid]))
+        self.assertContains(page, "vm1 is protected")
+        self.assertNotContains(page, 'name="submission_key"')  # no form
+        Instance.objects.filter(pk=self.backup.instance_id).update(protected=False)
+        op = self.submit()
+        Instance.objects.filter(pk=self.backup.instance_id).update(protected=True)  # after it was queued
+        with self.assertRaisesMessage(OperationError, "vm1 is protected"):
+            RestoreOver().precheck(op, Context(op, SimpleNamespace(identity=WORKER)))
 
     def test_a_vm_with_snapshots_is_refused(self):
         self.proxy.instance.snapshotNum.return_value = 2

@@ -2543,6 +2543,18 @@ def set_template(request, pk):
     return _back(request, pk, "options")
 
 
+@require_POST
+@superuser_only
+@serialize_instance_mutation  # not while a deletion or a restore over it runs: it would not stop them
+def set_protected(request, pk):
+    """Turns a VM's protection against deletion and a restore over it on or off."""
+    instance = get_instance(request.user, pk)
+    protected = bool(request.POST.get("protected"))
+    with audit_vm(request, instance, "protect" if protected else "unprotect"):
+        Instance.objects.filter(pk=instance.pk).update(protected=protected)
+    return _back(request, pk, "options")
+
+
 def keyfile_value(value):
     """value as a GLib key file (the .vv file) reads it back: a backslash,
     a line break or a leading space would change it."""

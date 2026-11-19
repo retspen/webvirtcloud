@@ -73,6 +73,14 @@ def _vm_plan(params):
 MOVED = _("The VM moved to another compute after the job was queued")
 
 
+def unprotected(instance):
+    """instance, unless it is protected: not deleted nor restored over."""
+    if instance.protected:
+        raise util.OperationError(_("%(vm)s is protected: a superuser turns its protection off on its Settings tab "
+                                    "first"), vm=instance.name)
+    return instance
+
+
 def _checked_proxy(op):
     """In the worker: the user may still change the VM, and it did not move."""
     instance = _authorized(op.user, op.params["instance"])
@@ -1467,7 +1475,7 @@ class DeleteInstance(Kind):
                 "delete_nvram": bool(raw.get("delete_nvram"))}
 
     def validate(self, user, params):
-        _deletable(user, params["instance"])
+        unprotected(_deletable(user, params["instance"]))
 
     def plan(self, user, params):
         instance = _instance(params["instance"])
@@ -1478,7 +1486,7 @@ class DeleteInstance(Kind):
                     intent={"compute": instance.compute_id, "uuid": instance.uuid, "name": instance.name})
 
     def precheck(self, op, ctx):
-        if _deletable(op.user, op.params["instance"]).compute_id != op.intent["compute"]:
+        if unprotected(_deletable(op.user, op.params["instance"])).compute_id != op.intent["compute"]:
             raise util.OperationError(MOVED)
 
     def run(self, op, ctx):

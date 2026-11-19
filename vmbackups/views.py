@@ -16,6 +16,7 @@ from django.utils.translation import gettext_noop
 from libvirt import libvirtError
 
 from admin.decorators import superuser_only
+from instances.jobs import unprotected
 from instances.models import Instance
 from instances.views import get_instance
 from logs.audit import audit
@@ -299,7 +300,7 @@ def restore_over(request, uuid):
         return redirect("operations:job", op.pk)
     over, problem = None, None
     try:
-        proxy = _proxy(backup.instance)
+        proxy = _proxy(unprotected(backup.instance))
         over = _over_plan(backup, proxy, owner=not request.user.is_superuser)
         names = _over_names(backup, proxy, over)
     except (OperationError, libvirtError) as err:
