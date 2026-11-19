@@ -25,7 +25,8 @@ function page(groups, text, state, noMatch, extra = {}) {
                     "no-match": noMatch, "filter-status": extra.status};
     return {
         getElementById: (id) => inputs[id],
-        querySelectorAll: (s) => (s === ".searchable" ? groups : s === "[data-count-state]" ? extra.counts || [] : []),
+        querySelectorAll: (s) => (s === ".searchable" ? groups : s === "[data-count-state]" ? extra.counts || []
+                                  : s === "[data-count-tag]" ? extra.tagCounts || [] : []),
     };
 }
 const visible = (rows) => rows.filter((r) => !r.hidden).map((r) => r.textContent);
@@ -120,6 +121,21 @@ assert.deepStrictEqual(visible(tagged), ["web-2"], "-: the rows without a tag");
 const tagCounts = [count(""), count("Active"), count("Off")];
 filterInstances(page([group(tagged)], "", "Active", undefined, {tag: "prod", counts: tagCounts}));
 assert.deepStrictEqual(tagCounts.map((c) => c.textContent), [2, 1, 1], "the state counts follow the tag");
+// the tag pills count as the state pills: the rows the search and the state find, the tag aside; one with none hides
+const countTag = (name) => ({dataset: {countTag: name}, textContent: "", parentElement: {hidden: false}});
+const tagPillCounts = [countTag("-"), countTag("prod"), countTag("web")];
+filterInstances(page([group(tagged)], "", "Off", undefined, {tag: "web", tagCounts: tagPillCounts}));
+assert.deepStrictEqual(tagPillCounts.map((c) => c.textContent), [0, 1, 0]);
+assert.deepStrictEqual(tagPillCounts.map((c) => c.parentElement.hidden), [true, false, false], "the chosen tag stays");
+filterInstances(page([group(tagged)], "web", "", undefined, {tag: "", tagCounts: tagPillCounts}));
+assert.deepStrictEqual(tagPillCounts.map((c) => c.textContent), [1, 1, 1], "and follow the search");
+// a tag named as an object's own property ("constructor") is counted as any other
+const objectNamed = [withTags(vm("app-1", "Active", "app-1"), "constructor")];
+const constructorCount = [countTag("constructor")];
+filterInstances(page([group(objectNamed)], "", "", undefined, {tag: "", tagCounts: constructorCount}));
+assert.strictEqual(constructorCount[0].textContent, 1);
+filterInstances(page([group(objectNamed)], "nothing", "", undefined, {tag: "", tagCounts: constructorCount}));
+assert.deepStrictEqual([constructorCount[0].textContent, constructorCount[0].parentElement.hidden], [0, true]);
 const hostVms = [hostRow("host-a"), withTags(vm("web-1", "Active", "web-1"), "prod"), withTags(vm("db-1", "Active", "db-1"), "")];
 filterInstances(page([group(hostVms, "host-a")], "host-a", "", undefined, {tag: "prod"}));
 assert.deepStrictEqual(visible(hostVms), ["host-a", "web-1"], "a host's name and a tag: its VMs with the tag");

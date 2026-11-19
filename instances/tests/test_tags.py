@@ -147,6 +147,8 @@ class VmListTagFilterTests(TestCase):
         self.assertEqual([pill.get("data-pill") for pill in pills], ["", "-", "prod", "secret", "web"])
         self.assertEqual([" ".join(pill.text_content().split()) for pill in pills],
                          ["All tags", "No tag 1", "prod 1", "secret 1", "web 1"])
+        # table_filter.js counts them again as the search and the state change
+        self.assertEqual(doc.xpath("//div[@id='tag-pills']//@data-count-tag"), ["-", "prod", "secret", "web"])
         self.assertEqual(doc.xpath("//tr[@data-tags]/@data-tags"), ["", "prod web", "secret"])
         # a badge chooses its tag in the list
         self.assertEqual(doc.xpath("//tr//button[@data-tag-filter]/@data-tag-filter"), ["prod", "web", "secret"])

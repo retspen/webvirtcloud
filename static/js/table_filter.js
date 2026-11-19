@@ -14,8 +14,9 @@
 //
 // The instance list's state pills (#state-pills) set the state; each one's
 // [data-count-state] counts the VMs of its state the search finds (its
-// state left aside, the tag not), "" all of them; a state's pill with none is hidden
-// unless chosen; the chosen state and tag are remembered as the search is, so that a
+// state left aside, the tag not), "" all of them; a tag's pill's [data-count-tag]
+// the rows with its tag ("-" none) the search and the state find. A pill with none
+// is hidden unless chosen; the chosen state and tag are remembered as the search is, so that a
 // list the poll reloads keeps it. #filter-status tells screen readers how
 // many VMs match, collapsed hosts' VMs too.
 
@@ -25,6 +26,17 @@ function fold(text) {
     return text.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/ı/g, "i");
 }
 
+// each count (selector, its value in dataset[key]) shows how many rows counts has for
+// its value; its pill is hidden with none, unless chosen or "" (all)
+function showCounts(doc, selector, key, counts, chosen) {
+    doc.querySelectorAll(selector).forEach(function (count) {
+        var value = count.dataset[key];
+        var n = counts[value] || 0;
+        count.textContent = n;
+        count.parentElement.hidden = n === 0 && value !== "" && value !== chosen;
+    });
+}
+
 function filterTable(doc) {
     var text = fold(doc.getElementById("filter").value);
     var states = doc.getElementById("state-filter");
@@ -32,7 +44,8 @@ function filterTable(doc) {
     var tags = doc.getElementById("tag-filter");
     var tag = tags ? tags.value : "";
     var anyShown = false;
-    var counts = {"": 0}, vms = 0, shownVms = 0;
+    // by tag name: no names of an object's own ("constructor") to start with
+    var counts = {"": 0}, tagCounts = Object.create(null), vms = 0, shownVms = 0;
     doc.querySelectorAll(".searchable").forEach(function (group) {
         var host = group.dataset.host;
         var hostMatches = host !== undefined && fold(host).includes(text);
@@ -46,8 +59,15 @@ function filterTable(doc) {
             var searched = row.dataset.search !== undefined ? row.dataset.search : row.textContent;
             var rowTags = row.dataset.tags || "";
             var tagged = !tag || (tag === "-" ? rowTags === "" : rowTags.split(" ").indexOf(tag) >= 0);
-            var found = (hostMatches || fold(searched).includes(text)) && tagged;
-            row.hidden = !((!state || (mark && mark.dataset.state === state)) && found);
+            var searchFound = hostMatches || fold(searched).includes(text);
+            var found = searchFound && tagged;
+            var inState = !state || (mark && mark.dataset.state === state);
+            row.hidden = !(inState && found);
+            if (row.dataset.tags !== undefined && searchFound && inState) {
+                (rowTags ? rowTags.split(" ") : ["-"]).forEach(function (name) {
+                    tagCounts[name] = (tagCounts[name] || 0) + 1;
+                });
+            }
             shown = shown || !row.hidden;
             if (mark) {
                 vms += 1;
@@ -67,11 +87,8 @@ function filterTable(doc) {
     if (noMatch) {
         noMatch.hidden = anyShown;
     }
-    doc.querySelectorAll("[data-count-state]").forEach(function (count) {
-        var n = counts[count.dataset.countState] || 0;
-        count.textContent = n;
-        count.parentElement.hidden = n === 0 && count.dataset.countState !== "" && count.dataset.countState !== state;
-    });
+    showCounts(doc, "[data-count-state]", "countState", counts, state);
+    showCounts(doc, "[data-count-tag]", "countTag", tagCounts, tag);
     var status = doc.getElementById("filter-status");
     if (status) {
         status.textContent = status.dataset.text.replace("%(shown)s", shownVms).replace("%(all)s", vms);
