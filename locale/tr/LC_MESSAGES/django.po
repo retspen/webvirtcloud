@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-19 07:03+0000\n"
+"POT-Creation-Date: 2026-11-19 08:03+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -1031,7 +1031,7 @@ msgstr "Başarısız"
 
 #: admin/templates/admin/tag_list.html:5 admin/templates/admin/tag_list.html:7
 #: computes/forms.py:55 instances/templates/instances/settings_tab.html:925
-#: instances/views.py:244 templates/common/tag_filter.html:5
+#: instances/views.py:244 templates/common/tag_filter.html:6
 #: templates/navbar.html:39
 msgid "Tags"
 msgstr "Etiketler"
@@ -9693,13 +9693,17 @@ msgstr "Yalnız bu etiketi göster"
 msgid "more tags"
 msgstr "diğer etiketler"
 
-#: templates/common/tag_filter.html:7
+#: templates/common/tag_filter.html:8
 msgid "All tags"
 msgstr "Tüm etiketler"
 
-#: templates/common/tag_filter.html:10
+#: templates/common/tag_filter.html:11
 msgid "No tag"
 msgstr "Etiketsiz"
+
+#: templates/common/tag_filter.html:17
+msgid "More tags"
+msgstr "Diğer etiketler"
 
 #: templates/error.html:13
 msgid "HTTP status"

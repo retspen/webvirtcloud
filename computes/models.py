@@ -37,9 +37,9 @@ class Tag(Model):
     @staticmethod
     def counts(rows):
         """The tag list's choices for rows (VMs or hosts, their tags read):
-        [(name, how many have it)] by name, and how many have no tag."""
+        [(name, how many have it)], the most used first, and how many have no tag."""
         counts = Counter(tag.name for row in rows for tag in row.tags.all())
-        return sorted(counts.items()), sum(1 for row in rows if not row.tags.all())
+        return sorted(counts.items(), key=lambda item: (-item[1], item[0])), sum(1 for row in rows if not row.tags.all())
 
     @classmethod
     def named(cls, names):

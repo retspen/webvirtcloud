@@ -321,6 +321,10 @@ td .tag-more {
     width: 0;
     min-width: 100%;
 }
+/* the tag pills behind "…", once shown: in the row of the others */
+.tag-pills-more:not([hidden]) {
+    display: contents;
+}
 /* a VM's or host's tags: smaller than other badges, so a row with several stays narrow */
 .tag-badge {
     font-size: 0.65rem;

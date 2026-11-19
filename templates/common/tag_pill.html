@@ -1,0 +1,4 @@
+{# one of tag_filter.html: the pill of name, with how many rows have it (table_filter.js counts them again) #}
+<button type="button" class="nav-link py-1 px-2" data-pill="{{ name }}" aria-pressed="false">
+    {{ name }} <span class="badge text-bg-light ms-1" data-count-tag="{{ name }}">{{ count }}</span>
+</button>

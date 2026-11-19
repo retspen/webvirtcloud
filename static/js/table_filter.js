@@ -89,6 +89,14 @@ function filterTable(doc) {
     }
     showCounts(doc, "[data-count-state]", "countState", counts, state);
     showCounts(doc, "[data-count-tag]", "countTag", tagCounts, tag);
+    // "…" of the tag pills: how many behind it the search and the state leave; with none, or once
+    // it has shown them, it is hidden
+    doc.querySelectorAll("[data-more-count]").forEach(function (count) {
+        var button = count.parentElement, others = button.nextElementSibling;
+        var n = others.querySelectorAll("[data-pill]:not([hidden])").length;
+        count.textContent = n;
+        button.hidden = !others.hidden || n === 0;
+    });
     var status = doc.getElementById("filter-status");
     if (status) {
         status.textContent = status.dataset.text.replace("%(shown)s", shownVms).replace("%(all)s", vms);
@@ -138,6 +146,12 @@ if (typeof module !== "undefined") {
     function pillRow(pills, input, which) {
         var all = pills.querySelectorAll("[data-pill]");
         function choose(pill) {
+            // one behind "…" (kept, or chosen by a badge): the pills behind it show
+            var others = pill.parentElement.closest("[hidden]");
+            if (others) {
+                others.hidden = false;
+                others.previousElementSibling.hidden = true;
+            }
             input.value = pill.dataset.pill;
             keep(input.value, which);
             all.forEach(function (other) {
@@ -184,7 +198,7 @@ if (typeof module !== "undefined") {
             more.hidden = true;
             others.hidden = false;
             // the focus is not lost with the button: the first tag shown takes it, or the tags if they are not buttons
-            (others.querySelector("button") || others).focus();
+            (others.querySelector("button:not([hidden])") || others).focus();
             return;
         }
         var badge = event.target.closest("[data-tag-filter]");

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-19 07:03+0000\n"
+"POT-Creation-Date: 2026-11-19 08:03+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -1003,7 +1003,7 @@ msgstr "失败"
 
 #: admin/templates/admin/tag_list.html:5 admin/templates/admin/tag_list.html:7
 #: computes/forms.py:55 instances/templates/instances/settings_tab.html:925
-#: instances/views.py:244 templates/common/tag_filter.html:5
+#: instances/views.py:244 templates/common/tag_filter.html:6
 #: templates/navbar.html:39
 msgid "Tags"
 msgstr "标签"
@@ -9124,13 +9124,17 @@ msgstr "只显示此标签"
 msgid "more tags"
 msgstr "更多标签"
 
-#: templates/common/tag_filter.html:7
+#: templates/common/tag_filter.html:8
 msgid "All tags"
 msgstr "所有标签"
 
-#: templates/common/tag_filter.html:10
+#: templates/common/tag_filter.html:11
 msgid "No tag"
 msgstr "无标签"
+
+#: templates/common/tag_filter.html:17
+msgid "More tags"
+msgstr "更多标签"
 
 #: templates/error.html:13
 msgid "HTTP status"

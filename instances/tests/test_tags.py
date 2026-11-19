@@ -153,6 +153,21 @@ class VmListTagFilterTests(TestCase):
         # a badge chooses its tag in the list
         self.assertEqual(doc.xpath("//tr//button[@data-tag-filter]/@data-tag-filter"), ["prod", "web", "secret"])
 
+    def test_the_most_used_eight_show_the_others_behind_an_ellipsis(self):
+        from types import SimpleNamespace
+        # ten tags, t0 on ten VMs ... t9 on one: by how many have them, the first eight shown
+        rows = [SimpleNamespace(tags=SimpleNamespace(all=lambda n=n: [SimpleNamespace(name=f"t{i}") for i in range(n)]))
+                for n in range(1, 11)]
+        counts = Tag.counts(rows)
+        self.assertEqual(counts[0][:3], [("t0", 10), ("t1", 9), ("t2", 8)])
+        doc = lxml_html.fromstring(render_to_string("common/tag_filter.html", {"tags": counts}))
+        shown = doc.xpath("//div[@id='tag-pills']/button/@data-pill")
+        self.assertEqual(shown, ["", "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7"])
+        (more,) = doc.xpath("//button[@data-show-tags]")
+        self.assertEqual(" ".join(more.text_content().split()), "… More tags 2")
+        self.assertEqual(more.xpath(".//@data-more-count"), [""])  # table_filter.js counts them again
+        self.assertEqual(doc.xpath("//*[@hidden]/button/@data-pill"), ["t8", "t9"])
+
     def test_an_owner_sees_only_the_tags_of_their_vms(self):
         doc = self.page(self.owner)
         self.assertEqual(doc.xpath("//div[@id='tag-pills']/button/@data-pill"), ["", "prod", "web"])
