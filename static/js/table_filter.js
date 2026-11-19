@@ -137,10 +137,11 @@ if (typeof module !== "undefined") {
     document.addEventListener("click", function (event) {
         var more = event.target.closest("[data-show-tags]");
         if (more) {
+            var others = more.nextElementSibling;
             more.hidden = true;
-            more.nextElementSibling.hidden = false;
-            // the focus is not lost with the button: the first tag shown takes it
-            more.nextElementSibling.querySelector("button, [tabindex]")?.focus();
+            others.hidden = false;
+            // the focus is not lost with the button: the first tag shown takes it, or the tags if they are not buttons
+            (others.querySelector("button") || others).focus();
             return;
         }
         var badge = event.target.closest("[data-tag-filter]");

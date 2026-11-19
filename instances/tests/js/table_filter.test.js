@@ -163,6 +163,10 @@ assert.deepStrictEqual(visible(turkish), ["Şişli"]);
     const ellipsis = {hidden: false, nextElementSibling: others};
     listeners.click({target: {closest: (s) => (s === "[data-show-tags]" ? ellipsis : null)}});
     assert.deepStrictEqual([others.hidden, ellipsis.hidden, focused], [false, true, "d4"]);
+    // tags that are not buttons (no tag list on the page): the tags shown take it
+    const plain = {hidden: true, querySelector: () => null, focus: () => { focused = "plain"; }};
+    listeners.click({target: {closest: (s) => (s === "[data-show-tags]" ? {hidden: false, nextElementSibling: plain} : null)}});
+    assert.strictEqual(focused, "plain");
 }
 
 // a kept tag the list no longer has is forgotten: made again later, it is not chosen by itself

@@ -65,7 +65,7 @@
                                 <a class="link-primary" href="{% url 'instances:instance' instance.id %}">{{ instance.name }}</a>
                                 <br>
                                 {% if instance.info %}<p class="m-0 small fst-italic">{{ instance.title }}</p>{% endif %}
-                                {% include 'common/tag_badges.html' with tags=instance.tags.all %}
+                                {% with tags=instance.tags.all %}{% include 'common/tag_badges.html' with tags=tags|slice:":3" more=tags|slice:"3:" %}{% endwith %}
                             </td>
                             <td>
                                 <em>

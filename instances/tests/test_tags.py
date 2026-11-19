@@ -92,6 +92,18 @@ class VmTagsTests(TestCase):
             self.assertContains(self.client.get(reverse("instances", args=[self.vm.compute_id])), "prod")
         self.assertContains(self.client.get(reverse("accounts:account", args=[self.owner.id])), "prod")
 
+    def test_the_host_s_vm_list_shows_three_and_the_others_behind_an_ellipsis(self):
+        self.vm.tags.add(*(Tag.objects.create(name=name) for name in ("a1", "b2", "c3", "d4")))
+        self.client.force_login(self.admin)
+        with patch("computes.views.utils.refresh_instance_database"), patch("computes.views.vm_states", return_value={}), \
+                patch("computes.views.read_list_rows"):
+            page = lxml_html.fromstring(self.client.get(reverse("instances", args=[self.vm.compute_id])).content)
+        self.assertEqual(page.xpath("//td//span[contains(@class,'tag-badge')][not(ancestor::*[@hidden])]/text()[last()]"),
+                         [" a1", " b2", " c3"])
+        self.assertEqual(page.xpath("//button[@data-show-tags]/@title"), ["d4"])
+        # the tags "…" shows take the focus from it (table_filter.js), not buttons here
+        self.assertEqual(page.xpath("//button[@data-show-tags]/following-sibling::span[1]/@tabindex"), ["-1"])
+
     def test_the_vm_list_shows_them(self):
         self.vm.tags.add(Tag.objects.create(name="prod"))
         html = render_to_string("instance_name_cell.html", {"instance": self.vm})
