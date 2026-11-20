@@ -1016,6 +1016,7 @@ class RestoreBackup(Kind):
         keys = vm_claims(compute, params["name"])
         for name in volumes.values():  # no other job makes a volume of these names meanwhile
             keys[claims.volume_key(compute.pk, params["pool"], name)] = Claim.EXCLUSIVE
+        keys[claims.pool_key(compute.pk, params["pool"])] = Claim.SHARED  # not stopped under it
         keys[claims.backup_key(backup.uuid)] = Claim.SHARED
         keys[claims.backup_target_key(backup.target_id)] = Claim.EXCLUSIVE
         if quota:  # a VM owner's: no other increase of their quota is admitted until the VM is recorded
@@ -1242,6 +1243,7 @@ class RestoreOver(Kind):
                 claims.backup_key(backup.uuid): Claim.SHARED, claims.backup_target_key(backup.target_id): Claim.EXCLUSIVE}
         for dev, name in names.items():  # no other job makes a volume of these names meanwhile
             keys[claims.volume_key(instance.compute_id, over["disks"][dev], name)] = Claim.EXCLUSIVE
+            keys[claims.pool_key(instance.compute_id, over["disks"][dev])] = Claim.SHARED  # not stopped under it
         return Plan(
             claims=keys,
             resource=claims.instance_key(instance.uuid),
@@ -1428,6 +1430,7 @@ class RestoreDisk(Kind):
         return Plan(
             claims={claims.compute_key(compute.pk): Claim.SHARED,
                     claims.volume_key(compute.pk, params["pool"], params["name"]): Claim.EXCLUSIVE,
+                    claims.pool_key(compute.pk, params["pool"]): Claim.SHARED,  # not stopped under it
                     claims.backup_key(backup.uuid): Claim.SHARED,
                     claims.backup_target_key(backup.target_id): Claim.EXCLUSIVE},
             resource=claims.backup_key(backup.uuid),

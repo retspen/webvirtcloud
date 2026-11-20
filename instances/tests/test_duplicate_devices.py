@@ -11,6 +11,8 @@ from django.urls import reverse
 
 from computes.models import Compute
 from instances.models import Instance
+from operations.claims import admit
+from operations.models import Claim
 
 PATH = "/var/lib/libvirt/images/data.qcow2"
 MAC = "52:54:00:aa:bb:cc"
@@ -50,6 +52,23 @@ class DuplicateDeviceTests(TestCase):
         self.proxy.get_disk_devices.side_effect = lambda config=False: [{"path": PATH, "dev": "vdb"}] if config else []
         self.assertEqual(self.post("add_existing_vol", form), ["data.qcow2 is already a disk of this VM"])
         self.proxy.attach_disk.assert_called_once()
+
+    @patch("instances.views.wvmStorage")
+    def test_a_volume_a_job_writes_is_not_attached(self, storage):
+        # a download holds the volume it writes: the VM would get a half-written disk; nothing is read before the claim
+        pool = storage.return_value
+        pool.get_volumes.return_value = ["data.qcow2"]
+        pool.get_volume_format_type.return_value = "qcow2"
+        pool.get_type.return_value = "dir"
+        pool.get_volume_type.return_value = "file"
+        pool.get_volume.return_value.path.return_value = PATH
+        # a copy reads it (shared): a running VM would write it meanwhile
+        admit({f"volume:{self.vm.compute_id}:default/data.qcow2": Claim.SHARED}, holder="other-node:1:1")
+        form = {"selected_storage": "default", "vols": "data.qcow2", "bus": "virtio", "cache": "default"}
+        self.assertEqual(self.post("add_existing_vol", form),
+                         ["A short operation is in progress on this resource; try again in a moment."])
+        self.proxy.attach_disk.assert_not_called()
+        pool.get_volume_format_type.assert_not_called()
 
     @patch("instances.views.wvmStorage")
     def test_a_backup_volume_is_not_attached(self, storage):

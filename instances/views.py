@@ -55,6 +55,7 @@ from logs.audit import audit, audit_vm, failed_vm
 from lxml import etree
 from operations import claims, jobs
 from operations.jobs import KEY_RE
+from operations.models import Claim
 from operations.utils import HOST_BUSY, busy_message, summary
 from webvirtcloud.middleware import error_text, same_origin_referer
 from vrtManager import util
@@ -1597,6 +1598,14 @@ def add_existing_vol(request, pk):
     instance = get_instance(request.user, pk, perm_type="change")
     storage = request.POST.get("selected_storage", "")
     name = request.POST.get("vols", "")
+    # the volume exclusive from its first read to the attach: not while a download writes it
+    # or a copy reads it (Busy names the job)
+    with claims.hold({claims.volume_key(instance.compute_id, storage, name): Claim.EXCLUSIVE}):
+        return _attach_volume(request, instance, storage, name)
+
+
+def _attach_volume(request, instance, storage, name):
+    pk = instance.pk
     bus = request.POST.get("bus", app_settings.INSTANCE_VOLUME_DEFAULT_BUS)
     cache = request.POST.get("cache", app_settings.INSTANCE_VOLUME_DEFAULT_CACHE)
 

@@ -24,7 +24,7 @@ from vrtManager.storage import wvmStorage, wvmStorages
 from storages.forms import AddStgPool, CloneImage, CreateVolumeForm
 from storages.jobs import is_iso
 from storages.upload import write_chunk
-from vmbackups.utils import backups_of, refuse_backup_volume, refuse_target_pool
+from vmbackups.utils import backups_of, pool_stop_claims, refuse_backup_volume, refuse_target_pool
 from webvirtcloud.gunicorn_worker import request_progressed
 
 
@@ -146,16 +146,18 @@ def storage(request, compute_id, pool):
             with audit(request, compute, subject, "start"):
                 conn.start()
             return HttpResponseRedirect(request.get_full_path())
+        # stopped or deleted only while no job (a download, a copy) works in it
+        in_pool = pool_stop_claims(compute, pool)
         if "stop" in request.POST:
             try:
-                with audit(request, compute, subject, "stop"):
+                with claims.hold(in_pool), audit(request, compute, subject, "stop"):
                     conn.stop()
             except OperationError as err:  # a running VM's disk is in it
                 messages.error(request, str(err))
             return HttpResponseRedirect(request.get_full_path())
         if "delete" in request.POST:
             try:
-                with audit(request, compute, subject, "delete"):
+                with claims.hold(in_pool), audit(request, compute, subject, "delete"):
                     refuse_target_pool(compute, pool)
                     conn.delete()
             except OperationError as err:  # a VM names it for a disk

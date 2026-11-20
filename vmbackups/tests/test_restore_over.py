@@ -151,6 +151,8 @@ class RestoreOverTests(TransactionTestCase):
         self.assertEqual((op.intent["over"]["disks"], op.intent["names"]), ({"vda": "default"}, {"vda": "vm1-vda-20261117-1140.qcow2"}))
         self.assertTrue(Claim.objects.filter(operation=op, resource=f"volume:{self.compute.pk}:default/vm1-vda-20261117-1140.qcow2",
                                              mode=Claim.EXCLUSIVE).exists())
+        # the pool written into, shared: not stopped under the restore
+        self.assertTrue(Claim.objects.filter(operation=op, resource=f"pool:{self.compute.pk}:default", mode=Claim.SHARED).exists())
         self.assertTrue(Claim.objects.filter(operation=op, resource=f"instance:{self.vm.uuid}", mode=Claim.EXCLUSIVE).exists())
         self.run_job(op)
         self.storage.clone_volume.assert_called_once()

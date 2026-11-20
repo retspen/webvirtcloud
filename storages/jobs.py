@@ -64,6 +64,10 @@ class CloneVolume(Kind):
         stg = _storage(op.params)[1]
         if op.intent["target"] in stg.get_volumes():
             raise util.OperationError(gettext_noop("Name of volume already in use"))
+        # the source's format, which names the copy, may have changed before its claim was taken (a download ended)
+        if stg.clone_name(op.params["name"], op.params["format"] or stg.get_volume_format_type(op.params["image"])) \
+                != op.intent["target"]:
+            raise util.OperationError(gettext_noop("The volume changed since the copy was asked; ask it again"))
         stg.refuse_running_copy(op.params["image"])  # the VM may have started since
 
     def plan(self, user, params):
@@ -78,7 +82,9 @@ class CloneVolume(Kind):
         if target in volumes:
             raise util.OperationError(gettext_noop("Name of volume already in use"))
         pool = claims.pool_key(compute.pk, params["pool"])
+        # the source shared: not copied while a download writes it
         return Plan(claims={claims.compute_key(compute.pk): Claim.SHARED, pool: Claim.SHARED,
+                            claims.volume_key(compute.pk, params["pool"], params["image"]): Claim.SHARED,
                             claims.volume_key(compute.pk, params["pool"], target): Claim.EXCLUSIVE},
                     resource=pool, label=f"{compute.name}/{params['pool']}", intent={"target": target})
 
@@ -158,7 +164,6 @@ class UploadVolume(Kind):
 
 # a volume's name as the pool page's forms take it
 VOLUME_NAME = re.compile(r"[A-Za-z0-9._-]{1,120}")
-FETCH_PROGRESS_EVERY = 16 * 2**20  # bytes between two progress records
 FETCH_REDIRECTS = 5
 FETCH_TIMEOUT = urllib3.Timeout(connect=10, read=60)
 BAD_ADDRESS = gettext_noop("Give an http or https address")
@@ -257,6 +262,12 @@ class FetchVolume(Kind):
         if op.user is None or not op.user.is_active:
             raise PermissionDenied
         self.validate(op.user, op.params)
+        # a volume made outside the panel since the job was queued may have taken the name
+        stg = _storage(op.params)[1]
+        with contextlib.suppress(libvirtError):
+            stg.refresh()
+        if op.params["name"] in stg.get_volumes():
+            raise util.OperationError(gettext_noop("The pool has a volume named %(name)s"), name=op.params["name"])
 
     @staticmethod
     def _stop_if_cancelled(op):
@@ -284,18 +295,16 @@ class FetchVolume(Kind):
                 raise
 
             def chunks():
-                done, recorded, checked = 0, 0, time.monotonic()
+                done, checked = 0, time.monotonic()
                 try:
                     for data in answer.stream(2**20, decode_content=False):
                         done += len(data)
                         if done > size:
                             raise util.OperationError(gettext_noop("The server sent more than the file's size"))
-                        if time.monotonic() - checked >= 1:
+                        if time.monotonic() - checked >= 1:  # each second: a cancel seen, the progress shown
                             self._stop_if_cancelled(op)
-                            checked = time.monotonic()
-                        if done - recorded >= FETCH_PROGRESS_EVERY:
                             ctx.record_intent(done=done)
-                            recorded = done
+                            checked = time.monotonic()
                         yield data
                 except urllib3.exceptions.HTTPError as err:  # the connection lost, a read timeout
                     raise _download_error(err) from None

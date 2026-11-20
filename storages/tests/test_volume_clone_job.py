@@ -10,6 +10,7 @@ from django.urls import reverse
 
 from computes.models import Compute
 from operations.jobs import Context
+from operations.claims import admit
 from operations.models import Claim, Operation, acquire
 from libvirt import libvirtError
 from storages.jobs import CloneVolume
@@ -39,8 +40,9 @@ class VolumeCloneJobTestCase(TransactionTestCase):
         self.assertRedirects(response, url, fetch_redirect_response=False)
         op = Operation.objects.get()
         self.assertEqual((op.kind, op.intent["target"]), ("volume.clone", "copy.qcow2"))
-        self.assertIn((f"volume:{self.compute.pk}:pool-a/copy.qcow2", "exclusive"),
-                      set(Claim.objects.values_list("resource", "mode")))
+        self.assertLessEqual({(f"volume:{self.compute.pk}:pool-a/copy.qcow2", "exclusive"),
+                              (f"volume:{self.compute.pk}:pool-a/base.qcow2", "shared")},
+                             set(Claim.objects.values_list("resource", "mode")))
         self.stg.clone_volume.assert_not_called()
 
         acquire("wvc-test:1:a", "wvc-test")
@@ -74,6 +76,18 @@ class VolumeCloneJobTestCase(TransactionTestCase):
         self.assertContains(response, "The running VMs vm use volume base.qcow2")
         self.assertFalse(Operation.objects.exists())
 
+    @patch("storages.views.wvmStorage")
+    def test_a_volume_a_job_writes_is_not_copied(self, page):
+        # a download holds the volume it writes: the copy waits for it, not a half-written file
+        page.return_value.is_active.return_value = False
+        page.return_value.get_size.return_value = (1, 1)
+        url = reverse("storage", args=[self.compute.pk, "pool-a"])
+        admit({f"volume:{self.compute.pk}:pool-a/base.qcow2": Claim.EXCLUSIVE}, holder="other-node:1:1")
+        response = self.client.post(url, {"cln_volume": "1", "image": "base.qcow2", "name": "copy",
+                                          "submission_key": "key-vol00005"}, follow=True)
+        self.assertContains(response, "try again in a moment")
+        self.assertFalse(Operation.objects.exists())
+
     def test_recovery(self):
         self.stg.get_volumes.return_value = ["base.qcow2", "copy.qcow2"]
         op = Operation(params={"compute": self.compute.pk, "pool": "pool-a"}, intent={"target": "copy.qcow2"})
@@ -89,6 +103,10 @@ class VolumeCloneJobTestCase(TransactionTestCase):
                        params={"compute": self.compute.pk, "pool": "pool-a", "image": "base.qcow2", "name": "copy",
                                "format": "", "prealloc": False})
         CloneVolume().precheck(op, None)
+        self.stg.clone_name.return_value = "copy.img"  # the source's format changed before the claim (a download ended)
+        with self.assertRaisesMessage(libvirtError, "The volume changed since the copy was asked"):
+            CloneVolume().precheck(op, None)
+        self.stg.clone_name.return_value = "copy.qcow2"
         self.stg.get_volumes.return_value = ["base.qcow2", "copy.qcow2"]  # made outside the panel meanwhile
         with self.assertRaisesMessage(libvirtError, "Name of volume already in use"):
             CloneVolume().precheck(op, None)

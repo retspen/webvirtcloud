@@ -139,6 +139,12 @@ class FetchJobTestCase(TransactionTestCase):
         self.run_job(op, [b"ab"])
         self.assertEqual(recorded, [True])
 
+    def test_the_worker_checks_the_name_is_still_free(self):
+        op = self.queue()
+        self.stg.get_volumes.return_value = ["rocky-10.qcow2"]  # made outside the panel meanwhile
+        with self.assertRaisesRegex(util.OperationError, "has a volume named"):
+            FetchVolume().precheck(op, None)
+
     def test_a_deactivated_superuser_s_job_does_not_run(self):
         op = self.queue()
         op.user.is_active = False
@@ -146,6 +152,22 @@ class FetchJobTestCase(TransactionTestCase):
         op.refresh_from_db()
         with self.assertRaises(PermissionDenied):
             FetchVolume().precheck(op, None)
+
+    def test_the_progress_is_recorded_each_second(self):
+        # a slow server: the bar moves before 16 MiB came
+        op = self.queue()
+        seen = []
+
+        def write(name, size, chunks):
+            for _chunk in chunks:
+                seen.append(Operation.objects.get(pk=op.pk).intent["done"])
+            return size
+
+        self.stg.write_volume.side_effect = write
+        clock = iter(range(0, 100, 2))
+        with patch("storages.jobs.time.monotonic", side_effect=lambda: next(clock)):
+            self.run_job(op, [b"ab", b"cd", b"ef"])
+        self.assertEqual(seen, [2, 4, 6])
 
     def test_more_than_the_size_told_is_not_written(self):
         op = self.queue()

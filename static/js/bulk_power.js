@@ -64,8 +64,11 @@
     update();
 })();
 
-// whether VMs on screen are chosen: the list's reload (poll.js pageInUse) waits meanwhile
+// whether VMs on screen are chosen, or a snapshot name or tag typed: the list's reload
+// (poll.js pageInUse) waits meanwhile
 function bulkPowerChosen() {
     return Array.prototype.some.call(document.querySelectorAll("input[name='vm'][form='bulk-power']:checked"),
-        function (box) { return box.getClientRects().length > 0; });
+        function (box) { return box.getClientRects().length > 0; })
+        || Array.prototype.some.call(document.querySelectorAll("#bulk-power input[type='text']"),
+            function (box) { return box.value.trim() !== ""; });
 }

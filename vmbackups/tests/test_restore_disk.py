@@ -82,6 +82,8 @@ class RestoreDiskTests(TransactionTestCase):
         op = self.submit()
         self.assertTrue(Claim.objects.filter(operation=op, resource=f"volume:{self.compute.pk}:default/vm1-vdb-restored.raw",
                                              mode=Claim.EXCLUSIVE).exists())
+        # the pool written into, shared: not stopped under the restore
+        self.assertTrue(Claim.objects.filter(operation=op, resource=f"pool:{self.compute.pk}:default", mode=Claim.SHARED).exists())
         self.assertEqual(self.run_job(op), {"open": reverse("storage", args=[self.compute.pk, "default"])})
         vol, name = self.storage.clone_volume.call_args.args
         self.assertEqual((name, self.storage.clone_volume.call_args.kwargs["vol_fmt"]), ("vm1-vdb-restored.raw", "raw"))

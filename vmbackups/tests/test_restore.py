@@ -196,6 +196,8 @@ class RestoreTests(TransactionTestCase):
         self.assertEqual(op.intent["volumes"], {"vda": "vm1-restored-vda.qcow2"})
         self.assertTrue(Claim.objects.filter(operation=op, resource=f"volume:{self.compute.pk}:default/vm1-restored-vda.qcow2",
                                              mode=Claim.EXCLUSIVE).exists())
+        # the pool written into, shared: not stopped under the restore
+        self.assertTrue(Claim.objects.filter(operation=op, resource=f"pool:{self.compute.pk}:default", mode=Claim.SHARED).exists())
 
     def test_a_copy_in_flight_is_not_removed(self):
         # its name may have been taken meanwhile by another volume: the job is left to the administrator

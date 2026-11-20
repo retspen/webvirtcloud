@@ -3,6 +3,8 @@ from django.utils.translation import gettext, gettext_noop
 from libvirt import libvirtError
 from lxml import etree
 
+from operations import claims
+from operations.models import Claim
 from storages.forms import inside
 from vrtManager.backup import wvmBackup
 from vrtManager.util import InUse
@@ -47,6 +49,16 @@ def refuse_target_pool(compute, pool):
             pool=pool,
             target=row.target.name,
         )
+
+
+def pool_stop_claims(compute, pool):
+    """The claims that keep out a pool's jobs while it is stopped or deleted: the pool's, and its
+    backup target's if it is one (backup jobs claim the target)."""
+    keys = {claims.pool_key(compute.pk, pool): Claim.EXCLUSIVE}
+    row = BackupTargetPool.objects.filter(compute=compute, pool=pool).first()
+    if row:
+        keys[claims.backup_target_key(row.target_id)] = Claim.EXCLUSIVE
+    return keys
 
 
 def pending_deletes():
