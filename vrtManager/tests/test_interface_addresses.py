@@ -85,8 +85,9 @@ class OsInfoTestCase(unittest.TestCase):
         def agent(dom, cmd, timeout, flags):
             if json.loads(cmd)["execute"] in ("guest-get-timezone", "guest-get-fsinfo"):
                 raise libvirtError("The command has not been found")
-            return json.dumps({"return": {"guest-get-osinfo": {"id": "alma"}, "guest-get-host-name": {"host-name": "web"}}[
-                json.loads(cmd)["execute"]]})
+            # a "filesystems" of another command is not taken for guest_filesystems'
+            return json.dumps({"return": {"guest-get-osinfo": {"id": "alma", "filesystems": "x"},
+                                          "guest-get-host-name": {"host-name": "web"}}[json.loads(cmd)["execute"]]})
 
         with patch.object(module, "qemuAgentCommand", side_effect=agent):
             self.assertEqual(inst.osinfo(), {"id": "alma", "host-name": "web"})
@@ -96,7 +97,11 @@ class OsInfoTestCase(unittest.TestCase):
             {"name": "vda2", "mountpoint": "/boot", "type": "xfs", "used-bytes": 2**28, "total-bytes": 2**30},
             {"name": "vda1", "mountpoint": "/var/lib/containers/overlay", "type": "overlay"},  # no size: left out
             {"name": "vdb1", "mountpoint": "/data", "type": "xfs", "total-bytes": 2**30},  # no used size: left out
-            None,
+            None, "/", 1,  # not entries
+            {"mountpoint": "/neg", "used-bytes": -5, "total-bytes": 100},  # garbled sizes: left out
+            {"mountpoint": "/bool", "used-bytes": True, "total-bytes": True},
+            {"mountpoint": None, "used-bytes": 1, "total-bytes": 2}, {"mountpoint": ["/x"], "used-bytes": 1, "total-bytes": 2},
+            {"mountpoint": "/srv", "type": None, "used-bytes": 92, "total-bytes": 90, "total-bytes-privileged": 100},
             {"name": "vda1", "mountpoint": "/", "type": "xfs", "used-bytes": 3 * 2**30, "total-bytes": 10 * 2**30},
         ]
         inst = wvmInstance.__new__(wvmInstance)
@@ -105,7 +110,11 @@ class OsInfoTestCase(unittest.TestCase):
             self.assertEqual(inst.guest_filesystems(), [
                 {"mountpoint": "/", "type": "xfs", "used": 3 * 2**30, "total": 10 * 2**30},
                 {"mountpoint": "/boot", "type": "xfs", "used": 2**28, "total": 2**30},
+                {"mountpoint": "/srv", "type": "", "used": 92, "total": 100},  # the whole file system's total
             ])
+        for answer in ({"error": "x"}, 1, None):  # not a list: none
+            with patch.object(module, "qemuAgentCommand", return_value=json.dumps({"return": answer})):
+                self.assertEqual(inst.guest_filesystems(), [])
 
 
 if __name__ == "__main__":

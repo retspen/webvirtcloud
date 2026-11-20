@@ -40,3 +40,8 @@ class GuestInfoTestCase(TestCase):
         table = html.fromstring(render_to_string("instances/info_tab.html")).xpath("//table[@id='osfilesystems']")[0]
         self.assertIsNotNone(table.get("hidden"))
         self.assertEqual(table.xpath(".//th/text()"), ["Mount point", "Type", "Used"])
+        # in a box that scrolls a long mount point, not in a margin past the tab's edge
+        self.assertIn("table-responsive", table.getparent().get("class"))
+        self.assertNotIn("mx-3", table.get("class"))
+        (note,) = html.fromstring(render_to_string("instances/info_tab.html")).xpath("//p[@id='osfilesystems-unread']")
+        self.assertIsNotNone(note.get("hidden"))

@@ -34,10 +34,12 @@
             $('#osversion').text(data.version || '');
             $('#ostimezone').text(data.zone ? data.zone + " / " + data.offset : '');
             show_filesystems(data.filesystems || []);
+            document.getElementById('osfilesystems-unread').hidden = (data.filesystems || []).length > 0;
         }).fail(function (xhr) {
             var message = xhr.responseJSON && xhr.responseJSON.error;
             error.text(message || silent).removeClass('d-none');
             show_filesystems([]);
+            document.getElementById('osfilesystems-unread').hidden = true;  // the error says why
         });
     }
     // each file system: its mount point, type, and how full it is (a bar, amber from 85 %)

@@ -183,7 +183,7 @@ class LiveJobsTestCase(TransactionTestCase):
         self.assertFalse(self.conn.lookupByUUIDString(uuid).isActive())  # defined on the source again
         self.assertEqual(Instance.objects.get(uuid=uuid).compute, self.compute)
 
-    def test_a_bulk_migration_migrates_the_chosen_vms_two_at_once(self):
+    def test_a_bulk_migration_migrates_the_chosen_vms(self):  # two at once: computes.tests.test_bulk_migrate
         dest, dest_conn = self.second_host()
         vms = []
         for name, running in (("evac-run", True), ("evac-off", False)):
