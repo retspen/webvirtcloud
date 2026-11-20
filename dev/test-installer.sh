@@ -26,9 +26,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# the installer clones the repository: a clone of HEAD, readable by any user
+# the installer clones the repository: a clone of HEAD (root in the container reads it)
 git clone -q --no-hardlinks . "$repo/webvirtcloud"
-chmod -R a+rX "$repo"
 
 docker build -q -t "$name" - > /dev/null <<EOF
 FROM $image
@@ -53,23 +52,30 @@ docker exec "$name" bash -c '
   cd /root/inst && printf "n\n\n" | APP_REPO_URL=/repo ./install.sh' ||
   { docker exec "$name" tail -n 50 /var/log/webvirtcloud-install.log; exit 1; }
 
-docker exec "$name" bash -c '
-  for unit in webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker nginx; do
-    systemctl is-active --quiet "$unit" || { systemctl status "$unit" --no-pager; exit 1; }
-  done
+docker exec "$name" bash -e -c '
   test -s /srv/webvirtcloud/data/secret_key || { echo "No secret key"; exit 1; }
   test -s /srv/webvirtcloud/data/admin_password || { echo "No admin password"; exit 1; }
   # curl is not on every distribution; the panel'"'"'s Python is
   /srv/webvirtcloud/venv/bin/python3 - <<PY
-import time, urllib.request
+import re, time, urllib.request
+page = ""
 for _ in range(30):
     try:
-        # the panel'"'"'s login form, not a page nginx serves instead
-        if "id=\"form-signin\"" in urllib.request.urlopen("http://127.0.0.1/accounts/login/", timeout=5).read().decode():
-            break
+        page = urllib.request.urlopen("http://127.0.0.1/accounts/login/", timeout=5).read().decode()
     except OSError:
-        time.sleep(1)
+        pass
+    # the panel'"'"'s login form, not a page nginx serves instead
+    if "id=\"form-signin\"" in page:
+        break
+    time.sleep(1)
 else:
     raise SystemExit("The login page does not load")
-PY'
-echo "$image: installed, the login page loads"
+# a stylesheet it links, as nginx serves the static files
+stylesheet = re.search(r"href=\"(/static/[^\"]+[.]css)\"", page).group(1)
+urllib.request.urlopen("http://127.0.0.1" + stylesheet, timeout=5)
+PY
+  # after the page: a daemon that died meanwhile is seen
+  for unit in webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker nginx; do
+    systemctl is-active --quiet "$unit" || { systemctl status "$unit" --no-pager; exit 1; }
+  done'
+echo "$image: installed, the login page and its stylesheet load"
