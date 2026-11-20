@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-20 05:04+0000\n"
+"POT-Creation-Date: 2026-11-20 05:17+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -74,7 +74,7 @@ msgstr "Geçersiz anahtar"
 #: instances/templates/create_instance_w2.html:42
 #: interfaces/templates/interface.html:119 networks/templates/network.html:145
 #: networks/templates/network.html:373 nwfilters/templates/nwfilters.html:29
-#: storages/templates/storage.html:123 virtsecrets/forms.py:34
+#: storages/templates/storage.html:140 virtsecrets/forms.py:34
 #: virtsecrets/forms.py:36 vmbackups/forms.py:23 vmbackups/forms.py:36
 #: vmbackups/forms.py:82 vmbackups/templates/vmbackups/policies.html:17
 #: vmbackups/templates/vmbackups/targets.html:18
@@ -262,7 +262,7 @@ msgstr "Yalnızca güç ve konsol"
 
 #: accounts/templates/account.html:81 computes/templates/computes/list.html:110
 #: instances/templates/instance_actions.html:9
-#: storages/templates/storage.html:140
+#: storages/templates/storage.html:166
 #, python-format
 msgid "Actions for %(name)s"
 msgstr "%(name)s için işlemler"
@@ -326,7 +326,7 @@ msgstr "Burada oturumunuz açık kalır; diğer oturumlarınız kapanır."
 #: storages/templates/create_stg_block.html:183
 #: storages/templates/create_stg_vol_block.html:35
 #: storages/templates/create_stg_vol_block.html:68
-#: storages/templates/storage.html:202 templates/base.html:65
+#: storages/templates/storage.html:228 templates/base.html:65
 #: templates/common/confirm_delete.html:25 templates/common/form.html:27
 #: virtsecrets/templates/create_secret_block.html:48
 #: virtsecrets/templates/secrets.html:106
@@ -478,7 +478,7 @@ msgstr "%(name)s API anahtarı için işlemler"
 #: instances/templates/instances/settings_tab.html:315
 #: instances/templates/instances/snapshots_tab.html:103
 #: instances/templates/instances/snapshots_tab.html:117
-#: networks/templates/network.html:168 storages/templates/storage.html:153
+#: networks/templates/network.html:168 storages/templates/storage.html:179
 #: templates/common/confirm_delete.html:5
 #: templates/common/confirm_delete.html:9
 #: templates/common/confirm_delete.html:26
@@ -1073,7 +1073,7 @@ msgstr "Sunucular"
 #: networks/templates/network.html:146 networks/templates/network.html:204
 #: networks/templates/network.html:286 nwfilters/templates/nwfilter.html:56
 #: nwfilters/templates/nwfilter.html:100 nwfilters/templates/nwfilters.html:35
-#: storages/templates/storage.html:126 virtsecrets/templates/secrets.html:33
+#: storages/templates/storage.html:144 virtsecrets/templates/secrets.html:33
 msgid "Actions"
 msgstr "Eylemler"
 
@@ -3397,7 +3397,7 @@ msgstr "Bağlan"
 #: storages/templates/create_stg_block.html:21
 #: storages/templates/create_stg_vol_block.html:16
 #: storages/templates/create_stg_vol_block.html:54
-#: storages/templates/storage.html:175 templates/base.html:61
+#: storages/templates/storage.html:201 templates/base.html:61
 #: virtsecrets/templates/create_secret_block.html:16
 #: virtsecrets/templates/secrets.html:97
 msgid "Close"
@@ -4284,7 +4284,7 @@ msgstr "Depolama havuzu"
 
 #: instances/templates/add_instance_volume.html:41
 #: instances/templates/create_instance_w2.html:46 storages/forms.py:119
-#: storages/templates/storage.html:183
+#: storages/templates/storage.html:209
 msgid "Letters, digits, dot, dash and underscore."
 msgstr "Harf, rakam, nokta, tire ve alt çizgi."
 
@@ -4297,14 +4297,14 @@ msgstr "Boyut"
 
 #: instances/templates/add_instance_volume.html:51
 #: instances/templates/instances/edit_instance_volume.html:82
-#: storages/templates/storage.html:124 storages/templates/storage.html:190
+#: storages/templates/storage.html:141 storages/templates/storage.html:216
 msgid "Format"
 msgstr "Biçem"
 
 #: instances/templates/add_instance_volume.html:61
 #: instances/templates/create_instance_w2.html:154
 #: instances/templates/create_instance_w2.html:220 storages/forms.py:125
-#: storages/forms.py:145 storages/templates/storage.html:198
+#: storages/forms.py:145 storages/templates/storage.html:224
 msgid "Preallocate metadata (qcow2)"
 msgstr "Meta veriyi önceden ayır (qcow2)"
 
@@ -4344,7 +4344,7 @@ msgstr "Bazı sanal makinelerinizin bir sunucusuna şu anda ulaşılamıyor."
 msgid "VM states"
 msgstr "Sanal makine durumları"
 
-#: instances/templates/allinstances.html:48
+#: instances/templates/allinstances.html:48 storages/templates/storage.html:125
 msgid "All"
 msgstr "Tümü"
 
@@ -4796,7 +4796,7 @@ msgstr "Ayrıntılar"
 #: instances/templates/instances/settings_tab.html:882
 #: instances/templates/instances/settings_tab.html:884
 #: nwfilters/templates/nwfilters.html:57 nwfilters/templates/nwfilters.html:94
-#: storages/templates/storage.html:143 storages/templates/storage.html:203
+#: storages/templates/storage.html:169 storages/templates/storage.html:229
 msgid "Clone"
 msgstr "Klonla"
 
@@ -4905,7 +4905,7 @@ msgstr "Kapat"
 #: instances/templates/instance_actions.html:39
 #: interfaces/templates/interface.html:22 networks/templates/network.html:22
 #: networks/templates/network.html:162 storages/templates/storage.html:26
-#: storages/templates/storage.html:147
+#: storages/templates/storage.html:173
 msgid "More actions"
 msgstr "Diğer işlemler"
 
@@ -5871,7 +5871,7 @@ msgid "The VM has no CD-ROM drive."
 msgstr "Sanal makinenin CD-ROM sürücüsü yok."
 
 #: instances/templates/instances/settings_tab.html:217
-#: storages/templates/storage.html:125
+#: storages/templates/storage.html:143
 msgid "Capacity"
 msgstr "Kapasite"
 
@@ -7822,7 +7822,8 @@ msgstr "Yayılan ağaç"
 
 #: interfaces/templates/interface.html:81
 #: interfaces/templates/interfaces.html:57 nodedevs/templates/nodedevs.html:37
-#: nodedevs/templates/nodedevs.html:82 virtsecrets/templates/secrets.html:32
+#: nodedevs/templates/nodedevs.html:82 storages/templates/storage.html:142
+#: virtsecrets/templates/secrets.html:32
 msgid "Used by"
 msgstr "Kullanan"
 
@@ -8835,7 +8836,7 @@ msgstr "Aramayla eşleşen filtre yok."
 msgid "Clone filter"
 msgstr "Filtreyi klonla"
 
-#: nwfilters/templates/nwfilters.html:88 storages/templates/storage.html:181
+#: nwfilters/templates/nwfilters.html:88 storages/templates/storage.html:207
 msgid "Name of the copy"
 msgstr "Kopyanın adı"
 
@@ -9614,16 +9615,32 @@ msgstr ""
 msgid "Search volumes"
 msgstr "Birimlerde ara"
 
-#: storages/templates/storage.html:137
+#: storages/templates/storage.html:122
+msgid "Volume use"
+msgstr "Disk kullanımı"
+
+#: storages/templates/storage.html:128 storages/templates/storage.html:156
+msgid "In use"
+msgstr "Kullanımda"
+
+#: storages/templates/storage.html:131 storages/templates/storage.html:157
+msgid "Not used on this host"
+msgstr "Bu sunucuda kullanılmıyor"
+
+#: storages/templates/storage.html:156
+msgid "Another volume is built on it"
+msgstr "Başka bir disk bunun üzerine kurulu"
+
+#: storages/templates/storage.html:163
 #, python-format
 msgid "%(allocated)s allocated"
 msgstr "%(allocated)s ayrılmış"
 
-#: storages/templates/storage.html:149
+#: storages/templates/storage.html:175
 msgid "Download"
 msgstr "İndir"
 
-#: storages/templates/storage.html:153
+#: storages/templates/storage.html:179
 #, python-format
 msgid ""
 "Delete volume %(name)s? Its file and data are removed; a volume a VM uses is "
@@ -9632,27 +9649,27 @@ msgstr ""
 "%(name)s birimi silinsin mi? Dosyası ve verisi kaldırılır; bir sanal "
 "makinenin kullandığı birim silinmez."
 
-#: storages/templates/storage.html:166
+#: storages/templates/storage.html:192
 msgid "No volume matches the search."
 msgstr "Aramayla eşleşen birim yok."
 
-#: storages/templates/storage.html:174
+#: storages/templates/storage.html:200
 msgid "Clone image"
 msgstr "İmaj Klonla"
 
-#: storages/templates/storage.html:187
+#: storages/templates/storage.html:213
 msgid "Convert it to another format"
 msgstr "Başka bir biçime dönüştür"
 
-#: storages/templates/storage.html:192
+#: storages/templates/storage.html:218
 msgid "raw"
 msgstr "raw"
 
-#: storages/templates/storage.html:193
+#: storages/templates/storage.html:219
 msgid "qcow2"
 msgstr "qcow2"
 
-#: storages/templates/storage.html:210
+#: storages/templates/storage.html:236
 msgid "This pool has no volumes."
 msgstr "Bu havuzda birim yok."
 
@@ -11411,7 +11428,7 @@ msgstr "Bağlantı başarısız: %(host)s bağlı değil"
 msgid "This host has no architecture %(arch)s"
 msgstr "Bu sunucuda %(arch)s mimarisi yok"
 
-#: vrtManager/connection.py:1265
+#: vrtManager/connection.py:1277
 #, python-format
 msgid ""
 "Pool %(pool)s is not active: the files the disks of the VMs in it are made "
@@ -12530,7 +12547,7 @@ msgstr ""
 msgid "Enter one <rule> element"
 msgstr "Tek bir <rule> öğesi girin"
 
-#: vrtManager/storage.py:124
+#: vrtManager/storage.py:125
 #, python-format
 msgid ""
 "Device %(device)s already holds data: a partition table, a file system or a "
@@ -12541,7 +12558,7 @@ msgstr ""
 "da bir birim grubu. Doğru cihazsa hostta \"wipefs -a %(device)s\" ile silin "
 "ve yeniden deneyin."
 
-#: vrtManager/storage.py:221
+#: vrtManager/storage.py:222
 #, python-format
 msgid ""
 "Pool %(name)s holds disks of the running VMs %(vms)s; shut them down first"
@@ -12549,7 +12566,7 @@ msgstr ""
 "%(name)s havuzu çalışan %(vms)s sanal makinelerinin disklerini tutuyor; önce "
 "onları kapatın"
 
-#: vrtManager/storage.py:241
+#: vrtManager/storage.py:242
 #, python-format
 msgid ""
 "VMs %(vms)s have disks in pool %(name)s and would no longer start; detach "
@@ -12558,12 +12575,12 @@ msgstr ""
 "%(vms)s sanal makinelerinin %(name)s havuzunda diskleri var ve artık "
 "başlamaz; önce bu diskleri ayırın"
 
-#: vrtManager/storage.py:276
+#: vrtManager/storage.py:277
 #, python-format
 msgid "Volume %(name)s is in use on another compute that shares this storage"
 msgstr "%(name)s birimi bu depolamayı paylaşan başka bir sunucuda kullanılıyor"
 
-#: vrtManager/storage.py:282
+#: vrtManager/storage.py:288
 #, python-format
 msgid ""
 "Volume %(name)s is in use: a VM's disk, a backing file or a snapshot's file"
@@ -12571,7 +12588,7 @@ msgstr ""
 "%(name)s birimi kullanımda: bir sanal makinenin diski, bir temel (backing) "
 "dosya ya da bir anlık görüntünün dosyası"
 
-#: vrtManager/storage.py:375
+#: vrtManager/storage.py:381
 #, python-format
 msgid "The running VMs %(vms)s use volume %(name)s; shut them down to copy it"
 msgstr ""

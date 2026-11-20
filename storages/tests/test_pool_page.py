@@ -25,7 +25,9 @@ class PoolPageTests(TestCase):
         self.conn.is_active.return_value = True
         self.conn.refresh.side_effect = libvirtError("pool 'default' has asynchronous jobs running.")
         self.conn.get_volumes.return_value = ["base.qcow2"]
-        self.conn.update_volumes.return_value = [{"name": "base.qcow2", "size": 1, "allocation": 1, "type": "qcow2"}]
+        self.conn.update_volumes.return_value = [{"name": "base.qcow2", "path": "/p/base.qcow2", "size": 1, "allocation": 1,
+                                                  "type": "qcow2"}]
+        self.conn.volume_users.return_value = {}
 
     def test_the_page_answers_while_a_volume_is_cloned(self):
         self.conn.get_size.return_value = (0, 0)  # an iSCSI pool without LUNs
@@ -113,7 +115,8 @@ class PoolPageTests(TestCase):
     def test_volumes_are_searched_by_name_and_share_one_clone_dialog(self):
         self.conn.get_size.return_value = (10, 4)
         self.conn.update_volumes.return_value = [
-            {"name": name, "size": 1, "allocation": 1, "type": "raw"} for name in ("data.img", "install.iso", "Boot.ISO")]
+            {"name": name, "path": f"/p/{name}", "size": 1, "allocation": 1, "type": "raw"}
+            for name in ("data.img", "install.iso", "Boot.ISO")]
         page = html.fromstring(self.client.get(reverse("storage", args=[self.compute.pk, "default"])).content)
         self.assertEqual(page.xpath("//tbody/tr/@data-search"), ["data.img", "install.iso", "Boot.ISO"])
         self.assertEqual(len(page.xpath("//div[contains(concat(' ', @class, ' '), ' modal ')][.//button[@name='cln_volume']]")), 1)
@@ -121,6 +124,29 @@ class PoolPageTests(TestCase):
         clone = {b.get("data-volume"): b.get("disabled") is None for b in page.xpath("//button[@data-volume]")}
         self.assertEqual(clone, {"data.img": True, "install.iso": False, "Boot.ISO": False})
         self.assertTrue(page.xpath("//div[@id='no-match'][@hidden]"))
+
+    def test_each_volume_says_which_vms_use_it(self):
+        self.conn.get_size.return_value = (10, 4)
+        self.conn.update_volumes.return_value = [
+            {"name": name, "path": f"/p/{name}", "size": 1, "allocation": 1, "type": "raw"}
+            for name in ("a.img", "b.img", "c.img")]
+        self.conn.volume_users.return_value = {"/p/a.img": ["vm1", "vm2"], "/p/b.img": []}
+        page = html.fromstring(self.client.get(reverse("storage", args=[self.compute.pk, "default"])).content)
+        self.assertEqual([" ".join(t.split()) for t in page.xpath("//tbody/tr/td[3]//text()[normalize-space()]")],
+                         ["vm1, vm2", "In use", "Not used on this host"])
+        self.assertEqual(page.xpath("//tbody/tr//@data-state"), ["used", "used", "unused"])
+        self.assertEqual(page.xpath("//tbody/tr/@data-search"), ["a.img vm1 vm2", "b.img", "c.img"])
+        self.assertEqual(page.xpath("//div[@id='state-pills']/button/@data-pill"), ["", "used", "unused"])
+
+    def test_volumes_whose_use_cannot_be_read_are_listed(self):
+        self.conn.get_size.return_value = (10, 4)
+        self.conn.update_volumes.return_value = [{"name": "a.img", "path": "/p/a.img", "size": 1, "allocation": 1,
+                                                  "type": "raw"}]
+        self.conn.volume_users.side_effect = libvirtError("cannot read the domains")
+        page = html.fromstring(self.client.get(reverse("storage", args=[self.compute.pk, "default"])).content)
+        self.assertEqual(page.xpath("//tbody/tr/td[1]/text()"), ["a.img"])
+        self.assertFalse(page.xpath("//tbody/tr//@data-state"))
+        self.assertFalse(page.xpath("//div[@id='state-pills']"))
 
     def test_the_heading_offers_what_the_pool_state_allows(self):
         # an active pool is stopped, a stopped one started or deleted; autostart either way

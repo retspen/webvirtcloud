@@ -232,8 +232,14 @@ def storage(request, compute_id, pool):
     # read only for the page: every action above redirects, but a refused new volume
     # first: it refreshes the pool, and libvirt measures a pool's space only then
     volumes = conn.update_volumes() if state else None
+    users = None
+    if volumes:
+        # which VMs of this host use each volume; the page lists them without it when it cannot be read
+        with contextlib.suppress(libvirtError):
+            users = conn.volume_users()
     for volume in volumes or []:
         volume["iso"] = is_iso(volume["name"])
+        volume["users"] = users.get(volume["path"]) if users is not None else None
     try:
         size, free = conn.get_size()
         status = conn.get_status()
@@ -251,6 +257,7 @@ def storage(request, compute_id, pool):
         "form": form,
         "state": state,
         "volumes": volumes,
+        "users_read": users is not None,
         "size": size,
         "free": free,
         "used": used,

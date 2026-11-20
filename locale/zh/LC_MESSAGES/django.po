@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-20 05:04+0000\n"
+"POT-Creation-Date: 2026-11-20 05:17+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -71,7 +71,7 @@ msgstr "无效的密钥"
 #: instances/templates/create_instance_w2.html:42
 #: interfaces/templates/interface.html:119 networks/templates/network.html:145
 #: networks/templates/network.html:373 nwfilters/templates/nwfilters.html:29
-#: storages/templates/storage.html:123 virtsecrets/forms.py:34
+#: storages/templates/storage.html:140 virtsecrets/forms.py:34
 #: virtsecrets/forms.py:36 vmbackups/forms.py:23 vmbackups/forms.py:36
 #: vmbackups/forms.py:82 vmbackups/templates/vmbackups/policies.html:17
 #: vmbackups/templates/vmbackups/targets.html:18
@@ -257,7 +257,7 @@ msgstr "仅电源和控制台"
 
 #: accounts/templates/account.html:81 computes/templates/computes/list.html:110
 #: instances/templates/instance_actions.html:9
-#: storages/templates/storage.html:140
+#: storages/templates/storage.html:166
 #, python-format
 msgid "Actions for %(name)s"
 msgstr "%(name)s 的操作"
@@ -321,7 +321,7 @@ msgstr "您在此处保持登录；您的其他会话将结束。"
 #: storages/templates/create_stg_block.html:183
 #: storages/templates/create_stg_vol_block.html:35
 #: storages/templates/create_stg_vol_block.html:68
-#: storages/templates/storage.html:202 templates/base.html:65
+#: storages/templates/storage.html:228 templates/base.html:65
 #: templates/common/confirm_delete.html:25 templates/common/form.html:27
 #: virtsecrets/templates/create_secret_block.html:48
 #: virtsecrets/templates/secrets.html:106
@@ -471,7 +471,7 @@ msgstr "API 令牌 %(name)s 的操作"
 #: instances/templates/instances/settings_tab.html:315
 #: instances/templates/instances/snapshots_tab.html:103
 #: instances/templates/instances/snapshots_tab.html:117
-#: networks/templates/network.html:168 storages/templates/storage.html:153
+#: networks/templates/network.html:168 storages/templates/storage.html:179
 #: templates/common/confirm_delete.html:5
 #: templates/common/confirm_delete.html:9
 #: templates/common/confirm_delete.html:26
@@ -1042,7 +1042,7 @@ msgstr "主机"
 #: networks/templates/network.html:146 networks/templates/network.html:204
 #: networks/templates/network.html:286 nwfilters/templates/nwfilter.html:56
 #: nwfilters/templates/nwfilter.html:100 nwfilters/templates/nwfilters.html:35
-#: storages/templates/storage.html:126 virtsecrets/templates/secrets.html:33
+#: storages/templates/storage.html:144 virtsecrets/templates/secrets.html:33
 msgid "Actions"
 msgstr "操作"
 
@@ -3230,7 +3230,7 @@ msgstr "连接"
 #: storages/templates/create_stg_block.html:21
 #: storages/templates/create_stg_vol_block.html:16
 #: storages/templates/create_stg_vol_block.html:54
-#: storages/templates/storage.html:175 templates/base.html:61
+#: storages/templates/storage.html:201 templates/base.html:61
 #: virtsecrets/templates/create_secret_block.html:16
 #: virtsecrets/templates/secrets.html:97
 msgid "Close"
@@ -4052,7 +4052,7 @@ msgstr "存储池"
 
 #: instances/templates/add_instance_volume.html:41
 #: instances/templates/create_instance_w2.html:46 storages/forms.py:119
-#: storages/templates/storage.html:183
+#: storages/templates/storage.html:209
 msgid "Letters, digits, dot, dash and underscore."
 msgstr "字母、数字、点、短横线和下划线。"
 
@@ -4065,14 +4065,14 @@ msgstr "大小"
 
 #: instances/templates/add_instance_volume.html:51
 #: instances/templates/instances/edit_instance_volume.html:82
-#: storages/templates/storage.html:124 storages/templates/storage.html:190
+#: storages/templates/storage.html:141 storages/templates/storage.html:216
 msgid "Format"
 msgstr "格式"
 
 #: instances/templates/add_instance_volume.html:61
 #: instances/templates/create_instance_w2.html:154
 #: instances/templates/create_instance_w2.html:220 storages/forms.py:125
-#: storages/forms.py:145 storages/templates/storage.html:198
+#: storages/forms.py:145 storages/templates/storage.html:224
 msgid "Preallocate metadata (qcow2)"
 msgstr "预分配元数据（qcow2）"
 
@@ -4111,7 +4111,7 @@ msgstr "您的部分虚拟机所在的主机当前无法连接。"
 msgid "VM states"
 msgstr "虚拟机状态"
 
-#: instances/templates/allinstances.html:48
+#: instances/templates/allinstances.html:48 storages/templates/storage.html:125
 msgid "All"
 msgstr "全部"
 
@@ -4550,7 +4550,7 @@ msgstr "详情"
 #: instances/templates/instances/settings_tab.html:882
 #: instances/templates/instances/settings_tab.html:884
 #: nwfilters/templates/nwfilters.html:57 nwfilters/templates/nwfilters.html:94
-#: storages/templates/storage.html:143 storages/templates/storage.html:203
+#: storages/templates/storage.html:169 storages/templates/storage.html:229
 msgid "Clone"
 msgstr "克隆"
 
@@ -4657,7 +4657,7 @@ msgstr "关机"
 #: instances/templates/instance_actions.html:39
 #: interfaces/templates/interface.html:22 networks/templates/network.html:22
 #: networks/templates/network.html:162 storages/templates/storage.html:26
-#: storages/templates/storage.html:147
+#: storages/templates/storage.html:173
 msgid "More actions"
 msgstr "更多操作"
 
@@ -5545,7 +5545,7 @@ msgid "The VM has no CD-ROM drive."
 msgstr "该虚拟机没有 CD-ROM 驱动器。"
 
 #: instances/templates/instances/settings_tab.html:217
-#: storages/templates/storage.html:125
+#: storages/templates/storage.html:143
 msgid "Capacity"
 msgstr "容量"
 
@@ -7343,7 +7343,8 @@ msgstr "生成树"
 
 #: interfaces/templates/interface.html:81
 #: interfaces/templates/interfaces.html:57 nodedevs/templates/nodedevs.html:37
-#: nodedevs/templates/nodedevs.html:82 virtsecrets/templates/secrets.html:32
+#: nodedevs/templates/nodedevs.html:82 storages/templates/storage.html:142
+#: virtsecrets/templates/secrets.html:32
 msgid "Used by"
 msgstr "使用者"
 
@@ -8306,7 +8307,7 @@ msgstr "没有与搜索匹配的过滤器。"
 msgid "Clone filter"
 msgstr "克隆过滤器"
 
-#: nwfilters/templates/nwfilters.html:88 storages/templates/storage.html:181
+#: nwfilters/templates/nwfilters.html:88 storages/templates/storage.html:207
 msgid "Name of the copy"
 msgstr "副本名称"
 
@@ -9048,43 +9049,59 @@ msgstr "此存储池已停止：在启动之前无法列出或管理其中的卷
 msgid "Search volumes"
 msgstr "搜索卷"
 
-#: storages/templates/storage.html:137
+#: storages/templates/storage.html:122
+msgid "Volume use"
+msgstr "卷使用情况"
+
+#: storages/templates/storage.html:128 storages/templates/storage.html:156
+msgid "In use"
+msgstr "使用中"
+
+#: storages/templates/storage.html:131 storages/templates/storage.html:157
+msgid "Not used on this host"
+msgstr "未在此主机上使用"
+
+#: storages/templates/storage.html:156
+msgid "Another volume is built on it"
+msgstr "另一个卷基于它"
+
+#: storages/templates/storage.html:163
 #, python-format
 msgid "%(allocated)s allocated"
 msgstr "已分配 %(allocated)s"
 
-#: storages/templates/storage.html:149
+#: storages/templates/storage.html:175
 msgid "Download"
 msgstr "下载"
 
-#: storages/templates/storage.html:153
+#: storages/templates/storage.html:179
 #, python-format
 msgid ""
 "Delete volume %(name)s? Its file and data are removed; a volume a VM uses is "
 "not deleted."
 msgstr "删除卷 %(name)s？其文件和数据将被删除；虚拟机正在使用的卷不会被删除。"
 
-#: storages/templates/storage.html:166
+#: storages/templates/storage.html:192
 msgid "No volume matches the search."
 msgstr "没有与搜索匹配的卷。"
 
-#: storages/templates/storage.html:174
+#: storages/templates/storage.html:200
 msgid "Clone image"
 msgstr "克隆镜像"
 
-#: storages/templates/storage.html:187
+#: storages/templates/storage.html:213
 msgid "Convert it to another format"
 msgstr "转换为其他格式"
 
-#: storages/templates/storage.html:192
+#: storages/templates/storage.html:218
 msgid "raw"
 msgstr "raw"
 
-#: storages/templates/storage.html:193
+#: storages/templates/storage.html:219
 msgid "qcow2"
 msgstr "qcow2"
 
-#: storages/templates/storage.html:210
+#: storages/templates/storage.html:236
 msgid "This pool has no volumes."
 msgstr "此存储池中没有卷。"
 
@@ -10722,7 +10739,7 @@ msgstr "连接失败：%(host)s 未连接"
 msgid "This host has no architecture %(arch)s"
 msgstr "此主机没有 %(arch)s 架构"
 
-#: vrtManager/connection.py:1265
+#: vrtManager/connection.py:1277
 #, python-format
 msgid ""
 "Pool %(pool)s is not active: the files the disks of the VMs in it are made "
@@ -11740,7 +11757,7 @@ msgstr "无法引用过滤器 %(name)s：它就是本过滤器、已被引用或
 msgid "Enter one <rule> element"
 msgstr "请输入一个 <rule> 元素"
 
-#: vrtManager/storage.py:124
+#: vrtManager/storage.py:125
 #, python-format
 msgid ""
 "Device %(device)s already holds data: a partition table, a file system or a "
@@ -11750,31 +11767,31 @@ msgstr ""
 "设备 %(device)s 上已有数据：分区表、文件系统或卷组。如果确认是正确的设备，请在主机上用 \"wipefs -a %(device)s\" "
 "清除后重试。"
 
-#: vrtManager/storage.py:221
+#: vrtManager/storage.py:222
 #, python-format
 msgid ""
 "Pool %(name)s holds disks of the running VMs %(vms)s; shut them down first"
 msgstr "存储池 %(name)s 中有运行中的虚拟机 %(vms)s 的磁盘；请先关闭它们"
 
-#: vrtManager/storage.py:241
+#: vrtManager/storage.py:242
 #, python-format
 msgid ""
 "VMs %(vms)s have disks in pool %(name)s and would no longer start; detach "
 "those disks first"
 msgstr "虚拟机 %(vms)s 使用存储池 %(name)s 中的磁盘，将无法再启动；请先分离这些磁盘"
 
-#: vrtManager/storage.py:276
+#: vrtManager/storage.py:277
 #, python-format
 msgid "Volume %(name)s is in use on another compute that shares this storage"
 msgstr "卷 %(name)s 正在被共享此存储的另一台主机使用"
 
-#: vrtManager/storage.py:282
+#: vrtManager/storage.py:288
 #, python-format
 msgid ""
 "Volume %(name)s is in use: a VM's disk, a backing file or a snapshot's file"
 msgstr "卷 %(name)s 正在使用中：它是虚拟机的磁盘、后备文件或快照文件"
 
-#: vrtManager/storage.py:375
+#: vrtManager/storage.py:381
 #, python-format
 msgid "The running VMs %(vms)s use volume %(name)s; shut them down to copy it"
 msgstr "正在运行的虚拟机 %(vms)s 使用卷 %(name)s；请先将其关闭再复制"

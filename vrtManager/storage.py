@@ -27,7 +27,7 @@ def rbd_source_children(pool):
 
 
 def volume_details(vol):
-    """A volume's name, capacity (size), allocation and format, from its XML:
+    """A volume's name, capacity (size), allocation, format and path, from its XML:
     one libvirt call, which refreshes the volume as info() does. Logical and
     iSCSI volumes have no format (None)."""
     def read(doc):
@@ -36,6 +36,7 @@ def volume_details(vol):
             "size": int(util.get_xpath(doc, "/volume/capacity")),
             "allocation": int(util.get_xpath(doc, "/volume/allocation")),
             "type": util.get_xpath(doc, "/volume/target/format/@type"),
+            "path": util.get_xpath(doc, "/volume/target/path"),
         }
     return util.get_xml_path(vol.XMLDesc(0), func=read)
 
@@ -274,6 +275,11 @@ class wvmStorage(wvmConnect):
         path = self.pool.storageVolLookupByName(name).path()
         if path in elsewhere([path]):
             raise util.InUse(gettext_noop("Volume %(name)s is in use on another compute that shares this storage"), name=name)
+
+    def volume_users(self):
+        """{path: VM names, sorted} of the paths this host uses (path_users): none for
+        a backing file only another volume is built on."""
+        return {path: sorted(names) for path, names in self.path_users().items()}
 
     def del_volume(self, name):
         """libvirt deletes any volume; one a VM of this host still needs is refused."""

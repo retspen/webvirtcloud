@@ -1220,19 +1220,30 @@ class wvmConnect(object):
         return sorted(name for name, trees in self.domain_trees(running_only) if any(map(match, trees)))
 
     def paths_in_use(self, skip_uuid=None, own=()):
-        """Paths (names for network disks) a domain uses as a disk or a
-        backing file of one, in its saved state too, or as a file of its
-        snapshots (overlays, memory, the disks they were taken on); and the
-        backing files of volumes.
+        """The paths of path_users."""
+        return set(self.path_users(skip_uuid, own))
+
+    def path_users(self, skip_uuid=None, own=()):
+        """{path: names of the domains that use it} for the paths (names for
+        network disks) a domain uses as a disk or a backing file of one, as
+        its UEFI variables, in its saved state too, or as a file of its
+        snapshots (overlays, memory, the disks they were taken on); and,
+        with no name, the backing files of volumes.
         skip_uuid leaves out one domain, own the volumes whose backing files
         do not count. util.InUse when a disk not running has its file in an
         inactive pool: the files it is made from cannot be read."""
-        used, unread = set(), set()
+        users, unread = {}, set()
         for dom in self.wvm.listAllDomains():
             if dom.UUIDString() == skip_uuid:
                 continue
+            name = dom.name()
+
+            def use(paths):
+                for path in paths:
+                    users.setdefault(path, set()).add(name)
+
             live, config = (etree.fromstring(dom.XMLDesc(flags)) for flags in (0, libvirt.VIR_DOMAIN_XML_INACTIVE))
-            used.update(self._source_paths(live), self._source_paths(config))
+            use(self._source_paths(live) + self._source_paths(config))
             # a running disk's definition has its backing chain; the others' volumes have it
             unread.update(set(UNREAD_DISKS(config)) - (set(UNREAD_DISKS(live)) if dom.isActive() else set()))
             # a saved state starts with the disks it was saved with, detached since or not
@@ -1247,16 +1258,17 @@ class wvmConnect(object):
                     # the image went meanwhile: the VM may have started from it
                     saved = dom.XMLDesc(0)
                 saved = etree.fromstring(saved)
-                used.update(self._source_paths(saved))
+                use(self._source_paths(saved))
                 unread.update(UNREAD_DISKS(saved))
             for snap in dom.listAllSnapshots(0):
                 tree = etree.fromstring(snap.getXMLDesc(0))
-                used.update(tree.xpath("disks/disk/source/@file|memory/@file"))
+                use(tree.xpath("disks/disk/source/@file|disks/disk/source/@dev|disks/disk/source/@name|memory/@file"))
                 for saved in tree.xpath("domain|inactiveDomain"):
-                    used.update(self._source_paths(saved))
+                    use(self._source_paths(saved))
                     unread.update(UNREAD_DISKS(saved))
         # A stopped domain's XML has no backing chain; the volumes have it.
         # Any volume backed by a path keeps that path, even an unattached one.
+        built_on = {}  # a backing path: the volumes built on it
         for pool in self.wvm.listAllStoragePools():
             if not pool.isActive():
                 target = util.get_xml_path(pool.XMLDesc(0), "/pool/target/path")
@@ -1271,18 +1283,30 @@ class wvmConnect(object):
                 # only a volume removed meanwhile is skipped: one that cannot
                 # be read may still keep a backing file
                 try:
-                    if vol.path() not in own:
-                        used.update(etree.fromstring(vol.XMLDesc(0)).xpath("./backingStore/path/text()"))
+                    if (top := vol.path()) not in own:
+                        for path in etree.fromstring(vol.XMLDesc(0)).xpath("./backingStore/path/text()"):
+                            users.setdefault(path, set())
+                            built_on.setdefault(path, []).append(top)
                 except libvirtError as err:
                     if err.get_error_code() != libvirt.VIR_ERR_NO_STORAGE_VOL:
                         raise
-        return used
+        # a backing file is used by the domains of the volumes built on it, down the chain
+        changed = True
+        while changed:
+            changed = False
+            for path, tops in built_on.items():
+                names = set().union(*(users.get(top, set()) for top in tops)) - users[path]
+                if names:
+                    users[path] |= names
+                    changed = True
+        return users
 
     def _source_paths(self, domain):
         """The files, devices or network names of a domain definition's
         disks and of their backing chains ("//" reaches a running domain's
-        backingStore); a pool volume source as its volume's path."""
-        paths = []
+        backingStore), and of its UEFI variables; a pool volume source as its volume's path."""
+        paths = domain.xpath("os/nvram/text()|os/nvram/source/@file|os/nvram/source/@dev|os/nvram/source/@name|"
+                             "os/varstore/@path")
         for source in domain.xpath("devices/disk//source"):
             if source.get("pool") and source.get("volume"):
                 try:
