@@ -35,11 +35,11 @@ WebVirtCloud and `virt-manager`/`virsh` can manage the same libvirt host **concu
 * Host maintenance: a host in maintenance takes no new VMs, incoming migrations or VM starts; putting it in maintenance offers to migrate its VMs away with Bulk Migrate
 * Balance: proposes migrations that even out the running VMs' memory, then vCPUs, as a share of each host's size
 * Virtual machine lifecycle: create, delete, power management, clone (also of a running VM, with libvirt 11.10 or later), migrate (with or without shared storage), bulk migrate (a host's chosen VMs to another host, the chosen number at once), disk moves between pools
-* Long operations (create, clone, delete, snapshots, migration, disk moves, ISO upload) run as jobs that the page follows; a queued job can be cancelled, and a running clone, migration, disk move or ISO upload too
+* Long operations (create, clone, delete, bulk power, snapshots, migration, disk moves, ISO upload, downloads from a URL, VM backups) run as jobs that the page follows; a queued job can be cancelled, and a running migration, ISO upload, download, backup or verification and the copy of a running VM (clone, disk move) too
 * External snapshots (memory optional; without memory, guest file systems can be frozen through the agent)
 * **External change detection:** VMs created, deleted or renamed via `virt-manager` or `virsh` are reconciled into the database automatically
-* Real-time hypervisor and VM statistics (CPU, RAM, disk, network)
-* Storage pool and volume management; a volume downloads from its pool page (not one a running VM uses)
+* Real-time host statistics (CPU, RAM) and VM statistics (CPU, RAM, disk, network)
+* Storage pool and volume management; a superuser downloads a volume from its pool page (not one a running VM uses), or makes one from a file at a URL
 * Network (with DHCP leases), interface, network filter and secret management
 * PCI and USB devices of the host given to VMs
 * UEFI Secure Boot and TPM 2.0 for new VMs, as Windows 11 needs
@@ -54,7 +54,7 @@ WebVirtCloud and `virt-manager`/`virsh` can manage the same libvirt host **concu
 * Cloud-init datasource interface (OpenStack metadata compatible) and NoCloud seed media
 * REST API — OpenAPI 3.0 (Swagger & ReDoc), with API tokens
 * LDAP / Active Directory integration (optional)
-* VM backups, of a running or shut-off VM, into a storage pool of your choice; a backup is restored as a new VM
+* VM backups, of a running or shut-off VM, into a storage pool of your choice; a backup is restored as a new VM, over its own shut-off VM, or one disk as a new volume
 * Daily backups of the panel, with an optional off-site copy (restic over SFTP)
 * English, Turkish and Simplified Chinese
 
@@ -80,7 +80,7 @@ chmod 744 install.sh
 sudo ./install.sh
 ```
 
-The installer writes the server's names and IPs to `ALLOWED_HOSTS`. Running it again keeps `data/local_settings.py`, the database, the secret key and the main nginx config, but replaces `/etc/nginx/conf.d/webvirtcloud.conf` and the systemd units; back up your own lines in the nginx config (TLS) first. Put your own service settings in `/etc/default/webvirtcloud` or in drop-ins (`systemctl edit webvirt-cloud`), which a re-run keeps.
+The installer writes the server's names and IPs to `ALLOWED_HOSTS`. Running it again keeps `data/local_settings.py` (and its noVNC port, whatever the answer), the database, the secret key and the main nginx config, but replaces `/etc/nginx/conf.d/webvirtcloud.conf` and the systemd units; back up your own lines in the nginx config (TLS) first. Put your own service settings in `/etc/default/webvirtcloud` or in drop-ins (`systemctl edit webvirt-cloud`), which a re-run keeps.
 
 ### Docker
 
@@ -140,8 +140,8 @@ rm -f /etc/nginx/sites-enabled/default
 
 # 7. Ownership, private files, start (the groups let the services reach a local libvirt and KVM)
 chown -R www-data:www-data /srv/webvirtcloud
-usermod -a -G libvirt,kvm www-data 2>/dev/null || true   # on a KVM host
-chmod 700 data && chmod 600 data/local_settings.py data/secret_key db.sqlite3
+for g in libvirt kvm; do usermod -a -G $g www-data 2>/dev/null || true; done   # on a KVM host
+chmod 700 data && chmod 600 data/local_settings.py data/secret_key && { [ ! -f db.sqlite3 ] || chmod 600 db.sqlite3; }
 systemctl daemon-reload && systemctl enable --now webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker webvirt-backup.timer
 nginx -t && systemctl restart nginx
 ```
@@ -150,7 +150,7 @@ nginx -t && systemctl restart nginx
 
 ```bash
 # 1. System packages (libvirt-devel is in the CRB repository)
-dnf -y install epel-release && crb enable
+dnf -y install epel-release && crb enable   # Rocky / AlmaLinux; on RHEL and Oracle Linux enable their CodeReady Builder repository and EPEL as their documentation says
 dnf -y install git python3-devel libvirt-devel python3-libvirt python3-lxml cyrus-sasl-md5 openssl-devel glibc gcc nginx python3-libguestfs iproute-tc policycoreutils-python-utils
 
 # 2. Code
@@ -179,8 +179,8 @@ cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
 
 # 7. Ownership, private files, SELinux, firewall, start (the groups let the services reach a local libvirt and KVM)
 chown -R nginx:nginx /srv/webvirtcloud
-usermod -a -G libvirt,kvm nginx 2>/dev/null || true   # on a KVM host
-chmod 700 data && chmod 600 data/local_settings.py data/secret_key db.sqlite3
+for g in libvirt kvm; do usermod -a -G $g nginx 2>/dev/null || true; done   # on a KVM host
+chmod 700 data && chmod 600 data/local_settings.py data/secret_key && { [ ! -f db.sqlite3 ] || chmod 600 db.sqlite3; }
 # nginx reads the static files, systemd runs the virtualenv's programs
 semanage fcontext -a -t httpd_sys_content_t "/srv/webvirtcloud(/.*)?" 2>/dev/null || true
 semanage fcontext -a -t bin_t "/srv/webvirtcloud/venv/bin(/.*)?" 2>/dev/null || true
@@ -226,8 +226,8 @@ cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
 
 # 7. Ownership, private files, start (the groups let the services reach a local libvirt and KVM)
 chown -R nginx:nginx /srv/webvirtcloud
-usermod -a -G libvirt,kvm nginx 2>/dev/null || true   # on a KVM host
-chmod 700 data && chmod 600 data/local_settings.py data/secret_key db.sqlite3
+for g in libvirt kvm; do usermod -a -G $g nginx 2>/dev/null || true; done   # on a KVM host
+chmod 700 data && chmod 600 data/local_settings.py data/secret_key && { [ ! -f db.sqlite3 ] || chmod 600 db.sqlite3; }
 systemctl daemon-reload && systemctl enable --now webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker webvirt-backup.timer
 systemctl enable nginx && nginx -t && systemctl restart nginx
 ```
@@ -247,7 +247,7 @@ Sign in at `http://<server-ip>`; you must set a new password at the first login,
 
 A compute node is a KVM host the panel manages over libvirt.
 
-1. Install KVM and libvirt. The bootstrap script handles Ubuntu, Debian, CentOS, Fedora, Rocky Linux and AlmaLinux 10, openEuler 24.03 LTS, openSUSE and SLES. On RHEL, which needs EPEL from its release RPM, install the `qemu-kvm`, `libvirt` and `python3-libguestfs` (for gstfsd, step 3) packages yourself and enable `virtqemud.socket` (plus `virtproxyd-tcp.socket` for TCP):
+1. Install KVM and libvirt. The bootstrap script handles Ubuntu, Debian, CentOS, Fedora, Rocky Linux and AlmaLinux 10, openEuler 24.03 LTS, openSUSE and SLES. On RHEL, which needs EPEL from its release RPM, install the `qemu-kvm`, `libvirt` and `python3-libguestfs` (for gstfsd, step 3) packages yourself and enable the sockets of the daemons the panel talks to, `virt{qemu,network,storage,nodedev,nwfilter,secret,interface}d.socket` (for TCP also `virtproxyd-tcp.socket` and SASL, set up as `dev/libvirt-bootstrap.sh` does on EL10):
 
    ```bash
    curl -fsSL https://raw.githubusercontent.com/retspen/webvirtcloud/master/dev/libvirt-bootstrap.sh | sudo sh
@@ -363,7 +363,7 @@ The on/off variables take `1` or `0`; any other value, such as `true`, stops the
 
 Where to set them:
 
-- **Docker:** the `environment:` list of `docker-compose.override.yml`; every process in the container gets it.
+- **Docker:** the `environment:` list of `docker-compose.override.yml`, then `docker compose up -d`; every process in the container gets it.
 - **Installer and manual installation:** `/etc/default/webvirtcloud` (root, mode 600), one `NAME='value'` per line (single quotes: systemd and the shell then read the same value); the panel's services read it. [`data/local_settings.py`](#local-settings) does not read these names: a line `WEBVIRTCLOUD_HTTPS = 1` there does nothing; it sets the setting the variable fills, e.g. `SERIAL_CONSOLE_ENABLED = True`. Then `systemctl restart webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker`, and load the file before running `manage.py`: `set -a; . /etc/default/webvirtcloud; set +a`.
 
 gunicorn runs at most 8 workers (fewer on hosts with under 4 CPUs), in Docker 4, of 4 threads each; each worker takes about 140 MB and sends at most 2 requests at a time to one compute. To change it, set `GUNICORN_CMD_ARGS=--workers N` in a drop-in of `webvirt-cloud` (`systemctl edit webvirt-cloud`: `[Service]` and `Environment="GUNICORN_CMD_ARGS=--workers N"`) or in `docker-compose.override.yml`.
@@ -489,7 +489,7 @@ The QR code is mailed as a link to a page that shows it, good for one hour: the 
 
 ### Alerts
 
-On the Settings page (Alerts), **Alert e-mail addresses** get a mail, through the server's SMTP settings (`EMAIL_HOST` and the others, as for OTP), and **Alert webhook** a JSON POST (`subject`, `text`, `time`; Slack, Mattermost and ntfy take it) when a backup job fails, a scheduled backup is not taken (not for a host in maintenance), the daily target check finds backups missing, a verification finds a backup damaged, or a job ends uncertain. The job worker sends them within a minute and tries a failed channel again for ten minutes.
+On the Settings page (Alerts), **Alert e-mail addresses** get a mail, through the server's SMTP settings (`EMAIL_HOST` and the others, as for OTP), and **Alert webhook** a JSON POST (`subject`, `text`, `time`; Slack and Mattermost take it) when a backup job fails, a scheduled backup is not taken (not for a host in maintenance), the daily target check finds backups missing, a verification finds a backup damaged, or a job ends uncertain. The job worker sends them within a minute and tries a failed channel again for ten minutes.
 
 `/healthz`, without a login, answers 200 while the database answers and the job worker runs, 503 otherwise: point a monitor at it. The Docker image's health check reads it too.
 
@@ -500,7 +500,7 @@ A VM without graphics (no `<graphics>` device, a `<console type='pty'>`) opens a
 - The VM page's Settings → Console switches a shut-off VM between VNC and serial (Console type). A new VNC console takes the form's other fields; on a TCP or TLS compute it needs Listen on: All interfaces (SSH and socket computes reach a localhost console).
 - The guest must use its serial port: a login prompt needs `systemctl enable --now serial-getty@ttyS0`, boot messages need the kernel parameter `console=ttyS0,115200`. The console shows only what the guest writes after it opens; press Enter for a new prompt.
 - socketiod listens on 127.0.0.1:6081; the page reaches it through nginx's `/socket.io/` location on the panel's own address.
-- It accepts the console page's signed token, which expires after 120 s, only from the session of the user it was given to, as noVNC does. An open console closes within 10 s once its user loses access to the VM.
+- It accepts the console page's signed token, which expires after 120 s, only from a session of the user it was given to, as noVNC does. An open console checks its user's access about every 10 s and closes once it is lost.
 - One console per VM, at most 20 at a time; a second one is refused with the reason, except a superuser's, which takes the console over.
 - novncd and socketiod log to the journal (`journalctl -u webvirt-novncd -u webvirt-socketiod`) or, in Docker, to `docker logs`: a console that was refused or could not connect says why there.
 
@@ -592,7 +592,7 @@ To get a backup back when the panel's host is lost, give the new host a key as i
 read -rs RESTIC_PASSWORD && export RESTIC_PASSWORD RESTIC_REPOSITORY=sftp:webvirtcloud-offsite:restic
 restic snapshots --tag webvirtcloud
 restic restore latest --tag webvirtcloud --target /root/offsite-restore
-b=$(find /root/offsite-restore -type d -name 'webvirtcloud-backup-*' | sort | tail -n 1)
+b=$(find /root/offsite-restore -type d -name 'webvirtcloud-backup-*' -printf '%T@ %p\n' | sort -n | tail -n 1 | cut -d' ' -f2-)
 ```
 
 and follow [Moving to a new machine](#moving-to-a-new-machine) with that `b` (leave out its `b=` line).
@@ -618,8 +618,8 @@ The target must be:
 An NFS target, on each host:
 
 ```bash
-virsh pool-define-as vmbackups netfs --source-host nfs.example.com --source-path /export/vmbackups --target /var/lib/libvirt/vmbackups
-virsh pool-build vmbackups && virsh pool-start vmbackups && virsh pool-autostart vmbackups
+virsh -c qemu:///system pool-define-as vmbackups netfs --source-host nfs.example.com --source-path /export/vmbackups --target /var/lib/libvirt/vmbackups
+virsh -c qemu:///system pool-build vmbackups && virsh -c qemu:///system pool-start vmbackups && virsh -c qemu:///system pool-autostart vmbackups
 ```
 
 The panel does not copy VM backups off site: the target's storage does.
@@ -677,10 +677,10 @@ From a root shell:
 
 - It runs the newest `update.sh` of the repository, also on an installation that has none yet. Another directory than `/srv/webvirtcloud`: set it in the command and `APP_PATH` for `bash`; the units get it.
 - Nothing in the installation changes until its checks pass; files of the repository changed by hand stop it, listed. With PostgreSQL (the database Django is set up with), back that database up first and run it with `... | bash -s -- --database-backed-up`.
-- An installation of an older version has its own `webvirtcloud/settings.py`: it stops and lists the lines that differ from that version's template: your own. Put your own values into [`data/local_settings.py`](#local-settings) and run it again. Typical ones are `TIME_ZONE`, `WS_*`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, LDAP and, with PostgreSQL, your `DATABASES`: the default is sqlite, so without it `migrate` would make a new, empty sqlite database and the panel would start on that. A literal `SECRET_KEY = "..."` (older installers wrote it there) goes into `data/secret_key` instead (with no key every page fails, with another every user is signed out); keep `SHOW_PROFILE_EDIT_PASSWORD` for this one update if you have it (migration `accounts.0008` reads it), then delete it.
+- An installation of an older version has its own `webvirtcloud/settings.py`: it stops and lists the lines that differ from that version's template: your own. Put your own values into [`data/local_settings.py`](#local-settings) and run it again. Typical ones are `TIME_ZONE`, `WS_PORT`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, LDAP and, with PostgreSQL, your `DATABASES`: the default is sqlite, so without it `migrate` would make a new, empty sqlite database and the panel would start on that. A literal `SECRET_KEY = "..."` (older installers wrote it there) goes into `data/secret_key` instead (with no key every page fails, with another every user is signed out); keep `SHOW_PROFILE_EDIT_PASSWORD` for this one update if you have it (migration `accounts.0008` reads it), then delete it.
 - It stops the panel and backs it up into `/root/webvirtcloud-backup-<date>`: the database, the commit, `data/local_settings.py`, the nginx config, `/etc/default/webvirtcloud`, an older version's own `settings.py` and the migrations an old installer generated (`local-migrations.tar`). Then it pulls `master`, installs the requirements (the LDAP ones too if installed), migrates, collects the static files, gives the files to the panel's user (the owner of `/srv/webvirtcloud`), installs the systemd units and starts the panel.
 - It does not replace `/etc/nginx/conf.d/webvirtcloud.conf`, which holds your `server_name`, TLS and noVNC port: when the new version changes that config, it prints the change to apply by hand.
-- A failure stops it with the reason and the backup's directory. A failed backup starts the panel again; a later failure leaves it stopped until the cause is fixed and the command runs again, which goes on with that backup, or it is [rolled back](#restore-and-rollback).
+- A failure stops it with the reason and the backup's directory. A failed backup starts the panel again; a later failure before the panel starts leaves it stopped until the cause is fixed and the command runs again, which goes on with that backup, or it is [rolled back](#restore-and-rollback). An nginx config nginx refuses stops it after the panel started: fix it and `systemctl reload nginx`.
 - Older versions collected static files into `static/`; `git clean -n static/` lists the leftovers, which can be deleted.
 
 ### Restore and rollback
@@ -724,7 +724,8 @@ venv/bin/pip3 install -r conf/requirements.txt &&
 venv/bin/python3 manage.py migrate &&
 venv/bin/python3 manage.py collectstatic --noinput &&
 chown -R www-data:www-data /srv/webvirtcloud &&
-chmod 600 db.sqlite3 && { [ ! -f "$b/settings.py" ] || chmod 600 webvirtcloud/settings.py; }
+chmod 600 db.sqlite3 && { [ ! -f "$b/settings.py" ] || chmod 600 webvirtcloud/settings.py; } &&
+rm -f data/.update-backup
 ```
 
 A backup of a version that had its own `settings.py` (not in the repository) holds that file: the steps put it back for the older code.
@@ -735,7 +736,7 @@ Put back `/etc/default/webvirtcloud` if the backup has it (`cp -p "$b/webvirtclo
 nginx -t && systemctl reload nginx && systemctl start webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
 ```
 
-A version from before v3.0.0 has no worker: `systemctl disable --now webvirt-worker`. A rollback keeps the systemd units. A rollback leaves the clone on a detached HEAD at the restored commit; `update.sh` records that commit before it switches back to `master`.
+A version from before v3.0.0 has no worker: `systemctl disable --now webvirt-worker`. A rollback keeps the systemd units, and drops what a stopped `update.sh` kept to go on with (`data/.update-backup`). A rollback leaves the clone on a detached HEAD at the restored commit; `update.sh` records that commit before it switches back to `master`.
 
 ### Moving to a new machine
 
@@ -757,14 +758,15 @@ docker compose cp "$b/node_id" webvirtcloud:/srv/webvirtcloud/data/ &&
 docker compose up -d    # the container migrates and fixes ownership and modes at start
 ```
 
-Installer and manual installation, from a root shell (`nginx` instead of `www-data` on RHEL / openSUSE). A backup of an older version has a `settings.py` instead of `local_settings.py`: carry your own values from it into [`data/local_settings.py`](#local-settings).
+Installer and manual installation, from a root shell (`nginx` instead of `www-data` on RHEL / openSUSE / openEuler), with your `/etc/default/webvirtcloud` in place first. A backup of an older version has a `settings.py` instead of `local_settings.py`: carry your own values from it into [`data/local_settings.py`](#local-settings).
 
 ```bash
 b=/root/webvirtcloud-backup-YYYYMMDD-HHMMSS
 systemctl stop webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
 cd /srv/webvirtcloud &&
+{ [ ! -f /etc/default/webvirtcloud ] || { set -a; . /etc/default/webvirtcloud; set +a; }; } &&
 venv/bin/python3 -c "import os,sqlite3,sys; [os.remove(p) for p in ('db.sqlite3-journal','db.sqlite3-wal','db.sqlite3-shm') if os.path.exists(p)]; sqlite3.connect(sys.argv[1]).backup(sqlite3.connect('db.sqlite3'))" "$b/db.sqlite3" &&
-cp "$b/node_id" data/ && { [ ! -f "$b/secret_key" ] || cp "$b/secret_key" data/; } &&
+{ [ ! -f "$b/node_id" ] || cp "$b/node_id" data/; } && { [ ! -f "$b/secret_key" ] || cp "$b/secret_key" data/; } &&
 { [ ! -f "$b/local_settings.py" ] || cp "$b/local_settings.py" data/; } &&
 mkdir -p ~www-data/.ssh && { [ ! -d "$b/ssh" ] || cp -r "$b"/ssh/. ~www-data/.ssh/; } &&
 mkdir -p ~www-data/.pki && { [ ! -d "$b/pki" ] || cp -r "$b"/pki/. ~www-data/.pki/; } &&
@@ -797,7 +799,7 @@ What an update from an older version changes for operators and users. `manage.py
 - New passwords must pass Django's password validators: at least 8 characters, not a common password, not only digits, not like the user's name or e-mail. Existing passwords keep working.
 - In Docker, the TLS client certificates of TLS computes are kept in a new volume, `webvirtcloud-pki` (`/var/www/.pki`), and backed up; put them there once ([Adding a Compute Node](#adding-a-compute-node), step 2).
 - The SQLite database must be on a local file system (WAL). Outside compose, stop the Docker container with `docker stop -t 95 webvirtcloud` so the worker can finish running jobs.
-- Long operations run as jobs in a worker process (`manage.py run_worker`): creating, cloning, migrating and deleting VMs, moving disks, cloning volumes, taking and reverting snapshots and deleting external snapshots. The page returns at once and the job panel and the Jobs page follow them; a migration can be cancelled. The API's VM create, migrate and delete answer 202 with the job and need a new `submission_key` per request. The create form no longer takes a console password; set it on the VM page.
+- Long operations run as jobs in a worker process (`manage.py run_worker`): creating, cloning, migrating and deleting VMs, bulk power actions, moving disks, cloning and downloading volumes, taking and reverting snapshots, deleting external snapshots and VM backups. The page returns at once and the job panel and the Jobs page follow them. The API's VM create, migrate and delete answer 202 with the job and need a `submission_key`: a new one for each operation, the same one to retry it (a delete retried after its VM is gone gets 404). The create form no longer takes a console password; set it on the VM page.
 - An API error other than a field the request got wrong (which answers with the fields) is `{"detail": ...}` with a status that says what it is: 404 for a VM, pool or volume read or deleted that the host does not have, 409 for a volume in use, a template started or a stopped pool, 503 for a host that cannot be reached (all were 400 or 200 before); an unknown API URL answers JSON.
 - An ISO upload is tracked as a job that can be cancelled. The browser sends the file, so stay on the page until it ends; an upload left idle for an hour is ended and its partial file deleted.
 - A clone of a running VM (libvirt 11.10 or later, local file disks, no TPM) locks the VM until the copy ends and can be cancelled; cancelling a clone of a shut-off VM has no effect. A job that ends uncertain keeps its VM locked until a superuser resolves it on its job page.
@@ -813,7 +815,6 @@ What an update from an older version changes for operators and users. `manage.py
 - A VM that vanishes from its compute, or whose compute is deleted, keeps its owners, tags, protection and schedules for `INSTANCE_OWNERSHIP_RETENTION_DAYS` (30) in case the same UUID comes back, and its backups are linked to it again; superusers manage these records on the "Removed VMs" page.
 - The Logs page records who changed what (computes, users, groups, VM owners, settings, SSH keys, host networks, pools, volumes, interfaces, secrets and network filters), every login, failed login and lockout, and every page or API call answered 401 or 403 to a signed-in user or a request with credentials, with the address and the result (a VM hidden with 404 is not logged).
 - On a host whose libvirt cannot change network interfaces (the udev backend: RHEL 9 and later, Debian 12), the interface pages offer no create, start, stop or delete.
-- The panel is offered in English, Turkish and Simplified Chinese.
 - With SELinux (RHEL family, openEuler), systemd could not run the virtualenv's programs and the panel did not start. The installer now writes file context rules (`httpd_sys_content_t` for the panel, `bin_t` for `venv/bin`) instead of `chcon`, so a relabel keeps them. A manual installation runs `semanage fcontext -a -t bin_t "/srv/webvirtcloud/venv/bin(/.*)?"` and `restorecon -R /srv/webvirtcloud` once; an installer one runs the installer again.
 
 ## Usage
@@ -853,7 +854,7 @@ The REST API (Django REST Framework, documented with `drf-spectacular`) takes th
 
 ## Development
 
-Run every step as your normal user, not with `sudo`: if `manage.py` ever runs as root, `db.sqlite3` and `data/` end up root-owned and later runs fail with "readonly database" or "Permission denied".
+Run `manage.py` as your normal user (`sudo` only for system packages): if it ever runs as root, `db.sqlite3` and `data/` end up root-owned and later runs fail with "readonly database" or "Permission denied".
 
 1. System packages. The virtualenv reuses the distro's `libvirt`, `lxml` and `ldap` bindings when their versions satisfy `conf/requirements.txt`; otherwise pip installs or builds newer ones:
 
@@ -911,7 +912,7 @@ It lists the dead keys it leaves out: a character only a dead key types cannot b
 
 ### Translations
 
-The panel is translated into the languages of `LANGUAGES` in `settings.py`, each with a full catalog in `locale/`. A new or changed text needs its translation in each before CI passes (needs `gettext`):
+English is the source language; the panel is translated into the other languages of `LANGUAGES` in `settings.py`, each with a full catalog in `locale/`. A new or changed text needs its translation in each before CI passes (needs `gettext`):
 
 ```bash
 python manage.py makemessages -l tr -l zh --no-obsolete --ignore=staticfiles --ignore=.venv

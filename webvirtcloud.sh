@@ -286,7 +286,11 @@ ALLOWED_HOSTS += $(wvc_allowed_hosts "$fqdn" $host_ips)
 CSRF_TRUSTED_ORIGINS += [$origins]
 EOF
   case $? in
-    1) echo "* Keeping the existing data/local_settings.py." ;;
+    1) echo "* Keeping the existing data/local_settings.py."
+       # nginx forwards to the noVNC port it gives, not to this run's answer
+       # (its last WS_PORT, else the default noVNC uses)
+       kept_port=$(sed -n 's/^WS_PORT *= *\([0-9]\{1,5\}\)\b.*/\1/p' "$APP_PATH/data/local_settings.py" | tail -n 1)
+       novncd_port=${kept_port:-6080} ;;
     2) echo "data/local_settings.py could not be written." >&2; exit 1 ;;
   esac
 
@@ -492,7 +496,7 @@ fi
 echo -n "  Q. NOVNC service port number?(Default: 6080) "
 read -r novncd_port
 if [ -z "$novncd_port" ]; then
-  readonly novncd_port=6080
+  novncd_port=6080
 elif [[ $novncd_port =~ ^[0-9]{1,5}$ ]] && (( 10#$novncd_port >= 1 && 10#$novncd_port <= 65535 )); then
   novncd_port=$((10#$novncd_port))  # 06080 is no Python number
 else
