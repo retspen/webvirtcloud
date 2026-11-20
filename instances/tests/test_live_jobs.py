@@ -197,7 +197,7 @@ class LiveJobsTestCase(TransactionTestCase):
         page = html.fromstring(self.client.get(reverse("bulk_migrate", args=[self.compute.pk]) + f"?target={dest.pk}").content)
         disabled = {int(box.get("value")): box.get("disabled") is not None for box in page.xpath("//input[@name='instance']")}
         self.assertEqual([disabled[vm.pk] for vm in (*vms, local)], [False, False, True])  # the host's other VMs as they are
-        raw = {"compute": self.compute.pk, "target": dest.pk, "parallel": 2, "instances": [vm.pk for vm in vms]}
+        raw = {"compute": self.compute.pk, "parallel": 2, "moves": [[vm.pk, dest.pk] for vm in vms]}
         self.run_job(jobs.submit("host.bulk_migrate", self.admin, raw, "key-evac0001"), concurrency=4)
         self.assertEqual(Operation.objects.filter(kind="instance.migrate", state=Operation.SUCCEEDED).count(), 2)
         self.assertEqual([dest_conn.lookupByUUIDString(vm.uuid).isActive() for vm in vms], [True, False])
