@@ -42,6 +42,7 @@ jobs:
           --health-retries 10
 
     env:
+      SECRET_KEY: ci-only-not-a-secret
       WEBVIRTCLOUD_DB_HOST: ${{ matrix.database == 'postgresql' && 'localhost' || '' }}
       WEBVIRTCLOUD_DB_PASSWORD: webvirtcloud
 
@@ -78,12 +79,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools
           pip install -r dev/requirements.txt
-
-      - name: Configure WebVirtCloud Settings
-        run: |
-          cp webvirtcloud/settings.py.template webvirtcloud/settings.py
-          SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(50))')
-          sed -i "s|^SECRET_KEY = .*|SECRET_KEY = \"${SECRET_KEY}\"|" webvirtcloud/settings.py
 
       - name: Check For Missing Migrations
         run: python manage.py makemigrations --check --dry-run
@@ -152,8 +147,7 @@ jobs:
       - name: Plant Secret Sentinels
         run: |
           mkdir -p data
-          for f in data/secret_key data/admin_password settings.py webvirtcloud/settings.py.bak \
-                   'webvirtcloud/settings.py~' webvirtcloud/.settings.py.swp; do
+          for f in data/secret_key data/admin_password data/local_settings.py data/local_settings.py~ settings.py; do
             echo sentinel > "$f"
           done
 
@@ -175,8 +169,7 @@ jobs:
         run: |
           docker run --rm --entrypoint sh webvirtcloud:ci -c '
             cd /srv/webvirtcloud
-            for f in data/secret_key data/admin_password settings.py webvirtcloud/settings.py.bak \
-                     "webvirtcloud/settings.py~" webvirtcloud/.settings.py.swp; do
+            for f in data/secret_key data/admin_password data/local_settings.py data/local_settings.py~ settings.py; do
               if [ -e "$f" ]; then echo "$f is in the image"; exit 1; fi
             done'
 

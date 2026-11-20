@@ -7,7 +7,8 @@ import os
 import sys
 try:
     import ldap
-    from django_auth_ldap.config import LDAPSearch, NestedActiveDirectoryGroupType
+    # data/local_settings.py sets up LDAP with these (README, LDAP)
+    from django_auth_ldap.config import LDAPSearch, NestedActiveDirectoryGroupType  # noqa: F401
     HAS_LDAP = True
 except ImportError:
     HAS_LDAP = False
@@ -190,7 +191,6 @@ AUTHENTICATION_BACKENDS = [
     # first: refuses logins that are locked out
     "axes.backends.AxesStandaloneBackend",
     "django.contrib.auth.backends.ModelBackend",
-    #"django_auth_ldap.backend.LDAPBackend",
 ]
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -446,29 +446,21 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL") or EMAIL_HOST_USER or "webm
 # seconds an SMTP server may take to answer; without it a server that stops answering holds the request for good
 EMAIL_TIMEOUT = 10
 
-# LDAP Config
-#
-
+# LDAP, set up in data/local_settings.py (README, LDAP): seconds to connect and for
+# each answer, as python-ldap waits for a server without end
 if HAS_LDAP:
-    AUTH_LDAP_SERVER_URI = "ldap://example.com"
-    AUTH_LDAP_BIND_DN = "username@example.com"
-    AUTH_LDAP_BIND_PASSWORD = "password"
-    # seconds to connect and for each answer: python-ldap waits for a server without end
     AUTH_LDAP_CONNECTION_OPTIONS = {ldap.OPT_NETWORK_TIMEOUT: 5, ldap.OPT_TIMEOUT: 10}
-    AUTH_LDAP_USER_SEARCH = LDAPSearch(
-        "CN=Users,DC=example,DC=com", ldap.SCOPE_SUBTREE, "(sAMAccountName=%(user)s)"
-    )
-    AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
-        "CN=Users,DC=example,DC=com", ldap.SCOPE_SUBTREE, "(objectClass=group)"
-    )
-    AUTH_LDAP_GROUP_TYPE = NestedActiveDirectoryGroupType()
-    AUTH_LDAP_REQUIRE_GROUP = "CN=WebVirtCloud Access,CN=Users,DC=example,DC=com"
-    AUTH_LDAP_USER_FLAGS_BY_GROUP = {
-        "is_staff": "CN=WebVirtCloud Staff,CN=Users,DC=example,DC=com",
-        "is_superuser": "CN=WebVirtCloud Admins,CN=Users,DC=example,DC=com",
-    }
-    AUTH_LDAP_USER_ATTR_MAP = {
-        "first_name": "givenName",
-        "last_name": "sn",
-        "email": "mail",
-    }
+
+# This installation's own settings: data/local_settings.py, which updates do not
+# change (Docker keeps it in the data volume). It runs here, after the defaults
+# above and with their names, so it sets or changes any of them, for example
+#   ALLOWED_HOSTS += ["panel.example.com"]
+# or the LDAP options (README, LDAP). A value worked out above from another
+# (DEFAULT_FROM_EMAIL, the log file) is not worked out again.
+LOCAL_SETTINGS = BASE_DIR / "data" / "local_settings.py"
+try:
+    local_settings = LOCAL_SETTINGS.read_bytes()  # bytes: Python reads its encoding, a BOM too
+except FileNotFoundError:  # one that cannot be read stops the panel, not silently
+    local_settings = None
+if local_settings is not None:
+    exec(compile(local_settings, str(LOCAL_SETTINGS), "exec"))

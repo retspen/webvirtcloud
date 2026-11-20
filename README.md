@@ -62,7 +62,7 @@ WebVirtCloud and `virt-manager`/`virsh` can manage the same libvirt host **concu
 
 1. [Installation](#installation): [installer](#installer), [Docker](#docker), [manual](#manual-installation), [first login](#first-login)
 2. [Adding a Compute Node](#adding-a-compute-node)
-3. [Configuration](#configuration): [environment variables](#environment-variables), [HTTPS and reverse proxy](#https-and-reverse-proxy), [cloud-init datasource](#cloud-init-datasource), [LDAP](#ldap), [OTP](#two-factor-login-otp), [serial console](#serial-console)
+3. [Configuration](#configuration): [environment variables](#environment-variables), [local settings](#local-settings), [HTTPS and reverse proxy](#https-and-reverse-proxy), [cloud-init datasource](#cloud-init-datasource), [LDAP](#ldap), [OTP](#two-factor-login-otp), [serial console](#serial-console)
 4. [Backups](#backups): [off-site copy](#off-site-copy), [VM backups](#vm-backups)
 5. [Updating](#updating): [Docker](#docker-1), [installer and manual](#installer-and-manual-installation), [restore and rollback](#restore-and-rollback), [moving to a new machine](#moving-to-a-new-machine), [behavior changes](#behavior-changes)
 6. [Usage](#usage): [users and permissions](#users-roles-and-permissions), [REST API](#rest-api), [screenshots](#screenshots)
@@ -80,7 +80,7 @@ chmod 744 install.sh
 sudo ./install.sh
 ```
 
-The installer writes the server's names and IPs to `ALLOWED_HOSTS`. Running it again keeps `settings.py`, the database, the secret key and the main nginx config, but replaces `/etc/nginx/conf.d/webvirtcloud.conf` and the systemd units; back up your own lines in the nginx config (TLS) first. Put your own service settings in `/etc/default/webvirtcloud` or in drop-ins (`systemctl edit webvirt-cloud`), which a re-run keeps.
+The installer writes the server's names and IPs to `ALLOWED_HOSTS`. Running it again keeps `data/local_settings.py`, the database, the secret key and the main nginx config, but replaces `/etc/nginx/conf.d/webvirtcloud.conf` and the systemd units; back up your own lines in the nginx config (TLS) first. Put your own service settings in `/etc/default/webvirtcloud` or in drop-ins (`systemctl edit webvirt-cloud`), which a re-run keeps.
 
 ### Docker
 
@@ -119,10 +119,10 @@ apt-get update && apt-get -y install git python3-venv python3-dev python3-lxml p
 git clone https://github.com/retspen/webvirtcloud /srv/webvirtcloud
 cd /srv/webvirtcloud
 
-# 3. Settings, allowed hosts and secret key
-cp webvirtcloud/settings.py.template webvirtcloud/settings.py
-sed -i 's|^ALLOWED_HOSTS = .*|ALLOWED_HOSTS = ["wvc.example.com", "192.0.2.10", "localhost", "127.0.0.1", "[::1]"]|' webvirtcloud/settings.py
-mkdir -p data && python3 conf/secret_generator.py > data/secret_key && chmod 600 data/secret_key
+# 3. This installation's settings (data/local_settings.py, see Configuration) and secret key
+mkdir -p -m 700 data && (umask 077 &&
+  echo 'ALLOWED_HOSTS += ["wvc.example.com", "192.0.2.10"]' > data/local_settings.py &&
+  python3 conf/secret_generator.py > data/secret_key)
 
 # 4. Virtualenv and dependencies
 python3 -m venv --system-site-packages venv
@@ -141,7 +141,7 @@ rm -f /etc/nginx/sites-enabled/default
 # 7. Ownership, private files, start (the groups let the services reach a local libvirt and KVM)
 chown -R www-data:www-data /srv/webvirtcloud
 usermod -a -G libvirt,kvm www-data 2>/dev/null || true   # on a KVM host
-chmod 700 data && chmod 600 webvirtcloud/settings.py db.sqlite3
+chmod 700 data && chmod 600 data/local_settings.py data/secret_key db.sqlite3
 systemctl daemon-reload && systemctl enable --now webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker webvirt-backup.timer
 nginx -t && systemctl restart nginx
 ```
@@ -157,10 +157,10 @@ dnf -y install git python3-devel libvirt-devel python3-libvirt python3-lxml cyru
 git clone https://github.com/retspen/webvirtcloud /srv/webvirtcloud
 cd /srv/webvirtcloud
 
-# 3. Settings, allowed hosts and secret key
-cp webvirtcloud/settings.py.template webvirtcloud/settings.py
-sed -i 's|^ALLOWED_HOSTS = .*|ALLOWED_HOSTS = ["wvc.example.com", "192.0.2.10", "localhost", "127.0.0.1", "[::1]"]|' webvirtcloud/settings.py
-mkdir -p data && python3 conf/secret_generator.py > data/secret_key && chmod 600 data/secret_key
+# 3. This installation's settings (data/local_settings.py, see Configuration) and secret key
+mkdir -p -m 700 data && (umask 077 &&
+  echo 'ALLOWED_HOSTS += ["wvc.example.com", "192.0.2.10"]' > data/local_settings.py &&
+  python3 conf/secret_generator.py > data/secret_key)
 
 # 4. Virtualenv and dependencies
 python3 -m venv --system-site-packages venv
@@ -180,7 +180,7 @@ cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
 # 7. Ownership, private files, SELinux, firewall, start (the groups let the services reach a local libvirt and KVM)
 chown -R nginx:nginx /srv/webvirtcloud
 usermod -a -G libvirt,kvm nginx 2>/dev/null || true   # on a KVM host
-chmod 700 data && chmod 600 webvirtcloud/settings.py db.sqlite3
+chmod 700 data && chmod 600 data/local_settings.py data/secret_key db.sqlite3
 # nginx reads the static files, systemd runs the virtualenv's programs
 semanage fcontext -a -t httpd_sys_content_t "/srv/webvirtcloud(/.*)?" 2>/dev/null || true
 semanage fcontext -a -t bin_t "/srv/webvirtcloud/venv/bin(/.*)?" 2>/dev/null || true
@@ -204,10 +204,10 @@ zypper --non-interactive install -y git hostname python311 python311-base python
 git clone https://github.com/retspen/webvirtcloud /srv/webvirtcloud
 cd /srv/webvirtcloud
 
-# 3. Settings, allowed hosts and secret key
-cp webvirtcloud/settings.py.template webvirtcloud/settings.py
-sed -i 's|^ALLOWED_HOSTS = .*|ALLOWED_HOSTS = ["wvc.example.com", "192.0.2.10", "localhost", "127.0.0.1", "[::1]"]|' webvirtcloud/settings.py
-mkdir -p data && python3.11 conf/secret_generator.py > data/secret_key && chmod 600 data/secret_key
+# 3. This installation's settings (data/local_settings.py, see Configuration) and secret key
+mkdir -p -m 700 data && (umask 077 &&
+  echo 'ALLOWED_HOSTS += ["wvc.example.com", "192.0.2.10"]' > data/local_settings.py &&
+  python3.11 conf/secret_generator.py > data/secret_key)
 
 # 4. Virtualenv and dependencies
 python3.11 -m venv --system-site-packages venv
@@ -227,7 +227,7 @@ cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/
 # 7. Ownership, private files, start (the groups let the services reach a local libvirt and KVM)
 chown -R nginx:nginx /srv/webvirtcloud
 usermod -a -G libvirt,kvm nginx 2>/dev/null || true   # on a KVM host
-chmod 700 data && chmod 600 webvirtcloud/settings.py db.sqlite3
+chmod 700 data && chmod 600 data/local_settings.py data/secret_key db.sqlite3
 systemctl daemon-reload && systemctl enable --now webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker webvirt-backup.timer
 systemctl enable nginx && nginx -t && systemctl restart nginx
 ```
@@ -354,7 +354,7 @@ If libvirt warns `Host SMBIOS information is not available`, install `dmidecode`
 | `WEBVIRTCLOUD_DEBUG=1` | Django debug mode: error pages show the traceback and settings; for trying things out only, never on a panel others use |
 | `WEBVIRTCLOUD_DB_HOST` | use PostgreSQL instead of sqlite (new installs); `WEBVIRTCLOUD_DB_PORT`/`_NAME`/`_USER`/`_PASSWORD` default to 5432/webvirtcloud/webvirtcloud/empty |
 | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, `DEFAULT_FROM_EMAIL` | SMTP for e-mail OTP; `EMAIL_USE_TLS` is 1 (STARTTLS, the default) or 0; the sender `DEFAULT_FROM_EMAIL` defaults to `EMAIL_HOST_USER` |
-| `TZ` | time zone of the panel's dates and times and, in Docker, of the container (its daily backup), e.g. `Europe/Istanbul`; default UTC (the installer writes the server's zone into `settings.py` instead) |
+| `TZ` | time zone of the panel's dates and times and, in Docker, of the container (its daily backup), e.g. `Europe/Istanbul`; default UTC (the installer writes the server's zone into `data/local_settings.py`, which wins) |
 | `WEBVIRTCLOUD_LOG_FILE` | log file (default `data/webvirtcloud.log`; a relative path is from the panel's directory; rotated at 10 MB × 5) |
 | `SECRET_KEY` | Django secret key (default: the `data/secret_key` file) |
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD` | the first superuser, read by the first `migrate` only, see [First login](#first-login) |
@@ -364,26 +364,21 @@ The on/off variables take `1` or `0`; any other value, such as `true`, stops the
 Where to set them:
 
 - **Docker:** the `environment:` list of `docker-compose.override.yml`; every process in the container gets it.
-- **Installer and manual installation:** `/etc/default/webvirtcloud` (root, mode 600), one `NAME='value'` per line (single quotes: systemd and the shell then read the same value); the panel's services read it. `settings.py` does not read these names: a line `WEBVIRTCLOUD_HTTPS = 1` there does nothing. To set an option in `settings.py` instead, change the setting the template fills from the variable, e.g. `SERIAL_CONSOLE_ENABLED = True`. Then `systemctl restart webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker`, and load the file before running `manage.py`: `set -a; . /etc/default/webvirtcloud; set +a`.
-
-Some options exist only in `settings.py` (LDAP, `OTP_ENABLED`, `LOGIN_TRUSTED_PROXIES`). Docker builds that file from the template in each new container; to keep such options there, mount your own copy and update it from the template after each update:
-
-```bash
-docker compose exec webvirtcloud cat webvirtcloud/settings.py > settings.py   # then edit it
-```
-
-add it to `docker-compose.override.yml` and run `docker compose up -d`:
-
-```yaml
-services:
-  webvirtcloud:
-    volumes:
-      - ./settings.py:/srv/webvirtcloud/webvirtcloud/settings.py
-```
-
-The container makes the file the panel user's (uid 33) with mode 600; edit it as root.
+- **Installer and manual installation:** `/etc/default/webvirtcloud` (root, mode 600), one `NAME='value'` per line (single quotes: systemd and the shell then read the same value); the panel's services read it. [`data/local_settings.py`](#local-settings) does not read these names: a line `WEBVIRTCLOUD_HTTPS = 1` there does nothing; it sets the setting the variable fills, e.g. `SERIAL_CONSOLE_ENABLED = True`. Then `systemctl restart webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker`, and load the file before running `manage.py`: `set -a; . /etc/default/webvirtcloud; set +a`.
 
 gunicorn runs at most 8 workers (fewer on hosts with under 4 CPUs), in Docker 4, of 4 threads each; each worker takes about 140 MB and sends at most 2 requests at a time to one compute. To change it, set `GUNICORN_CMD_ARGS=--workers N` in a drop-in of `webvirt-cloud` (`systemctl edit webvirt-cloud`: `[Service]` and `Environment="GUNICORN_CMD_ARGS=--workers N"`) or in `docker-compose.override.yml`.
+
+### Local settings
+
+Options that are not environment variables (LDAP, `OTP_ENABLED`, `LOGIN_TRUSTED_PROXIES` or any other setting of `webvirtcloud/settings.py`) go into `data/local_settings.py`. `settings.py` runs it after its own defaults and with their names, so it sets or changes any of them, and its values win over the environment's; updates replace `settings.py` and leave this file alone. For example:
+
+```python
+TIME_ZONE = "Europe/Istanbul"
+ALLOWED_HOSTS += ["wvc.example.com"]
+OTP_ENABLED = True
+```
+
+The installer writes the server's time zone, the noVNC port and its names and IPs into it. A value `settings.py` works out from another before the file runs stays as it was: with `EMAIL_HOST_USER` set here, set `DEFAULT_FROM_EMAIL` here too; the log file is set with `WEBVIRTCLOUD_LOG_FILE` in the environment. It may hold passwords (LDAP): keep it the panel user's with mode 600. After a change, `systemctl restart webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker`. Docker keeps it in the `webvirtcloud-data` volume: write it next to the compose file, then `docker compose cp local_settings.py webvirtcloud:/srv/webvirtcloud/data/` and `docker compose restart webvirtcloud` (the start makes it the panel user's).
 
 ### HTTPS and reverse proxy
 
@@ -392,7 +387,7 @@ For a panel served over HTTPS:
 - set `WEBVIRTCLOUD_HTTPS=1`: session and CSRF cookies become HTTPS-only, HTTP is redirected to HTTPS (except `/datasource/`, which VMs fetch over HTTP), and HSTS is sent for one year;
 - add the HTTPS origin to `CSRF_TRUSTED_ORIGINS`, e.g. `CSRF_TRUSTED_ORIGINS=https://wvc.example.com` and `WEBVIRTCLOUD_HTTPS=1` in `/etc/default/webvirtcloud`.
 
-TLS can end at the bundled nginx or at a proxy in front of it; such a proxy must send `X-Forwarded-Proto: https`. Failed logins are counted per client address, which the bundled nginx passes in `X-Real-IP`. A proxy that replaces the bundled nginx must set `X-Real-IP` itself; one on another machine (gunicorn bound beyond 127.0.0.1) must also be in `LOGIN_TRUSTED_PROXIES` in `settings.py`. With a proxy in front of the bundled nginx, configure nginx's `set_real_ip_from` / `real_ip_header` for that proxy, or all clients share its address.
+TLS can end at the bundled nginx or at a proxy in front of it; such a proxy must send `X-Forwarded-Proto: https`. Failed logins are counted per client address, which the bundled nginx passes in `X-Real-IP`. A proxy that replaces the bundled nginx must set `X-Real-IP` itself; one on another machine (gunicorn bound beyond 127.0.0.1) must also be in `LOGIN_TRUSTED_PROXIES` in [`data/local_settings.py`](#local-settings). With a proxy in front of the bundled nginx, configure nginx's `set_real_ip_from` / `real_ip_header` for that proxy, or all clients share its address.
 
 Every page is sent with `X-Frame-Options: DENY` and `Content-Security-Policy: script-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`: the panel runs only scripts it serves itself, cannot be shown in a frame, and its forms post only to its own origin.
 
@@ -410,7 +405,7 @@ Without the network: tick **Cloud-init seed** (Advanced) when creating a VM. The
 
 ### LDAP
 
-The options below are set in `webvirtcloud/settings.py` (Docker: see [Environment variables](#environment-variables) for keeping your own). Variants for Active Directory and OpenLDAP are shown; this is a minimal config, see the [django-auth-ldap documentation](https://django-auth-ldap.readthedocs.io) for more.
+The options below go into [`data/local_settings.py`](#local-settings), which has `ldap`, `LDAPSearch` and `NestedActiveDirectoryGroupType` at hand. Variants for Active Directory and OpenLDAP are shown; this is a minimal config, see the [django-auth-ldap documentation](https://django-auth-ldap.readthedocs.io) for more.
 
 The Docker image includes the LDAP packages. On an installer or manual install, add them to the virtualenv first; pip builds `python-ldap` against these headers:
 
@@ -423,8 +418,8 @@ zypper --non-interactive install -y openldap2-devel cyrus-sasl-devel   # openSUS
 
 Enable the LDAP backend:
 
-```bash
-sudo sed -i "s~#\"django_auth_ldap.backend.LDAPBackend\",~\"django_auth_ldap.backend.LDAPBackend\",~g" /srv/webvirtcloud/webvirtcloud/settings.py
+```python
+AUTHENTICATION_BACKENDS.append("django_auth_ldap.backend.LDAPBackend")
 ```
 
 Set the LDAP server and bind DN:
@@ -460,7 +455,8 @@ AUTH_LDAP_USER_SEARCH = LDAPSearch(
 AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
     "ou=groups,dc=example,dc=com", ldap.SCOPE_SUBTREE, "(objectClass=groupOfUniqueNames)"
 )
-AUTH_LDAP_GROUP_TYPE = GroupOfUniqueNamesType()  # import needs to be changed at the top of settings.py
+from django_auth_ldap.config import GroupOfUniqueNamesType
+AUTH_LDAP_GROUP_TYPE = GroupOfUniqueNamesType()
 ```
 
 Set the group required to access WebVirtCloud (`False` disables this filter):
@@ -487,7 +483,7 @@ An LDAP user is authenticated by LDAP and authorized through the WebVirtCloud pe
 
 ### Two-factor login (OTP)
 
-Set `OTP_ENABLED = True` in `settings.py` to ask for a one-time code at login. It is per user: a user without a confirmed device signs in with the password alone.
+Set `OTP_ENABLED = True` in [`data/local_settings.py`](#local-settings) to ask for a one-time code at login. It is per user: a user without a confirmed device signs in with the password alone.
 
 The QR code is mailed as a link to a page that shows it, good for one hour: the mail does not hold the code's secret. Email OTP QR code on a user's page (Users) sends it; Lost OTP? on the login page sends it to an enrolled user who gives their address.
 
@@ -499,7 +495,7 @@ On the Settings page (Alerts), **Alert e-mail addresses** get a mail, through th
 
 ### Serial console
 
-A VM without graphics (no `<graphics>` device, a `<console type='pty'>`) opens a serial console (xterm.js) instead of VNC. It is off by default. To turn it on, set `WEBVIRTCLOUD_SERIAL_CONSOLE=1` (Docker: in `docker-compose.override.yml`, then `docker compose up -d`) or `SERIAL_CONSOLE_ENABLED = True` in `settings.py` and `systemctl restart webvirt-cloud webvirt-socketiod`.
+A VM without graphics (no `<graphics>` device, a `<console type='pty'>`) opens a serial console (xterm.js) instead of VNC. It is off by default. To turn it on, set `WEBVIRTCLOUD_SERIAL_CONSOLE=1` (Docker: in `docker-compose.override.yml`, then `docker compose up -d`) or `SERIAL_CONSOLE_ENABLED = True` in [`data/local_settings.py`](#local-settings) and `systemctl restart webvirt-cloud webvirt-socketiod`.
 
 - The VM page's Settings → Console switches a shut-off VM between VNC and serial (Console type). A new VNC console takes the form's other fields; on a TCP or TLS compute it needs Listen on: All interfaces (SSH and socket computes reach a localhost console).
 - The guest must use its serial port: a login prompt needs `systemctl enable --now serial-getty@ttyS0`, boot messages need the kernel parameter `console=ttyS0,115200`. The console shows only what the guest writes after it opens; press Enter for a new prompt.
@@ -513,7 +509,7 @@ A VM without graphics (no `<graphics>` device, a `<console type='pty'>`) opens a
 The panel backs itself up every day at 03:15 (cron in Docker; otherwise `webvirt-backup.timer`, within 10 minutes after and at the next boot if the server was off) into a new directory under `/srv/webvirtcloud/backups`, in Docker the `webvirtcloud-backups` volume, and keeps the newest 7. A backup holds:
 
 - `db.sqlite3`: a consistent copy taken while the panel runs, checked with `PRAGMA integrity_check`; with PostgreSQL it is left out, so back up that database yourself
-- `secret_key`, `node_id` and `settings.py`
+- `secret_key`, `node_id` and `local_settings.py`
 - `ssh/`: the SSH keys of the panel's user, which the SSH computes accept
 - `pki/`: the TLS client certificates of the panel's user, which the TLS computes accept
 - `commit`, outside Docker
@@ -630,11 +626,11 @@ The panel does not copy VM backups off site: the target's storage does.
 
 ## Updating
 
-Every update starts with a backup in its own directory (mode 700, named by date) that holds the database, the commit it was taken from, for Docker the TLS client certificates and, for installer and manual installations, `settings.py`, the nginx config, `/etc/default/webvirtcloud` if there is one and migrations an old installer generated (`local-migrations.tar`). The database is copied with SQLite's backup API, which also finishes a write interrupted by a crash. This covers sqlite only; with PostgreSQL (`WEBVIRTCLOUD_DB_HOST`), back up that database yourself before updating.
+Every update starts with a backup in its own directory (mode 700, named by date) that holds the database, the commit it was taken from, for Docker the TLS client certificates and, for installer and manual installations, `data/local_settings.py` (and a `settings.py` of an older version), the nginx config, `/etc/default/webvirtcloud` if there is one and migrations an old installer generated (`local-migrations.tar`). The database is copied with SQLite's backup API, which also finishes a write interrupted by a crash. This covers sqlite only; with PostgreSQL (`WEBVIRTCLOUD_DB_HOST`), back up that database yourself before updating.
 
 ### Docker
 
-Each new container builds `settings.py` from the template and runs the migrations at start; the database and the secret key stay in the `webvirtcloud-data` volume. Keep your settings in `docker-compose.override.yml` (at least `ALLOWED_HOSTS`, see [Docker](#docker)).
+Each new container runs the migrations at start; the database, the secret key and [`data/local_settings.py`](#local-settings) stay in the `webvirtcloud-data` volume. Keep your environment in `docker-compose.override.yml` (at least `ALLOWED_HOSTS`, see [Docker](#docker)). An override that mounts your own `settings.py` (`./settings.py:/srv/webvirtcloud/webvirtcloud/settings.py`, as older versions of this README said) would keep that old file: remove the mount and move your own values into `data/local_settings.py`.
 
 Run the commands in the directory you installed from. Compose names the deployment after that directory (`webvirtcloud`), so another clone in a directory of the same name acts on the same containers and volumes.
 
@@ -671,7 +667,7 @@ Move the `environment=` values of that config into `/etc/default/webvirtcloud` (
 
 ### Installer and manual installation
 
-`git pull` never overwrites `webvirtcloud/settings.py` or `/etc/nginx/conf.d/webvirtcloud.conf`; steps 2 and 4 bring them up to date. Run the steps from a root shell; they use `$b`, so in a new shell set it again to the backup directory.
+`git pull` never changes `data/` (the database, the secret key, [`data/local_settings.py`](#local-settings)) or `/etc/nginx/conf.d/webvirtcloud.conf`; step 4 brings the nginx config up to date. Run the steps from a root shell; they use `$b`, so in a new shell set it again to the backup directory.
 
 1. Stop the panel, back up and pull:
 
@@ -685,7 +681,9 @@ Move the `environment=` values of that config into `/etc/default/webvirtcloud` (
    mkdir -m 700 "$b" &&
    venv/bin/python3 -c "import sqlite3,sys; sqlite3.connect('db.sqlite3').backup(sqlite3.connect(sys.argv[1]))" "$b/db.sqlite3.part" &&
    mv "$b/db.sqlite3.part" "$b/db.sqlite3" &&
-   cp -p webvirtcloud/settings.py /etc/nginx/conf.d/webvirtcloud.conf "$b"/ &&
+   cp -p /etc/nginx/conf.d/webvirtcloud.conf "$b"/ &&
+   { [ ! -f data/local_settings.py ] || cp -p data/local_settings.py "$b"/; } &&
+   { git ls-files --error-unmatch webvirtcloud/settings.py >/dev/null 2>&1 || [ ! -f webvirtcloud/settings.py ] || mv webvirtcloud/settings.py "$b"/; } &&
    { [ ! -f /etc/default/webvirtcloud ] || cp -p /etc/default/webvirtcloud "$b"/; } &&
    git rev-parse HEAD > "$b/commit" &&
    git ls-files -z --others --exclude-standard -- '*/migrations/*.py' | tar --null -T - --remove-files -cf "$b/local-migrations.tar" &&
@@ -693,16 +691,15 @@ Move the `environment=` values of that config into `/etc/default/webvirtcloud` (
    git checkout master && git pull
    ```
 
-   Older installers collected static files into the tracked `static/` and deleted the tracked `install.sh` and `webvirtcloud.sh`; the second-to-last line puts those files back, so that `git pull` can update them.
+   Older installers collected static files into the tracked `static/` and deleted the tracked `install.sh` and `webvirtcloud.sh`; the second-to-last line puts those files back, so that `git pull` can update them. Older versions also had a `settings.py` of their own, not in the repository: step 1 moves it into the backup, as `git pull` now brings `settings.py`.
 
-2. Rebuild `settings.py` from the template (the file keeps its owner and mode), then put back your own values; the `diff` lists them:
+2. Once, coming from a version with its own `settings.py` (step 1 moved it to `$b`): put your own values into [`data/local_settings.py`](#local-settings); the `diff` lists them:
 
    ```bash
-   cat webvirtcloud/settings.py.template > webvirtcloud/settings.py
    diff "$b/settings.py" webvirtcloud/settings.py
    ```
 
-   Typical ones are `TIME_ZONE`, `WS_*`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, LDAP and, with PostgreSQL, your `DATABASES`: the template's is sqlite, so without it `migrate` would make a new, empty sqlite database and the panel would start on that. Two need care:
+   Typical ones are `TIME_ZONE`, `WS_*`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, LDAP and, with PostgreSQL, your `DATABASES`: the default is sqlite, so without it `migrate` would make a new, empty sqlite database and the panel would start on that. Two need care:
    - a literal `SECRET_KEY = "..."` (older installers wrote it there): put the value into `data/secret_key` instead (`mkdir -p data` first if there is no `data/`). With no key, `migrate` in step 3 stops with "The SECRET_KEY setting must not be empty" and every page fails; with another key, every user is signed out;
    - `SHOW_PROFILE_EDIT_PASSWORD`: keep it for this one `migrate` if you have it (migration `accounts.0008` reads it), then delete it.
 
@@ -716,12 +713,12 @@ Move the `environment=` values of that config into `/etc/default/webvirtcloud` (
    venv/bin/python3 manage.py migrate &&
    venv/bin/python3 manage.py collectstatic --noinput &&
    chown -R www-data:www-data /srv/webvirtcloud &&
-   chmod -R go-rwx data webvirtcloud/settings.py db.sqlite3
+   chmod -R go-rwx data db.sqlite3
    ```
 
    Installers from before September 2025 generated migrations of their own; step 1 moved them into `local-migrations.tar`. One of them has the name of a tracked migration, which `migrate` would skip; the second line marks it unapplied so that the tracked one runs.
 
-4. Update the nginx config the same way as `settings.py`:
+4. Update the nginx config, then put back your own lines; the `diff` lists them:
 
    ```bash
    cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/webvirtcloud.conf
@@ -751,7 +748,7 @@ Older versions collected static files into `static/`; `git clean -n static/` lis
 
 ### Restore and rollback
 
-Restoring puts back the database as it was at the backup; changes made since are lost. Migrations are not reversed. This covers sqlite; restore a PostgreSQL database from your own backup before rolling back the code. Set `b` to the backup directory to restore. To restore the database without rolling back the code, leave out the `build` line and every line that takes another file from `$b`: the commit, `local-migrations.tar`, `settings.py`, the nginx config and `/etc/default/webvirtcloud`.
+Restoring puts back the database as it was at the backup; changes made since are lost. Migrations are not reversed. This covers sqlite; restore a PostgreSQL database from your own backup before rolling back the code. Set `b` to the backup directory to restore. To restore the database without rolling back the code, leave out the `build` line and every line that takes another file from `$b`: the commit, `local-migrations.tar`, `settings.py` and `local_settings.py`, the nginx config and `/etc/default/webvirtcloud`.
 
 Docker, in the directory you installed from:
 
@@ -769,7 +766,7 @@ docker compose start &&
 docker compose exec webvirtcloud chown -R www-data:www-data /var/www/.pki
 ```
 
-The container fixes the ownership and modes of the database and keys at start; the last line gives the TLS client certificates to `www-data` also in an image of v4.3.0 or older, which neither does that nor keeps them in a volume.
+A version from before `data/local_settings.py` builds its `settings.py` from a template and does not read that file: to roll back to one, mount your `settings.py` again as that version's README says. The container fixes the ownership and modes of the database and keys at start; the last line gives the TLS client certificates to `www-data` also in an image of v4.3.0 or older, which neither does that nor keeps them in a volume.
 
 Installer and manual installation, from a root shell (`nginx:nginx` on RHEL / openSUSE):
 
@@ -782,15 +779,18 @@ git checkout -- $(git ls-files -m -- static/css dev/scss) &&
 git checkout "$(cat "$b/commit")" &&
 { [ ! -f "$b/local-migrations.tar" ] || tar -xf "$b/local-migrations.tar"; } &&
 venv/bin/python3 -c "import os,sqlite3,sys; [os.remove(p) for p in ('db.sqlite3-journal','db.sqlite3-wal','db.sqlite3-shm') if os.path.exists(p)]; sqlite3.connect(sys.argv[1]).backup(sqlite3.connect('db.sqlite3'))" "$b/db.sqlite3" &&
-cp "$b/settings.py" webvirtcloud/settings.py &&
+{ [ ! -f "$b/settings.py" ] || cp "$b/settings.py" webvirtcloud/settings.py; } &&
+{ [ ! -f "$b/local_settings.py" ] || cp -p "$b/local_settings.py" data/; } &&
 { [ ! -f "$b/webvirtcloud.conf" ] || cp "$b/webvirtcloud.conf" /etc/nginx/conf.d/webvirtcloud.conf; } &&
 { [ ! -f "$b/webvirtcloud" ] || { set -a; . "$b/webvirtcloud"; set +a; }; } &&
 venv/bin/pip3 install -r conf/requirements.txt &&
 venv/bin/python3 manage.py migrate &&
 venv/bin/python3 manage.py collectstatic --noinput &&
 chown -R www-data:www-data /srv/webvirtcloud &&
-chmod 600 db.sqlite3 webvirtcloud/settings.py
+chmod 600 db.sqlite3 && { [ ! -f "$b/settings.py" ] || chmod 600 webvirtcloud/settings.py; }
 ```
+
+A backup of a version that had its own `settings.py` (not in the repository) holds that file: the steps put it back for the older code.
 
 Put back `/etc/default/webvirtcloud` if the backup has it (`cp -p "$b/webvirtcloud" /etc/default/`), then reload nginx and start the panel:
 
@@ -813,13 +813,14 @@ docker compose stop -t 95 &&
 docker compose run --rm --no-deps -T --entrypoint /srv/webvirtcloud/venv/bin/python3 webvirtcloud \
   -c "import os,sqlite3,sys,tempfile; t=tempfile.mktemp(); open(t,'wb').write(sys.stdin.buffer.read()); [os.remove(p) for p in ('data/db.sqlite3-journal','data/db.sqlite3-wal','data/db.sqlite3-shm') if os.path.exists(p)]; sqlite3.connect(t).backup(sqlite3.connect('data/db.sqlite3'))" < "$b/db.sqlite3" &&
 { [ ! -f "$b/secret_key" ] || docker compose cp "$b/secret_key" webvirtcloud:/srv/webvirtcloud/data/; } &&
+{ [ ! -f "$b/local_settings.py" ] || docker compose cp "$b/local_settings.py" webvirtcloud:/srv/webvirtcloud/data/; } &&
 docker compose cp "$b/node_id" webvirtcloud:/srv/webvirtcloud/data/ &&
 { [ ! -d "$b/ssh" ] || docker compose cp "$b/ssh/." webvirtcloud:/var/www/.ssh/; } &&
 { [ ! -d "$b/pki" ] || docker compose cp "$b/pki/." webvirtcloud:/var/www/.pki/; } &&
 docker compose up -d    # the container migrates and fixes ownership and modes at start
 ```
 
-Installer and manual installation, from a root shell (`nginx` instead of `www-data` on RHEL / openSUSE). Compare `$b/settings.py` with `webvirtcloud/settings.py` and carry your own values over:
+Installer and manual installation, from a root shell (`nginx` instead of `www-data` on RHEL / openSUSE). A backup of an older version has a `settings.py` instead of `local_settings.py`: carry your own values from it into [`data/local_settings.py`](#local-settings).
 
 ```bash
 b=/root/webvirtcloud-backup-YYYYMMDD-HHMMSS
@@ -827,11 +828,12 @@ systemctl stop webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
 cd /srv/webvirtcloud &&
 venv/bin/python3 -c "import os,sqlite3,sys; [os.remove(p) for p in ('db.sqlite3-journal','db.sqlite3-wal','db.sqlite3-shm') if os.path.exists(p)]; sqlite3.connect(sys.argv[1]).backup(sqlite3.connect('db.sqlite3'))" "$b/db.sqlite3" &&
 cp "$b/node_id" data/ && { [ ! -f "$b/secret_key" ] || cp "$b/secret_key" data/; } &&
+{ [ ! -f "$b/local_settings.py" ] || cp "$b/local_settings.py" data/; } &&
 mkdir -p ~www-data/.ssh && { [ ! -d "$b/ssh" ] || cp -r "$b"/ssh/. ~www-data/.ssh/; } &&
 mkdir -p ~www-data/.pki && { [ ! -d "$b/pki" ] || cp -r "$b"/pki/. ~www-data/.pki/; } &&
 venv/bin/python3 manage.py migrate &&
 chown -R www-data:www-data data ~www-data/.ssh ~www-data/.pki &&
-chmod 700 data ~www-data/.ssh ~www-data/.pki && { [ ! -f db.sqlite3 ] || chmod 600 db.sqlite3; } &&
+chmod 700 data ~www-data/.ssh ~www-data/.pki && chmod -R go-rwx data && { [ ! -f db.sqlite3 ] || chmod 600 db.sqlite3; } &&
 systemctl start webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
 ```
 
@@ -847,8 +849,8 @@ What an update from an older version changes for operators and users. `manage.py
 - The admin's first-login password change survives losing `data/admin_password` (migration `accounts.0007`); run `migrate` as a user who can read that file.
 - A new VM and each clone get a random VNC password of their own (clones no longer share their source's). The console page sends it for a user with **Open a console without the VM's console password**, which a new user has unless unticked; others are asked for it. Existing VMs keep theirs.
 - An `admin` account that still has the password `admin` (the first user of versions up to v2.0.0) must change it at its next login, and its API tokens are refused until then (migration `accounts.0013`).
-- A `settings.py` kept from an older version must match the template (apps, middleware, the SQLite `OPTIONS`, the REST framework, knox, axes and password settings): rebuild it from the template and carry your own values over, as step 2 of the update does.
-- The VNC console connects to `/novncd/` on the panel's own address through nginx, and the serial console to `/socket.io/`: they work on HTTPS and behind another proxy without settings. `WS_PUBLIC_PORT`, `WS_PUBLIC_HOST`, `WS_PUBLIC_PATH`, `WS_CERT` and `SOCKETIO_PUBLIC_HOST`/`_PORT`/`_PATH` are gone; remove them from `docker-compose.override.yml`, `/etc/default/webvirtcloud` or a kept `settings.py`, set `WS_HOST = "127.0.0.1"` in a kept `settings.py`, and close port 6080 in the firewall.
+- `webvirtcloud/settings.py` is part of the code, and every update replaces it; an installation's own settings are in [`data/local_settings.py`](#local-settings). Step 2 of the update moves them there once from an older version's own `settings.py`; in Docker, remove a mounted `settings.py` from `docker-compose.override.yml`.
+- The VNC console connects to `/novncd/` on the panel's own address through nginx, and the serial console to `/socket.io/`: they work on HTTPS and behind another proxy without settings. `WS_PUBLIC_PORT`, `WS_PUBLIC_HOST`, `WS_PUBLIC_PATH`, `WS_CERT` and `SOCKETIO_PUBLIC_HOST`/`_PORT`/`_PATH` are gone; remove them from `docker-compose.override.yml`, `/etc/default/webvirtcloud` or `data/local_settings.py`, and close port 6080 in the firewall.
 - Installer and manual installations run the panel as systemd units (`webvirt-cloud`, `webvirt-novncd`, `webvirt-socketiod`, `webvirt-worker`, `webvirt-backup.timer`) and computes run `webvirt-gstfsd`, instead of supervisor; see [Moving from supervisor to systemd](#moving-from-supervisor-to-systemd). Service settings go into `/etc/default/webvirtcloud`, service output into the journal (`journalctl -u webvirt-cloud`); the app log stays in `data/`. novncd and socketiod run sandboxed (read-only system directories, no `/home`).
 - gstfsd does only what the panel signs with the host's key: it does not start without `GSTFSD_KEY` in `/etc/default/webvirt-gstfsd`. On every compute, update gstfsd and its unit and make the key as in [Adding a Compute Node](#adding-a-compute-node), step 3 (a remote panel's `GSTFSD_BIND_HOST` and `GSTFSD_ALLOW_REMOTE` move into that file from `systemctl edit webvirt-gstfsd`), then enter the key on each compute's edit page.
 - LDAP login's packages are in `conf/requirements-ldap.txt` and no longer installed by default, nor their build headers by the installer; the Docker image keeps them. An existing virtualenv keeps them, but only installing that file updates them (see [LDAP](#ldap)).
@@ -937,10 +939,9 @@ Run every step as your normal user, not with `sudo`: if `manage.py` ever runs as
    pip install -r dev/requirements.txt
    ```
 
-3. Settings and secret key:
+3. Secret key (your own settings go into [`data/local_settings.py`](#local-settings)):
 
    ```bash
-   cp webvirtcloud/settings.py.template webvirtcloud/settings.py
    mkdir -p data && python conf/secret_generator.py > data/secret_key && chmod 600 data/secret_key
    ```
 
@@ -1016,7 +1017,7 @@ python manage.py test
 HOME=$PWD/.vagrant/tls TEST_LIBVIRT_TYPE=3 TEST_LIBVIRT_SSH_HOST= python manage.py test   # compute1 again, over TLS
 # a socket compute is the panel's own libvirt: the committed HEAD runs inside compute1
 git archive HEAD | vagrant ssh compute1 -c "sudo sh -c 'rm -rf /root/wvc && mkdir /root/wvc && tar -x -C /root/wvc'"
-vagrant ssh compute1 -c "sudo -i sh -ec 'dnf -y install python3-devel openldap-devel cyrus-sasl-devel gcc; cd /root/wvc; python3 -m venv --system-site-packages venv; venv/bin/pip install -r dev/requirements.txt; cp webvirtcloud/settings.py.template webvirtcloud/settings.py; mkdir data; venv/bin/python conf/secret_generator.py > data/secret_key; TEST_LIBVIRT_HOST=localhost TEST_LIBVIRT_TYPE=4 TEST_LIBVIRT_LOGIN=wvc TEST_LIBVIRT_PASSWORD=wvc-test TEST_LIBVIRT_LVM_DEVICE=/dev/vdb TEST_LIBVIRT_ISCSI_TARGET=iqn.2026-10.test.wvc:lun TEST_LIBVIRT_NFS_EXPORT=/srv/wvc-nfs venv/bin/python manage.py test'"
+vagrant ssh compute1 -c "sudo -i sh -ec 'dnf -y install python3-devel openldap-devel cyrus-sasl-devel gcc; cd /root/wvc; python3 -m venv --system-site-packages venv; venv/bin/pip install -r dev/requirements.txt; mkdir data; venv/bin/python conf/secret_generator.py > data/secret_key; TEST_LIBVIRT_HOST=localhost TEST_LIBVIRT_TYPE=4 TEST_LIBVIRT_LOGIN=wvc TEST_LIBVIRT_PASSWORD=wvc-test TEST_LIBVIRT_LVM_DEVICE=/dev/vdb TEST_LIBVIRT_ISCSI_TARGET=iqn.2026-10.test.wvc:lun TEST_LIBVIRT_NFS_EXPORT=/srv/wvc-nfs venv/bin/python manage.py test'"
 vagrant destroy -f
 ```
 

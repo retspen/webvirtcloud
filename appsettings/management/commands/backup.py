@@ -15,7 +15,7 @@ PREFIX = "webvirtcloud-backup-"
 
 
 class Command(BaseCommand):
-    help = ("Copy the database, secret key, worker id, settings and the SSH keys and TLS certificates of the "
+    help = ("Copy the database, secret key, worker id, local settings and the SSH keys and TLS certificates of the "
             "panel's user into a new directory in backups/, then delete all but the newest --keep backups.")
 
     def add_arguments(self, parser):
@@ -70,7 +70,7 @@ class Command(BaseCommand):
         # the key in use: SECRET_KEY from the environment has no data/secret_key
         (to / "secret_key").write_text(settings.SECRET_KEY + "\n")
         data = settings.BASE_DIR / "data"
-        for source in (data / "node_id", settings.BASE_DIR / "webvirtcloud" / "settings.py"):
+        for source in (data / "node_id", data / "local_settings.py"):
             if source.is_file():
                 shutil.copyfile(source, to / source.name)
         ssh = Path.home() / ".ssh"

@@ -1,7 +1,8 @@
 #!/bin/bash
 # Installs the panel with install.sh in a systemd container of one distribution
-# and checks that it answers: its services run, it has a secret key and an
-# admin password, and the login page loads. It installs the committed HEAD.
+# and checks that it answers: its services run, it has a secret key, an admin
+# password and its local settings, and the login page loads. It installs the
+# committed HEAD.
 #
 # Usage, from the repository root (needs docker):
 #   dev/test-installer.sh IMAGE      e.g. debian:13, almalinux:10, opensuse/leap:15.6
@@ -55,6 +56,7 @@ docker exec "$name" bash -c '
 docker exec "$name" bash -e -c '
   test -s /srv/webvirtcloud/data/secret_key || { echo "No secret key"; exit 1; }
   test -s /srv/webvirtcloud/data/admin_password || { echo "No admin password"; exit 1; }
+  test -s /srv/webvirtcloud/data/local_settings.py || { echo "No local settings"; exit 1; }
   # curl is not on every distribution; the panel'"'"'s Python is
   /srv/webvirtcloud/venv/bin/python3 - <<PY
 import re, time, urllib.request

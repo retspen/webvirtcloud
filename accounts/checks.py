@@ -14,7 +14,7 @@ def password_change_middleware_check(app_configs, **kwargs):
         return [
             Error(
                 "ForcePasswordChangeMiddleware must follow AuthenticationMiddleware.",
-                hint=f"Add '{required}' to MIDDLEWARE in webvirtcloud/settings.py, as settings.py.template does.",
+                hint=f"data/local_settings.py sets MIDDLEWARE: keep '{required}' after AuthenticationMiddleware, as webvirtcloud/settings.py has it.",
                 id="accounts.E001",
             )
         ]
@@ -30,8 +30,8 @@ def login_required_middleware_check(app_configs, **kwargs):
         return [
             Error(
                 "MIDDLEWARE must use Django's LoginRequiredMiddleware.",
-                hint=f"In webvirtcloud/settings.py replace '{old}' with '{required}' "
-                "and delete LOGIN_REQUIRED_IGNORE_VIEW_NAMES, as settings.py.template does.",
+                hint=f"data/local_settings.py sets MIDDLEWARE: replace '{old}' with '{required}' "
+                "and delete LOGIN_REQUIRED_IGNORE_VIEW_NAMES, as webvirtcloud/settings.py has it.",
                 id="accounts.E002",
             )
         ]
@@ -44,7 +44,7 @@ def obsolete_settings_check(app_configs, **kwargs):
         return [
             Warning(
                 "SHOW_PROFILE_EDIT_PASSWORD is no longer used.",
-                hint="Remove it from webvirtcloud/settings.py. Whether a user may change their own "
+                hint="Remove it from data/local_settings.py. Whether a user may change their own "
                 "password is the 'Can change password' permission, per user or group.",
                 id="accounts.W001",
             )

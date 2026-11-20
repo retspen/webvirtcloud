@@ -51,11 +51,9 @@ COPY --from=build /srv/webvirtcloud/venv venv
 COPY . .
 
 # The code stays root's: the panel writes only to its data and backup
-# directories (made its own at start). A settings file and a key exist only
-# for collectstatic.
-RUN cp webvirtcloud/settings.py.template webvirtcloud/settings.py \
-    && SECRET_KEY=build-only WEBVIRTCLOUD_LOG_FILE=/tmp/build.log venv/bin/python3 manage.py collectstatic --noinput \
-    && rm -f webvirtcloud/settings.py /tmp/build.log  # the log handler makes the file at its first line only
+# directories (made its own at start). A key exists only for collectstatic.
+RUN SECRET_KEY=build-only WEBVIRTCLOUD_LOG_FILE=/tmp/build.log venv/bin/python3 manage.py collectstatic --noinput \
+    && rm -f /tmp/build.log  # the log handler makes the file at its first line only
 
 COPY conf/docker/nginx.conf /etc/nginx/nginx.conf
 COPY conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/

@@ -1,10 +1,9 @@
 #!/bin/sh
-# The container's start: settings, secret key and database in place, the
+# The container's start: secret key and database in place, the
 # data the panel's own, migrations run; then the command (supervisord).
 set -eu
 cd /srv/webvirtcloud
 
-[ -f webvirtcloud/settings.py ] || cp webvirtcloud/settings.py.template webvirtcloud/settings.py
 if [ -z "${SECRET_KEY:-}" ] && [ ! -s data/secret_key ]; then
     (umask 077 && venv/bin/python3 -c 'import secrets; print(secrets.token_urlsafe(50))' > data/secret_key)
 fi
@@ -12,12 +11,14 @@ fi
 touch data/db.sqlite3
 ln -sfn /srv/webvirtcloud/data/db.sqlite3 db.sqlite3
 
-# The database holds compute passwords and password hashes: the data, keys,
-# settings and backups are readable by the panel's user only.
+# The database holds compute passwords and password hashes: the data (the
+# database, the key, local_settings.py), keys and backups are readable by the
+# panel's user only.
 chown -R www-data:www-data data /var/www/.ssh /var/www/.pki
-chown www-data:www-data backups webvirtcloud/settings.py
+chown www-data:www-data backups
 chmod 700 data backups /var/www/.ssh /var/www/.pki
-chmod 600 data/db.sqlite3 webvirtcloud/settings.py
+chmod 600 data/db.sqlite3
+[ ! -f data/local_settings.py ] || chmod 600 data/local_settings.py
 
 # cron starts its jobs with an empty environment: the backup reads this one
 (umask 077 && export -p > /run/webvirtcloud.env)

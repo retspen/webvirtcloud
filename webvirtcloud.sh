@@ -268,36 +268,32 @@ install_webvirtcloud () {
   echo "* Ensuring Django secret key (data/secret_key, kept across re-runs)."
   wvc_ensure_secret_key "$APP_PATH/data" "$PYTHON" || { echo "The secret key could not be written." >&2; exit 1; }
 
-  echo "* Configuring settings.py file."
-  if wvc_ensure_settings "$APP_PATH/webvirtcloud/settings.py.template" "$APP_PATH/webvirtcloud/settings.py" >/dev/null; then
-    # first install only: apply instance values. SECRET_KEY is NOT written here;
-    # settings.py reads data/secret_key, so the key persists across re-runs.
-    tzone_escape="$(echo -n "$tzone"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
-    novncd_port_escape="$(echo -n "$novncd_port"|sed -e 's/[](){}<>=:\!\?\+\|\/\&$*.^[]/\\&/g')"
+  echo "* Writing this installation's settings (data/local_settings.py, kept by re-runs and updates)."
+  host_ips="$(hostname -I 2>/dev/null)"
+  origins="'http://$fqdn', 'http://127.0.0.1'"
+  for ip in $host_ips; do
+    case "$ip" in *:*) ip="[$ip]" ;; esac  # an IPv6 origin is bracketed, as browsers send it
+    origins+=", 'http://$ip'"
+  done
+  # shellcheck disable=SC2086
+  # added to the lists: hosts and origins from the environment stay
+  wvc_ensure_local_settings "$APP_PATH/data" >/dev/null <<EOF
+# This installation's settings: settings.py runs this file after its own defaults,
+# and updates do not change it. See the README, Local settings.
+TIME_ZONE = $tzone
+WS_PORT = $novncd_port
+ALLOWED_HOSTS += $(wvc_allowed_hosts "$fqdn" $host_ips)
+CSRF_TRUSTED_ORIGINS += [$origins]
+EOF
+  case $? in
+    1) echo "* Keeping the existing data/local_settings.py." ;;
+    2) echo "data/local_settings.py could not be written." >&2; exit 1 ;;
+  esac
 
-    #TODO escape SED delimiter in variables
-    sed -i "s|^\\(TIME_ZONE = \\).*|\\1$tzone_escape|" "$APP_PATH/webvirtcloud/settings.py"
-    sed -i "s|^\\(WS_PORT = \\).*|\\1$novncd_port_escape|" "$APP_PATH/webvirtcloud/settings.py"
-
-    # set CSRF TRUSTED ORIGINS
-    host_ip="'http://127.0.0.1', "
-    if command -v hostname >/dev/null 2>&1; then
-      for i in $(hostname -I 2>/dev/null); do
-        host_ip+="'http://$i', "
-      done
-    fi
-    sed -i "s|^\\(CSRF_TRUSTED_ORIGINS = \\).*|\\1\[ \'http://$fqdn\', $host_ip ]|" "$APP_PATH/webvirtcloud/settings.py"
-    # shellcheck disable=SC2046
-    allowed_hosts="$(wvc_allowed_hosts "$fqdn" $(hostname -I 2>/dev/null))"
-    sed -i "s|^ALLOWED_HOSTS = .*|ALLOWED_HOSTS = $allowed_hosts|" "$APP_PATH/webvirtcloud/settings.py"
-  else
-    echo "* Keeping existing settings.py (not overwritten)."
-  fi
-
-  # Restrict modes before the long-running pip/migrate steps, so settings and the
-  # key are not left world-readable during installation. The db is hardened again
-  # after migrate creates it.
-  wvc_harden_modes "$APP_PATH/webvirtcloud/settings.py" "" "$APP_PATH/data"
+  # Restrict modes before the long-running pip/migrate steps, so the key and the
+  # settings are not left world-readable during installation. The db is hardened
+  # again after migrate creates it.
+  wvc_harden_modes "" "$APP_PATH/data"
 
   echo "* Activate virtual environment."
   activate_python_environment
@@ -324,7 +320,7 @@ install_webvirtcloud () {
   log "$PYTHON $APP_PATH/manage.py collectstatic --noinput" || { echo "manage.py collectstatic failed: see /var/log/webvirtcloud-install.log." >&2; exit 1; }
 
   echo "* Restricting file modes on secret, settings and database."
-  wvc_harden_modes "$APP_PATH/webvirtcloud/settings.py" "$APP_PATH/db.sqlite3" "$APP_PATH/data"
+  wvc_harden_modes "$APP_PATH/db.sqlite3" "$APP_PATH/data"
 
   chown -R "$nginx_group":"$nginx_group" "$APP_PATH"
 }
@@ -487,10 +483,21 @@ until [[ $setupfqdn == "yes" ]] || [[ $setupfqdn == "no" ]]; do
   esac
 done
 
+# written into Python and nginx as it is
+if ! [[ $fqdn =~ ^[A-Za-z0-9.-]+$ ]]; then
+  echo "Not a host name: $fqdn" >&2
+  exit 1
+fi
+
 echo -n "  Q. NOVNC service port number?(Default: 6080) "
 read -r novncd_port
 if [ -z "$novncd_port" ]; then
   readonly novncd_port=6080
+elif [[ $novncd_port =~ ^[0-9]{1,5}$ ]] && (( 10#$novncd_port >= 1 && 10#$novncd_port <= 65535 )); then
+  novncd_port=$((10#$novncd_port))  # 06080 is no Python number
+else
+  echo "The port is a number from 1 to 65535: $novncd_port" >&2
+  exit 1
 fi
 echo "     Setting novnc service port $novncd_port"
 echo ""
