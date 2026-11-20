@@ -18,4 +18,16 @@
         <dt class="col-3">{% trans "Timezone / Offset" %}</dt>
         <dd class="col-9" id="ostimezone"></dd>  
     </dl>
+    {# instance_page.js fills and shows it when the agent gives the file systems #}
+    <table class="table table-sm align-middle mx-3" id="osfilesystems" hidden>
+        <caption class="caption-top">{% trans "File systems" %}</caption>
+        <thead>
+        <tr>
+            <th scope="col">{% trans "Mount point" %}</th>
+            <th scope="col">{% trans "Type" %}</th>
+            <th scope="col">{% trans "Used" %}</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
 </div>

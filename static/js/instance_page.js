@@ -33,10 +33,39 @@
             $('#oskernelversion').text(data['kernel-version'] || '');
             $('#osversion').text(data.version || '');
             $('#ostimezone').text(data.zone ? data.zone + " / " + data.offset : '');
+            show_filesystems(data.filesystems || []);
         }).fail(function (xhr) {
             var message = xhr.responseJSON && xhr.responseJSON.error;
             error.text(message || silent).removeClass('d-none');
+            show_filesystems([]);
         });
+    }
+    // each file system: its mount point, type, and how full it is (a bar, amber from 85 %)
+    function show_filesystems(filesystems) {
+        var table = document.getElementById('osfilesystems');
+        var body = table.tBodies[0];
+        body.replaceChildren();
+        filesystems.forEach(function (fs) {
+            var row = body.insertRow();
+            row.insertCell().textContent = fs.mountpoint;
+            row.insertCell().textContent = fs.type;
+            var used = row.insertCell();
+            used.textContent = fs.used_text + " / " + fs.total_text;
+            var bar = document.createElement('div');
+            bar.className = 'progress mt-1';
+            bar.style.setProperty('--bs-progress-height', '0.3rem');
+            bar.setAttribute('role', 'progressbar');
+            bar.setAttribute('aria-valuenow', fs.percent);
+            bar.setAttribute('aria-valuemin', 0);
+            bar.setAttribute('aria-valuemax', 100);
+            bar.setAttribute('aria-label', fs.mountpoint);
+            var fill = document.createElement('div');
+            fill.className = 'progress-bar' + (fs.percent >= 85 ? ' bg-warning' : '');
+            fill.style.width = fs.percent + '%';
+            bar.appendChild(fill);
+            used.appendChild(bar);
+        });
+        table.hidden = filesystems.length === 0;
     }
     function get_osinfo() {
         show_tab('#settings');

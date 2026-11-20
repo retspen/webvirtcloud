@@ -549,7 +549,11 @@ def stats(request, pk):
 def osinfo(request, pk):
     instance = get_instance(request.user, pk)
     try:
-        return JsonResponse(instance.proxy.osinfo())
+        info = instance.proxy.osinfo()
+        for fs in info.get("filesystems", []):  # sizes in the page's words
+            fs.update(used_text=filesizeformat(fs["used"]), total_text=filesizeformat(fs["total"]),
+                      percent=min(100, fs["used"] * 100 // fs["total"]))  # used may pass a BSD guest's total
+        return JsonResponse(info)
     except libvirtError as err:
         return JsonResponse({"error": error_text(request, err)}, status=400)
 

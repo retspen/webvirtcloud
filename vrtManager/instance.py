@@ -784,7 +784,20 @@ class wvmInstance(wvmConnect):
         for command in ("guest-get-timezone", "guest-get-host-name"):
             with contextlib.suppress(libvirtError):
                 info.update(agent_command(self.instance, command))
+        with contextlib.suppress(libvirtError):
+            info["filesystems"] = self.guest_filesystems()
         return info
+
+    def guest_filesystems(self):
+        """The guest's mounted file systems the agent gives both sizes of (not
+        pseudo ones), by mount point: [{"mountpoint", "type", "used", "total"}], bytes."""
+        filesystems = []
+        for fs in agent_command(self.instance, "guest-get-fsinfo") or []:
+            used, total = (fs or {}).get("used-bytes"), (fs or {}).get("total-bytes")
+            if isinstance(used, int) and isinstance(total, int) and total > 0:
+                filesystems.append({"mountpoint": str(fs.get("mountpoint", "")), "type": str(fs.get("type", "")),
+                                    "used": used, "total": total})
+        return sorted(filesystems, key=lambda fs: fs["mountpoint"])
 
     def start(self, flags=0):
         self.instance.createWithFlags(flags)
