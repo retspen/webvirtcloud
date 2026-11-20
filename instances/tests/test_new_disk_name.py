@@ -32,7 +32,8 @@ class NewDiskNameTestCase(TestCase):
             proxy.get_disk_devices.side_effect = lambda **kw: list((config if kw.get("config") else live)[0])
             proxy.get_media_devices.side_effect = lambda **kw: list((config if kw.get("config") else live)[1])
             proxy.get_disk_bus_types.return_value = ["virtio", "sata", "scsi", "usb"]
-            proxy.get_iso_path.side_effect = lambda image: f"/iso/{image}"
+            proxy.iso_location.side_effect = lambda image: ("isos", f"/iso/{image}")
+            proxy.iso_path_in.side_effect = lambda image, pool: f"/iso/{image}"
             proxy.get_cache_modes.return_value = {"default": "", "none": ""}
             proxy.get_machine_type.return_value = "q35"
             proxy.get_status.return_value = status

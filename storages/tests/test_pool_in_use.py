@@ -83,8 +83,10 @@ class PoolInUseTests(TestCase):
     def test_a_backup_target_pool_is_not_stopped_during_a_backup(self):
         from vmbackups.models import BackupTarget, BackupTargetPool
 
-        target = BackupTarget.objects.create(name="nfs-b")
-        BackupTargetPool.objects.create(target=target, compute=self.compute, pool="use-pool", pool_uuid="u1")
+        # the pool of two targets: a backup to the second one counts too
+        for name in ("nfs-a", "nfs-b"):
+            target = BackupTarget.objects.create(name=name)
+            BackupTargetPool.objects.create(target=target, compute=self.compute, pool="use-pool", pool_uuid="u1")
         admit({f"backup_target:{target.pk}": Claim.EXCLUSIVE}, holder="other-node:1:1")  # a backup writes to it
         self.assertIn("A short operation is in progress on this resource; try again in a moment.", self.post("stop"))
         self.assertTrue(self.pool.isActive())

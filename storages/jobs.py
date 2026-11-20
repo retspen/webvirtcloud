@@ -297,7 +297,8 @@ class FetchVolume(Kind):
             def chunks():
                 done, checked = 0, time.monotonic()
                 try:
-                    for data in answer.stream(2**20, decode_content=False):
+                    # what has come, up to 1 MiB: a slow server's bytes are not held until a whole MiB
+                    for data in iter(lambda: answer.read1(2**20, decode_content=False), b""):
                         done += len(data)
                         if done > size:
                             raise util.OperationError(gettext_noop("The server sent more than the file's size"))

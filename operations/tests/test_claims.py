@@ -30,6 +30,13 @@ class AdmitTestCase(TestCase):
             claims.admit({"compute:1": X}, holder="c")
         self.assertEqual((busy.exception.resource, busy.exception.blocker), ("compute:1", None))
 
+    def test_a_long_volume_key_is_held(self):
+        # a pool's and a long file name's: more than 255 characters, which PostgreSQL refused
+        key = claims.volume_key(1, "default", "a" * 250 + ".iso")
+        claims.admit({key: S}, holder="a")
+        with self.assertRaises(claims.Busy):
+            claims.admit({key: X}, holder="b")
+
     def test_a_refusal_writes_nothing(self):
         claims.admit({"instance:u1": X}, holder="a")
         with self.assertRaises(claims.Busy):

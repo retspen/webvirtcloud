@@ -25,7 +25,7 @@ def answer(chunks, size=None, status=200, headers=None):
     body.headers = {"Content-Length": str(size if size is not None else sum(map(len, chunks))), **(headers or {})}
     if size == -1:
         del body.headers["Content-Length"]
-    body.stream.return_value = iter(chunks)
+    body.read1.side_effect = [*chunks, b""]
     return body
 
 

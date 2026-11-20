@@ -1401,21 +1401,33 @@ class wvmInstance(wvmConnect):
                     raise util.OperationError(gettext_noop("Media of %(dev)s changed in the running VM only: %(err)s"), dev=dev, err=err) from err
                 raise
 
-    def get_iso_path(self, image):
-        """The path of the ISO image of that name, in one of the active pools."""
-        paths = []
+    def iso_location(self, image):
+        """(pool, path) of the ISO image of that name, in one of the active pools."""
+        found = []
         for storage in self.get_storages(only_actives=True):
             stg = self.get_storage(storage)
             if image in stg.listVolumes():
-                paths.append(stg.storageVolLookupByName(image).path())
-        if not paths:
+                found.append((storage, stg.storageVolLookupByName(image).path()))
+        if not found:
             raise util.OperationError(gettext_noop("ISO image %(image)s was not found"), image=image)
-        if len(paths) > 1:
+        if len(found) > 1:
             raise util.OperationError(gettext_noop("ISO image %(image)s is in more than one storage pool"), image=image)
-        return paths[0]
+        return found[0]
 
-    def mount_iso(self, dev, image):
-        self._set_cdrom_media(dev, self.get_iso_path(image))
+    def get_iso_path(self, image):
+        return self.iso_location(image)[1]
+
+    def iso_path_in(self, image, pool):
+        """The path of the ISO image, which must still be the one of that pool (the one a caller claimed)."""
+        found, path = self.iso_location(image)
+        if found != pool:
+            raise util.OperationError(gettext_noop("ISO image %(image)s is no longer in pool %(pool)s; choose it again"),
+                                      image=image, pool=pool)
+        return path
+
+    def mount_iso(self, dev, image, pool=None):
+        """Insert the ISO image; pool: the pool it must be in, when the caller claimed its volume there."""
+        self._set_cdrom_media(dev, self.iso_path_in(image, pool) if pool else self.get_iso_path(image))
 
     def umount_iso(self, dev, image=None):
         self._set_cdrom_media(dev, None)

@@ -79,7 +79,7 @@ class Claim(models.Model):
     EXCLUSIVE = "exclusive"
 
     operation = models.ForeignKey(Operation, null=True, on_delete=models.CASCADE, related_name="claims")
-    resource = models.CharField(max_length=255, db_index=True)
+    resource = models.TextField(db_index=True)  # a volume's key holds its pool's and file's names
     mode = models.CharField(max_length=9, choices=[(SHARED, SHARED), (EXCLUSIVE, EXCLUSIVE)])
     holder = models.CharField(max_length=128, blank=True)  # transient: host:pid:thread
     expires_at = models.DateTimeField(null=True)  # transient only

@@ -13,6 +13,7 @@ from computes.models import Compute
 from instances.models import Instance
 from operations.claims import admit
 from operations.models import Claim
+from vrtManager import util
 
 PATH = "/var/lib/libvirt/images/data.qcow2"
 MAC = "52:54:00:aa:bb:cc"
@@ -95,9 +96,28 @@ class DuplicateDeviceTests(TestCase):
                          [f"The VM already has a network device with MAC {MAC.upper()}"])
         self.proxy.add_network.assert_called_once()
 
+    def test_an_iso_a_download_writes_is_not_added_or_inserted(self):
+        self.proxy.iso_location.return_value = ("isos", "/var/lib/libvirt/isos/alma.iso")
+        admit({f"volume:{self.vm.compute_id}:isos/alma.iso": Claim.EXCLUSIVE}, holder="other-node:1:1")
+        busy = ["A short operation is in progress on this resource; try again in a moment."]
+        with patch("instances.views.cdrom_bus_choices", return_value=["sata"]):
+            self.assertEqual(self.post("add_cdrom", {"bus": "sata", "media": "alma.iso"}), busy)
+        self.assertEqual(self.post("mount_iso", {"mount_iso": "sda", "media": "alma.iso"})[-1:], busy)
+        self.proxy.attach_disk.assert_not_called()
+        self.proxy.mount_iso.assert_not_called()
+
+    def test_an_iso_is_read_again_in_the_pool_claimed(self):
+        # another pool's image of that name (a download there) is not inserted under this pool's claim
+        from vrtManager.instance import wvmInstance
+
+        vm = wvmInstance.__new__(wvmInstance)
+        with patch.object(wvmInstance, "iso_location", return_value=("other", "/other/alma.iso")), \
+                self.assertRaisesMessage(util.OperationError, "no longer in pool isos"):
+            vm.iso_path_in("alma.iso", "isos")
+
     def test_an_iso_in_a_cdrom_of_the_vm_is_not_added_again(self):
         iso = "/var/lib/libvirt/isos/alma.iso"
-        self.proxy.get_iso_path.return_value = iso
+        self.proxy.iso_location.return_value = ("isos", iso)
         with patch("instances.views.cdrom_bus_choices", return_value=["sata"]):
             form = {"bus": "sata", "media": "alma.iso"}
             self.post("add_cdrom", form)

@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-20 12:24+0000\n"
+"POT-Creation-Date: 2026-11-20 13:47+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -3548,8 +3548,8 @@ msgstr ""
 "VNC olarak değiştirin."
 
 #: instances/api/viewsets.py:160 instances/api/viewsets.py:178
-#: instances/jobs.py:1605 instances/views.py:1010 instances/views.py:1032
-#: instances/views.py:2030
+#: instances/jobs.py:1615 instances/views.py:1010 instances/views.py:1032
+#: instances/views.py:2036
 msgid "Templates cannot be started."
 msgstr "Şablon makineler başlatılamaz."
 
@@ -3621,7 +3621,7 @@ msgstr ""
 msgid "A password takes no line breaks or other control characters."
 msgstr "Parola satır sonu ya da başka denetim karakteri içeremez."
 
-#: instances/forms.py:114 vrtManager/instance.py:1823
+#: instances/forms.py:114 vrtManager/instance.py:1835
 msgid ""
 "The console listens on no address (on a network, a socket or nowhere); change"
 " it in the XML editor"
@@ -3724,7 +3724,7 @@ msgstr ""
 msgid "Delete snapshot"
 msgstr "Anlık görüntüyü sil"
 
-#: instances/jobs.py:366 vrtManager/instance.py:2591
+#: instances/jobs.py:366 vrtManager/instance.py:2603
 #, python-format
 msgid "The VM has no external snapshot named %(name)s"
 msgstr "Sanal makinede %(name)s adında harici anlık görüntü yok"
@@ -3759,7 +3759,7 @@ msgstr "Sanal makine artık işin çalıştığı sunucuda değil"
 msgid "Take snapshot"
 msgstr "Anlık görüntü al"
 
-#: instances/jobs.py:437 instances/jobs.py:446 vrtManager/instance.py:2162
+#: instances/jobs.py:437 instances/jobs.py:446 vrtManager/instance.py:2174
 #, python-format
 msgid "A snapshot named %(name)s already exists"
 msgstr "%(name)s adında bir anlık görüntü zaten var"
@@ -3837,7 +3837,7 @@ msgstr ""
 msgid "Clone VM"
 msgstr "Sanal makineyi klonla"
 
-#: instances/jobs.py:668 instances/jobs.py:675 instances/jobs.py:1017
+#: instances/jobs.py:668 instances/jobs.py:675 instances/jobs.py:1027
 #: vmbackups/jobs.py:369 vmbackups/jobs.py:1076 vmbackups/jobs.py:1283
 #: vmbackups/jobs.py:1459
 msgid "Copying disks"
@@ -3923,12 +3923,12 @@ msgstr ""
 msgid "Each network card needs a network"
 msgstr "Her ağ kartının bir ağı olmalı"
 
-#: instances/jobs.py:880 vrtManager/backup.py:387 vrtManager/instance.py:3007
+#: instances/jobs.py:880 vrtManager/backup.py:387 vrtManager/instance.py:3019
 #, python-format
 msgid "This host has no network %(name)s"
 msgstr "Bu sunucuda %(name)s ağı yok"
 
-#: instances/jobs.py:882 vrtManager/backup.py:391 vrtManager/instance.py:3009
+#: instances/jobs.py:882 vrtManager/backup.py:391 vrtManager/instance.py:3021
 #, python-format
 msgid "This host has no network filter %(name)s"
 msgstr "Bu sunucuda %(name)s ağ filtresi yok"
@@ -3953,11 +3953,11 @@ msgstr ""
 msgid "Create VM"
 msgstr "Sanal makine oluştur"
 
-#: instances/jobs.py:940 instances/jobs.py:987 instances/views.py:2826
+#: instances/jobs.py:940 instances/jobs.py:997 instances/views.py:2832
 msgid "A virtual machine with this name already exists"
 msgstr "Bu isimde bir sanal makine mevcut"
 
-#: instances/jobs.py:942 instances/jobs.py:982
+#: instances/jobs.py:942 instances/jobs.py:992
 msgid "There is an instance with same name. Remove it and try again!"
 msgstr "Aynı isimde başka bir sanal makine var. Onu silip yeniden deneyin!"
 
@@ -4002,19 +4002,19 @@ msgstr "cloud-init tohumu, disk için bir dizin depolama havuzu gerektirir"
 msgid "This host offers no firmware %(firmware)s"
 msgstr "Bu sunucu %(firmware)s firmware'ini sunmuyor"
 
-#: instances/jobs.py:969 vrtManager/instance.py:3357
+#: instances/jobs.py:969 vrtManager/instance.py:3369
 msgid "This host offers no TPM 2.0: install swtpm on it"
 msgstr "Bu sunucu TPM 2.0 sunmuyor: üzerine swtpm kurun"
 
-#: instances/jobs.py:1037
+#: instances/jobs.py:1047
 msgid "Writing the cloud-init seed"
 msgstr "cloud-init tohumu yazılıyor"
 
-#: instances/jobs.py:1044
+#: instances/jobs.py:1054
 msgid "Defining the VM"
 msgstr "Sanal makine tanımlanıyor"
 
-#: instances/jobs.py:1086
+#: instances/jobs.py:1096
 #, python-format
 msgid ""
 "The panel failed unexpectedly; its log has the details. Remove these volumes "
@@ -4023,122 +4023,122 @@ msgstr ""
 "Panel beklenmedik bir hatayla karşılaştı; ayrıntılar panelin günlüğünde. Bu "
 "birimleri elle kaldırın: %(volumes)s"
 
-#: instances/jobs.py:1090
+#: instances/jobs.py:1100
 #, python-format
 msgid "%(error)s. Remove these volumes by hand: %(volumes)s"
 msgstr "%(error)s. Şu birimleri elle silin: %(volumes)s"
 
-#: instances/jobs.py:1118
+#: instances/jobs.py:1128
 #, python-format
 msgid "The instance is already on %(compute)s"
 msgstr "Sanal makine zaten %(compute)s üzerinde"
 
-#: instances/jobs.py:1121
+#: instances/jobs.py:1131
 #, python-format
 msgid "%(compute)s is not reachable"
 msgstr "%(compute)s sunucusuna ulaşılamıyor"
 
-#: instances/jobs.py:1123
+#: instances/jobs.py:1133
 #, python-format
 msgid "%(compute)s is the VM's own host under another name"
 msgstr "%(compute)s, sanal makinenin kendi sunucusunun başka bir adı"
 
-#: instances/jobs.py:1180
+#: instances/jobs.py:1190
 #, python-format
 msgid ""
 "The VM migrated, but autostart could not be set on the destination: %(error)s"
 msgstr ""
 "Sanal makine taşındı, ancak hedefte otomatik başlatma ayarlanamadı: %(error)s"
 
-#: instances/jobs.py:1187
+#: instances/jobs.py:1197
 #, python-format
 msgid "The VM migrated, but its NVRAM file stays on the source: %(error)s"
 msgstr "Sanal makine taşındı, ancak NVRAM dosyası kaynakta kaldı: %(error)s"
 
-#: instances/jobs.py:1195
+#: instances/jobs.py:1205
 msgid "Migrate VM"
 msgstr "Sanal makineyi taşı"
 
-#: instances/jobs.py:1249
+#: instances/jobs.py:1259
 msgid "Migrating the VM"
 msgstr "Sanal makine taşınıyor"
 
-#: instances/jobs.py:1298
+#: instances/jobs.py:1308
 msgid "libvirt is still migrating the VM"
 msgstr "libvirt sanal makineyi hâlâ taşıyor"
 
-#: instances/jobs.py:1310
+#: instances/jobs.py:1320
 msgid "The VM stayed on the source host"
 msgstr "Sanal makine kaynak sunucuda kaldı"
 
-#: instances/jobs.py:1312
+#: instances/jobs.py:1322
 msgid ""
 "The VM is on both computes or on neither; check them, then resolve this job."
 msgstr ""
 "Sanal makine ya iki sunucuda da var ya da hiçbirinde yok; kontrol edin, sonra"
 " bu işi çözün."
 
-#: instances/jobs.py:1331
+#: instances/jobs.py:1341
 msgid "Move disk"
 msgstr "Diski taşı"
 
-#: instances/jobs.py:1338
+#: instances/jobs.py:1348
 msgid "Choose a disk of the VM"
 msgstr "Sanal makinenin bir diskini seçin"
 
-#: instances/jobs.py:1362
+#: instances/jobs.py:1372
 msgid "Copying the disk"
 msgstr "Disk kopyalanıyor"
 
-#: instances/jobs.py:1404
+#: instances/jobs.py:1414
 #, python-format
 msgid "Another block job runs on %(dev)s; check the VM"
 msgstr ""
 "%(dev)s üzerinde başka bir blok işi çalışıyor; sanal makineyi kontrol edin"
 
-#: instances/jobs.py:1410
+#: instances/jobs.py:1420
 #, python-format
 msgid "The disk stayed in %(path)s; remove %(dest)s if it is there"
 msgstr "Disk %(path)s içinde kaldı; varsa %(dest)s dosyasını silin"
 
-#: instances/jobs.py:1412
+#: instances/jobs.py:1422
 #, python-format
 msgid "The definitions of %(dev)s name %(paths)s; check the VM"
 msgstr "%(dev)s tanımları %(paths)s gösteriyor; sanal makineyi kontrol edin"
 
-#: instances/jobs.py:1419
+#: instances/jobs.py:1429
 #, python-format
 msgid "Disk %(path)s was kept: a disk file that stays needs it"
 msgstr "%(path)s diski korundu: kalan bir disk dosyası ona ihtiyaç duyuyor"
 
-#: instances/jobs.py:1420
+#: instances/jobs.py:1430
 #, python-format
 msgid "The VM is removed, but disk %(path)s was not deleted: %(err)s"
 msgstr "Sanal makine kaldırıldı, ancak %(path)s diski silinmedi: %(err)s"
 
-#: instances/jobs.py:1421
+#: instances/jobs.py:1431
 #, python-format
 msgid "Disk %(path)s is used by another VM and was kept"
 msgstr ""
 "%(path)s diski başka bir sanal makine tarafından kullanılıyor ve korundu"
 
-#: instances/jobs.py:1475
+#: instances/jobs.py:1485
 msgid "Delete VM"
 msgstr "Sanal makineyi sil"
 
-#: instances/jobs.py:1505
+#: instances/jobs.py:1515
 msgid "Deleting the VM"
 msgstr "Sanal makine siliniyor"
 
-#: instances/jobs.py:1518
+#: instances/jobs.py:1528
 msgid "The VM was not deleted; it may have been shut off"
 msgstr "Sanal makine silinmedi; kapatılmış olabilir"
 
-#: instances/jobs.py:1584
+#: instances/jobs.py:1594
 msgid "The VM was not powered"
 msgstr "Sanal makineye güç işlemi yapılmadı"
 
-#: instances/jobs.py:1600 instances/templates/allinstances.html:69
+#: instances/jobs.py:1610 instances/templates/allinstances.html:69
 #: instances/templates/instance_actions.html:17
 #: instances/templates/instance_actions.html:33
 #: interfaces/templates/interface.html:18 networks/templates/network.html:18
@@ -4146,20 +4146,20 @@ msgstr "Sanal makineye güç işlemi yapılmadı"
 msgid "Start"
 msgstr "Başlat"
 
-#: instances/jobs.py:1607
+#: instances/jobs.py:1617
 msgid "The VM is not shut off"
 msgstr "Sanal makine kapalı değil"
 
-#: instances/jobs.py:1621 instances/templates/allinstances.html:71
+#: instances/jobs.py:1631 instances/templates/allinstances.html:71
 #: instances/templates/instance_actions.html:27
 msgid "Shut down"
 msgstr "Kapat"
 
-#: instances/jobs.py:1626 vrtManager/instance.py:182
+#: instances/jobs.py:1636 vrtManager/instance.py:182
 msgid "The VM is not running"
 msgstr "Sanal makine çalışmıyor"
 
-#: instances/jobs.py:1628
+#: instances/jobs.py:1638
 msgid ""
 "The VM was still running when the job was checked: its guest may still shut "
 "it down"
@@ -4167,12 +4167,12 @@ msgstr ""
 "İş denetlendiğinde sanal makine hâlâ çalışıyordu: konuk sistem onu yine de "
 "kapatabilir"
 
-#: instances/jobs.py:1640 instances/templates/allinstances.html:73
+#: instances/jobs.py:1650 instances/templates/allinstances.html:73
 #: instances/templates/instance_actions.html:50
 msgid "Force off"
 msgstr "Zorla kapat"
 
-#: instances/jobs.py:1645
+#: instances/jobs.py:1655
 msgid "The VM is already shut off"
 msgstr "Sanal makine zaten kapalı"
 
@@ -4359,7 +4359,7 @@ msgid "Disk source"
 msgstr "Disk kaynağı"
 
 #: instances/templates/add_instance_volume.html:21
-#: instances/templates/create_instance_w2.html:134 instances/views.py:2856
+#: instances/templates/create_instance_w2.html:134 instances/views.py:2862
 msgid "New disk"
 msgstr "Yeni disk"
 
@@ -4822,7 +4822,7 @@ msgstr "Özel CPU modelleri"
 msgid "Size (GiB)"
 msgstr "Boyut (GiB)"
 
-#: instances/templates/create_instance_w2.html:161 instances/views.py:2857
+#: instances/templates/create_instance_w2.html:161 instances/views.py:2863
 msgid "Existing volumes"
 msgstr "Mevcut birimler"
 
@@ -4859,7 +4859,7 @@ msgstr "Aygıt"
 msgid "Remove"
 msgstr "Kaldır"
 
-#: instances/templates/create_instance_w2.html:194 instances/views.py:2858
+#: instances/templates/create_instance_w2.html:194 instances/views.py:2864
 msgid "Clone from template"
 msgstr "Şablondan klonla"
 
@@ -5413,7 +5413,7 @@ msgid "Add USB device"
 msgstr "USB aygıtı ekle"
 
 #: instances/templates/instances/host_devices_form.html:18
-#: vrtManager/instance.py:3260
+#: vrtManager/instance.py:3272
 msgid ""
 "A VM with a saved state does not change its USB devices: start it, or start "
 "it without its saved state"
@@ -7563,7 +7563,7 @@ msgstr "Birim başarıyla değiştirildi."
 msgid "Disk %(dev)s is not a storage volume of this instance"
 msgstr "%(dev)s diski bu sanal makinenin bir depolama birimi değil"
 
-#: instances/views.py:1768 vrtManager/instance.py:2601
+#: instances/views.py:1768 vrtManager/instance.py:2613
 msgid "The VM has a saved state; start it or remove the saved state first"
 msgstr ""
 "Sanal makinenin kaydedilmiş durumu var; önce başlatın veya kaydedilmiş durumu"
@@ -7611,47 +7611,47 @@ msgstr "USB CD-ROM bir ISO imajı ister: libvirt boş USB sürücü desteklemiyo
 msgid "%(image)s is already in a CD-ROM of this VM"
 msgstr "%(image)s bu sanal makinenin bir CD-ROM'unda zaten takılı"
 
-#: instances/views.py:1935
+#: instances/views.py:1941
 #, python-format
 msgid "Pool %(pool)s was not read again: %(err)s"
 msgstr "%(pool)s havuzu yeniden okunamadı: %(err)s"
 
-#: instances/views.py:1956
+#: instances/views.py:1962
 #, python-format
 msgid "Snapshot was not deleted: %(err)s"
 msgstr "Anlık görüntü silinmedi: %(err)s"
 
-#: instances/views.py:2075
+#: instances/views.py:2081
 msgid "Add at least one device to the boot order."
 msgstr "Ön yükleme sırasına en az bir aygıt ekleyin."
 
-#: instances/views.py:2081 vrtManager/instance.py:1364
+#: instances/views.py:2087 vrtManager/instance.py:1364
 msgid "Invalid Device Type for boot order"
 msgstr "Ön yükleme sırası için geçersiz aygıt türü"
 
-#: instances/views.py:2092
+#: instances/views.py:2098
 msgid "Boot order changed. It applies at the next start."
 msgstr "Ön yükleme sırası değiştirildi. Sonraki başlatmada uygulanır."
 
-#: instances/views.py:2094
+#: instances/views.py:2100
 msgid "Boot order changed successfully."
 msgstr "Ön yükleme sırası başarıyla değiştirildi."
 
-#: instances/views.py:2114
+#: instances/views.py:2120
 msgid "The XML is empty"
 msgstr "XML boş"
 
-#: instances/views.py:2118 instances/views.py:2838
+#: instances/views.py:2124 instances/views.py:2844
 #, python-format
 msgid "The XML is not well-formed: %(error)s"
 msgstr "XML düzgün biçimlendirilmemiş: %(error)s"
 
-#: instances/views.py:2120
+#: instances/views.py:2126
 #, python-format
 msgid "The XML must keep the VM's UUID %(uuid)s."
 msgstr "XML, sanal makinenin %(uuid)s UUID'sini korumalıdır."
 
-#: instances/views.py:2124
+#: instances/views.py:2130
 msgid ""
 "The definition has changed since the editor was opened. Reload the page to "
 "edit the current one."
@@ -7659,45 +7659,45 @@ msgstr ""
 "Düzenleyici açıldığından beri tanım değişti. Geçerli tanımı düzenlemek için "
 "sayfayı yeniden yükleyin."
 
-#: instances/views.py:2140
+#: instances/views.py:2146
 msgid "The XML definition was saved."
 msgstr "XML tanımı kaydedildi."
 
-#: instances/views.py:2142
+#: instances/views.py:2148
 msgid "The XML definition was saved; the VM uses it from its next start."
 msgstr ""
 "XML tanımı kaydedildi; sanal makine onu sonraki başlatmasından itibaren "
 "kullanır."
 
-#: instances/views.py:2223
+#: instances/views.py:2229
 msgid "Select one network interface to change"
 msgstr "Değiştirilecek bir ağ arabirimi seçin"
 
-#: instances/views.py:2237
+#: instances/views.py:2243
 #, python-format
 msgid "Network interface %(mac)s was changed meanwhile; reload the page"
 msgstr "%(mac)s ağ arayüzü bu arada değişti; sayfayı yeniden yükleyin"
 
-#: instances/views.py:2267
+#: instances/views.py:2273
 msgid "Network Device Config is changed. Please shutdown instance to activate."
 msgstr ""
 "Ağ aygıtı yapılandırması değiştirildi. Aktifleştirmek için lütfen sanal "
 "makineyi kapatın."
 
-#: instances/views.py:2269
+#: instances/views.py:2275
 msgid "Network device changed"
 msgstr "Ağ aygıtı değiştirildi"
 
-#: instances/views.py:2281
+#: instances/views.py:2287
 msgid "No network selected"
 msgstr "Ağ seçilmedi"
 
-#: instances/views.py:2286
+#: instances/views.py:2292
 #, python-format
 msgid "The VM already has a network device with MAC %(mac)s"
 msgstr "Sanal makinede %(mac)s MAC adresli bir ağ aygıtı zaten var"
 
-#: instances/views.py:2305
+#: instances/views.py:2311
 msgid ""
 "The running VM has no free PCI slot for another network device: shut it down "
 "and add the device then; Add PCIe slots on the Disks tab gives it free ones "
@@ -7707,21 +7707,21 @@ msgstr ""
 "aygıtı sonra ekleyin; Diskler sekmesindeki PCIe yuvaları ekle, sonraki "
 "başlatmadan itibaren ona boş yuvalar verir."
 
-#: instances/views.py:2351 instances/views.py:2357
+#: instances/views.py:2357 instances/views.py:2363
 msgid "The VM has it"
 msgstr "Sanal makinede var"
 
-#: instances/views.py:2392
+#: instances/views.py:2398
 #, python-format
 msgid "The host has no USB device %(device)s; reload the page"
 msgstr "Sunucuda %(device)s USB aygıtı yok; sayfayı yeniden yükleyin"
 
-#: instances/views.py:2413
+#: instances/views.py:2419
 #, python-format
 msgid "The host has no PCI device %(device)s"
 msgstr "Sunucuda %(device)s PCI aygıtı yok"
 
-#: instances/views.py:2431
+#: instances/views.py:2437
 #, python-format
 msgid ""
 "Removal of PCI device %(address)s requested: the guest has not let it go yet;"
@@ -7731,20 +7731,20 @@ msgstr ""
 "bırakmadı; bırakana ya da sanal makine durana kadar çalışan sanal makinede "
 "kalır."
 
-#: instances/views.py:2476 instances/views.py:2506
+#: instances/views.py:2482 instances/views.py:2512
 msgid "Select a network interface and a QoS direction"
 msgstr "Bir ağ arabirimi ve bir QoS yönü seçin"
 
-#: instances/views.py:2479 vrtManager/network.py:470
+#: instances/views.py:2485 vrtManager/network.py:470
 msgid "QoS rates must be whole numbers"
 msgstr "QoS hızları tam sayı olmalıdır"
 
-#: instances/views.py:2486 networks/views.py:235
+#: instances/views.py:2492 networks/views.py:235
 #, python-format
 msgid "%(qos_dir)s QoS is set"
 msgstr "%(qos_dir)s QoS ayarlandı"
 
-#: instances/views.py:2491
+#: instances/views.py:2497
 #, python-format
 msgid ""
 "%(qos_dir)s QoS is set. A running VM gets it after it is powered off and on."
@@ -7752,12 +7752,12 @@ msgstr ""
 "%(qos_dir)s QoS ayarlandı. Çalışan bir sanal makine, kapatılıp açıldıktan "
 "sonra bunu alır."
 
-#: instances/views.py:2513 networks/views.py:261
+#: instances/views.py:2519 networks/views.py:261
 #, python-format
 msgid "%(qos_dir)s QoS is deleted"
 msgstr "%(qos_dir)s QoS silindi"
 
-#: instances/views.py:2518
+#: instances/views.py:2524
 #, python-format
 msgid ""
 "%(qos_dir)s QoS is deleted. A running VM keeps the old limit until it is "
@@ -7766,21 +7766,21 @@ msgstr ""
 "%(qos_dir)s QoS silindi. Çalışan bir sanal makine, kapatılıp açılana kadar "
 "eski sınırı korur."
 
-#: instances/views.py:2546
+#: instances/views.py:2552
 msgid "Only one owner is allowed and the one already added"
 msgstr "Sadece bir sahibe izin verilmiştir ve bir sahip zaten eklenmiş"
 
-#: instances/views.py:2548
+#: instances/views.py:2554
 #, python-format
 msgid "%(user)s is already an owner"
 msgstr "%(user)s zaten bir sahip"
 
-#: instances/views.py:2613
+#: instances/views.py:2619
 #, python-format
 msgid "Console settings were not saved: %(errors)s"
 msgstr "Konsol ayarları kaydedilmedi: %(errors)s"
 
-#: instances/views.py:2635
+#: instances/views.py:2641
 msgid ""
 "Error setting console password. You should check that your instance have an "
 "graphic device."
@@ -7788,41 +7788,41 @@ msgstr ""
 "Konsol parolası ayarlanırken hata oluştu. Sanal makinenin bir grafik aygıtına"
 " sahip olduğundan emin olunuz."
 
-#: instances/views.py:2682
+#: instances/views.py:2688
 msgid "Shut the VM down to change whether it is a template."
 msgstr "Şablon olup olmadığını değiştirmek için sanal makineyi kapatın."
 
-#: instances/views.py:2688
+#: instances/views.py:2694
 #, python-format
 msgid "%(quota)s: '%(instance_name)s' stays a template."
 msgstr "%(quota)s: '%(instance_name)s' şablon olarak kalıyor."
 
-#: instances/views.py:2710
+#: instances/views.py:2716
 msgid "An I/O limit is whole numbers of IOPS and MiB/s, 0 for none"
 msgstr "G/Ç sınırı, IOPS ve MiB/s için tam sayılardır; 0: sınır yok"
 
-#: instances/views.py:2824
+#: instances/views.py:2830
 msgid "The XML has no name"
 msgstr "XML'de ad yok"
 
-#: instances/views.py:2842 webvirtcloud/middleware.py:157
+#: instances/views.py:2848 webvirtcloud/middleware.py:157
 #, python-format
 msgid "libvirt Error - %(exception)s"
 msgstr "libvirt Hatası - %(exception)s"
 
-#: instances/views.py:2856
+#: instances/views.py:2862
 msgid "An empty disk of the size you set"
 msgstr "Belirlediğiniz boyutta boş bir disk"
 
-#: instances/views.py:2857
+#: instances/views.py:2863
 msgid "Volumes already in a pool"
 msgstr "Bir havuzda zaten bulunan birimler"
 
-#: instances/views.py:2858
+#: instances/views.py:2864
 msgid "A copy of a template volume"
 msgstr "Bir şablon biriminin kopyası"
 
-#: instances/views.py:2948
+#: instances/views.py:2954
 msgid ""
 "This host has no running storage pool for the VM's disks: add or start one on"
 " its Storage page."
@@ -7830,29 +7830,29 @@ msgstr ""
 "Bu sunucuda sanal makinenin diskleri için çalışan bir depolama havuzu yok: "
 "Depolama sayfasından bir tane ekleyin ya da başlatın."
 
-#: instances/views.py:2950
+#: instances/views.py:2956
 msgid "This host has no network for the VM: add one on its Networks page."
 msgstr ""
 "Bu sunucuda sanal makine için ağ yok: Ağlar sayfasından bir tane ekleyin."
 
-#: instances/views.py:2982
+#: instances/views.py:2988
 #, python-format
 msgid "The machine type is q35, not %(machine)s: UEFI Secure Boot needs it"
 msgstr "Makine türü %(machine)s değil q35: UEFI Secure Boot bunu gerektiriyor"
 
-#: instances/views.py:3011
+#: instances/views.py:3017
 msgid "Flavor Created"
 msgstr "Flavor Oluşturuldu"
 
-#: instances/views.py:3019
+#: instances/views.py:3025
 msgid "Create Flavor"
 msgstr "Kullanıcı Oluştur"
 
-#: instances/views.py:3031
+#: instances/views.py:3037
 msgid "Flavor Deleted"
 msgstr "Flavor Silindi"
 
-#: instances/views.py:3037
+#: instances/views.py:3043
 msgid "Only the size template goes; VMs made from it keep their size."
 msgstr ""
 "Yalnızca boyut şablonu silinir; ondan oluşturulan sanal makineler boyutlarını"
@@ -9655,19 +9655,19 @@ msgstr "Sunucu dosyanın boyutunu bildirmiyor"
 msgid "The file is larger than the pool's free space"
 msgstr "Dosya, havuzun boş alanından büyük"
 
-#: storages/jobs.py:303
+#: storages/jobs.py:304
 msgid "The server sent more than the file's size"
 msgstr "Sunucu dosyanın boyutundan fazlasını gönderdi"
 
-#: storages/jobs.py:314
+#: storages/jobs.py:315
 msgid "The download ended early"
 msgstr "İndirme erken bitti"
 
-#: storages/jobs.py:320
+#: storages/jobs.py:321
 msgid "The download stopped and its volume was not deleted"
 msgstr "İndirme durdu ve birimi silinemedi"
 
-#: storages/jobs.py:337
+#: storages/jobs.py:338
 msgid "The download stopped; what it wrote was deleted"
 msgstr "İndirme durdu; yazdıkları silindi"
 
@@ -11528,14 +11528,14 @@ msgid ""
 msgstr ""
 "%(pool)s depolama havuzu %(target)s yedek hedefidir; önce hedeften çıkarın"
 
-#: vmbackups/utils.py:85
+#: vmbackups/utils.py:84
 msgid ""
 "No backup target open to VM owners has a storage pool on this VM's host."
 msgstr ""
 "VM sahiplerine açık hiçbir yedek hedefinin bu VM'in sunucusunda depolama "
 "havuzu yok."
 
-#: vmbackups/utils.py:86
+#: vmbackups/utils.py:85
 msgid "No backup target has a storage pool on this VM's host."
 msgstr ""
 "Hiçbir yedek hedefinin bu sanal makinenin sunucusunda depolama havuzu yok."
@@ -12061,17 +12061,22 @@ msgstr "ISO imajı %(image)s bulunamadı"
 msgid "ISO image %(image)s is in more than one storage pool"
 msgstr "ISO imajı %(image)s birden fazla depolama havuzunda var"
 
-#: vrtManager/instance.py:1509
+#: vrtManager/instance.py:1424
+#, python-format
+msgid "ISO image %(image)s is no longer in pool %(pool)s; choose it again"
+msgstr "%(image)s ISO imajı artık %(pool)s havuzunda değil; yeniden seçin"
+
+#: vrtManager/instance.py:1521
 #, python-format
 msgid "Disk %(target_dev)s is not in the VM's definition"
 msgstr "Disk %(target_dev)s sanal makinenin tanımında yok"
 
-#: vrtManager/instance.py:1641
+#: vrtManager/instance.py:1653
 msgid "Please shutdown the instance then try to enable vCPU hotplug"
 msgstr ""
 "vCPU hotplug özelliğini etkinleştirmek için önce sanal makineyi kapatın"
 
-#: vrtManager/instance.py:1844
+#: vrtManager/instance.py:1856
 #, python-format
 msgid ""
 "The serial console is a %(type)s one, the browser opens only a pty one; "
@@ -12080,11 +12085,11 @@ msgstr ""
 "Seri konsol %(type)s türünde, tarayıcı yalnızca pty türünü açar; bunu XML "
 "düzenleyicide değiştirin"
 
-#: vrtManager/instance.py:1955
+#: vrtManager/instance.py:1967
 msgid "The VM has no video card"
 msgstr "Sanal makinede ekran kartı yok"
 
-#: vrtManager/instance.py:1965
+#: vrtManager/instance.py:1977
 #, python-format
 msgid ""
 "The VM's CPU topology has %(count)s vCPUs: change it in the XML editor to set"
@@ -12093,62 +12098,62 @@ msgstr ""
 "VM'nin CPU topolojisi %(count)s vCPU içeriyor: başka bir en fazla değer için "
 "onu XML düzenleyicide değiştirin"
 
-#: vrtManager/instance.py:1991
+#: vrtManager/instance.py:2003
 #, python-format
 msgid "The VM's next start has a maximum memory of %(max)s MiB"
 msgstr ""
 "Sanal makinenin bir sonraki başlangıcındaki en yüksek bellek %(max)s MiB"
 
-#: vrtManager/instance.py:2132
+#: vrtManager/instance.py:2144
 msgid ""
 "The VM has external snapshots; internal snapshots cannot be mixed with them"
 msgstr ""
 "Sanal makinenin harici anlık görüntüleri var; dahili anlık görüntüler "
 "bunlarla karıştırılamaz"
 
-#: vrtManager/instance.py:2160
+#: vrtManager/instance.py:2172
 msgid ""
 "The VM has internal snapshots; external snapshots cannot be mixed with them"
 msgstr ""
 "Sanal makinenin dahili anlık görüntüleri var; harici anlık görüntüler "
 "bunlarla karıştırılamaz"
 
-#: vrtManager/instance.py:2165
+#: vrtManager/instance.py:2177
 msgid "Newer snapshots exist after the last revert; delete them first"
 msgstr ""
 "Son geri dönüşten sonra daha yeni anlık görüntüler var; önce onları silin"
 
-#: vrtManager/instance.py:2168
+#: vrtManager/instance.py:2180
 msgid "No snapshot is current; revert to a snapshot first"
 msgstr "Geçerli anlık görüntü yok; önce bir anlık görüntüye geri dönün"
 
-#: vrtManager/instance.py:2174
+#: vrtManager/instance.py:2186
 #, python-format
 msgid "Eject the media from %(dev)s first"
 msgstr "Önce %(dev)s içindeki ortamı çıkarın"
 
-#: vrtManager/instance.py:2176
+#: vrtManager/instance.py:2188
 #, python-format
 msgid "Disk %(dev)s is not a file; external snapshots need file disks"
 msgstr ""
 "Disk %(dev)s bir dosya değil; harici anlık görüntüler dosya diskleri "
 "gerektirir"
 
-#: vrtManager/instance.py:2189
+#: vrtManager/instance.py:2201
 msgid "A snapshot with memory is not quiesced; it keeps the whole guest state"
 msgstr ""
 "Bellekli bir anlık görüntüde dosya sistemleri dondurulmaz; tüm konuk durumunu"
 " saklar"
 
-#: vrtManager/instance.py:2191
+#: vrtManager/instance.py:2203
 msgid "Only a running VM's file systems can be frozen"
 msgstr "Yalnızca çalışan bir sanal makinenin dosya sistemleri dondurulabilir"
 
-#: vrtManager/instance.py:2193
+#: vrtManager/instance.py:2205
 msgid "The QEMU guest agent is not connected; it freezes the file systems"
 msgstr "QEMU konuk aracısı bağlı değil; dosya sistemlerini o dondurur"
 
-#: vrtManager/instance.py:2202
+#: vrtManager/instance.py:2214
 #, python-format
 msgid ""
 "The storage pools could not be refreshed, so their free space is unknown: "
@@ -12156,21 +12161,21 @@ msgid ""
 msgstr ""
 "Depolama havuzları yenilenemedi, bu yüzden boş alanları bilinmiyor: %(err)s"
 
-#: vrtManager/instance.py:2225
+#: vrtManager/instance.py:2237
 msgid "Memory is saved only from a running VM"
 msgstr "Bellek yalnızca çalışan bir sanal makineden kaydedilir"
 
-#: vrtManager/instance.py:2227
+#: vrtManager/instance.py:2239
 msgid "The VM has no disk to keep its memory next to"
 msgstr "Sanal makinenin, belleğinin yanına kaydedileceği bir diski yok"
 
-#: vrtManager/instance.py:2231
+#: vrtManager/instance.py:2243
 #, python-format
 msgid "%(disk)s is not in a storage pool; memory is saved only into one"
 msgstr ""
 "%(disk)s bir depolama havuzunda değil; bellek yalnızca bir havuza kaydedilir"
 
-#: vrtManager/instance.py:2262
+#: vrtManager/instance.py:2274
 #, python-format
 msgid ""
 "Storage pool %(pool)s has %(free).1f GiB free; the snapshot needs %(size).1f "
@@ -12181,7 +12186,7 @@ msgstr ""
 "%(size).1f GiB gerektiriyor (sanal makinenin oradaki disklerinin "
 "%%%(percent)g kadarı, en az %(minimum)g GiB, ve kaydediliyorsa bellek)"
 
-#: vrtManager/instance.py:2280
+#: vrtManager/instance.py:2292
 msgid ""
 "This snapshot was taken by an older version on a UEFI VM and cannot be "
 "reverted; delete it instead"
@@ -12189,7 +12194,7 @@ msgstr ""
 "Bu anlık görüntü UEFI bir sanal makinede eski bir sürümle alındı ve geri "
 "dönülemez; bunun yerine silin"
 
-#: vrtManager/instance.py:2310
+#: vrtManager/instance.py:2322
 #, python-format
 msgid ""
 "The revert failed twice; try again in a moment (%(error)s). The VM is "
@@ -12198,7 +12203,7 @@ msgstr ""
 "Geri dönüş iki kez başarısız oldu; biraz sonra tekrar deneyin (%(error)s). "
 "Sanal makine çalışıyor."
 
-#: vrtManager/instance.py:2312
+#: vrtManager/instance.py:2324
 #, python-format
 msgid ""
 "The revert failed twice; try again in a moment (%(error)s). The VM is shut "
@@ -12207,13 +12212,13 @@ msgstr ""
 "Geri dönüş iki kez başarısız oldu; biraz sonra tekrar deneyin (%(error)s). "
 "Sanal makine kapalı."
 
-#: vrtManager/instance.py:2480
+#: vrtManager/instance.py:2492
 msgid "A disk moves when its VM is defined and running, paused or shut off"
 msgstr ""
 "Bir disk, sanal makinesi tanımlıyken ve çalışırken, duraklatılmışken veya "
 "kapalıyken taşınır"
 
-#: vrtManager/instance.py:2482
+#: vrtManager/instance.py:2494
 msgid ""
 "A disk of a VM with snapshots, a saved state or a running block job does not "
 "move"
@@ -12221,7 +12226,7 @@ msgstr ""
 "Anlık görüntüleri, kaydedilmiş durumu veya çalışan bir blok işi olan sanal "
 "makinenin diski taşınmaz"
 
-#: vrtManager/instance.py:2490
+#: vrtManager/instance.py:2502
 #, python-format
 msgid ""
 "%(dev)s is not a disk file of the VM, the same in its running and next "
@@ -12230,121 +12235,121 @@ msgstr ""
 "%(dev)s, sanal makinenin çalışan ve sonraki başlatma tanımlarında aynı olan "
 "bir disk dosyası değil"
 
-#: vrtManager/instance.py:2495
+#: vrtManager/instance.py:2507
 #, python-format
 msgid "%(dev)s does not move: only writable raw and qcow2 disks do"
 msgstr "%(dev)s taşınmaz: yalnızca yazılabilir raw ve qcow2 diskler taşınır"
 
-#: vrtManager/instance.py:2502
+#: vrtManager/instance.py:2514
 #, python-format
 msgid "%(dev)s does not move: no storage pool has %(path)s"
 msgstr "%(dev)s taşınmaz: hiçbir depolama havuzunda %(path)s yok"
 
-#: vrtManager/instance.py:2504
+#: vrtManager/instance.py:2516
 #, python-format
 msgid "%(dev)s does not move: it has a backing file"
 msgstr "%(dev)s taşınmaz: temel (backing) dosyası var"
 
-#: vrtManager/instance.py:2507
+#: vrtManager/instance.py:2519
 #, python-format
 msgid "%(pool_name)s is not an active pool of disk files of this host"
 msgstr "%(pool_name)s bu sunucunun etkin bir disk dosyası havuzu değil"
 
-#: vrtManager/instance.py:2510
+#: vrtManager/instance.py:2522
 #, python-format
 msgid "%(dev)s is in pool %(pool_name)s already"
 msgstr "%(dev)s zaten %(pool_name)s havuzunda"
 
-#: vrtManager/instance.py:2514
+#: vrtManager/instance.py:2526
 #, python-format
 msgid "Pool %(pool_name)s already has a file %(name)s"
 msgstr "%(pool_name)s havuzunda zaten %(name)s dosyası var"
 
-#: vrtManager/instance.py:2538
+#: vrtManager/instance.py:2550
 #, python-format
 msgid "The copy of %(dev)s ended before it was complete"
 msgstr "%(dev)s kopyası tamamlanmadan sona erdi"
 
-#: vrtManager/instance.py:2583
+#: vrtManager/instance.py:2595
 #, python-format
 msgid "%(error)s; remove %(dest)s if it is there: %(cleanup_error)s"
 msgstr "%(error)s; varsa %(dest)s dosyasını kaldırın: %(cleanup_error)s"
 
-#: vrtManager/instance.py:2585
+#: vrtManager/instance.py:2597
 #, python-format
 msgid "%(error)s; the VM may use %(dest)s now: check its disk %(dev)s"
 msgstr ""
 "%(error)s; sanal makine şu anda %(dest)s dosyasını kullanıyor olabilir: "
 "%(dev)s diskini kontrol edin"
 
-#: vrtManager/instance.py:2592
+#: vrtManager/instance.py:2604
 #, python-format
 msgid "The VM has no internal snapshot named %(name)s"
 msgstr "Sanal makinenin %(name)s adlı dahili anlık görüntüsü yok"
 
-#: vrtManager/instance.py:2603
+#: vrtManager/instance.py:2615
 msgid "A snapshot job is still running on this VM; try again when it ends"
 msgstr ""
 "Bu sanal makinede hâlâ bir anlık görüntü işi çalışıyor; bittiğinde tekrar "
 "deneyin"
 
-#: vrtManager/instance.py:2613
+#: vrtManager/instance.py:2625
 msgid "Shut the VM down to revert to an internal snapshot"
 msgstr "Dahili bir anlık görüntüye geri dönmek için sanal makineyi kapatın"
 
-#: vrtManager/instance.py:2680
+#: vrtManager/instance.py:2692
 msgid "Cannot clone a VM whose NVRAM is not a file"
 msgstr "NVRAM'i dosya olmayan bir sanal makine klonlanamaz"
 
-#: vrtManager/instance.py:2751
+#: vrtManager/instance.py:2763
 #, python-format
 msgid "Clone failed (%(err)s); remove these copies by hand: %(path)s"
 msgstr ""
 "Klonlama başarısız oldu (%(err)s); bu kopyaları elle kaldırın: %(path)s"
 
-#: vrtManager/instance.py:2762
+#: vrtManager/instance.py:2774
 msgid "Shut the VM down before cloning it"
 msgstr "Klonlamadan önce sanal makineyi kapatın"
 
-#: vrtManager/instance.py:2789
+#: vrtManager/instance.py:2801
 #, python-format
 msgid "Clone failed (%(err)s); remove these copies by hand: %(leftovers)s"
 msgstr ""
 "Klonlama başarısız oldu (%(err)s); bu kopyaları elle kaldırın: %(leftovers)s"
 
-#: vrtManager/instance.py:2800
+#: vrtManager/instance.py:2812
 msgid "Live clone needs libvirt 11.10 or later; shut the VM down to clone it"
 msgstr ""
 "Canlı klonlama libvirt 11.10 veya sonrasını gerektirir; klonlamak için sanal "
 "makineyi kapatın"
 
-#: vrtManager/instance.py:2803
+#: vrtManager/instance.py:2815
 msgid "A VM with a TPM is cloned only shut down"
 msgstr "TPM'i olan bir sanal makine yalnızca kapalıyken klonlanır"
 
-#: vrtManager/instance.py:2806
+#: vrtManager/instance.py:2818
 #, python-format
 msgid "Disk %(dev)s is not a local file; shut the VM down to clone it"
 msgstr ""
 "Disk %(dev)s yerel bir dosya değil; klonlamak için sanal makineyi kapatın"
 
-#: vrtManager/instance.py:2808
+#: vrtManager/instance.py:2820
 #, python-format
 msgid "Disk %(dev)s is shareable; shut the VM down to clone it"
 msgstr "Disk %(dev)s paylaşılabilir; klonlamak için sanal makineyi kapatın"
 
-#: vrtManager/instance.py:2813
+#: vrtManager/instance.py:2825
 #, python-format
 msgid "Disk %(dev)s changes at the next start; shut the VM down to clone it"
 msgstr ""
 "Disk %(dev)s sonraki başlatmada değişiyor; klonlamak için sanal makineyi "
 "kapatın"
 
-#: vrtManager/instance.py:2815
+#: vrtManager/instance.py:2827
 msgid "Another job is running on the VM; clone it when that ends"
 msgstr "Sanal makinede başka bir iş çalışıyor; o bittiğinde klonlayın"
 
-#: vrtManager/instance.py:2841
+#: vrtManager/instance.py:2853
 #, python-format
 msgid ""
 "Storage pool %(pool)s has %(free).1f GiB free; the clone needs %(size).1f GiB"
@@ -12354,25 +12359,25 @@ msgstr ""
 "gerektiriyor (kopyalanan diskler, artı bunların %%%(percent)g kadarı, en az "
 "%(minimum)g GiB)"
 
-#: vrtManager/instance.py:2858
+#: vrtManager/instance.py:2870
 #, python-format
 msgid "Volume %(name)s already exists in storage pool %(pool)s"
 msgstr "%(name)s birimi %(pool)s depolama havuzunda zaten var"
 
-#: vrtManager/instance.py:3046
+#: vrtManager/instance.py:3058
 msgid "A network interface that is a host device is removed in the XML editor"
 msgstr "Sunucu aygıtı olan bir ağ arabirimi XML düzenleyicide kaldırılır"
 
-#: vrtManager/instance.py:3062
+#: vrtManager/instance.py:3074
 #, python-format
 msgid "No network interface with MAC %(old_mac)s"
 msgstr "MAC adresi %(old_mac)s olan ağ arabirimi yok"
 
-#: vrtManager/instance.py:3065
+#: vrtManager/instance.py:3077
 msgid "A network interface that is a host device is changed in the XML editor"
 msgstr "Sunucu aygıtı olan bir ağ arabirimi XML düzenleyicide değiştirilir"
 
-#: vrtManager/instance.py:3159
+#: vrtManager/instance.py:3171
 msgid ""
 "A VM changes its PCI devices while it runs, or is shut off without a saved "
 "state"
@@ -12380,43 +12385,43 @@ msgstr ""
 "Sanal makine PCI aygıtlarını çalışırken veya kaydedilmiş durumu olmadan "
 "kapalıyken değiştirir"
 
-#: vrtManager/instance.py:3180
+#: vrtManager/instance.py:3192
 #, python-format
 msgid "%(err)s; whether the VM has %(device)s now is not known"
 msgstr "%(err)s; sanal makinede şu anda %(device)s olup olmadığı bilinmiyor"
 
-#: vrtManager/instance.py:3182
+#: vrtManager/instance.py:3194
 #, python-format
 msgid "%(err)s; %(device)s: the VM is not running, its next start has it"
 msgstr "%(err)s; %(device)s: sanal makine çalışmıyor, sonraki başlatmada var"
 
-#: vrtManager/instance.py:3183
+#: vrtManager/instance.py:3195
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the VM is not running, its next start does not have it"
 msgstr "%(err)s; %(device)s: sanal makine çalışmıyor, sonraki başlatmada yok"
 
-#: vrtManager/instance.py:3184
+#: vrtManager/instance.py:3196
 #, python-format
 msgid "%(err)s; %(device)s: the running VM has it, its next start has it"
 msgstr ""
 "%(err)s; %(device)s: çalışan sanal makinede var, sonraki başlatmada var"
 
-#: vrtManager/instance.py:3185
+#: vrtManager/instance.py:3197
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the running VM has it, its next start does not have it"
 msgstr ""
 "%(err)s; %(device)s: çalışan sanal makinede var, sonraki başlatmada yok"
 
-#: vrtManager/instance.py:3186
+#: vrtManager/instance.py:3198
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the running VM does not have it, its next start has it"
 msgstr ""
 "%(err)s; %(device)s: çalışan sanal makinede yok, sonraki başlatmada var"
 
-#: vrtManager/instance.py:3188
+#: vrtManager/instance.py:3200
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the running VM does not have it, its next start does not"
@@ -12424,48 +12429,48 @@ msgid ""
 msgstr ""
 "%(err)s; %(device)s: çalışan sanal makinede yok, sonraki başlatmada yok"
 
-#: vrtManager/instance.py:3222
+#: vrtManager/instance.py:3234
 #, python-format
 msgid "The VM has no PCI device %(address)s"
 msgstr "Sanal makinede %(address)s PCI aygıtı yok"
 
-#: vrtManager/instance.py:3243
+#: vrtManager/instance.py:3255
 msgid "The VM has no USB controller"
 msgstr "Sanal makinede USB denetleyicisi yok"
 
-#: vrtManager/instance.py:3277
+#: vrtManager/instance.py:3289
 msgid "The VM has no such USB device"
 msgstr "Sanal makinede böyle bir USB aygıtı yok"
 
-#: vrtManager/instance.py:3291
+#: vrtManager/instance.py:3303
 #, python-format
 msgid "The VM has no network interface %(mac)s"
 msgstr "Sanal makinede %(mac)s ağ arabirimi yok"
 
-#: vrtManager/instance.py:3323
+#: vrtManager/instance.py:3335
 msgid "The VM has its own RNG device: change it in the XML editor"
 msgstr ""
 "Sanal makinenin kendi RNG aygıtı var: bunu XML düzenleyicide değiştirin"
 
-#: vrtManager/instance.py:3350
+#: vrtManager/instance.py:3362
 msgid "The VM has its own TPM: change it in the XML editor"
 msgstr "Sanal makinenin kendi TPM'i var: bunu XML düzenleyicide değiştirin"
 
-#: vrtManager/instance.py:3369
+#: vrtManager/instance.py:3381
 #, python-format
 msgid "Unknown crash action %(action)s"
 msgstr "Bilinmeyen çökme eylemi %(action)s"
 
-#: vrtManager/instance.py:3396
+#: vrtManager/instance.py:3408
 #, python-format
 msgid "Network interface %(mac)s is not in the definition"
 msgstr "%(mac)s ağ arayüzü tanımda yok"
 
-#: vrtManager/instance.py:3487
+#: vrtManager/instance.py:3499
 msgid "The guest agent did not answer in time; nothing was changed"
 msgstr "Konuk ajanı zamanında yanıt vermedi; hiçbir şey değiştirilmedi"
 
-#: vrtManager/instance.py:3490
+#: vrtManager/instance.py:3502
 msgid "The VM runs Windows: its guest agent sets no root password or SSH key"
 msgstr ""
 "Sanal makinede Windows çalışıyor: konuk ajanı root parolası ya da SSH "

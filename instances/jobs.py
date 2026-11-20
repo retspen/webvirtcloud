@@ -970,7 +970,17 @@ class CreateInstance(Kind):
 
     def plan(self, user, params):
         compute = Compute.objects.get(pk=params["compute"])
-        return Plan(claims=vm_claims(compute, params["name"]), resource=claims.compute_key(compute.pk),
+        keys = vm_claims(compute, params["name"])
+        # the volumes it is made from: not while a download writes them; a writable one
+        # exclusive, as an attach holds it, a template or an image in a CD-ROM shared
+        if params["template"]:
+            keys[claims.volume_key(compute.pk, params["template_pool"], params["template"])] = Claim.SHARED
+        for image, (device, _bus) in zip(filter(None, params["images"].split(",")), params["devices"]):
+            pool, _sep, name = image.partition("/")
+            key = claims.volume_key(compute.pk, pool, name)
+            if keys.get(key) != Claim.EXCLUSIVE:  # one given twice keeps its writable claim
+                keys[key] = Claim.SHARED if device == "cdrom" else Claim.EXCLUSIVE
+        return Plan(claims=keys, resource=claims.compute_key(compute.pk),
                     label=f"{compute.name}/{params['name']}",
                     intent={"compute": compute.pk, "uuid": str(uuid4()), "name": params["name"]})
 

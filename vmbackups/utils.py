@@ -53,11 +53,10 @@ def refuse_target_pool(compute, pool):
 
 def pool_stop_claims(compute, pool):
     """The claims that keep out a pool's jobs while it is stopped or deleted: the pool's, and its
-    backup target's if it is one (backup jobs claim the target)."""
+    backup targets' if it is one or more (backup jobs claim the target)."""
     keys = {claims.pool_key(compute.pk, pool): Claim.EXCLUSIVE}
-    row = BackupTargetPool.objects.filter(compute=compute, pool=pool).first()
-    if row:
-        keys[claims.backup_target_key(row.target_id)] = Claim.EXCLUSIVE
+    for target in BackupTargetPool.objects.filter(compute=compute, pool=pool).values_list("target_id", flat=True):
+        keys[claims.backup_target_key(target)] = Claim.EXCLUSIVE
     return keys
 
 

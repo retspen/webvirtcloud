@@ -1848,7 +1848,7 @@ def add_cdrom(request, pk):
     if bus == "usb" and not image:
         messages.error(request, _("A USB CD-ROM needs an ISO image: libvirt has no empty USB drive"))
         return _back(request, pk, "disks")
-    path = instance.proxy.get_iso_path(image) if image else ""
+    pool, path = instance.proxy.iso_location(image) if image else ("", "")
     # a form sent twice (a double click) adds the drive once
     if path and path in {media["path"] for media in instance.media + instance.config_media}:
         messages.error(request, _("%(image)s is already in a CD-ROM of this VM") % {"image": image})
@@ -1858,7 +1858,10 @@ def add_cdrom(request, pk):
         instance.media + instance.config_media, instance.disks + instance.config_disks, bus
     )
     try:
-        with audit_vm(request, instance, f"add CD-ROM {target}" + (f" with {image}" if image else "")):
+        # the image shared: not inserted while a download writes it (Busy names the job)
+        with claims.hold({claims.volume_key(instance.compute_id, pool, image): Claim.SHARED} if image else {}), \
+                audit_vm(request, instance, f"add CD-ROM {target}" + (f" with {image}" if image else "")):
+            path = instance.proxy.iso_path_in(image, pool) if image else ""  # read again under the claim
             instance.proxy.attach_disk(
                 target,
                 path,
@@ -1920,8 +1923,11 @@ def mount_iso(request, pk):
     image = request.POST.get("media", "")
     dev = request.POST.get("mount_iso", "")
     try:
-        with audit_vm(request, instance, f"insert media {image} into {dev}"):
-            instance.proxy.mount_iso(dev, image)
+        pool, _path = instance.proxy.iso_location(image)
+        # the image shared: not inserted while a download writes it (Busy names the job)
+        with claims.hold({claims.volume_key(instance.compute_id, pool, image): Claim.SHARED}), \
+                audit_vm(request, instance, f"insert media {image} into {dev}"):
+            instance.proxy.mount_iso(dev, image, pool)
     except libvirtError as err:
         messages.error(request, err)
     return redirect(same_origin_referer(request, reverse("instances:instance", args=[pk])) + "#disks")
