@@ -70,7 +70,7 @@ WebVirtCloud and `virt-manager`/`virsh` can manage the same libvirt host **concu
 
 ## Installation
 
-The installer supports Ubuntu 22.04 / 24.04 / 26.04, Debian 12 / 13, RHEL / Rocky Linux / AlmaLinux / Oracle Linux 10, openEuler 24.03 LTS, openSUSE Leap 15.x / Tumbleweed and SLES 15; the panel runs on a virtual machine, a physical host or a KVM host itself and needs Python 3.10 or newer. CI tests Python 3.10–3.14 on Ubuntu (sqlite, and PostgreSQL on 3.12) and the Docker image; the distro installs are not tested in CI. Pick one of the three ways below, then do the [first login](#first-login).
+The installer supports Ubuntu 22.04 / 24.04 / 26.04, Debian 12 / 13, RHEL / Rocky Linux / AlmaLinux / Oracle Linux 10, openEuler 24.03 LTS, openSUSE Leap 15.x / 16.0 / Tumbleweed and SLES 15; the panel runs on a virtual machine, a physical host or a KVM host itself and needs Python 3.10 or newer. CI tests Python 3.10–3.14 on Ubuntu (sqlite, and PostgreSQL on 3.12), the Docker image, and the installer on Ubuntu 22.04 / 24.04 / 26.04, Debian 12 / 13, AlmaLinux 10, openEuler 24.03 and openSUSE Leap 15.6 / 16.0 (`dev/test-installer.sh`). Pick one of the three ways below, then do the [first login](#first-login).
 
 ### Installer
 
@@ -192,10 +192,12 @@ systemctl daemon-reload && systemctl enable --now webvirt-cloud webvirt-novncd w
 systemctl enable nginx && nginx -t && systemctl restart nginx
 ```
 
-#### openSUSE Leap 15.x / Tumbleweed, SLES 15
+#### openSUSE Leap 15.x / 16.0 / Tumbleweed, SLES 15
+
+On SLES 15, enable the Python 3 module and SUSE Package Hub first (`SUSEConnect -p sle-module-python3/15.7/x86_64` and `SUSEConnect -p PackageHub/15.7/x86_64`, with your service pack); the installer needs them too.
 
 ```bash
-# 1. System packages (Python 3.11 stack)
+# 1. System packages (Python 3.11 stack; on Leap 16 and Tumbleweed python313-* packages and python3.13 below)
 zypper --non-interactive install -y git hostname python311 python311-base python311-devel python311-pip python311-libvirt-python python311-lxml libvirt-devel libopenssl-devel gcc pkg-config nginx
 
 # 2. Code

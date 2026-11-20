@@ -76,6 +76,8 @@ readonly APP_NAME="webvirtcloud"
 readonly APP_PATH="/srv/$APP_NAME"
 
 PYTHON="python3"
+# the interpreter a distribution's branch installed its bindings for, if it chose one
+WANT_PYTHON=""
 
 progress () {
   spin[0]="-"
@@ -208,7 +210,7 @@ add_service_groups () {
 
 check_python () {
   # dynamically find python >= 3.10 if default python3 is older
-  for py_bin in python3.11 python3.12 python3.13 python3.10 python3; do
+  for py_bin in $WANT_PYTHON python3.11 python3.12 python3.13 python3.10 python3; do
     if command -v "$py_bin" >/dev/null 2>&1; then
       if "$py_bin" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' >/dev/null 2>&1; then
         PYTHON="$py_bin"
@@ -629,7 +631,7 @@ case $distro in
   fi
   ;;
   suse)
-    # Install for openSUSE Leap 15.x / Tumbleweed / SLES 15
+    # Install for openSUSE Leap 15.x / 16.0 / Tumbleweed / SLES 15
     tzone=\'$(get_timezone)\'
 
     echo -n "* Updating installed packages."
@@ -638,12 +640,19 @@ case $distro in
     wait "$pid" || { echo "Updating the package lists failed." >&2; exit 1; }
 
     echo "* Installing OS requirements."
-    # On SUSE, install Python 3.11 stack to satisfy Python >= 3.10 requirement along with the native libvirt bindings
-    if zypper se -s python311-devel >/dev/null 2>&1; then
-      PACKAGES="git hostname python311 python311-base python311-devel python311-pip python311-libvirt-python python311-lxml libvirt-devel libopenssl-devel gcc pkg-config nginx"
-    else
-      PACKAGES="git hostname python3-devel python3-pip python3-virtualenv libvirt-devel python3-libvirt python3-lxml libopenssl-devel gcc pkg-config nginx"
-    fi
+    # the Python the distribution builds the libvirt binding for: 3.11 on Leap 15 and SLES 15,
+    # 3.13 on Leap 16 and Tumbleweed; the venv is made with it
+    py=""
+    for version in 311 312 313; do
+      found=$(zypper -q search -x "python$version-libvirt-python" 2>&1)
+      case $? in
+        0) py=python$version; WANT_PYTHON=python3.${version#3}; break ;;
+        104) ;;  # no such package
+        *) echo "Searching the packages failed: $found" >&2; exit 1 ;;
+      esac
+    done
+    [ -n "$py" ] || { echo "No libvirt binding for Python 3.11 or newer (python3XX-libvirt-python) was found." >&2; exit 1; }
+    PACKAGES="git hostname $py $py-devel $py-pip $py-libvirt-python $py-lxml libvirt-devel libopenssl-devel gcc pkg-config nginx"
     install_packages
 
     set_hosts

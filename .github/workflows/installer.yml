@@ -37,6 +37,7 @@ jobs:
           - debian:13
           - almalinux:10
           - opensuse/leap:15.6
+          - opensuse/leap:16.0
           - openeuler/openeuler:24.03-lts
     steps:
       - name: Checkout Code
