@@ -12,7 +12,7 @@ from instances.models import Instance, InstanceTombstone
 from logs.audit import write
 from operations import claims
 from operations.models import Claim
-from vmbackups.models import Backup, BackupRun
+from vmbackups.models import Backup, BackupPolicy, BackupRun
 
 logger = logging.getLogger(__name__)
 
@@ -134,13 +134,16 @@ def _bury(inst):
         {"user": ui.user_id, "is_change": ui.is_change, "is_delete": ui.is_delete, "is_vnc": ui.is_vnc}
         for ui in UserInstance.objects.filter(instance=inst)
     ]
-    tags = list(inst.tags.values_list("name", flat=True))
-    if owners or inst.is_template or tags:
-        InstanceTombstone.objects.create(uuid=inst.uuid, name=inst.name, host=inst.compute.name,
-                                         is_template=inst.is_template, owners=owners, tags=tags)
-        _log(inst, "owners and tags kept on the Removed VMs page")
+    tombstone = InstanceTombstone(uuid=inst.uuid, name=inst.name, host=inst.compute.name, is_template=inst.is_template,
+                                  protected=inst.protected, owners=owners,
+                                  tags=list(inst.tags.values_list("name", flat=True)),
+                                  policies=list(inst.backup_policies.values_list("pk", flat=True)),
+                                  backups=list(inst.backups.values_list("pk", flat=True)))
+    if tombstone.keeps_anything():
+        tombstone.save()
+        _log(inst, "kept on the Removed VMs page")
     else:
-        _log(inst, "left the panel (no owners or tags)")
+        _log(inst, "left the panel (nothing to keep)")
 
 
 def _restore(inst):
@@ -158,11 +161,13 @@ def _restore(inst):
                 is_vnc=owner["is_vnc"],
             )
     inst.tags.set(Tag.objects.filter(name__in=tombstone.tags))
-    if tombstone.is_template:
-        inst.is_template = True
-        inst.save(update_fields=["is_template"])
+    # not a schedule that chooses its VMs by compute or tag since: it chooses this one, or not, by itself
+    inst.backup_policies.set(BackupPolicy.objects.filter(pk__in=tombstone.policies, compute=None, tag=None))
+    Backup.objects.filter(pk__in=tombstone.backups, instance__isnull=True).update(instance=inst)
+    inst.is_template, inst.protected = tombstone.is_template, tombstone.protected
+    inst.save(update_fields=["is_template", "protected"])
     InstanceTombstone.objects.filter(uuid=inst.uuid).delete()
-    _log(inst, "owners and tags restored")
+    _log(inst, "restored from the Removed VMs page")
 
 
 def _host_domains(compute):

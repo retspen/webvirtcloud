@@ -53,7 +53,7 @@ class TombstoneTests(TestCase):
     def test_a_get_only_asks_for_confirmation(self):
         response = self.client.get(reverse("admin:tombstone_delete", args=[self.tombstone.pk]))
         self.assertContains(response, "ts-vm")
-        self.assertContains(response, "Its owners and tags no longer come back if its UUID shows up again.")
+        self.assertContains(response, "Its owners, tags, protection and schedules no longer come back if its UUID shows up again, nor are its backups linked to it again.")
         self.assertTrue(InstanceTombstone.objects.exists())
 
     def test_a_post_removes_it(self):

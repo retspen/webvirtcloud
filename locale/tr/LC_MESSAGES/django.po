@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-19 19:29+0000\n"
+"POT-Creation-Date: 2026-11-20 05:04+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -470,7 +470,7 @@ msgstr "%(name)s API anahtarı için işlemler"
 #: accounts/templates/ssh_key_list.html:13
 #: admin/templates/admin/group_list.html:44
 #: admin/templates/admin/tag_list.html:38
-#: admin/templates/admin/tombstone_list.html:43
+#: admin/templates/admin/tombstone_list.html:44
 #: admin/templates/admin/user_list.html:74
 #: admin/templates/admin/user_list.html:76
 #: instances/templates/create_flavors.html:11
@@ -703,7 +703,7 @@ msgstr "Sanal makineleri yedekleyebilir"
 msgid "Can clone instances"
 msgstr "Sanal makineleri klonlayabilir"
 
-#: admin/forms.py:26 instances/models.py:440
+#: admin/forms.py:26 instances/models.py:446
 msgid "Can access console without password"
 msgstr "Parolasız konsol erişimi yapabilir"
 
@@ -1093,11 +1093,13 @@ msgstr "Kaldırılan Sanal Makineler"
 
 #: admin/templates/admin/tombstone_list.html:11
 msgid ""
-"VMs that vanished from their compute. Their owners and tags come back if the "
-"same UUID shows up again before the record expires."
+"VMs that vanished from their compute. Their owners, tags, protection and "
+"schedules come back if the same UUID shows up again before the record "
+"expires; their backups come back with them."
 msgstr ""
 "Sunucularından kaybolan sanal makineler. Kayıt süresi dolmadan aynı UUID "
-"yeniden görünürse sahipleri ve etiketleri geri gelir."
+"yeniden görünürse sahipleri, etiketleri, korumaları ve zamanlamaları geri "
+"gelir; yedekleri de onlarla birlikte geri gelir."
 
 #: admin/templates/admin/tombstone_list.html:14
 msgid "No removed VMs"
@@ -1112,23 +1114,28 @@ msgstr "Kaldırılan sanal makinelerde ara"
 msgid "Template"
 msgstr "Şablon"
 
-#: admin/templates/admin/tombstone_list.html:34
+#: admin/templates/admin/tombstone_list.html:29
+#: instances/templates/instances/settings_tab.html:926
+msgid "Protected"
+msgstr "Korumalı"
+
+#: admin/templates/admin/tombstone_list.html:35
 msgid "Left"
 msgstr "Ayrıldığı sunucu"
 
-#: admin/templates/admin/tombstone_list.html:35 instances/views.py:244
+#: admin/templates/admin/tombstone_list.html:36 instances/views.py:244
 msgid "Owners"
 msgstr "Sahipler"
 
-#: admin/templates/admin/tombstone_list.html:38
+#: admin/templates/admin/tombstone_list.html:39
 msgid "Removed"
 msgstr "Kaldırılma"
 
-#: admin/templates/admin/tombstone_list.html:39
+#: admin/templates/admin/tombstone_list.html:40
 msgid "expires"
 msgstr "sona erer"
 
-#: admin/templates/admin/tombstone_list.html:50
+#: admin/templates/admin/tombstone_list.html:51
 msgid "No removed VM matches the search."
 msgstr "Aramayla eşleşen kaldırılmış sanal makine yok."
 
@@ -1333,9 +1340,12 @@ msgid "Removed VM %(name)s deleted"
 msgstr "Kaldırılan sanal makine %(name)s silindi"
 
 #: admin/views.py:465
-msgid "Its owners and tags no longer come back if its UUID shows up again."
+msgid ""
+"Its owners, tags, protection and schedules no longer come back if its UUID "
+"shows up again, nor are its backups linked to it again."
 msgstr ""
-"UUID'si yeniden görünse bile sahipleri ve etiketleri artık geri gelmez."
+"UUID'si yeniden görünse bile sahipleri, etiketleri, koruması ve zamanlamaları"
+" artık geri gelmez, yedekleri de ona yeniden bağlanmaz."
 
 #: admin/views.py:512
 #, python-format
@@ -3187,21 +3197,21 @@ msgstr ""
 "Sunucudaki /etc/default/webvirt-gstfsd içindeki GSTFSD_KEY değerinin 64 "
 "onaltılık karakterini girin"
 
-#: computes/views.py:168
+#: computes/views.py:188
 #, python-format
 msgid "The host did not answer within %(seconds)s seconds"
 msgstr "Sunucu %(seconds)s saniye içinde yanıt vermedi"
 
-#: computes/views.py:396
+#: computes/views.py:417
 msgid "No other host has room for it"
 msgstr "Başka hiçbir sunucuda ona yer yok"
 
-#: computes/views.py:475
+#: computes/views.py:496
 #, python-format
 msgid "The host was saved, but the panel cannot connect to it: %(error)s"
 msgstr "Sunucu kaydedildi, ancak panel ona bağlanamıyor: %(error)s"
 
-#: computes/views.py:548
+#: computes/views.py:569
 #, python-format
 msgid ""
 "Its VMs keep running on the host and leave the panel; their owners are kept "
@@ -3882,7 +3892,7 @@ msgstr ""
 msgid "Create VM"
 msgstr "Sanal makine oluştur"
 
-#: instances/jobs.py:936 instances/jobs.py:983 instances/views.py:2647
+#: instances/jobs.py:936 instances/jobs.py:983 instances/views.py:2650
 msgid "A virtual machine with this name already exists"
 msgstr "Bu isimde bir sanal makine mevcut"
 
@@ -4246,7 +4256,7 @@ msgid "Disk source"
 msgstr "Disk kaynağı"
 
 #: instances/templates/add_instance_volume.html:21
-#: instances/templates/create_instance_w2.html:134 instances/views.py:2677
+#: instances/templates/create_instance_w2.html:134 instances/views.py:2680
 msgid "New disk"
 msgstr "Yeni disk"
 
@@ -4280,7 +4290,7 @@ msgstr "Harf, rakam, nokta, tire ve alt çizgi."
 
 #: instances/templates/add_instance_volume.html:44
 #: instances/templates/instances/settings_tab.html:851
-#: vmbackups/templates/vmbackups/index.html:51
+#: vmbackups/templates/vmbackups/index.html:52
 #: vmbackups/templates/vmbackups/vm_tab.html:42
 msgid "Size"
 msgstr "Boyut"
@@ -4437,7 +4447,7 @@ msgstr "Adres"
 #: instances/templates/allinstances.html:106 instances/views.py:243
 #: interfaces/templates/interface.html:153 networks/templates/network.html:202
 #: vmbackups/templates/vmbackups/index.html:18
-#: vmbackups/templates/vmbackups/index.html:49
+#: vmbackups/templates/vmbackups/index.html:50
 #: vmbackups/templates/vmbackups/policy.html:30
 msgid "VM"
 msgstr "VM"
@@ -4643,7 +4653,7 @@ msgstr "Özel CPU modelleri"
 msgid "Size (GiB)"
 msgstr "Boyut (GiB)"
 
-#: instances/templates/create_instance_w2.html:161 instances/views.py:2678
+#: instances/templates/create_instance_w2.html:161 instances/views.py:2681
 msgid "Existing volumes"
 msgstr "Mevcut birimler"
 
@@ -4680,7 +4690,7 @@ msgstr "Aygıt"
 msgid "Remove"
 msgstr "Kaldır"
 
-#: instances/templates/create_instance_w2.html:194 instances/views.py:2679
+#: instances/templates/create_instance_w2.html:194 instances/views.py:2682
 msgid "Clone from template"
 msgstr "Şablondan klonla"
 
@@ -6491,10 +6501,6 @@ msgstr ""
 msgid "Only administrators and staff can change this."
 msgstr "Bunu yalnızca yöneticiler ve personel değiştirebilir."
 
-#: instances/templates/instances/settings_tab.html:926
-msgid "Protected"
-msgstr "Korumalı"
-
 #: instances/templates/instances/settings_tab.html:928
 msgid "A protected VM is not deleted and no backup is restored over it."
 msgstr "Korumalı bir VM silinmez ve üzerine yedek geri yüklenmez."
@@ -6954,7 +6960,7 @@ msgstr "Çok fazla arama hâlâ çalışıyor; birazdan yeniden deneyin."
 #: operations/templates/operations/jobs.html:62
 #: storages/templates/storage.html:91
 #: vmbackups/templates/vmbackups/index.html:29
-#: vmbackups/templates/vmbackups/index.html:51
+#: vmbackups/templates/vmbackups/index.html:52
 #: vmbackups/templates/vmbackups/policies.html:18
 #: vmbackups/templates/vmbackups/vm_tab.html:42
 msgid "State"
@@ -7357,7 +7363,7 @@ msgstr "Ön yükleme sırası başarıyla değiştirildi."
 msgid "The XML is empty"
 msgstr "XML boş"
 
-#: instances/views.py:1965 instances/views.py:2659
+#: instances/views.py:1965 instances/views.py:2662
 #, python-format
 msgid "The XML is not well-formed: %(error)s"
 msgstr "XML düzgün biçimlendirilmemiş: %(error)s"
@@ -7513,28 +7519,28 @@ msgstr "Şablon olup olmadığını değiştirmek için sanal makineyi kapatın.
 msgid "%(quota)s: '%(instance_name)s' stays a template."
 msgstr "%(quota)s: '%(instance_name)s' şablon olarak kalıyor."
 
-#: instances/views.py:2645
+#: instances/views.py:2648
 msgid "The XML has no name"
 msgstr "XML'de ad yok"
 
-#: instances/views.py:2663 webvirtcloud/middleware.py:157
+#: instances/views.py:2666 webvirtcloud/middleware.py:157
 #, python-format
 msgid "libvirt Error - %(exception)s"
 msgstr "libvirt Hatası - %(exception)s"
 
-#: instances/views.py:2677
+#: instances/views.py:2680
 msgid "An empty disk of the size you set"
 msgstr "Belirlediğiniz boyutta boş bir disk"
 
-#: instances/views.py:2678
+#: instances/views.py:2681
 msgid "Volumes already in a pool"
 msgstr "Bir havuzda zaten bulunan birimler"
 
-#: instances/views.py:2679
+#: instances/views.py:2682
 msgid "A copy of a template volume"
 msgstr "Bir şablon biriminin kopyası"
 
-#: instances/views.py:2769
+#: instances/views.py:2772
 msgid ""
 "This host has no running storage pool for the VM's disks: add or start one on"
 " its Storage page."
@@ -7542,29 +7548,29 @@ msgstr ""
 "Bu sunucuda sanal makinenin diskleri için çalışan bir depolama havuzu yok: "
 "Depolama sayfasından bir tane ekleyin ya da başlatın."
 
-#: instances/views.py:2771
+#: instances/views.py:2774
 msgid "This host has no network for the VM: add one on its Networks page."
 msgstr ""
 "Bu sunucuda sanal makine için ağ yok: Ağlar sayfasından bir tane ekleyin."
 
-#: instances/views.py:2803
+#: instances/views.py:2806
 #, python-format
 msgid "The machine type is q35, not %(machine)s: UEFI Secure Boot needs it"
 msgstr "Makine türü %(machine)s değil q35: UEFI Secure Boot bunu gerektiriyor"
 
-#: instances/views.py:2832
+#: instances/views.py:2835
 msgid "Flavor Created"
 msgstr "Flavor Oluşturuldu"
 
-#: instances/views.py:2840
+#: instances/views.py:2843
 msgid "Create Flavor"
 msgstr "Kullanıcı Oluştur"
 
-#: instances/views.py:2852
+#: instances/views.py:2855
 msgid "Flavor Deleted"
 msgstr "Flavor Silindi"
 
-#: instances/views.py:2858
+#: instances/views.py:2861
 msgid "Only the size template goes; VMs made from it keep their size."
 msgstr ""
 "Yalnızca boyut şablonu silinir; ondan oluşturulan sanal makineler boyutlarını"
@@ -8621,7 +8627,7 @@ msgstr "Filtre oluştur"
 #: nwfilters/templates/nwfilter.html:15 nwfilters/templates/nwfilter.html:54
 #: operations/templates/operations/jobs.html:46
 #: vmbackups/templates/vmbackups/index.html:16
-#: vmbackups/templates/vmbackups/index.html:40
+#: vmbackups/templates/vmbackups/index.html:41
 msgid "Filter"
 msgstr "Filtre"
 
@@ -10735,7 +10741,7 @@ msgid "VM name"
 msgstr "Sanal makine adı"
 
 #: vmbackups/templates/vmbackups/index.html:22
-#: vmbackups/templates/vmbackups/index.html:58
+#: vmbackups/templates/vmbackups/index.html:59
 #: vmbackups/templates/vmbackups/policies.html:17
 #: vmbackups/templates/vmbackups/vm_tab.html:42
 msgid "Target"
@@ -10760,29 +10766,34 @@ msgstr "Oluşturuluyor"
 msgid "Deleting"
 msgstr "Siliniyor"
 
-#: vmbackups/templates/vmbackups/index.html:49
+#: vmbackups/templates/vmbackups/index.html:37
+#: vmbackups/templates/vmbackups/state.html:1
+msgid "Damaged"
+msgstr "Hasarlı"
+
+#: vmbackups/templates/vmbackups/index.html:50
 #: vmbackups/templates/vmbackups/vm_tab.html:42
 msgid "Time"
 msgstr "Zaman"
 
-#: vmbackups/templates/vmbackups/index.html:50
+#: vmbackups/templates/vmbackups/index.html:51
 #: vmbackups/templates/vmbackups/vm_tab.html:42
 msgid "Consistency"
 msgstr "Tutarlılık"
 
-#: vmbackups/templates/vmbackups/index.html:61
+#: vmbackups/templates/vmbackups/index.html:62
 msgid "removed"
 msgstr "kaldırıldı"
 
-#: vmbackups/templates/vmbackups/index.html:62
+#: vmbackups/templates/vmbackups/index.html:63
 msgid "Schedule"
 msgstr "Zamanlama"
 
-#: vmbackups/templates/vmbackups/index.html:77
+#: vmbackups/templates/vmbackups/index.html:78
 msgid "No backup matches the filter."
 msgstr "Süzgece uyan yedek yok."
 
-#: vmbackups/templates/vmbackups/index.html:79
+#: vmbackups/templates/vmbackups/index.html:80
 msgid "No backup yet. Back a VM up from its Backups tab."
 msgstr "Henüz yedek yok. Bir sanal makineyi Yedekler sekmesinden yedekleyin."
 
@@ -10987,10 +10998,6 @@ msgid "Its deletion did not end; delete it again"
 msgstr "Silinmesi tamamlanmadı; yeniden silin"
 
 #: vmbackups/templates/vmbackups/state.html:1
-msgid "Damaged"
-msgstr "Hasarlı"
-
-#: vmbackups/templates/vmbackups/state.html:1
 #, python-format
 msgid "Verified %(time)s"
 msgstr "%(time)s tarihinde doğrulandı"
@@ -11189,17 +11196,17 @@ msgstr "%(target)s hedefini artık yalnızca süper kullanıcılar kullanır."
 msgid "Choose a backup target"
 msgstr "Bir yedek hedefi seçin"
 
-#: vmbackups/views.py:230
+#: vmbackups/views.py:232
 #, python-format
 msgid "The backup of %(vm)s taken %(time)s is being deleted."
 msgstr "%(vm)s VM'inin %(time)s tarihli yedeği siliniyor."
 
-#: vmbackups/views.py:345 vmbackups/views.py:366
+#: vmbackups/views.py:347 vmbackups/views.py:368
 #, python-format
 msgid "Backup schedule %(name)s is saved."
 msgstr "%(name)s yedekleme zamanlaması kaydedildi."
 
-#: vmbackups/views.py:357
+#: vmbackups/views.py:359
 #, python-format
 msgid "Backup schedule %(name)s is deleted; its backups stay."
 msgstr "%(name)s yedekleme zamanlaması silindi; yedekleri duruyor."

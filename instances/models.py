@@ -410,7 +410,7 @@ class Instance(models.Model):
 
 
 class InstanceTombstone(models.Model):
-    """Ownership and tags of a VM that disappeared from its compute.
+    """Ownership, tags, protection, schedules and backups of a VM that disappeared from its compute.
 
     Kept for INSTANCE_OWNERSHIP_RETENTION_DAYS so that they come back
     when the same UUID shows up again, on this or another compute.
@@ -420,12 +420,18 @@ class InstanceTombstone(models.Model):
     name = models.CharField(max_length=255)
     host = models.CharField(max_length=64, blank=True)  # the compute's name: the compute may be deleted
     is_template = models.BooleanField(default=False)
+    protected = models.BooleanField(default=False)
     owners = models.JSONField(default=list)  # [{"user": id, "is_change": .., "is_delete": .., "is_vnc": ..}]
     tags = models.JSONField(default=list)  # the names: a tag deleted meanwhile is not given back
+    policies = models.JSONField(default=list)  # the ids of the schedules that chose it: one deleted is not
+    backups = models.JSONField(default=list)  # the ids of its backups: not a copy's under the same UUID
     removed = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return "%s (%s)" % (self.name, self.uuid)
+
+    def keeps_anything(self):
+        return bool(self.owners or self.is_template or self.protected or self.tags or self.policies or self.backups)
 
 
 class PermissionSet(models.Model):

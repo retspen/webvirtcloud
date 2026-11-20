@@ -2550,9 +2550,12 @@ def set_protected(request, pk):
     """Turns a VM's protection against deletion and a restore over it on or off."""
     instance = get_instance(request.user, pk)
     protected = bool(request.POST.get("protected"))
-    with audit_vm(request, instance, "protect" if protected else "unprotect"):
-        Instance.objects.filter(pk=instance.pk).update(protected=protected)
-    return _back(request, pk, "options")
+    with audit_vm(request, instance, "protect" if protected else "unprotect") as entry, transaction.atomic():
+        lock_ownership()  # not while the VM's protection is kept or given back (computes.utils.forget)
+        entry.skip = moved = _moved_meanwhile(pk, instance)  # its host's list may have dropped it meanwhile
+        if not moved:
+            Instance.objects.filter(pk=instance.pk).update(protected=protected)
+    return _moved(request, pk) if moved else _back(request, pk, "options")
 
 
 def keyfile_value(value):

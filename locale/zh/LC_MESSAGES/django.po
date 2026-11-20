@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-19 19:29+0000\n"
+"POT-Creation-Date: 2026-11-20 05:04+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -463,7 +463,7 @@ msgstr "API 令牌 %(name)s 的操作"
 #: accounts/templates/ssh_key_list.html:13
 #: admin/templates/admin/group_list.html:44
 #: admin/templates/admin/tag_list.html:38
-#: admin/templates/admin/tombstone_list.html:43
+#: admin/templates/admin/tombstone_list.html:44
 #: admin/templates/admin/user_list.html:74
 #: admin/templates/admin/user_list.html:76
 #: instances/templates/create_flavors.html:11
@@ -687,7 +687,7 @@ msgstr "可以备份虚拟机"
 msgid "Can clone instances"
 msgstr "可克隆虚拟机"
 
-#: admin/forms.py:26 instances/models.py:440
+#: admin/forms.py:26 instances/models.py:446
 msgid "Can access console without password"
 msgstr "可无密码访问控制台"
 
@@ -1062,9 +1062,10 @@ msgstr "已移除的虚拟机"
 
 #: admin/templates/admin/tombstone_list.html:11
 msgid ""
-"VMs that vanished from their compute. Their owners and tags come back if the "
-"same UUID shows up again before the record expires."
-msgstr "从其计算节点上消失的虚拟机。若在记录过期前同一 UUID 再次出现，其所有者和标签将恢复。"
+"VMs that vanished from their compute. Their owners, tags, protection and "
+"schedules come back if the same UUID shows up again before the record "
+"expires; their backups come back with them."
+msgstr "从其计算节点上消失的虚拟机。若在记录过期前同一 UUID 再次出现，其所有者、标签、保护和计划将恢复；其备份也随之恢复。"
 
 #: admin/templates/admin/tombstone_list.html:14
 msgid "No removed VMs"
@@ -1079,23 +1080,28 @@ msgstr "搜索已移除的虚拟机"
 msgid "Template"
 msgstr "模板"
 
-#: admin/templates/admin/tombstone_list.html:34
+#: admin/templates/admin/tombstone_list.html:29
+#: instances/templates/instances/settings_tab.html:926
+msgid "Protected"
+msgstr "受保护"
+
+#: admin/templates/admin/tombstone_list.html:35
 msgid "Left"
 msgstr "已离开"
 
-#: admin/templates/admin/tombstone_list.html:35 instances/views.py:244
+#: admin/templates/admin/tombstone_list.html:36 instances/views.py:244
 msgid "Owners"
 msgstr "所有者"
 
-#: admin/templates/admin/tombstone_list.html:38
+#: admin/templates/admin/tombstone_list.html:39
 msgid "Removed"
 msgstr "移除时间"
 
-#: admin/templates/admin/tombstone_list.html:39
+#: admin/templates/admin/tombstone_list.html:40
 msgid "expires"
 msgstr "过期"
 
-#: admin/templates/admin/tombstone_list.html:50
+#: admin/templates/admin/tombstone_list.html:51
 msgid "No removed VM matches the search."
 msgstr "没有与搜索匹配的已移除虚拟机。"
 
@@ -1292,8 +1298,10 @@ msgid "Removed VM %(name)s deleted"
 msgstr "已删除已移除的虚拟机 %(name)s"
 
 #: admin/views.py:465
-msgid "Its owners and tags no longer come back if its UUID shows up again."
-msgstr "若其 UUID 再次出现，其所有者和标签将不再恢复。"
+msgid ""
+"Its owners, tags, protection and schedules no longer come back if its UUID "
+"shows up again, nor are its backups linked to it again."
+msgstr "若其 UUID 再次出现，其所有者、标签、保护和计划将不再恢复，其备份也不会重新关联到它。"
 
 #: admin/views.py:512
 #, python-format
@@ -3027,21 +3035,21 @@ msgid ""
 "/etc/default/webvirt-gstfsd"
 msgstr "请输入主机 /etc/default/webvirt-gstfsd 中 GSTFSD_KEY 的 64 个十六进制字符"
 
-#: computes/views.py:168
+#: computes/views.py:188
 #, python-format
 msgid "The host did not answer within %(seconds)s seconds"
 msgstr "主机未在 %(seconds)s 秒内响应"
 
-#: computes/views.py:396
+#: computes/views.py:417
 msgid "No other host has room for it"
 msgstr "没有其他主机能容纳它"
 
-#: computes/views.py:475
+#: computes/views.py:496
 #, python-format
 msgid "The host was saved, but the panel cannot connect to it: %(error)s"
 msgstr "主机已保存，但面板无法连接到它：%(error)s"
 
-#: computes/views.py:548
+#: computes/views.py:569
 #, python-format
 msgid ""
 "Its VMs keep running on the host and leave the panel; their owners are kept "
@@ -3664,7 +3672,7 @@ msgstr "磁盘缓存 %(cache)s 与设置中的原生 (native) 磁盘 I/O 不兼�
 msgid "Create VM"
 msgstr "创建虚拟机"
 
-#: instances/jobs.py:936 instances/jobs.py:983 instances/views.py:2647
+#: instances/jobs.py:936 instances/jobs.py:983 instances/views.py:2650
 msgid "A virtual machine with this name already exists"
 msgstr "同名虚拟机已存在"
 
@@ -4016,7 +4024,7 @@ msgid "Disk source"
 msgstr "磁盘来源"
 
 #: instances/templates/add_instance_volume.html:21
-#: instances/templates/create_instance_w2.html:134 instances/views.py:2677
+#: instances/templates/create_instance_w2.html:134 instances/views.py:2680
 msgid "New disk"
 msgstr "新磁盘"
 
@@ -4050,7 +4058,7 @@ msgstr "字母、数字、点、短横线和下划线。"
 
 #: instances/templates/add_instance_volume.html:44
 #: instances/templates/instances/settings_tab.html:851
-#: vmbackups/templates/vmbackups/index.html:51
+#: vmbackups/templates/vmbackups/index.html:52
 #: vmbackups/templates/vmbackups/vm_tab.html:42
 msgid "Size"
 msgstr "大小"
@@ -4202,7 +4210,7 @@ msgstr "地址"
 #: instances/templates/allinstances.html:106 instances/views.py:243
 #: interfaces/templates/interface.html:153 networks/templates/network.html:202
 #: vmbackups/templates/vmbackups/index.html:18
-#: vmbackups/templates/vmbackups/index.html:49
+#: vmbackups/templates/vmbackups/index.html:50
 #: vmbackups/templates/vmbackups/policy.html:30
 msgid "VM"
 msgstr "虚拟机"
@@ -4401,7 +4409,7 @@ msgstr "自定义 CPU 型号"
 msgid "Size (GiB)"
 msgstr "大小（GiB）"
 
-#: instances/templates/create_instance_w2.html:161 instances/views.py:2678
+#: instances/templates/create_instance_w2.html:161 instances/views.py:2681
 msgid "Existing volumes"
 msgstr "已有卷"
 
@@ -4438,7 +4446,7 @@ msgstr "设备"
 msgid "Remove"
 msgstr "移除"
 
-#: instances/templates/create_instance_w2.html:194 instances/views.py:2679
+#: instances/templates/create_instance_w2.html:194 instances/views.py:2682
 msgid "Clone from template"
 msgstr "从模板克隆"
 
@@ -6124,10 +6132,6 @@ msgstr "模板是用于克隆的虚拟机：不计入配额，且无法启动。
 msgid "Only administrators and staff can change this."
 msgstr "只有管理员和工作人员可以更改此项。"
 
-#: instances/templates/instances/settings_tab.html:926
-msgid "Protected"
-msgstr "受保护"
-
 #: instances/templates/instances/settings_tab.html:928
 msgid "A protected VM is not deleted and no backup is restored over it."
 msgstr "受保护的虚拟机不会被删除，也不会有备份还原到其上。"
@@ -6539,7 +6543,7 @@ msgstr "仍在运行的搜索过多；请稍后再试。"
 #: operations/templates/operations/jobs.html:62
 #: storages/templates/storage.html:91
 #: vmbackups/templates/vmbackups/index.html:29
-#: vmbackups/templates/vmbackups/index.html:51
+#: vmbackups/templates/vmbackups/index.html:52
 #: vmbackups/templates/vmbackups/policies.html:18
 #: vmbackups/templates/vmbackups/vm_tab.html:42
 msgid "State"
@@ -6915,7 +6919,7 @@ msgstr "启动顺序已成功更改。"
 msgid "The XML is empty"
 msgstr "XML 为空"
 
-#: instances/views.py:1965 instances/views.py:2659
+#: instances/views.py:1965 instances/views.py:2662
 #, python-format
 msgid "The XML is not well-formed: %(error)s"
 msgstr "XML 格式不正确：%(error)s"
@@ -7054,55 +7058,55 @@ msgstr "请关闭虚拟机以更改其是否为模板。"
 msgid "%(quota)s: '%(instance_name)s' stays a template."
 msgstr "%(quota)s：“%(instance_name)s”仍为模板。"
 
-#: instances/views.py:2645
+#: instances/views.py:2648
 msgid "The XML has no name"
 msgstr "XML 中没有名称"
 
-#: instances/views.py:2663 webvirtcloud/middleware.py:157
+#: instances/views.py:2666 webvirtcloud/middleware.py:157
 #, python-format
 msgid "libvirt Error - %(exception)s"
 msgstr "libvirt 错误 - %(exception)s"
 
-#: instances/views.py:2677
+#: instances/views.py:2680
 msgid "An empty disk of the size you set"
 msgstr "按设定大小创建的空磁盘"
 
-#: instances/views.py:2678
+#: instances/views.py:2681
 msgid "Volumes already in a pool"
 msgstr "存储池中已有的卷"
 
-#: instances/views.py:2679
+#: instances/views.py:2682
 msgid "A copy of a template volume"
 msgstr "模板卷的副本"
 
-#: instances/views.py:2769
+#: instances/views.py:2772
 msgid ""
 "This host has no running storage pool for the VM's disks: add or start one on"
 " its Storage page."
 msgstr "此主机没有可用于虚拟机磁盘的运行中存储池：请在其“存储”页面添加或启动一个。"
 
-#: instances/views.py:2771
+#: instances/views.py:2774
 msgid "This host has no network for the VM: add one on its Networks page."
 msgstr "此主机没有可供虚拟机使用的网络：请在其“网络”页面添加一个。"
 
-#: instances/views.py:2803
+#: instances/views.py:2806
 #, python-format
 msgid "The machine type is q35, not %(machine)s: UEFI Secure Boot needs it"
 msgstr "机器类型为 q35，而不是 %(machine)s：UEFI 安全启动需要它"
 
-#: instances/views.py:2832
+#: instances/views.py:2835
 msgid "Flavor Created"
 msgstr "规格已创建"
 
-#: instances/views.py:2840
+#: instances/views.py:2843
 msgid "Create Flavor"
 msgstr "创建规格"
 
-#: instances/views.py:2852
+#: instances/views.py:2855
 msgid "Flavor Deleted"
 msgstr "规格已删除"
 
-#: instances/views.py:2858
+#: instances/views.py:2861
 msgid "Only the size template goes; VMs made from it keep their size."
 msgstr "仅删除此规格；由它创建的虚拟机保持其大小。"
 
@@ -8101,7 +8105,7 @@ msgstr "创建过滤器"
 #: nwfilters/templates/nwfilter.html:15 nwfilters/templates/nwfilter.html:54
 #: operations/templates/operations/jobs.html:46
 #: vmbackups/templates/vmbackups/index.html:16
-#: vmbackups/templates/vmbackups/index.html:40
+#: vmbackups/templates/vmbackups/index.html:41
 msgid "Filter"
 msgstr "过滤器"
 
@@ -10100,7 +10104,7 @@ msgid "VM name"
 msgstr "虚拟机名称"
 
 #: vmbackups/templates/vmbackups/index.html:22
-#: vmbackups/templates/vmbackups/index.html:58
+#: vmbackups/templates/vmbackups/index.html:59
 #: vmbackups/templates/vmbackups/policies.html:17
 #: vmbackups/templates/vmbackups/vm_tab.html:42
 msgid "Target"
@@ -10125,29 +10129,34 @@ msgstr "正在创建"
 msgid "Deleting"
 msgstr "正在删除"
 
-#: vmbackups/templates/vmbackups/index.html:49
+#: vmbackups/templates/vmbackups/index.html:37
+#: vmbackups/templates/vmbackups/state.html:1
+msgid "Damaged"
+msgstr "已损坏"
+
+#: vmbackups/templates/vmbackups/index.html:50
 #: vmbackups/templates/vmbackups/vm_tab.html:42
 msgid "Time"
 msgstr "时间"
 
-#: vmbackups/templates/vmbackups/index.html:50
+#: vmbackups/templates/vmbackups/index.html:51
 #: vmbackups/templates/vmbackups/vm_tab.html:42
 msgid "Consistency"
 msgstr "一致性"
 
-#: vmbackups/templates/vmbackups/index.html:61
+#: vmbackups/templates/vmbackups/index.html:62
 msgid "removed"
 msgstr "已移除"
 
-#: vmbackups/templates/vmbackups/index.html:62
+#: vmbackups/templates/vmbackups/index.html:63
 msgid "Schedule"
 msgstr "计划"
 
-#: vmbackups/templates/vmbackups/index.html:77
+#: vmbackups/templates/vmbackups/index.html:78
 msgid "No backup matches the filter."
 msgstr "没有符合筛选条件的备份。"
 
-#: vmbackups/templates/vmbackups/index.html:79
+#: vmbackups/templates/vmbackups/index.html:80
 msgid "No backup yet. Back a VM up from its Backups tab."
 msgstr "还没有备份。请在虚拟机的备份选项卡中备份虚拟机。"
 
@@ -10339,10 +10348,6 @@ msgid "Its deletion did not end; delete it again"
 msgstr "其删除未完成；请再次删除"
 
 #: vmbackups/templates/vmbackups/state.html:1
-msgid "Damaged"
-msgstr "已损坏"
-
-#: vmbackups/templates/vmbackups/state.html:1
 #, python-format
 msgid "Verified %(time)s"
 msgstr "于 %(time)s 验证"
@@ -10519,17 +10524,17 @@ msgstr "现在仅超级用户使用 %(target)s。"
 msgid "Choose a backup target"
 msgstr "请选择备份目标"
 
-#: vmbackups/views.py:230
+#: vmbackups/views.py:232
 #, python-format
 msgid "The backup of %(vm)s taken %(time)s is being deleted."
 msgstr "正在删除 %(vm)s 于 %(time)s 的备份。"
 
-#: vmbackups/views.py:345 vmbackups/views.py:366
+#: vmbackups/views.py:347 vmbackups/views.py:368
 #, python-format
 msgid "Backup schedule %(name)s is saved."
 msgstr "备份计划 %(name)s 已保存。"
 
-#: vmbackups/views.py:357
+#: vmbackups/views.py:359
 #, python-format
 msgid "Backup schedule %(name)s is deleted; its backups stay."
 msgstr "备份计划 %(name)s 已删除；其备份保留。"

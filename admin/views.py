@@ -462,7 +462,7 @@ def tombstone_delete(request, pk):
         request,
         "common/confirm_delete.html",
         {"object": tombstone,
-         "consequence": _("Its owners and tags no longer come back if its UUID shows up again.")},
+         "consequence": _("Its owners, tags, protection and schedules no longer come back if its UUID shows up again, nor are its backups linked to it again.")},
     )
 
 
@@ -485,7 +485,7 @@ def _retag_removed_vms(old, new):
                 tombstone.tags = [new if name == old else name for name in tombstone.tags]
             else:
                 tombstone.tags = [name for name in tombstone.tags if name != old]
-            if tombstone.tags or tombstone.owners or tombstone.is_template:
+            if tombstone.keeps_anything():
                 tombstone.save(update_fields=["tags"])
             else:  # kept only for the tag (computes.utils._bury)
                 tombstone.delete()

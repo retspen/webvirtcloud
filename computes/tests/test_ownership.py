@@ -1,10 +1,10 @@
 """Ownership survives a VM's temporary disappearance or an out-of-band move."""
 
-from datetime import timedelta
+from datetime import time, timedelta
 from unittest.mock import MagicMock
 
 from accounts.models import UserInstance
-from computes.models import Compute
+from computes.models import Compute, Tag
 from computes.utils import refresh_instance_database
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
@@ -15,6 +15,7 @@ from logs.models import Logs
 from operations import claims
 from operations.models import Claim
 from rest_framework.test import APIClient
+from vmbackups.models import Backup, BackupPolicy, BackupTarget
 from computes.tests.fakes import Domain
 
 UUID = "44444444-4444-4444-4444-444444444444"
@@ -59,14 +60,57 @@ class OwnershipTestCase(TestCase):
         self.assertEqual(self.ownership(self.host_a), (True, [(self.owner, True, False, True)]))
         self.assertFalse(InstanceTombstone.objects.exists())
         self.assertEqual(self.rows(), [
-            ("-", "host-a", f"VM vm ({UUID}): owners and tags kept on the Removed VMs page"),
-            ("-", "host-a", f"VM vm ({UUID}): owners and tags restored"),
+            ("-", "host-a", f"VM vm ({UUID}): kept on the Removed VMs page"),
+            ("-", "host-a", f"VM vm ({UUID}): restored from the Removed VMs page"),
         ])
+
+    def test_vm_that_returns_gets_its_protection_schedules_and_backups_back(self):
+        vm = Instance.objects.create(compute=self.host_a, name="vm", uuid=UUID, protected=True)
+        target = BackupTarget.objects.create(name="t")
+        policy = BackupPolicy.objects.create(name="nightly", target=target, time=time(2), keep=1)
+        policy.instances.add(vm)
+        backup = Backup.objects.create(target=target, instance=vm, vm_uuid=UUID, vm_name="vm", compute_name="host-a",
+                                       state=Backup.READY, policy=policy)
+        refresh_instance_database(self.host_a)  # undefined for a while
+        self.assertEqual(InstanceTombstone.objects.get().policies, [policy.pk])
+
+        self.on(self.host_a, [("vm", UUID)])  # defined again
+        refresh_instance_database(self.host_a)
+
+        vm = Instance.objects.get(uuid=UUID)
+        self.assertTrue(vm.protected)
+        self.assertEqual(list(vm.backup_policies.all()), [policy])
+        backup.refresh_from_db()
+        self.assertEqual(backup.instance, vm)
+
+    def test_a_schedule_that_chooses_by_tag_since_is_not_given_the_vm(self):
+        vm = Instance.objects.create(compute=self.host_a, name="vm", uuid=UUID)
+        policy = BackupPolicy.objects.create(name="nightly", target=BackupTarget.objects.create(name="t"),
+                                             time=time(2), keep=1)
+        policy.instances.add(vm)
+        refresh_instance_database(self.host_a)
+        BackupPolicy.objects.filter(pk=policy.pk).update(tag=Tag.objects.create(name="prod"))
+        self.on(self.host_a, [("vm", UUID)])
+        refresh_instance_database(self.host_a)
+        self.assertFalse(policy.instances.exists())
+
+    def test_vm_that_returns_does_not_get_a_copys_backups(self):
+        target = BackupTarget.objects.create(name="t")
+        copy = Instance.objects.create(compute=self.host_b, name="vm", uuid=UUID)
+        theirs = Backup.objects.create(target=target, instance=copy, vm_uuid=UUID, vm_name="vm", compute_name="host-b",
+                                       state=Backup.READY)
+        copy.delete()  # deleted in the panel: its backups stay, unlinked
+        Instance.objects.create(compute=self.host_a, name="vm", uuid=UUID, protected=True)
+        refresh_instance_database(self.host_a)
+        self.on(self.host_a, [("vm", UUID)])
+        refresh_instance_database(self.host_a)
+        theirs.refresh_from_db()
+        self.assertIsNone(theirs.instance)
 
     def test_an_ownerless_vm_leaves_a_row(self):
         Instance.objects.create(compute=self.host_a, name="vm", uuid=UUID)
         refresh_instance_database(self.host_a)
-        self.assertEqual(self.rows(), [("-", "host-a", f"VM vm ({UUID}): left the panel (no owners or tags)")])
+        self.assertEqual(self.rows(), [("-", "host-a", f"VM vm ({UUID}): left the panel (nothing to keep)")])
 
     def test_move_seen_on_the_new_host_first(self):
         self.owned_vm(self.host_a)
@@ -165,7 +209,7 @@ class OwnershipTestCase(TestCase):
         self.assertEqual((tombstone.owners[0]["user"], tombstone.host), (self.owner.id, "host-a"))
         self.assertEqual(self.rows(), [
             ("cd-admin", "-", "Login"),
-            ("-", "host-a", f"VM vm ({UUID}): owners and tags kept on the Removed VMs page"),
+            ("-", "host-a", f"VM vm ({UUID}): kept on the Removed VMs page"),
             ("cd-admin", "host-a", "Compute host-a (host-a.example): delete"),
         ])
 

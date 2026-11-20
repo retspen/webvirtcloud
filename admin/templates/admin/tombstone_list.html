@@ -8,7 +8,7 @@
 {% block page_heading %}{% trans "Removed VMs" %}{% endblock page_heading %}
 
 {% block content %}
-<p class="text-body-secondary">{% trans "VMs that vanished from their compute. Their owners and tags come back if the same UUID shows up again before the record expires." %}</p>
+<p class="text-body-secondary">{% trans "VMs that vanished from their compute. Their owners, tags, protection and schedules come back if the same UUID shows up again before the record expires; their backups come back with them." %}</p>
 {% if not tombstones %}
     <div class="alert alert-info shadow-sm">
         {% bs_icon 'info-circle' %} {% trans "No removed VMs" %}
@@ -26,6 +26,7 @@
                     <div class="col-12 col-md-4">
                         <span class="fw-semibold text-break">{{ tombstone.name }}</span>
                         {% if tombstone.is_template %}<span class="badge text-bg-light border">{% trans "Template" %}</span>{% endif %}
+                        {% if tombstone.protected %}<span class="badge text-bg-light border">{% trans "Protected" %}</span>{% endif %}
                         {% include 'common/tag_badges.html' with tags=tombstone.tags %}
                         <div class="font-monospace small text-body-secondary text-break mt-1">{{ tombstone.uuid }}</div>
                     </div>

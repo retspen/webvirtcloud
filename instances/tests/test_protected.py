@@ -1,5 +1,7 @@
 """A protected VM: only a superuser turns its protection on or off; while on, the VM is not deleted nor
 restored over (refusals in test_destroy and vmbackups.tests.test_restore_over)."""
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -49,6 +51,18 @@ class ProtectedTestCase(TestCase):
         claims.admit({claims.instance_key(self.instance.uuid): Claim.EXCLUSIVE}, holder="192.0.2.30:1:1")
         self.client.post(reverse("instances:set_protected", args=[self.instance.id]), {"protected": "True"})
         self.assertFalse(Instance.objects.get(pk=self.instance.pk).protected)
+
+    def test_not_changed_when_the_vm_left_its_host_meanwhile(self):
+        # its record may be kept, unprotected, for the Removed VMs page: no success is told
+        # the first check is the claim's (serialize_instance_mutation); the VM goes after it
+        with patch("instances.views._moved_meanwhile", side_effect=[False, True]), \
+                patch("instances.views.lock_ownership") as lock:
+            response = self.client.post(reverse("instances:set_protected", args=[self.instance.id]),
+                                        {"protected": "True"}, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+        lock.assert_called_once()
+        self.assertEqual(response.status_code, 409)
+        self.assertFalse(Instance.objects.get(pk=self.instance.pk).protected)
+        self.assertFalse(Logs.objects.filter(instance="pe-vm").exists())
 
     def test_the_destroy_page_offers_no_form(self):
         Instance.objects.filter(pk=self.instance.pk).update(protected=True)
