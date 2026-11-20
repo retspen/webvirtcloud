@@ -16,6 +16,7 @@ from libvirt import libvirtError
 from operations import claims, jobs
 from operations.utils import busy_message
 from logs.audit import audit, failed
+from webvirtcloud.middleware import error_text
 
 from vrtManager.util import OperationError
 from vrtManager.storage import wvmStorage, wvmStorages
@@ -208,6 +209,18 @@ def storage(request, compute_id, pool):
             if not state:
                 for msg_err in form.errors.values():
                     messages.error(request, msg_err.as_text())
+        if "fetch_volume" in request.POST:
+            raw = {"compute": compute.id, "pool": pool, "url": request.POST.get("url", ""),
+                   "name": request.POST.get("name", "")}
+            try:  # the job writes its row when it ends
+                op = jobs.submit("volume.fetch", request.user, raw, request.POST.get("submission_key", ""))
+            except claims.Busy as busy:
+                messages.error(request, busy_message(busy, request.user))
+            except (jobs.SubmissionConflict, OperationError, libvirtError) as err:
+                messages.error(request, error_text(request, err))
+            else:
+                jobs.remember_job(request, op)
+            return redirect(reverse("storage", args=[compute.id, pool]))
         if "cln_volume" in request.POST:
             form = CloneImage(request.POST)
             if form.is_valid():

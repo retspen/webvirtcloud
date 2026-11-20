@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-20 11:15+0000\n"
+"POT-Creation-Date: 2026-11-20 11:28+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -324,8 +324,9 @@ msgstr "Burada oturumunuz açık kalır; diğer oturumlarınız kapanır."
 #: operations/templates/operations/job.html:31
 #: operations/templatetags/operations.py:90
 #: storages/templates/create_stg_block.html:183
-#: storages/templates/create_stg_vol_block.html:35
-#: storages/templates/create_stg_vol_block.html:68
+#: storages/templates/create_stg_vol_block.html:36
+#: storages/templates/create_stg_vol_block.html:69
+#: storages/templates/create_stg_vol_block.html:102
 #: storages/templates/storage.html:229 templates/base.html:65
 #: templates/common/confirm_delete.html:25 templates/common/form.html:27
 #: virtsecrets/templates/create_secret_block.html:48
@@ -574,7 +575,7 @@ msgstr ""
 "artık kullanmadığınız ya da sızmış olabilecek bir anahtarı silin."
 
 #: accounts/templates/profile.html:73
-#: storages/templates/create_stg_vol_block.html:69
+#: storages/templates/create_stg_vol_block.html:70
 msgid "Create"
 msgstr "Oluştur"
 
@@ -3453,8 +3454,9 @@ msgstr "Bağlan"
 #: nwfilters/templates/create_nwfilter_block.html:17
 #: nwfilters/templates/nwfilter.html:169 nwfilters/templates/nwfilters.html:85
 #: storages/templates/create_stg_block.html:21
-#: storages/templates/create_stg_vol_block.html:16
-#: storages/templates/create_stg_vol_block.html:54
+#: storages/templates/create_stg_vol_block.html:17
+#: storages/templates/create_stg_vol_block.html:55
+#: storages/templates/create_stg_vol_block.html:86
 #: storages/templates/storage.html:202 templates/base.html:61
 #: virtsecrets/templates/create_secret_block.html:16
 #: virtsecrets/templates/secrets.html:97
@@ -4603,6 +4605,7 @@ msgstr "Bul"
 #: interfaces/templates/interface.html:101 networks/templates/network.html:143
 #: networks/templates/network.html:199 networks/templates/network.html:364
 #: nodedevs/templates/nodedevs.html:32
+#: storages/templates/create_stg_vol_block.html:91
 msgid "Address"
 msgstr "Adres"
 
@@ -9552,57 +9555,117 @@ msgstr "İmaj adı herhangi bir özel karakter içeremez"
 msgid "The image name must not exceed 120 characters"
 msgstr "İmaj adı 120 karakterden fazla olamaz"
 
-#: storages/jobs.py:42
+#: storages/jobs.py:48
 msgid "Clone volume"
 msgstr "Birimi klonla"
 
-#: storages/jobs.py:60 storages/jobs.py:73
+#: storages/jobs.py:66 storages/jobs.py:79
 msgid "Name of volume already in use"
 msgstr "Birim adı zaten kullanılıyor"
 
-#: storages/jobs.py:67
+#: storages/jobs.py:73
 #, python-format
 msgid "The pool has no volume named %(name)s"
 msgstr "Havuzda %(name)s adında birim yok"
 
-#: storages/jobs.py:69
+#: storages/jobs.py:75
 msgid "An ISO image is not cloned"
 msgstr "ISO imajı klonlanmaz"
 
-#: storages/jobs.py:82
+#: storages/jobs.py:88
 msgid "Copying the volume"
 msgstr "Birim kopyalanıyor"
 
-#: storages/jobs.py:94
+#: storages/jobs.py:100
 msgid ""
 "The copy exists, but the job did not see it finish; check it, then resolve "
 "this job."
 msgstr ""
 "Kopya var, ancak iş bittiğini görmedi; kontrol edin, sonra bu işi çözün."
 
-#: storages/jobs.py:95
+#: storages/jobs.py:101
 msgid "The copy was not made"
 msgstr "Kopya oluşturulmadı"
 
-#: storages/jobs.py:106
+#: storages/jobs.py:112
 msgid "Upload ISO image"
 msgstr "ISO imajı yükle"
 
-#: storages/jobs.py:121
+#: storages/jobs.py:127
 msgid "Invalid file name"
 msgstr "Geçersiz dosya adı"
 
-#: storages/jobs.py:123
+#: storages/jobs.py:129
 msgid "Only .iso files can be uploaded"
 msgstr "Yalnızca .iso dosyaları yüklenebilir"
 
-#: storages/jobs.py:125
+#: storages/jobs.py:131
 msgid "Invalid file size"
 msgstr "Geçersiz dosya boyutu"
 
-#: storages/jobs.py:127
+#: storages/jobs.py:133
 msgid "Invalid chunk index or total chunks"
 msgstr "Geçersiz parça dizini veya toplam parça sayısı"
+
+#: storages/jobs.py:164
+msgid "Give an http or https address"
+msgstr "Bir http ya da https adresi verin"
+
+#: storages/jobs.py:186
+#, python-format
+msgid "The file could not be downloaded: %(error)s"
+msgstr "Dosya indirilemedi: %(error)s"
+
+#: storages/jobs.py:213
+#, python-format
+msgid "The server answered %(status)s, not the whole file"
+msgstr "Sunucu dosyanın tamamı yerine %(status)s yanıtı verdi"
+
+#: storages/jobs.py:216
+#, python-format
+msgid "The address is redirected more than %(count)s times"
+msgstr "Adres %(count)s defadan fazla yönlendiriliyor"
+
+#: storages/jobs.py:226
+msgid "Download volume"
+msgstr "Birim indir"
+
+#: storages/jobs.py:241
+msgid "A volume's name is letters, digits, '.', '_' and '-'"
+msgstr "Birim adı harf, rakam, '.', '_' ve '-' olur"
+
+#: storages/jobs.py:246
+msgid "Files are downloaded into a pool of files (dir, fs, netfs)"
+msgstr "Dosyalar, dosya tabanlı bir havuza (dir, fs, netfs) indirilir"
+
+#: storages/jobs.py:250
+#, python-format
+msgid "The pool has a volume named %(name)s"
+msgstr "Havuzda %(name)s adında bir birim var"
+
+#: storages/jobs.py:272
+msgid "The server does not tell the file's size"
+msgstr "Sunucu dosyanın boyutunu bildirmiyor"
+
+#: storages/jobs.py:275
+msgid "The file is larger than the pool's free space"
+msgstr "Dosya, havuzun boş alanından büyük"
+
+#: storages/jobs.py:285
+msgid "The server sent more than the file's size"
+msgstr "Sunucu dosyanın boyutundan fazlasını gönderdi"
+
+#: storages/jobs.py:298
+msgid "The download ended early"
+msgstr "İndirme erken bitti"
+
+#: storages/jobs.py:304
+msgid "The download stopped and its volume was not deleted"
+msgstr "İndirme durdu ve birimi silinemedi"
+
+#: storages/jobs.py:321
+msgid "The download stopped; what it wrote was deleted"
+msgstr "İndirme durdu; yazdıkları silindi"
 
 #: storages/templates/create_stg_block.html:7
 msgid "New pool"
@@ -9728,69 +9791,99 @@ msgstr "Havuz hemen ve bundan sonra sunucuyla birlikte başlar."
 msgid "Create pool"
 msgstr "Havuz oluştur"
 
-#: storages/templates/create_stg_vol_block.html:8
+#: storages/templates/create_stg_vol_block.html:9
 msgid "Upload ISO"
 msgstr "ISO yükle"
 
-#: storages/templates/create_stg_vol_block.html:15
+#: storages/templates/create_stg_vol_block.html:16
 msgid "Upload ISO Image"
 msgstr "ISO İmajı Yükle"
 
-#: storages/templates/create_stg_vol_block.html:18
+#: storages/templates/create_stg_vol_block.html:19
 msgid "Upload iso form"
 msgstr "ISO yükleme formu"
 
-#: storages/templates/create_stg_vol_block.html:19
+#: storages/templates/create_stg_vol_block.html:20
 msgid "Please select a file to upload."
 msgstr "Lütfen yüklenecek bir dosya seçin."
 
-#: storages/templates/create_stg_vol_block.html:19
+#: storages/templates/create_stg_vol_block.html:20
 msgid "Only .iso files can be uploaded."
 msgstr "Yalnızca .iso dosyaları yüklenebilir."
 
-#: storages/templates/create_stg_vol_block.html:20
+#: storages/templates/create_stg_vol_block.html:21
 msgid "The selected file is empty."
 msgstr "Seçilen dosya boş."
 
-#: storages/templates/create_stg_vol_block.html:20
-#: storages/templates/create_stg_vol_block.html:29
+#: storages/templates/create_stg_vol_block.html:21
+#: storages/templates/create_stg_vol_block.html:30
 msgid "Starting upload..."
 msgstr "Yükleme başlıyor..."
 
-#: storages/templates/create_stg_vol_block.html:21
+#: storages/templates/create_stg_vol_block.html:22
 msgid ""
 "Uploading; the job panel shows its progress. Stay on this page until it ends."
 msgstr ""
 "Yükleniyor; ilerlemesi iş panelinde görünür. Bitene kadar bu sayfada kalın."
 
-#: storages/templates/create_stg_vol_block.html:22
+#: storages/templates/create_stg_vol_block.html:23
 msgid "Retrying upload..."
 msgstr "Yükleme yeniden deneniyor..."
 
-#: storages/templates/create_stg_vol_block.html:22
+#: storages/templates/create_stg_vol_block.html:23
 msgid "An error occurred during upload."
 msgstr "Yükleme sırasında bir hata oluştu."
 
-#: storages/templates/create_stg_vol_block.html:24
+#: storages/templates/create_stg_vol_block.html:25
 msgid "ISO file"
 msgstr "ISO dosyası"
 
-#: storages/templates/create_stg_vol_block.html:26
+#: storages/templates/create_stg_vol_block.html:27
 msgid "The browser sends it: keep the page open until the upload ends."
 msgstr "Dosyayı tarayıcı gönderir: yükleme bitene kadar sayfayı açık tutun."
 
-#: storages/templates/create_stg_vol_block.html:36
+#: storages/templates/create_stg_vol_block.html:37
 msgid "Upload"
 msgstr "Yükle"
 
-#: storages/templates/create_stg_vol_block.html:45
-#: storages/templates/create_stg_vol_block.html:53
+#: storages/templates/create_stg_vol_block.html:46
+#: storages/templates/create_stg_vol_block.html:54
 msgid "New volume"
 msgstr "Yeni birim"
 
-#: storages/templates/create_stg_vol_block.html:57
+#: storages/templates/create_stg_vol_block.html:58
 msgid "Create volume to storage form"
 msgstr "Depolamaya birim oluşturma formu"
+
+#: storages/templates/create_stg_vol_block.html:79
+#: storages/templates/create_stg_vol_block.html:85
+msgid "Download from a URL"
+msgstr "Adresten indir"
+
+#: storages/templates/create_stg_vol_block.html:93
+msgid ""
+"An ISO or a disk image (qcow2, raw) at an http or https address that tells "
+"its size. The panel's host downloads it."
+msgstr ""
+"Boyutunu bildiren bir http ya da https adresindeki ISO ya da disk imajı "
+"(qcow2, raw). Paneli çalıştıran sunucu indirir."
+
+#: storages/templates/create_stg_vol_block.html:96 vmbackups/forms.py:60
+msgid "Volume name"
+msgstr "Birim adı"
+
+#: storages/templates/create_stg_vol_block.html:98
+msgid ""
+"Empty: the file's name in the address. An ISO keeps its .iso ending, or VMs "
+"do not list it as media."
+msgstr ""
+"Boş bırakılırsa: adresteki dosyanın adı. ISO dosyasının adı .iso ile bitmeli;"
+" yoksa VM'ler onu ortam olarak listelemez."
+
+#: storages/templates/create_stg_vol_block.html:103
+#: storages/templates/storage.html:176
+msgid "Download"
+msgstr "İndir"
 
 #: storages/templates/storage.html:14
 #, python-format
@@ -9919,10 +10012,6 @@ msgstr "Başka bir disk bunun üzerine kurulu"
 #, python-format
 msgid "%(allocated)s allocated"
 msgstr "%(allocated)s ayrılmış"
-
-#: storages/templates/storage.html:176
-msgid "Download"
-msgstr "İndir"
 
 #: storages/templates/storage.html:180
 #, python-format
@@ -10057,36 +10146,36 @@ msgstr "Son parça bildirilen dosya boyutuyla eşleşmiyor"
 msgid "The partial upload is missing"
 msgstr "Kısmi yükleme bulunamadı"
 
-#: storages/views.py:33
+#: storages/views.py:34
 msgid "No file chunk was submitted."
 msgstr "Dosya parçası gönderilmedi."
 
-#: storages/views.py:39
+#: storages/views.py:40
 msgid "Invalid chunk parameters."
 msgstr "Geçersiz parça parametreleri."
 
-#: storages/views.py:41
+#: storages/views.py:42
 msgid "Invalid chunk index or total chunks."
 msgstr "Geçersiz parça dizini veya toplam parça sayısı."
 
-#: storages/views.py:46
+#: storages/views.py:47
 msgid "Invalid file size."
 msgstr "Geçersiz dosya boyutu."
 
-#: storages/views.py:55
+#: storages/views.py:56
 msgid "Upload session is busy. Please retry."
 msgstr "Yükleme oturumu meşgul. Lütfen yeniden deneyin."
 
-#: storages/views.py:57
+#: storages/views.py:58
 msgid "ISO image already exists"
 msgstr "ISO imajı zaten mevcut"
 
-#: storages/views.py:187
+#: storages/views.py:188
 #, python-format
 msgid "Volume: %(vol)s is deleted."
 msgstr "Birim: %(vol)s silindi."
 
-#: storages/views.py:204
+#: storages/views.py:205
 #, python-format
 msgid "Image file %(name)s is created successfully"
 msgstr "İmaj dosyası %(name)s başarıyla oluşturuldu"
@@ -10457,10 +10546,6 @@ msgstr ""
 #: vmbackups/forms.py:42
 msgid "Start after restore"
 msgstr "Geri yüklendikten sonra başlat"
-
-#: vmbackups/forms.py:60
-msgid "Volume name"
-msgstr "Birim adı"
 
 #: vmbackups/forms.py:82 vmbackups/templates/vmbackups/vm_tab.html:14
 msgid "Backup target"
@@ -12883,7 +12968,7 @@ msgstr ""
 "%(name)s birimi kullanımda: bir sanal makinenin diski, bir temel (backing) "
 "dosya ya da bir anlık görüntünün dosyası"
 
-#: vrtManager/storage.py:381
+#: vrtManager/storage.py:413
 #, python-format
 msgid "The running VMs %(vms)s use volume %(name)s; shut them down to copy it"
 msgstr ""

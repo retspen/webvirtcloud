@@ -305,6 +305,38 @@ class wvmStorage(wvmConnect):
             self.refresh()
         return volume_details(self.get_volume(volname))
 
+    def new_raw_volume(self, name, size):
+        """A new volume of name and size bytes to write (write_volume); libvirt refuses a name taken."""
+        self.pool.createXML(f"<volume><name>{util.xml_escape(name)}</name><capacity unit='bytes'>{int(size)}</capacity>"
+                            "<target><format type='raw'/></target></volume>", 0)
+
+    def write_volume(self, name, size, chunks):
+        """chunks (bytes, size of them in all) into the volume of name, from its start, through one
+        libvirt stream as an upload is written, whatever the connection; the bytes written. A
+        failure, or chunks raising, aborts the stream."""
+        stream = self.wvm.newStream(0)
+        written = 0
+        try:
+            self.pool.storageVolLookupByName(name).upload(stream, 0, size, 0)
+            for data in chunks:
+                while data:
+                    sent = stream.send(data)
+                    if sent <= 0:
+                        raise OSError("the libvirt stream stopped")
+                    written += sent
+                    data = data[sent:]
+            stream.finish()
+        except BaseException:
+            stream.abort()
+            raise
+        return written
+
+    def delete_volume_if_present(self, name):
+        with contextlib.suppress(libvirt.libvirtError):  # gone, or never made
+            self.pool.refresh(0)
+        if name in self.pool.listVolumes():
+            self.pool.storageVolLookupByName(name).delete(0)
+
     def update_volumes(self):
         """Every volume's details (volume_details) by name, the pool refreshed
         first: two calls and one per volume, where a lookup, info() and the

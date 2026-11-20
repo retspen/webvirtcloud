@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-20 11:15+0000\n"
+"POT-Creation-Date: 2026-11-20 11:28+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -319,8 +319,9 @@ msgstr "您在此处保持登录；您的其他会话将结束。"
 #: operations/templates/operations/job.html:31
 #: operations/templatetags/operations.py:90
 #: storages/templates/create_stg_block.html:183
-#: storages/templates/create_stg_vol_block.html:35
-#: storages/templates/create_stg_vol_block.html:68
+#: storages/templates/create_stg_vol_block.html:36
+#: storages/templates/create_stg_vol_block.html:69
+#: storages/templates/create_stg_vol_block.html:102
 #: storages/templates/storage.html:229 templates/base.html:65
 #: templates/common/confirm_delete.html:25 templates/common/form.html:27
 #: virtsecrets/templates/create_secret_block.html:48
@@ -564,7 +565,7 @@ msgstr ""
 "&lt;token&gt;</code> 的形式发送。修改密码不会删除令牌：请删除不再使用或可能已泄露的令牌。"
 
 #: accounts/templates/profile.html:73
-#: storages/templates/create_stg_vol_block.html:69
+#: storages/templates/create_stg_vol_block.html:70
 msgid "Create"
 msgstr "创建"
 
@@ -3283,8 +3284,9 @@ msgstr "连接"
 #: nwfilters/templates/create_nwfilter_block.html:17
 #: nwfilters/templates/nwfilter.html:169 nwfilters/templates/nwfilters.html:85
 #: storages/templates/create_stg_block.html:21
-#: storages/templates/create_stg_vol_block.html:16
-#: storages/templates/create_stg_vol_block.html:54
+#: storages/templates/create_stg_vol_block.html:17
+#: storages/templates/create_stg_vol_block.html:55
+#: storages/templates/create_stg_vol_block.html:86
 #: storages/templates/storage.html:202 templates/base.html:61
 #: virtsecrets/templates/create_secret_block.html:16
 #: virtsecrets/templates/secrets.html:97
@@ -4355,6 +4357,7 @@ msgstr "查找"
 #: interfaces/templates/interface.html:101 networks/templates/network.html:143
 #: networks/templates/network.html:199 networks/templates/network.html:364
 #: nodedevs/templates/nodedevs.html:32
+#: storages/templates/create_stg_vol_block.html:91
 msgid "Address"
 msgstr "地址"
 
@@ -8980,56 +8983,116 @@ msgstr "镜像名称不能包含特殊字符"
 msgid "The image name must not exceed 120 characters"
 msgstr "镜像名称不能超过 120 个字符"
 
-#: storages/jobs.py:42
+#: storages/jobs.py:48
 msgid "Clone volume"
 msgstr "克隆卷"
 
-#: storages/jobs.py:60 storages/jobs.py:73
+#: storages/jobs.py:66 storages/jobs.py:79
 msgid "Name of volume already in use"
 msgstr "卷名已被使用"
 
-#: storages/jobs.py:67
+#: storages/jobs.py:73
 #, python-format
 msgid "The pool has no volume named %(name)s"
 msgstr "存储池中没有名为 %(name)s 的卷"
 
-#: storages/jobs.py:69
+#: storages/jobs.py:75
 msgid "An ISO image is not cloned"
 msgstr "ISO 镜像不会被克隆"
 
-#: storages/jobs.py:82
+#: storages/jobs.py:88
 msgid "Copying the volume"
 msgstr "正在复制卷"
 
-#: storages/jobs.py:94
+#: storages/jobs.py:100
 msgid ""
 "The copy exists, but the job did not see it finish; check it, then resolve "
 "this job."
 msgstr "副本已存在，但任务未看到其完成；请检查后处理此任务。"
 
-#: storages/jobs.py:95
+#: storages/jobs.py:101
 msgid "The copy was not made"
 msgstr "未创建副本"
 
-#: storages/jobs.py:106
+#: storages/jobs.py:112
 msgid "Upload ISO image"
 msgstr "上传 ISO 镜像"
 
-#: storages/jobs.py:121
+#: storages/jobs.py:127
 msgid "Invalid file name"
 msgstr "文件名无效"
 
-#: storages/jobs.py:123
+#: storages/jobs.py:129
 msgid "Only .iso files can be uploaded"
 msgstr "只能上传 .iso 文件"
 
-#: storages/jobs.py:125
+#: storages/jobs.py:131
 msgid "Invalid file size"
 msgstr "文件大小无效"
 
-#: storages/jobs.py:127
+#: storages/jobs.py:133
 msgid "Invalid chunk index or total chunks"
 msgstr "分块索引或分块总数无效"
+
+#: storages/jobs.py:164
+msgid "Give an http or https address"
+msgstr "请提供 http 或 https 地址"
+
+#: storages/jobs.py:186
+#, python-format
+msgid "The file could not be downloaded: %(error)s"
+msgstr "无法下载文件：%(error)s"
+
+#: storages/jobs.py:213
+#, python-format
+msgid "The server answered %(status)s, not the whole file"
+msgstr "服务器返回了 %(status)s，而不是完整文件"
+
+#: storages/jobs.py:216
+#, python-format
+msgid "The address is redirected more than %(count)s times"
+msgstr "该地址重定向超过 %(count)s 次"
+
+#: storages/jobs.py:226
+msgid "Download volume"
+msgstr "下载卷"
+
+#: storages/jobs.py:241
+msgid "A volume's name is letters, digits, '.', '_' and '-'"
+msgstr "卷名只能包含字母、数字、'.'、'_' 和 '-'"
+
+#: storages/jobs.py:246
+msgid "Files are downloaded into a pool of files (dir, fs, netfs)"
+msgstr "文件只能下载到文件型存储池（dir、fs、netfs）"
+
+#: storages/jobs.py:250
+#, python-format
+msgid "The pool has a volume named %(name)s"
+msgstr "存储池中已有名为 %(name)s 的卷"
+
+#: storages/jobs.py:272
+msgid "The server does not tell the file's size"
+msgstr "服务器未告知文件大小"
+
+#: storages/jobs.py:275
+msgid "The file is larger than the pool's free space"
+msgstr "文件大于存储池的可用空间"
+
+#: storages/jobs.py:285
+msgid "The server sent more than the file's size"
+msgstr "服务器发送的数据超过了文件大小"
+
+#: storages/jobs.py:298
+msgid "The download ended early"
+msgstr "下载提前结束"
+
+#: storages/jobs.py:304
+msgid "The download stopped and its volume was not deleted"
+msgstr "下载已停止，但其卷未被删除"
+
+#: storages/jobs.py:321
+msgid "The download stopped; what it wrote was deleted"
+msgstr "下载已停止；已写入的内容已删除"
 
 #: storages/templates/create_stg_block.html:7
 msgid "New pool"
@@ -9153,68 +9216,94 @@ msgstr "存储池立即启动，此后随主机一同启动。"
 msgid "Create pool"
 msgstr "创建存储池"
 
-#: storages/templates/create_stg_vol_block.html:8
+#: storages/templates/create_stg_vol_block.html:9
 msgid "Upload ISO"
 msgstr "上传 ISO"
 
-#: storages/templates/create_stg_vol_block.html:15
+#: storages/templates/create_stg_vol_block.html:16
 msgid "Upload ISO Image"
 msgstr "上传 ISO 镜像"
 
-#: storages/templates/create_stg_vol_block.html:18
+#: storages/templates/create_stg_vol_block.html:19
 msgid "Upload iso form"
 msgstr "上传 ISO 表单"
 
-#: storages/templates/create_stg_vol_block.html:19
+#: storages/templates/create_stg_vol_block.html:20
 msgid "Please select a file to upload."
 msgstr "请选择要上传的文件。"
 
-#: storages/templates/create_stg_vol_block.html:19
+#: storages/templates/create_stg_vol_block.html:20
 msgid "Only .iso files can be uploaded."
 msgstr "只能上传 .iso 文件。"
 
-#: storages/templates/create_stg_vol_block.html:20
+#: storages/templates/create_stg_vol_block.html:21
 msgid "The selected file is empty."
 msgstr "所选文件为空。"
 
-#: storages/templates/create_stg_vol_block.html:20
-#: storages/templates/create_stg_vol_block.html:29
+#: storages/templates/create_stg_vol_block.html:21
+#: storages/templates/create_stg_vol_block.html:30
 msgid "Starting upload..."
 msgstr "正在开始上传..."
 
-#: storages/templates/create_stg_vol_block.html:21
+#: storages/templates/create_stg_vol_block.html:22
 msgid ""
 "Uploading; the job panel shows its progress. Stay on this page until it ends."
 msgstr "正在上传，任务面板会显示进度。上传结束前请勿离开此页面。"
 
-#: storages/templates/create_stg_vol_block.html:22
+#: storages/templates/create_stg_vol_block.html:23
 msgid "Retrying upload..."
 msgstr "正在重试上传..."
 
-#: storages/templates/create_stg_vol_block.html:22
+#: storages/templates/create_stg_vol_block.html:23
 msgid "An error occurred during upload."
 msgstr "上传时发生错误。"
 
-#: storages/templates/create_stg_vol_block.html:24
+#: storages/templates/create_stg_vol_block.html:25
 msgid "ISO file"
 msgstr "ISO 文件"
 
-#: storages/templates/create_stg_vol_block.html:26
+#: storages/templates/create_stg_vol_block.html:27
 msgid "The browser sends it: keep the page open until the upload ends."
 msgstr "文件由浏览器发送：上传结束前请保持页面打开。"
 
-#: storages/templates/create_stg_vol_block.html:36
+#: storages/templates/create_stg_vol_block.html:37
 msgid "Upload"
 msgstr "上传"
 
-#: storages/templates/create_stg_vol_block.html:45
-#: storages/templates/create_stg_vol_block.html:53
+#: storages/templates/create_stg_vol_block.html:46
+#: storages/templates/create_stg_vol_block.html:54
 msgid "New volume"
 msgstr "新建卷"
 
-#: storages/templates/create_stg_vol_block.html:57
+#: storages/templates/create_stg_vol_block.html:58
 msgid "Create volume to storage form"
 msgstr "在存储中创建卷的表单"
+
+#: storages/templates/create_stg_vol_block.html:79
+#: storages/templates/create_stg_vol_block.html:85
+msgid "Download from a URL"
+msgstr "从 URL 下载"
+
+#: storages/templates/create_stg_vol_block.html:93
+msgid ""
+"An ISO or a disk image (qcow2, raw) at an http or https address that tells "
+"its size. The panel's host downloads it."
+msgstr "位于 http 或 https 地址、且会告知大小的 ISO 或磁盘镜像（qcow2、raw）。由面板所在主机下载。"
+
+#: storages/templates/create_stg_vol_block.html:96 vmbackups/forms.py:60
+msgid "Volume name"
+msgstr "卷名"
+
+#: storages/templates/create_stg_vol_block.html:98
+msgid ""
+"Empty: the file's name in the address. An ISO keeps its .iso ending, or VMs "
+"do not list it as media."
+msgstr "留空：使用地址中的文件名。ISO 须保留 .iso 后缀，否则虚拟机不会将其列为介质。"
+
+#: storages/templates/create_stg_vol_block.html:103
+#: storages/templates/storage.html:176
+msgid "Download"
+msgstr "下载"
 
 #: storages/templates/storage.html:14
 #, python-format
@@ -9334,10 +9423,6 @@ msgstr "另一个卷基于它"
 #, python-format
 msgid "%(allocated)s allocated"
 msgstr "已分配 %(allocated)s"
-
-#: storages/templates/storage.html:176
-msgid "Download"
-msgstr "下载"
 
 #: storages/templates/storage.html:180
 #, python-format
@@ -9469,36 +9554,36 @@ msgstr "最后一个分块与声明的文件大小不符"
 msgid "The partial upload is missing"
 msgstr "部分上传的文件不存在"
 
-#: storages/views.py:33
+#: storages/views.py:34
 msgid "No file chunk was submitted."
 msgstr "未提交文件分块。"
 
-#: storages/views.py:39
+#: storages/views.py:40
 msgid "Invalid chunk parameters."
 msgstr "分块参数无效。"
 
-#: storages/views.py:41
+#: storages/views.py:42
 msgid "Invalid chunk index or total chunks."
 msgstr "分块索引或分块总数无效。"
 
-#: storages/views.py:46
+#: storages/views.py:47
 msgid "Invalid file size."
 msgstr "文件大小无效。"
 
-#: storages/views.py:55
+#: storages/views.py:56
 msgid "Upload session is busy. Please retry."
 msgstr "上传会话繁忙，请重试。"
 
-#: storages/views.py:57
+#: storages/views.py:58
 msgid "ISO image already exists"
 msgstr "ISO 镜像已存在"
 
-#: storages/views.py:187
+#: storages/views.py:188
 #, python-format
 msgid "Volume: %(vol)s is deleted."
 msgstr "卷 %(vol)s 已删除。"
 
-#: storages/views.py:204
+#: storages/views.py:205
 #, python-format
 msgid "Image file %(name)s is created successfully"
 msgstr "镜像文件 %(name)s 创建成功"
@@ -9843,10 +9928,6 @@ msgstr "恢复的客户机保留虚拟机的地址和主机名：与原虚拟机
 #: vmbackups/forms.py:42
 msgid "Start after restore"
 msgstr "恢复后启动"
-
-#: vmbackups/forms.py:60
-msgid "Volume name"
-msgstr "卷名"
 
 #: vmbackups/forms.py:82 vmbackups/templates/vmbackups/vm_tab.html:14
 msgid "Backup target"
@@ -12064,7 +12145,7 @@ msgid ""
 "Volume %(name)s is in use: a VM's disk, a backing file or a snapshot's file"
 msgstr "卷 %(name)s 正在使用中：它是虚拟机的磁盘、后备文件或快照文件"
 
-#: vrtManager/storage.py:381
+#: vrtManager/storage.py:413
 #, python-format
 msgid "The running VMs %(vms)s use volume %(name)s; shut them down to copy it"
 msgstr "正在运行的虚拟机 %(vms)s 使用卷 %(name)s；请先将其关闭再复制"

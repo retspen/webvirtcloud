@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load operations %}
 {% load django_bootstrap5 %}
 {% load bootstrap_icons %}
 {% if request.user.is_superuser %}
@@ -71,6 +72,40 @@
                     </div> <!-- /.modal-content -->
                 </div> <!-- /.modal-dialog -->
             </div> <!-- /.modal -->
+        {% endif %}
+        {% if type == "dir" or type == "fs" or type == "netfs" %}
+            {# the worker downloads it into the pool; the job panel shows its progress #}
+            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#FetchVolume">
+                <span aria-hidden="true">{% bs_icon 'download' %}</span> {% trans "Download from a URL" %}
+            </button>
+            <div class="modal fade" id="FetchVolume" tabindex="-1" aria-labelledby="FetchVolumeLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="FetchVolumeLabel">{% trans "Download from a URL" %}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
+                        </div>
+                        <form method="post" aria-labelledby="FetchVolumeLabel">{% csrf_token %}{% submission_key %}
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label" for="fetch-url">{% trans "Address" %}</label>
+                                    <input type="url" class="form-control" name="url" id="fetch-url" required placeholder="https://" aria-describedby="fetch-url-help">
+                                    <div class="form-text" id="fetch-url-help">{% trans "An ISO or a disk image (qcow2, raw) at an http or https address that tells its size. The panel's host downloads it." %}</div>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="fetch-name">{% trans "Volume name" %}</label>
+                                    <input type="text" class="form-control" name="name" id="fetch-name" pattern="[a-zA-Z0-9\.\-_]+" aria-describedby="fetch-name-help">
+                                    <div class="form-text" id="fetch-name-help">{% trans "Empty: the file's name in the address. An ISO keeps its .iso ending, or VMs do not list it as media." %}</div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                                <button type="submit" class="btn btn-primary" name="fetch_volume" value="1">{% trans "Download" %}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
         {% endif %}
     {% endif %}
 {% endif %}
