@@ -196,6 +196,12 @@ class Instance(models.Model):
         return self.proxy.get_disk_devices(config=True)
 
     @cached_property
+    def live_custom_iotune(self) -> set:
+        """The disks whose running definition has I/O tuning set in the XML (custom_iotune): the
+        Disks tab shows the next start's, and set_disk_limit refuses these too."""
+        return {disk["dev"] for disk in self.disks if disk.get("iotune_custom")}
+
+    @cached_property
     def config_vcpu(self) -> int:
         """vCPUs of the persistent definition, which the CPU form changes."""
         return self.proxy.get_vcpu(config=True)

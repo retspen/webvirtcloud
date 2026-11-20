@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-20 07:10+0000\n"
+"POT-Creation-Date: 2026-11-20 07:56+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -30,17 +30,17 @@ msgid "Instance owned by another user"
 msgstr "Diğer kullanıcıya ait sanal makineler"
 
 #: accounts/forms.py:35 accounts/templates/account.html:73
-#: instances/templates/instances/settings_tab.html:676
+#: instances/templates/instances/settings_tab.html:695
 msgid "Change settings"
 msgstr "Ayarları değiştir"
 
 #: accounts/forms.py:35 accounts/templates/account.html:74
-#: instances/templates/instances/settings_tab.html:676
+#: instances/templates/instances/settings_tab.html:695
 msgid "Delete the VM"
 msgstr "Sanal makineyi sil"
 
 #: accounts/forms.py:36 accounts/templates/account.html:75
-#: instances/templates/instances/settings_tab.html:676
+#: instances/templates/instances/settings_tab.html:695
 msgid "Change console settings"
 msgstr "Konsol ayarlarını değiştir"
 
@@ -256,7 +256,7 @@ msgid "Host"
 msgstr "Sunucu"
 
 #: accounts/templates/account.html:76
-#: instances/templates/instances/settings_tab.html:678
+#: instances/templates/instances/settings_tab.html:697
 msgid "Power and console only"
 msgstr "Yalnızca güç ve konsol"
 
@@ -312,8 +312,8 @@ msgstr "Burada oturumunuz açık kalır; diğer oturumlarınız kapanır."
 #: instances/templates/instances/destroy_instance_form.html:56
 #: instances/templates/instances/edit_instance_volume.html:111
 #: instances/templates/instances/move_disk.html:27
-#: instances/templates/instances/settings_tab.html:412
-#: instances/templates/instances/settings_tab.html:653
+#: instances/templates/instances/settings_tab.html:431
+#: instances/templates/instances/settings_tab.html:672
 #: interfaces/templates/create_iface_block.html:147
 #: networks/templates/add_network_qos.html:35
 #: networks/templates/create_net_block.html:126
@@ -475,7 +475,7 @@ msgstr "%(name)s API anahtarı için işlemler"
 #: admin/templates/admin/user_list.html:76
 #: instances/templates/create_flavors.html:11
 #: instances/templates/instances/settings_tab.html:251
-#: instances/templates/instances/settings_tab.html:315
+#: instances/templates/instances/settings_tab.html:334
 #: instances/templates/instances/snapshots_tab.html:103
 #: instances/templates/instances/snapshots_tab.html:117
 #: networks/templates/network.html:168 storages/templates/storage.html:180
@@ -703,7 +703,7 @@ msgstr "Sanal makineleri yedekleyebilir"
 msgid "Can clone instances"
 msgstr "Sanal makineleri klonlayabilir"
 
-#: admin/forms.py:26 instances/models.py:446
+#: admin/forms.py:26 instances/models.py:451
 msgid "Can access console without password"
 msgstr "Parolasız konsol erişimi yapabilir"
 
@@ -798,7 +798,7 @@ msgstr ""
 #: instances/templates/allinstances_index_nongrouped.html:14
 #: instances/templates/create_instance_w2.html:63
 #: instances/templates/instances/resize_tab.html:30
-#: instances/templates/instances/settings_tab.html:854 instances/views.py:243
+#: instances/templates/instances/settings_tab.html:873 instances/views.py:243
 msgid "vCPUs"
 msgstr "vCPU"
 
@@ -816,7 +816,7 @@ msgstr "vCPU"
 msgid "Memory"
 msgstr "Bellek"
 
-#: admin/forms.py:224 instances/models.py:243
+#: admin/forms.py:224 instances/models.py:248
 #: instances/templates/create_instance_w2.html:118
 #: instances/templates/instances/settings_tab.html:25
 #: instances/templates/instances/stats_tab.html:53 vmbackups/forms.py:57
@@ -943,7 +943,7 @@ msgstr[1] "%(count)s izin"
 #: admin/templates/admin/group_list.html:40
 #: admin/templates/admin/user_list.html:61
 #: instances/templates/instances/edit_instance_volume.html:3
-#: instances/templates/instances/settings_tab.html:309
+#: instances/templates/instances/settings_tab.html:328
 #: networks/templates/network.html:159 networks/templates/network.html:301
 msgid "Edit"
 msgstr "Düzenle"
@@ -1032,7 +1032,7 @@ msgstr "Başarısız"
 
 #: admin/templates/admin/tag_list.html:6 admin/templates/admin/tag_list.html:8
 #: admin/templates/admin/tag_list.html:17 computes/forms.py:55
-#: instances/templates/instances/settings_tab.html:934 instances/views.py:244
+#: instances/templates/instances/settings_tab.html:953 instances/views.py:244
 #: templates/common/tag_filter.html:6 templates/navbar.html:39
 msgid "Tags"
 msgstr "Etiketler"
@@ -1068,8 +1068,8 @@ msgstr "Sunucular"
 #: computes/templates/computes/list.html:65
 #: instances/templates/allinstances_index_grouped.html:18
 #: instances/templates/allinstances_index_nongrouped.html:16
-#: instances/templates/instances/settings_tab.html:450
-#: instances/templates/instances/settings_tab.html:485
+#: instances/templates/instances/settings_tab.html:469
+#: instances/templates/instances/settings_tab.html:504
 #: networks/templates/network.html:146 networks/templates/network.html:204
 #: networks/templates/network.html:286 nwfilters/templates/nwfilter.html:56
 #: nwfilters/templates/nwfilter.html:100 nwfilters/templates/nwfilters.html:35
@@ -1115,7 +1115,7 @@ msgid "Template"
 msgstr "Şablon"
 
 #: admin/templates/admin/tombstone_list.html:29
-#: instances/templates/instances/settings_tab.html:926
+#: instances/templates/instances/settings_tab.html:945
 msgid "Protected"
 msgstr "Korumalı"
 
@@ -2148,8 +2148,8 @@ msgstr ""
 "rakamla başlar; en fazla 12 karakter"
 
 #: computes/forms.py:99 computes/templates/computes/instances.html:53
-#: instances/templates/instances/settings_tab.html:872
-#: instances/templates/instances/settings_tab.html:904
+#: instances/templates/instances/settings_tab.html:891
+#: instances/templates/instances/settings_tab.html:923
 #: instances/templates/instances/snapshots_tab.html:27
 #: instances/templates/instances/snapshots_tab.html:71
 msgid "Description"
@@ -2796,7 +2796,7 @@ msgstr "kayıtlı"
 
 #: computes/templates/computes/form.html:42
 #: instances/templates/instances/edit_instance_volume.html:82
-#: instances/templates/instances/settings_tab.html:375
+#: instances/templates/instances/settings_tab.html:394
 #: networks/templates/networks.html:63
 msgid "none"
 msgstr "hiçbiri"
@@ -2804,10 +2804,10 @@ msgstr "hiçbiri"
 #: computes/templates/computes/form.html:55
 #: instances/templates/instances/edit_instance_volume.html:112
 #: instances/templates/instances/nic_qos_form.html:23
-#: instances/templates/instances/settings_tab.html:413
-#: instances/templates/instances/settings_tab.html:654
-#: instances/templates/instances/settings_tab.html:908
-#: instances/templates/instances/settings_tab.html:939
+#: instances/templates/instances/settings_tab.html:432
+#: instances/templates/instances/settings_tab.html:673
+#: instances/templates/instances/settings_tab.html:927
+#: instances/templates/instances/settings_tab.html:958
 #: networks/templates/add_network_qos.html:36
 #: networks/templates/network.html:337 networks/templates/network.html:379
 #: networks/templates/network.html:406 networks/templates/network.html:445
@@ -2840,8 +2840,8 @@ msgstr "Sanal Makineler"
 #: computes/templates/computes/host_nav.html:15
 #: computes/templates/computes/host_nav.html:16
 #: computes/templates/overview.html:118
-#: instances/templates/instances/settings_tab.html:551
-#: instances/templates/instances/settings_tab.html:828
+#: instances/templates/instances/settings_tab.html:570
+#: instances/templates/instances/settings_tab.html:847
 #: storages/templates/storage.html:6 storages/templates/storage.html:8
 msgid "Storage"
 msgstr "Depolama"
@@ -2851,7 +2851,7 @@ msgstr "Depolama"
 #: instances/templates/add_instance_network_block.html:18
 #: instances/templates/create_instance_w2.html:230
 #: instances/templates/create_instance_w2.html:232
-#: instances/templates/instances/settings_tab.html:376
+#: instances/templates/instances/settings_tab.html:395
 #: networks/templates/networks.html:5 networks/templates/networks.html:7
 msgid "Networks"
 msgstr "Ağlar"
@@ -2859,7 +2859,7 @@ msgstr "Ağlar"
 #: computes/templates/computes/host_nav.html:23
 #: computes/templates/computes/host_nav.html:24
 #: instances/templates/add_instance_network_block.html:23
-#: instances/templates/instances/settings_tab.html:381
+#: instances/templates/instances/settings_tab.html:400
 #: interfaces/templates/interfaces.html:6
 #: interfaces/templates/interfaces.html:8
 msgid "Interfaces"
@@ -2936,7 +2936,7 @@ msgstr "/ %(memory)s"
 #: console/templates/console-vnc.html:13
 #: console/templates/console-xterm.html:16
 #: instances/templates/allinstances_index_grouped.html:36
-#: instances/templates/instances/settings_tab.html:989
+#: instances/templates/instances/settings_tab.html:1008
 #: networks/templates/network.html:260
 msgid "Connected"
 msgstr "Bağlı"
@@ -3343,7 +3343,8 @@ msgstr "Ölçekleme"
 #: instances/templates/create_instance_w2.html:324
 #: instances/templates/instance.html:72
 #: instances/templates/instances/settings_tab.html:180
-#: instances/templates/instances/settings_tab.html:399
+#: instances/templates/instances/settings_tab.html:266
+#: instances/templates/instances/settings_tab.html:418
 #: instances/templates/instances/stats_tab.html:65
 #: interfaces/templates/create_iface_block.html:94
 #: interfaces/templates/create_iface_block.html:117
@@ -3416,8 +3417,8 @@ msgstr "Bağlan"
 #: instances/templates/create_instance_w2.html:367
 #: instances/templates/instances/edit_instance_volume.html:13
 #: instances/templates/instances/move_disk.html:13
-#: instances/templates/instances/settings_tab.html:362
-#: instances/templates/instances/settings_tab.html:645
+#: instances/templates/instances/settings_tab.html:381
+#: instances/templates/instances/settings_tab.html:664
 #: interfaces/templates/create_iface_block.html:20
 #: networks/templates/add_network_qos.html:8
 #: networks/templates/create_net_block.html:20
@@ -3524,7 +3525,7 @@ msgid "Templates cannot be started."
 msgstr "Şablon makineler başlatılamaz."
 
 #: instances/forms.py:14 instances/templates/create_instance_w2.html:69
-#: instances/templates/instances/settings_tab.html:858 instances/views.py:243
+#: instances/templates/instances/settings_tab.html:877 instances/views.py:243
 msgid "Memory (MiB)"
 msgstr "Bellek (MiB)"
 
@@ -3591,7 +3592,7 @@ msgstr ""
 msgid "A password takes no line breaks or other control characters."
 msgstr "Parola satır sonu ya da başka denetim karakteri içeremez."
 
-#: instances/forms.py:114 vrtManager/instance.py:1756
+#: instances/forms.py:114 vrtManager/instance.py:1825
 msgid ""
 "The console listens on no address (on a network, a socket or nowhere); change"
 " it in the XML editor"
@@ -3694,7 +3695,7 @@ msgstr ""
 msgid "Delete snapshot"
 msgstr "Anlık görüntüyü sil"
 
-#: instances/jobs.py:365 vrtManager/instance.py:2517
+#: instances/jobs.py:365 vrtManager/instance.py:2586
 #, python-format
 msgid "The VM has no external snapshot named %(name)s"
 msgstr "Sanal makinede %(name)s adında harici anlık görüntü yok"
@@ -3729,7 +3730,7 @@ msgstr "Sanal makine artık işin çalıştığı sunucuda değil"
 msgid "Take snapshot"
 msgstr "Anlık görüntü al"
 
-#: instances/jobs.py:433 instances/jobs.py:442 vrtManager/instance.py:2106
+#: instances/jobs.py:433 instances/jobs.py:442 vrtManager/instance.py:2175
 #, python-format
 msgid "A snapshot named %(name)s already exists"
 msgstr "%(name)s adında bir anlık görüntü zaten var"
@@ -3893,12 +3894,12 @@ msgstr ""
 msgid "Each network card needs a network"
 msgstr "Her ağ kartının bir ağı olmalı"
 
-#: instances/jobs.py:876 vrtManager/backup.py:387 vrtManager/instance.py:2933
+#: instances/jobs.py:876 vrtManager/backup.py:387 vrtManager/instance.py:3002
 #, python-format
 msgid "This host has no network %(name)s"
 msgstr "Bu sunucuda %(name)s ağı yok"
 
-#: instances/jobs.py:878 vrtManager/backup.py:391 vrtManager/instance.py:2935
+#: instances/jobs.py:878 vrtManager/backup.py:391 vrtManager/instance.py:3004
 #, python-format
 msgid "This host has no network filter %(name)s"
 msgstr "Bu sunucuda %(name)s ağ filtresi yok"
@@ -3923,7 +3924,7 @@ msgstr ""
 msgid "Create VM"
 msgstr "Sanal makine oluştur"
 
-#: instances/jobs.py:936 instances/jobs.py:983 instances/views.py:2654
+#: instances/jobs.py:936 instances/jobs.py:983 instances/views.py:2677
 msgid "A virtual machine with this name already exists"
 msgstr "Bu isimde bir sanal makine mevcut"
 
@@ -3972,7 +3973,7 @@ msgstr "cloud-init tohumu, disk için bir dizin depolama havuzu gerektirir"
 msgid "This host offers no firmware %(firmware)s"
 msgstr "Bu sunucu %(firmware)s firmware'ini sunmuyor"
 
-#: instances/jobs.py:965 vrtManager/instance.py:3283
+#: instances/jobs.py:965 vrtManager/instance.py:3352
 msgid "This host offers no TPM 2.0: install swtpm on it"
 msgstr "Bu sunucu TPM 2.0 sunmuyor: üzerine swtpm kurun"
 
@@ -4140,12 +4141,12 @@ msgstr "oluşturuldu"
 msgid "drbd"
 msgstr "drbd"
 
-#: instances/models.py:245 instances/templates/create_instance_w2.html:312
+#: instances/models.py:250 instances/templates/create_instance_w2.html:312
 #: instances/templates/instances/settings_tab.html:159
 msgid "CD-ROM"
 msgstr "CD-ROM"
 
-#: instances/models.py:247
+#: instances/models.py:252
 msgid "NIC"
 msgstr "NIC"
 
@@ -4234,23 +4235,23 @@ msgstr "Sanal makine ağı ekleme formu"
 #: instances/templates/allinstances.html:108
 #: instances/templates/instances/edit_instance_volume.html:21
 #: instances/templates/instances/settings_tab.html:224
-#: instances/templates/instances/settings_tab.html:372
+#: instances/templates/instances/settings_tab.html:391
 msgid "Source"
 msgstr "Kaynak"
 
 #: instances/templates/add_instance_network_block.html:31
-#: instances/templates/instances/settings_tab.html:389
+#: instances/templates/instances/settings_tab.html:408
 msgid "Model"
 msgstr "Model"
 
 #: instances/templates/add_instance_network_block.html:39
-#: instances/templates/instances/settings_tab.html:397
+#: instances/templates/instances/settings_tab.html:416
 msgid "NWFilter"
 msgstr "AğFiltresi"
 
 #: instances/templates/add_instance_network_block.html:48
 #: instances/templates/allinstances.html:107
-#: instances/templates/instances/settings_tab.html:406
+#: instances/templates/instances/settings_tab.html:425
 #: interfaces/templates/interface.html:60
 #: interfaces/templates/interface.html:121
 #: interfaces/templates/interfaces.html:39 networks/templates/network.html:67
@@ -4287,7 +4288,7 @@ msgid "Disk source"
 msgstr "Disk kaynağı"
 
 #: instances/templates/add_instance_volume.html:21
-#: instances/templates/create_instance_w2.html:134 instances/views.py:2684
+#: instances/templates/create_instance_w2.html:134 instances/views.py:2707
 msgid "New disk"
 msgstr "Yeni disk"
 
@@ -4320,7 +4321,7 @@ msgid "Letters, digits, dot, dash and underscore."
 msgstr "Harf, rakam, nokta, tire ve alt çizgi."
 
 #: instances/templates/add_instance_volume.html:44
-#: instances/templates/instances/settings_tab.html:851
+#: instances/templates/instances/settings_tab.html:870
 #: vmbackups/templates/vmbackups/index.html:52
 #: vmbackups/templates/vmbackups/vm_tab.html:42
 msgid "Size"
@@ -4659,7 +4660,7 @@ msgid "Firmware"
 msgstr "Üretici yazılımı"
 
 #: instances/templates/create_instance_w2.html:86
-#: instances/templates/instances/settings_tab.html:968
+#: instances/templates/instances/settings_tab.html:987
 msgid "TPM 2.0"
 msgstr "TPM 2.0"
 
@@ -4684,7 +4685,7 @@ msgstr "Özel CPU modelleri"
 msgid "Size (GiB)"
 msgstr "Boyut (GiB)"
 
-#: instances/templates/create_instance_w2.html:161 instances/views.py:2685
+#: instances/templates/create_instance_w2.html:161 instances/views.py:2708
 msgid "Existing volumes"
 msgstr "Mevcut birimler"
 
@@ -4715,13 +4716,13 @@ msgstr "Aygıt"
 #: instances/templates/create_instance_w2.html:188
 #: instances/templates/create_instance_w2.html:246
 #: instances/templates/instances/boot_device.html:14
-#: instances/templates/instances/settings_tab.html:685
+#: instances/templates/instances/settings_tab.html:704
 #: networks/templates/network.html:304
 #: vmbackups/templates/vmbackups/target.html:38
 msgid "Remove"
 msgstr "Kaldır"
 
-#: instances/templates/create_instance_w2.html:194 instances/views.py:2686
+#: instances/templates/create_instance_w2.html:194 instances/views.py:2709
 msgid "Clone from template"
 msgstr "Şablondan klonla"
 
@@ -4763,7 +4764,7 @@ msgid "Network filter"
 msgstr "Ağ filtresi"
 
 #: instances/templates/create_instance_w2.html:293
-#: instances/templates/instances/settings_tab.html:951
+#: instances/templates/instances/settings_tab.html:970
 #: vrtManager/nodedevs.py:30
 msgid "Video"
 msgstr "Görüntü"
@@ -4777,7 +4778,7 @@ msgid "Input device"
 msgstr "Girdi aygıtı"
 
 #: instances/templates/create_instance_w2.html:334
-#: instances/templates/instances/settings_tab.html:981
+#: instances/templates/instances/settings_tab.html:1000
 msgid "Guest agent"
 msgstr "Konuk ajanı"
 
@@ -4824,8 +4825,8 @@ msgstr "Ayrıntılar"
 #: instances/templates/instance.html:39
 #: instances/templates/instance_actions.html:13
 #: instances/templates/instances/settings_tab.html:53
-#: instances/templates/instances/settings_tab.html:882
-#: instances/templates/instances/settings_tab.html:884
+#: instances/templates/instances/settings_tab.html:901
+#: instances/templates/instances/settings_tab.html:903
 #: nwfilters/templates/nwfilters.html:57 nwfilters/templates/nwfilters.html:94
 #: storages/templates/storage.html:170 storages/templates/storage.html:230
 msgid "Clone"
@@ -4878,8 +4879,8 @@ msgid "IPv4"
 msgstr "IPv4"
 
 #: instances/templates/instance.html:77
-#: instances/templates/instances/settings_tab.html:321
 #: instances/templates/instances/settings_tab.html:340
+#: instances/templates/instances/settings_tab.html:359
 msgid "Reading…"
 msgstr "Okunuyor…"
 
@@ -5195,7 +5196,7 @@ msgid "Edit %(dev)s"
 msgstr "Düzenle: %(dev)s"
 
 #: instances/templates/instances/edit_instance_volume.html:18
-#: instances/templates/instances/settings_tab.html:366
+#: instances/templates/instances/settings_tab.html:385
 msgid "The VM is running: the changes apply at its next start."
 msgstr ""
 "Sanal makine çalışıyor: değişiklikler bir sonraki başlatmada uygulanır."
@@ -5285,7 +5286,7 @@ msgid "Add USB device"
 msgstr "USB aygıtı ekle"
 
 #: instances/templates/instances/host_devices_form.html:18
-#: vrtManager/instance.py:3186
+#: vrtManager/instance.py:3255
 msgid ""
 "A VM with a saved state does not change its USB devices: start it, or start "
 "it without its saved state"
@@ -5385,7 +5386,7 @@ msgid "Mount point"
 msgstr "Bağlama noktası"
 
 #: instances/templates/instances/info_tab.html:28
-#: instances/templates/instances/settings_tab.html:338
+#: instances/templates/instances/settings_tab.html:357
 #: interfaces/templates/create_iface_block.html:26
 #: interfaces/templates/interface.html:43
 #: interfaces/templates/interface.html:120
@@ -5515,13 +5516,13 @@ msgstr ""
 "makine ya da birim kullanmıyorsa %(path)s silinir."
 
 #: instances/templates/instances/nic_qos_form.html:3
-#: instances/templates/instances/settings_tab.html:345
+#: instances/templates/instances/settings_tab.html:364
 #: networks/templates/network.html:291
 msgid "inbound"
 msgstr "gelen"
 
 #: instances/templates/instances/nic_qos_form.html:3
-#: instances/templates/instances/settings_tab.html:345
+#: instances/templates/instances/settings_tab.html:364
 #: networks/templates/network.html:291
 msgid "outbound"
 msgstr "giden"
@@ -5730,7 +5731,7 @@ msgstr ""
 "sağlar."
 
 #: instances/templates/instances/resize_tab.html:78
-#: instances/templates/instances/settings_tab.html:920
+#: instances/templates/instances/settings_tab.html:939
 msgid "Shut the VM down to change this."
 msgstr "Bunu değiştirmek için sanal makineyi kapatın."
 
@@ -5797,7 +5798,7 @@ msgid "Boot"
 msgstr "Ön Yükleme"
 
 #: instances/templates/instances/settings_tab.html:39
-#: instances/templates/instances/settings_tab.html:806
+#: instances/templates/instances/settings_tab.html:825
 #: instances/templates/instances/stats_tab.html:46
 #: networks/templates/network.html:6 networks/templates/network.html:8
 #: networks/templates/network.html:48
@@ -5809,8 +5810,8 @@ msgid "Host devices"
 msgstr "Sunucu aygıtları"
 
 #: instances/templates/instances/settings_tab.html:60
-#: instances/templates/instances/settings_tab.html:617
-#: instances/templates/instances/settings_tab.html:620
+#: instances/templates/instances/settings_tab.html:636
+#: instances/templates/instances/settings_tab.html:639
 msgid "Migrate"
 msgstr "Taşı"
 
@@ -5960,7 +5961,7 @@ msgid "Delete %(dev)s? It is detached and its file and data are removed."
 msgstr "%(dev)s silinsin mi? Ayrılır, dosyası ve verileri kaldırılır."
 
 #: instances/templates/instances/settings_tab.html:256
-#: instances/templates/instances/settings_tab.html:336
+#: instances/templates/instances/settings_tab.html:355
 msgid "Device details"
 msgstr "Aygıt ayrıntıları"
 
@@ -5972,33 +5973,64 @@ msgstr "Önbellek"
 msgid "Discard"
 msgstr "Discard"
 
-#: instances/templates/instances/settings_tab.html:276
+#: instances/templates/instances/settings_tab.html:265
+msgid "I/O limit"
+msgstr "G/Ç sınırı"
+
+#: instances/templates/instances/settings_tab.html:266
+msgid "Set in the VM's XML"
+msgstr "Sanal makinenin XML'inde ayarlı"
+
+#: instances/templates/instances/settings_tab.html:266
+#, python-format
+msgid "%(iops)s IOPS, %(mibps)s MiB/s"
+msgstr "%(iops)s IOPS, %(mibps)s MiB/s"
+
+#: instances/templates/instances/settings_tab.html:274
+msgid "IOPS"
+msgstr "IOPS"
+
+#: instances/templates/instances/settings_tab.html:278
+msgid "MiB/s"
+msgstr "MiB/s"
+
+#: instances/templates/instances/settings_tab.html:281
+msgid "Set the limit"
+msgstr "Sınırı uygula"
+
+#: instances/templates/instances/settings_tab.html:282
+msgid "Reads and writes together; 0: no limit. A running VM gets it at once."
+msgstr ""
+"Okuma ve yazma birlikte; 0: sınır yok. Çalışan bir sanal makineye hemen "
+"uygulanır."
+
+#: instances/templates/instances/settings_tab.html:295
 #, python-format
 msgid "PCIe slots: %(free)s free of %(total)s"
 msgstr "PCIe yuvaları: %(total)s yuvadan %(free)s boş"
 
-#: instances/templates/instances/settings_tab.html:276
+#: instances/templates/instances/settings_tab.html:295
 #, python-format
 msgid "%(next_free)s free from the next start"
 msgstr "sonraki başlatmadan itibaren %(next_free)s boş"
 
-#: instances/templates/instances/settings_tab.html:280
+#: instances/templates/instances/settings_tab.html:299
 msgid "Add PCIe slots"
 msgstr "PCIe yuvası ekle"
 
-#: instances/templates/instances/settings_tab.html:292
+#: instances/templates/instances/settings_tab.html:311
 msgid "Network devices"
 msgstr "Ağ aygıtları"
 
-#: instances/templates/instances/settings_tab.html:311
+#: instances/templates/instances/settings_tab.html:330
 msgid "Add QoS"
 msgstr "QoS ekle"
 
-#: instances/templates/instances/settings_tab.html:313
+#: instances/templates/instances/settings_tab.html:332
 msgid "Delete network device form"
 msgstr "Ağ aygıtı silme formu"
 
-#: instances/templates/instances/settings_tab.html:315
+#: instances/templates/instances/settings_tab.html:334
 #, python-format
 msgid ""
 "Remove network card %(mac)s? A running VM loses its connection through it at "
@@ -6007,34 +6039,34 @@ msgstr ""
 "%(mac)s ağ kartı kaldırılsın mı? Çalışan bir sanal makine bu kart üzerinden "
 "bağlantısını hemen kaybeder."
 
-#: instances/templates/instances/settings_tab.html:321
+#: instances/templates/instances/settings_tab.html:340
 msgid "No IPv4 address known"
 msgstr "Bilinen IPv4 adresi yok"
 
-#: instances/templates/instances/settings_tab.html:322
+#: instances/templates/instances/settings_tab.html:341
 msgid "Link state form"
 msgstr "Bağlantı durumu formu"
 
-#: instances/templates/instances/settings_tab.html:327
+#: instances/templates/instances/settings_tab.html:346
 #: interfaces/templates/link_badge.html:1
 msgid "Link up"
 msgstr "Bağlantı açık"
 
-#: instances/templates/instances/settings_tab.html:327
+#: instances/templates/instances/settings_tab.html:346
 #: interfaces/templates/link_badge.html:1
 msgid "Link down"
 msgstr "Bağlantı kapalı"
 
-#: instances/templates/instances/settings_tab.html:331
+#: instances/templates/instances/settings_tab.html:350
 #, python-format
 msgid "filter %(filter)s"
 msgstr "%(filter)s filtresi"
 
-#: instances/templates/instances/settings_tab.html:331
+#: instances/templates/instances/settings_tab.html:350
 msgid "bandwidth limited"
 msgstr "bant genişliği sınırlı"
 
-#: instances/templates/instances/settings_tab.html:333
+#: instances/templates/instances/settings_tab.html:352
 msgid ""
 "In most configurations, macvtap does not work for host to guest network "
 "communication"
@@ -6042,31 +6074,31 @@ msgstr ""
 "macvtap birçok yapılandırmada sunucu ile sanal makine ağı arasındaki "
 "iletişimde çalışmaz"
 
-#: instances/templates/instances/settings_tab.html:339
+#: instances/templates/instances/settings_tab.html:358
 msgid "Host device"
 msgstr "Sunucudaki aygıt"
 
-#: instances/templates/instances/settings_tab.html:339
+#: instances/templates/instances/settings_tab.html:358
 msgid "no target"
 msgstr "hedef yok"
 
-#: instances/templates/instances/settings_tab.html:340
+#: instances/templates/instances/settings_tab.html:359
 msgid "IPv6"
 msgstr "IPv6"
 
-#: instances/templates/instances/settings_tab.html:340
+#: instances/templates/instances/settings_tab.html:359
 msgid "unknown"
 msgstr "bilinmiyor"
 
-#: instances/templates/instances/settings_tab.html:345
+#: instances/templates/instances/settings_tab.html:364
 msgid "QoS limits"
 msgstr "QoS sınırları"
 
-#: instances/templates/instances/settings_tab.html:345
+#: instances/templates/instances/settings_tab.html:364
 msgid "inbound, outbound"
 msgstr "gelen, giden"
 
-#: instances/templates/instances/settings_tab.html:348
+#: instances/templates/instances/settings_tab.html:367
 msgid ""
 "Average and peak are in KiB/s, burst in KiB. A running VM gets a change after"
 " it is powered off and on."
@@ -6074,25 +6106,25 @@ msgstr ""
 "Ortalama ve tepe KiB/s, ani yük KiB cinsindendir. Çalışan bir sanal makine "
 "değişikliği kapatılıp açıldıktan sonra alır."
 
-#: instances/templates/instances/settings_tab.html:359
+#: instances/templates/instances/settings_tab.html:378
 #, python-format
 msgid "Edit eth%(nic)s"
 msgstr "eth%(nic)s düzenle"
 
-#: instances/templates/instances/settings_tab.html:375
+#: instances/templates/instances/settings_tab.html:394
 #, python-format
 msgid "%(nic)s, as it is"
 msgstr "%(nic)s, olduğu gibi"
 
-#: instances/templates/instances/settings_tab.html:420
+#: instances/templates/instances/settings_tab.html:439
 msgid "Add network QoS form"
 msgstr "Ağ QoS ekleme formu"
 
-#: instances/templates/instances/settings_tab.html:426
+#: instances/templates/instances/settings_tab.html:445
 msgid "The VM has no network device."
 msgstr "Sanal makinenin ağ aygıtı yok."
 
-#: instances/templates/instances/settings_tab.html:434
+#: instances/templates/instances/settings_tab.html:453
 msgid ""
 "Devices of the host given to the VM. The VM starts only on a host that has "
 "them; it is not migrated while it has them, and its clones get none."
@@ -6101,130 +6133,130 @@ msgstr ""
 "sahip bir sunucuda başlar; bunlara sahipken taşınmaz ve klonları bunları "
 "almaz."
 
-#: instances/templates/instances/settings_tab.html:437
+#: instances/templates/instances/settings_tab.html:456
 msgid "The host's devices could not be read."
 msgstr "Sunucunun aygıtları okunamadı."
 
-#: instances/templates/instances/settings_tab.html:438
+#: instances/templates/instances/settings_tab.html:457
 msgid "Reading the host's devices…"
 msgstr "Sunucunun aygıtları okunuyor…"
 
-#: instances/templates/instances/settings_tab.html:446
+#: instances/templates/instances/settings_tab.html:465
 msgid "USB device"
 msgstr "USB aygıtı"
 
-#: instances/templates/instances/settings_tab.html:447
+#: instances/templates/instances/settings_tab.html:466
 msgid "Chosen by"
 msgstr "Seçim ölçütü"
 
-#: instances/templates/instances/settings_tab.html:448
-#: instances/templates/instances/settings_tab.html:483
+#: instances/templates/instances/settings_tab.html:467
+#: instances/templates/instances/settings_tab.html:502
 msgid "Running VM"
 msgstr "Çalışan sanal makine"
 
-#: instances/templates/instances/settings_tab.html:449
-#: instances/templates/instances/settings_tab.html:484
+#: instances/templates/instances/settings_tab.html:468
+#: instances/templates/instances/settings_tab.html:503
 msgid "Next start"
 msgstr "Sonraki başlatma"
 
-#: instances/templates/instances/settings_tab.html:457
+#: instances/templates/instances/settings_tab.html:476
 #, python-format
 msgid "Its address %(bus)s/%(device)s"
 msgstr "Adresi %(bus)s/%(device)s"
 
-#: instances/templates/instances/settings_tab.html:457
+#: instances/templates/instances/settings_tab.html:476
 msgid "Its model: any device of it"
 msgstr "Modeli: bu modelin herhangi bir aygıtı"
 
-#: instances/templates/instances/settings_tab.html:458
+#: instances/templates/instances/settings_tab.html:477
 #, python-format
 msgid "Has %(bus)s/%(device)s"
 msgstr "%(bus)s/%(device)s üzerinde"
 
-#: instances/templates/instances/settings_tab.html:459
-#: instances/templates/instances/settings_tab.html:493
+#: instances/templates/instances/settings_tab.html:478
+#: instances/templates/instances/settings_tab.html:512
 msgid "Yes"
 msgstr "Evet"
 
-#: instances/templates/instances/settings_tab.html:459
-#: instances/templates/instances/settings_tab.html:493
+#: instances/templates/instances/settings_tab.html:478
+#: instances/templates/instances/settings_tab.html:512
 msgid "No"
 msgstr "Hayır"
 
-#: instances/templates/instances/settings_tab.html:466
+#: instances/templates/instances/settings_tab.html:485
 msgid "Remove the USB device"
 msgstr "USB aygıtını kaldır"
 
-#: instances/templates/instances/settings_tab.html:467
+#: instances/templates/instances/settings_tab.html:486
 msgid "Remove this USB device from the VM? A running VM loses it at once."
 msgstr ""
 "Bu USB aygıtı sanal makineden kaldırılsın mı? Çalışan bir sanal makine onu "
 "hemen kaybeder."
 
-#: instances/templates/instances/settings_tab.html:482
+#: instances/templates/instances/settings_tab.html:501
 msgid "PCI device"
 msgstr "PCI aygıtı"
 
-#: instances/templates/instances/settings_tab.html:492
+#: instances/templates/instances/settings_tab.html:511
 msgid "Has it"
 msgstr "Var"
 
-#: instances/templates/instances/settings_tab.html:498
+#: instances/templates/instances/settings_tab.html:517
 msgid "Remove the PCI device"
 msgstr "PCI aygıtını kaldır"
 
-#: instances/templates/instances/settings_tab.html:499
+#: instances/templates/instances/settings_tab.html:518
 msgid "A paused VM, or one with a saved state, does not change its PCI devices"
 msgstr ""
 "Duraklatılmış ya da durumu kaydedilmiş bir sanal makinenin PCI aygıtları "
 "değiştirilemez"
 
-#: instances/templates/instances/settings_tab.html:500
+#: instances/templates/instances/settings_tab.html:519
 msgid ""
 "Remove this PCI device from the VM? A running VM's guest has to let it go."
 msgstr ""
 "Bu PCI aygıtı sanal makineden kaldırılsın mı? Çalışan bir sanal makinede "
 "konuk sistemin aygıtı bırakması gerekir."
 
-#: instances/templates/instances/settings_tab.html:512
+#: instances/templates/instances/settings_tab.html:531
 msgid "Network interface"
 msgstr "Ağ arabirimi"
 
-#: instances/templates/instances/settings_tab.html:513
+#: instances/templates/instances/settings_tab.html:532
 msgid "running VM and next start"
 msgstr "çalışan sanal makine ve sonraki başlatma"
 
-#: instances/templates/instances/settings_tab.html:513
+#: instances/templates/instances/settings_tab.html:532
 msgid "running VM only"
 msgstr "yalnızca çalışan sanal makine"
 
-#: instances/templates/instances/settings_tab.html:513
+#: instances/templates/instances/settings_tab.html:532
 msgid "next start only"
 msgstr "yalnızca sonraki başlatmada"
 
-#: instances/templates/instances/settings_tab.html:513
+#: instances/templates/instances/settings_tab.html:532
 msgid "changed in the XML editor"
 msgstr "XML düzenleyicide değiştirilir"
 
-#: instances/templates/instances/settings_tab.html:517
+#: instances/templates/instances/settings_tab.html:536
 msgid "The VM has no host devices."
 msgstr "Sanal makinenin sunucu aygıtı yok."
 
-#: instances/templates/instances/settings_tab.html:524
+#: instances/templates/instances/settings_tab.html:543
 msgid "Migration route"
 msgstr "Taşıma yolu"
 
-#: instances/templates/instances/settings_tab.html:527
+#: instances/templates/instances/settings_tab.html:546
 #: networks/templates/network.html:396
 msgid "From"
 msgstr "Başlangıç"
 
-#: instances/templates/instances/settings_tab.html:532
+#: instances/templates/instances/settings_tab.html:551
 #: networks/templates/network.html:400
 msgid "To"
 msgstr "Bitiş"
 
-#: instances/templates/instances/settings_tab.html:541
+#: instances/templates/instances/settings_tab.html:560
 msgid ""
 "The VM is running: it migrates live, or paused for the transfer when Live "
 "migration is off."
@@ -6232,15 +6264,15 @@ msgstr ""
 "Sanal makine çalışıyor: canlı taşınır, Canlı olarak taşı kapalıysa aktarım "
 "süresince duraklatılır."
 
-#: instances/templates/instances/settings_tab.html:542
+#: instances/templates/instances/settings_tab.html:561
 msgid "The VM is paused: it stays paused on the destination."
 msgstr "Sanal makine duraklatılmış: hedefte de duraklatılmış kalır."
 
-#: instances/templates/instances/settings_tab.html:543
+#: instances/templates/instances/settings_tab.html:562
 msgid "The VM is shut off: it moves offline."
 msgstr "Sanal makine kapalı: çevrimdışı taşınır."
 
-#: instances/templates/instances/settings_tab.html:544
+#: instances/templates/instances/settings_tab.html:563
 msgid ""
 "Both hosts need the same emulator; the VM's definition leaves the source "
 "host."
@@ -6248,35 +6280,35 @@ msgstr ""
 "İki sunucuda da aynı emülatör olmalıdır; sanal makinenin tanımı kaynak "
 "sunucudan kaldırılır."
 
-#: instances/templates/instances/settings_tab.html:553
+#: instances/templates/instances/settings_tab.html:572
 msgid "Checking the hosts…"
 msgstr "Sunucular denetleniyor…"
 
-#: instances/templates/instances/settings_tab.html:553
+#: instances/templates/instances/settings_tab.html:572
 msgid "The hosts could not be checked."
 msgstr "Sunucular denetlenemedi."
 
-#: instances/templates/instances/settings_tab.html:554
+#: instances/templates/instances/settings_tab.html:573
 msgid "No host can take the VM now."
 msgstr "Şu anda sanal makineyi alabilecek sunucu yok."
 
-#: instances/templates/instances/settings_tab.html:554
+#: instances/templates/instances/settings_tab.html:573
 msgid "Checking the disks…"
 msgstr "Diskler denetleniyor…"
 
-#: instances/templates/instances/settings_tab.html:555
+#: instances/templates/instances/settings_tab.html:574
 msgid "The disks could not be checked."
 msgstr "Diskler denetlenemedi."
 
-#: instances/templates/instances/settings_tab.html:560
+#: instances/templates/instances/settings_tab.html:579
 msgid "Transfer settings"
 msgstr "Aktarım ayarları"
 
-#: instances/templates/instances/settings_tab.html:566
+#: instances/templates/instances/settings_tab.html:585
 msgid "Live migration"
 msgstr "Canlı olarak taşı"
 
-#: instances/templates/instances/settings_tab.html:568
+#: instances/templates/instances/settings_tab.html:587
 msgid ""
 "The VM keeps running while its memory is copied. Off, it is paused for the "
 "transfer."
@@ -6284,11 +6316,11 @@ msgstr ""
 "Belleği kopyalanırken sanal makine çalışmaya devam eder. Kapalıysa aktarım "
 "süresince duraklatılır."
 
-#: instances/templates/instances/settings_tab.html:574
+#: instances/templates/instances/settings_tab.html:593
 msgid "Auto converge"
 msgstr "Otomatik yavaşlat"
 
-#: instances/templates/instances/settings_tab.html:576
+#: instances/templates/instances/settings_tab.html:595
 msgid ""
 "Slows the guest's CPUs so that a busy VM's live migration can finish. Only "
 "with Live migration."
@@ -6296,21 +6328,21 @@ msgstr ""
 "Yoğun bir sanal makinenin canlı taşımasının bitebilmesi için konuk sistemin "
 "CPU'larını yavaşlatır. Yalnızca canlı taşımada."
 
-#: instances/templates/instances/settings_tab.html:581
+#: instances/templates/instances/settings_tab.html:600
 msgid "Compressed"
 msgstr "Sıkıştırılmış"
 
-#: instances/templates/instances/settings_tab.html:583
+#: instances/templates/instances/settings_tab.html:602
 msgid "Compresses the memory sent: less network, more CPU on both hosts."
 msgstr ""
 "Gönderilen belleği sıkıştırır: daha az ağ trafiği, iki sunucuda da daha fazla"
 " CPU."
 
-#: instances/templates/instances/settings_tab.html:595
+#: instances/templates/instances/settings_tab.html:614
 msgid "Unsafe migration"
 msgstr "Güvensiz şekilde taşı"
 
-#: instances/templates/instances/settings_tab.html:597
+#: instances/templates/instances/settings_tab.html:616
 msgid ""
 "Skips libvirt's safety checks, such as a disk cache mode that can corrupt "
 "data in a migration."
@@ -6318,11 +6350,11 @@ msgstr ""
 "libvirt'in güvenlik denetimlerini atlar; örneğin taşımada veriyi bozabilecek "
 "bir disk önbellek modu."
 
-#: instances/templates/instances/settings_tab.html:603
+#: instances/templates/instances/settings_tab.html:622
 msgid "Delete the source files of copied disks"
 msgstr "Kopyalanan disklerin kaynak dosyalarını sil"
 
-#: instances/templates/instances/settings_tab.html:605
+#: instances/templates/instances/settings_tab.html:624
 msgid ""
 "After a migration that copied disks, their files on the source host go. Disks"
 " on shared storage stay."
@@ -6330,22 +6362,22 @@ msgstr ""
 "Diskleri kopyalayan bir taşımadan sonra kaynak sunucudaki dosyaları silinir. "
 "Paylaşımlı depolamadaki diskler kalır."
 
-#: instances/templates/instances/settings_tab.html:615
+#: instances/templates/instances/settings_tab.html:634
 msgid "Migration runs as a background job."
 msgstr "Taşıma arka planda bir iş olarak çalışır."
 
-#: instances/templates/instances/settings_tab.html:629
+#: instances/templates/instances/settings_tab.html:648
 msgid ""
 "This is the definition for the VM's next start; a saved change applies then."
 msgstr ""
 "Bu, sanal makinenin sonraki başlatmasındaki tanımdır; kaydedilen değişiklik o"
 " zaman uygulanır."
 
-#: instances/templates/instances/settings_tab.html:636
+#: instances/templates/instances/settings_tab.html:655
 msgid "Review changes"
 msgstr "Değişiklikleri incele"
 
-#: instances/templates/instances/settings_tab.html:640
+#: instances/templates/instances/settings_tab.html:659
 msgid ""
 "The request did not go through; your edit is still in the editor. Try again, "
 "or copy it and reload the page."
@@ -6353,24 +6385,24 @@ msgstr ""
 "İstek iletilemedi; düzenlemeniz hâlâ düzenleyicide. Yeniden deneyin ya da "
 "kopyalayıp sayfayı yeniden yükleyin."
 
-#: instances/templates/instances/settings_tab.html:644
+#: instances/templates/instances/settings_tab.html:663
 msgid "Review the XML change"
 msgstr "XML değişikliğini incele"
 
-#: instances/templates/instances/settings_tab.html:649
+#: instances/templates/instances/settings_tab.html:668
 msgid "The XML is the same as the VM's definition; there is nothing to save."
 msgstr "XML, sanal makinenin tanımıyla aynı; kaydedilecek bir şey yok."
 
-#: instances/templates/instances/settings_tab.html:650
+#: instances/templates/instances/settings_tab.html:669
 #, python-format
 msgid "Line %(line)s"
 msgstr "Satır %(line)s"
 
-#: instances/templates/instances/settings_tab.html:663
+#: instances/templates/instances/settings_tab.html:682
 msgid "Instance owners"
 msgstr "Sanal makine sahipleri"
 
-#: instances/templates/instances/settings_tab.html:666
+#: instances/templates/instances/settings_tab.html:685
 msgid ""
 "Every owner can power the VM and open its console. A new owner has no other "
 "right until it is given one."
@@ -6378,19 +6410,19 @@ msgstr ""
 "Her sahip sanal makineyi açıp kapatabilir ve konsolunu açabilir. Yeni bir "
 "sahibin, verilene kadar başka bir hakkı yoktur."
 
-#: instances/templates/instances/settings_tab.html:684
+#: instances/templates/instances/settings_tab.html:703
 msgid "Edit rights"
 msgstr "Hakları düzenle"
 
-#: instances/templates/instances/settings_tab.html:693
+#: instances/templates/instances/settings_tab.html:712
 msgid "The VM has no owner: only administrators can use it."
 msgstr "Sanal makinenin sahibi yok: yalnızca yöneticiler kullanabilir."
 
-#: instances/templates/instances/settings_tab.html:700
+#: instances/templates/instances/settings_tab.html:719
 msgid "Console settings"
 msgstr "Konsol ayarları"
 
-#: instances/templates/instances/settings_tab.html:702
+#: instances/templates/instances/settings_tab.html:721
 msgid ""
 "The running console keeps its current settings; changes here apply after the "
 "VM is shut down and started."
@@ -6398,57 +6430,57 @@ msgstr ""
 "Çalışan konsol mevcut ayarlarını korur; buradaki değişiklikler sanal makine "
 "kapatılıp başlatıldıktan sonra uygulanır."
 
-#: instances/templates/instances/settings_tab.html:708
+#: instances/templates/instances/settings_tab.html:727
 msgid "The settings below apply to a VNC console."
 msgstr "Aşağıdaki ayarlar VNC konsolu için geçerlidir."
 
-#: instances/templates/instances/settings_tab.html:710
+#: instances/templates/instances/settings_tab.html:729
 msgid "The VNC settings appear once the console type VNC is saved."
 msgstr "VNC ayarları, konsol tipi VNC olarak kaydedildiğinde görünür."
 
-#: instances/templates/instances/settings_tab.html:718
+#: instances/templates/instances/settings_tab.html:737
 msgid "VNC connection"
 msgstr "VNC bağlantısı"
 
-#: instances/templates/instances/settings_tab.html:723
-#: instances/templates/instances/settings_tab.html:929
+#: instances/templates/instances/settings_tab.html:742
+#: instances/templates/instances/settings_tab.html:948
 msgid "Only administrators can change this."
 msgstr "Bunu yalnızca yöneticiler değiştirebilir."
 
-#: instances/templates/instances/settings_tab.html:723
+#: instances/templates/instances/settings_tab.html:742
 msgid "Beyond localhost the console is reachable from the network."
 msgstr "localhost dışında konsola ağdan erişilebilir."
 
-#: instances/templates/instances/settings_tab.html:734
+#: instances/templates/instances/settings_tab.html:753
 msgid "VNC password"
 msgstr "VNC parolası"
 
-#: instances/templates/instances/settings_tab.html:737
+#: instances/templates/instances/settings_tab.html:756
 msgid "A password is set."
 msgstr "Parola ayarlanmış."
 
-#: instances/templates/instances/settings_tab.html:737
+#: instances/templates/instances/settings_tab.html:756
 msgid "No password is set."
 msgstr "Parola ayarlanmamış."
 
-#: instances/templates/instances/settings_tab.html:748
+#: instances/templates/instances/settings_tab.html:767
 msgid "Up to 8 letters, digits or symbols, without accents."
 msgstr "En çok 8 harf, rakam ya da simge; aksanlı harf olmadan."
 
-#: instances/templates/instances/settings_tab.html:759
+#: instances/templates/instances/settings_tab.html:778
 msgid "Save console settings"
 msgstr "Konsol ayarlarını kaydet"
 
-#: instances/templates/instances/settings_tab.html:768
+#: instances/templates/instances/settings_tab.html:787
 msgid "Create a clone"
 msgstr "Bir klon oluştur"
 
-#: instances/templates/instances/settings_tab.html:769
+#: instances/templates/instances/settings_tab.html:788
 #, python-format
 msgid "Source VM: %(name)s"
 msgstr "Kaynak sanal makine: %(name)s"
 
-#: instances/templates/instances/settings_tab.html:771
+#: instances/templates/instances/settings_tab.html:790
 msgid ""
 "The clone gets a new, empty TPM: keys in this VM's TPM, such as BitLocker's, "
 "do not come along."
@@ -6456,69 +6488,69 @@ msgstr ""
 "Klon yeni ve boş bir TPM alır: bu sanal makinenin TPM'indeki anahtarlar, "
 "örneğin BitLocker'ınkiler, klona geçmez."
 
-#: instances/templates/instances/settings_tab.html:776
-#: instances/templates/instances/settings_tab.html:789
-#: instances/templates/instances/settings_tab.html:792
+#: instances/templates/instances/settings_tab.html:795
+#: instances/templates/instances/settings_tab.html:808
+#: instances/templates/instances/settings_tab.html:811
 msgid "Clone name"
 msgstr "Klon adı"
 
-#: instances/templates/instances/settings_tab.html:784
-#: instances/templates/instances/settings_tab.html:816
+#: instances/templates/instances/settings_tab.html:803
+#: instances/templates/instances/settings_tab.html:835
 msgid "Guess"
 msgstr "Tahmin"
 
-#: instances/templates/instances/settings_tab.html:787
+#: instances/templates/instances/settings_tab.html:806
 msgid "The DHCP file has no free name to suggest."
 msgstr "DHCP dosyasında önerilecek boş ad yok."
 
-#: instances/templates/instances/settings_tab.html:790
+#: instances/templates/instances/settings_tab.html:809
 msgid "Automatic"
 msgstr "Otomatik"
 
-#: instances/templates/instances/settings_tab.html:810
+#: instances/templates/instances/settings_tab.html:829
 msgid "New MAC address"
 msgstr "Yeni MAC adresi"
 
-#: instances/templates/instances/settings_tab.html:813
+#: instances/templates/instances/settings_tab.html:832
 msgid "Random"
 msgstr "Rastgele"
 
-#: instances/templates/instances/settings_tab.html:831
+#: instances/templates/instances/settings_tab.html:850
 #, python-format
 msgid "%(pool)s pool"
 msgstr "%(pool)s havuzu"
 
-#: instances/templates/instances/settings_tab.html:832
+#: instances/templates/instances/settings_tab.html:851
 msgid "New volume name"
 msgstr "Yeni birim adı"
 
-#: instances/templates/instances/settings_tab.html:838
+#: instances/templates/instances/settings_tab.html:857
 msgid "Preallocate qcow2 metadata"
 msgstr "qcow2 meta verisini önceden ayır"
 
-#: instances/templates/instances/settings_tab.html:843
+#: instances/templates/instances/settings_tab.html:862
 msgid "The VM has no disk to copy."
 msgstr "Sanal makinenin kopyalanacak diski yok."
 
-#: instances/templates/instances/settings_tab.html:862
+#: instances/templates/instances/settings_tab.html:881
 msgid "The VM's size to start from; the quota counts the larger of the two."
 msgstr ""
 "Başlangıç olarak sanal makinenin boyutu; kota ikisinden büyük olanı sayar."
 
-#: instances/templates/instances/settings_tab.html:865
+#: instances/templates/instances/settings_tab.html:884
 msgid "Start the clone when it is made"
 msgstr "Klon oluşturulunca başlat"
 
-#: instances/templates/instances/settings_tab.html:869
+#: instances/templates/instances/settings_tab.html:888
 msgid "Optional details"
 msgstr "İsteğe bağlı ayrıntılar"
 
-#: instances/templates/instances/settings_tab.html:870
-#: instances/templates/instances/settings_tab.html:900
+#: instances/templates/instances/settings_tab.html:889
+#: instances/templates/instances/settings_tab.html:919
 msgid "Title"
 msgstr "Başlık"
 
-#: instances/templates/instances/settings_tab.html:877
+#: instances/templates/instances/settings_tab.html:896
 msgid ""
 "The clone gets none of the VM's host devices: one VM holds a device of the "
 "host."
@@ -6526,61 +6558,61 @@ msgstr ""
 "Klon, sanal makinenin sunucu aygıtlarını almaz: bir sunucu aygıtını tek bir "
 "sanal makine tutar."
 
-#: instances/templates/instances/settings_tab.html:880
+#: instances/templates/instances/settings_tab.html:899
 msgid "Cloning runs as a background job."
 msgstr "Klonlama arka planda bir iş olarak çalışır."
 
-#: instances/templates/instances/settings_tab.html:897
+#: instances/templates/instances/settings_tab.html:916
 msgid "VM details"
 msgstr "Sanal makine ayrıntıları"
 
-#: instances/templates/instances/settings_tab.html:916
+#: instances/templates/instances/settings_tab.html:935
 msgid "Use as a template"
 msgstr "Şablon olarak kullan"
 
-#: instances/templates/instances/settings_tab.html:918
+#: instances/templates/instances/settings_tab.html:937
 msgid ""
 "A template is a VM to clone: it is not counted in quotas and cannot be "
 "started."
 msgstr ""
 "Şablon, klonlanacak bir sanal makinedir: kotalarda sayılmaz ve başlatılamaz."
 
-#: instances/templates/instances/settings_tab.html:919
+#: instances/templates/instances/settings_tab.html:938
 msgid "Only administrators and staff can change this."
 msgstr "Bunu yalnızca yöneticiler ve personel değiştirebilir."
 
-#: instances/templates/instances/settings_tab.html:928
+#: instances/templates/instances/settings_tab.html:947
 msgid "A protected VM is not deleted and no backup is restored over it."
 msgstr "Korumalı bir VM silinmez ve üzerine yedek geri yüklenmez."
 
-#: instances/templates/instances/settings_tab.html:938
+#: instances/templates/instances/settings_tab.html:957
 msgid ""
 "Choose a tag or type a new one. Owners see the tags but cannot change them."
 msgstr ""
 "Bir etiket seçin ya da yenisini yazın. Sahipler etiketleri görür ama "
 "değiştiremez."
 
-#: instances/templates/instances/settings_tab.html:947
+#: instances/templates/instances/settings_tab.html:966
 msgid "Devices the guest sees"
 msgstr "Konuk sistemin gördüğü aygıtlar"
 
-#: instances/templates/instances/settings_tab.html:948
+#: instances/templates/instances/settings_tab.html:967
 msgid "Changes apply from the next start; the guest agent's at once."
 msgstr "Değişiklikler sonraki başlatmada geçerli olur; konuk ajanınki hemen."
 
-#: instances/templates/instances/settings_tab.html:957
+#: instances/templates/instances/settings_tab.html:976
 msgid "The graphics device the guest sees."
 msgstr "Konuk sistemin gördüğü grafik aygıtı."
 
-#: instances/templates/instances/settings_tab.html:960
+#: instances/templates/instances/settings_tab.html:979
 msgid "Virtio RNG"
 msgstr "Virtio RNG"
 
-#: instances/templates/instances/settings_tab.html:965
+#: instances/templates/instances/settings_tab.html:984
 msgid "The VM has its own RNG device: change it in the XML editor."
 msgstr "Sanal makinenin kendi RNG aygıtı var: XML düzenleyicide değiştirin."
 
-#: instances/templates/instances/settings_tab.html:965
+#: instances/templates/instances/settings_tab.html:984
 msgid ""
 "Feeds the guest's entropy from the host, so a new VM does not wait for it at "
 "boot."
@@ -6588,15 +6620,15 @@ msgstr ""
 "Konuk sistemin entropisini sunucudan besler; yeni bir sanal makine açılışta "
 "onu beklemez."
 
-#: instances/templates/instances/settings_tab.html:974
+#: instances/templates/instances/settings_tab.html:993
 msgid "The VM has its own TPM: change it in the XML editor."
 msgstr "Sanal makinenin kendi TPM'i var: XML düzenleyicide değiştirin."
 
-#: instances/templates/instances/settings_tab.html:975
+#: instances/templates/instances/settings_tab.html:994
 msgid "This host offers no TPM 2.0: install swtpm on it."
 msgstr "Bu sunucu TPM 2.0 sunmuyor: üzerine swtpm kurun."
 
-#: instances/templates/instances/settings_tab.html:976
+#: instances/templates/instances/settings_tab.html:995
 msgid ""
 "Turned off, its state stays on the host until the VM is destroyed; turned on "
 "again, it is back."
@@ -6604,42 +6636,42 @@ msgstr ""
 "Kapatıldığında durumu, sanal makine silinene kadar sunucuda kalır; yeniden "
 "açıldığında geri gelir."
 
-#: instances/templates/instances/settings_tab.html:977
+#: instances/templates/instances/settings_tab.html:996
 msgid "Windows 11 needs it, with UEFI Secure Boot."
 msgstr "Windows 11, UEFI Secure Boot ile birlikte bunu ister."
 
-#: instances/templates/instances/settings_tab.html:986
+#: instances/templates/instances/settings_tab.html:1005
 msgid "The channel to the agent in the guest: a running VM gets it at once."
 msgstr ""
 "Konuk sistemdeki ajana giden kanal: çalışan bir sanal makine onu hemen alır."
 
-#: instances/templates/instances/settings_tab.html:987
+#: instances/templates/instances/settings_tab.html:1006
 msgid "VM not running"
 msgstr "Sanal makine çalışmıyor"
 
-#: instances/templates/instances/settings_tab.html:988
+#: instances/templates/instances/settings_tab.html:1007
 msgid "No channel"
 msgstr "Kanal yok"
 
-#: instances/templates/instances/settings_tab.html:990
+#: instances/templates/instances/settings_tab.html:1009
 msgid "Not connected: is the agent installed and running in the guest?"
 msgstr "Bağlı değil: ajan konuk sistemde kurulu ve çalışıyor mu?"
 
-#: instances/templates/instances/settings_tab.html:995
+#: instances/templates/instances/settings_tab.html:1014
 msgid "When the guest crashes"
 msgstr "Konuk sistem çöktüğünde"
 
-#: instances/templates/instances/settings_tab.html:1000
+#: instances/templates/instances/settings_tab.html:1019
 msgid "Restart"
 msgstr "Yeniden başlat"
 
-#: instances/templates/instances/settings_tab.html:1002
+#: instances/templates/instances/settings_tab.html:1021
 #: interfaces/templates/interface.html:16 networks/templates/network.html:16
 #: storages/templates/storage.html:18
 msgid "Stop"
 msgstr "Durdur"
 
-#: instances/templates/instances/settings_tab.html:1004
+#: instances/templates/instances/settings_tab.html:1023
 msgid ""
 "For a crash the guest reports, not a hang. Stop keeps a VM that crashes again"
 " and again down for a look. From the next start."
@@ -6648,7 +6680,7 @@ msgstr ""
 " tekrar çöken bir sanal makineyi incelemek için kapalı tutar. Sonraki "
 "başlatmadan itibaren."
 
-#: instances/templates/instances/settings_tab.html:1006
+#: instances/templates/instances/settings_tab.html:1025
 #, python-format
 msgid "%(action)s: change it in the XML editor."
 msgstr "%(action)s: XML düzenleyicide değiştirin."
@@ -7333,7 +7365,7 @@ msgstr "Birim başarıyla değiştirildi."
 msgid "Disk %(dev)s is not a storage volume of this instance"
 msgstr "%(dev)s diski bu sanal makinenin bir depolama birimi değil"
 
-#: instances/views.py:1619 vrtManager/instance.py:2527
+#: instances/views.py:1619 vrtManager/instance.py:2596
 msgid "The VM has a saved state; start it or remove the saved state first"
 msgstr ""
 "Sanal makinenin kaydedilmiş durumu var; önce başlatın veya kaydedilmiş durumu"
@@ -7395,7 +7427,7 @@ msgstr "Anlık görüntü silinmedi: %(err)s"
 msgid "Add at least one device to the boot order."
 msgstr "Ön yükleme sırasına en az bir aygıt ekleyin."
 
-#: instances/views.py:1932 vrtManager/instance.py:1297
+#: instances/views.py:1932 vrtManager/instance.py:1366
 msgid "Invalid Device Type for boot order"
 msgstr "Ön yükleme sırası için geçersiz aygıt türü"
 
@@ -7411,7 +7443,7 @@ msgstr "Ön yükleme sırası başarıyla değiştirildi."
 msgid "The XML is empty"
 msgstr "XML boş"
 
-#: instances/views.py:1969 instances/views.py:2666
+#: instances/views.py:1969 instances/views.py:2689
 #, python-format
 msgid "The XML is not well-formed: %(error)s"
 msgstr "XML düzgün biçimlendirilmemiş: %(error)s"
@@ -7567,28 +7599,32 @@ msgstr "Şablon olup olmadığını değiştirmek için sanal makineyi kapatın.
 msgid "%(quota)s: '%(instance_name)s' stays a template."
 msgstr "%(quota)s: '%(instance_name)s' şablon olarak kalıyor."
 
-#: instances/views.py:2652
+#: instances/views.py:2561
+msgid "An I/O limit is whole numbers of IOPS and MiB/s, 0 for none"
+msgstr "G/Ç sınırı, IOPS ve MiB/s için tam sayılardır; 0: sınır yok"
+
+#: instances/views.py:2675
 msgid "The XML has no name"
 msgstr "XML'de ad yok"
 
-#: instances/views.py:2670 webvirtcloud/middleware.py:157
+#: instances/views.py:2693 webvirtcloud/middleware.py:157
 #, python-format
 msgid "libvirt Error - %(exception)s"
 msgstr "libvirt Hatası - %(exception)s"
 
-#: instances/views.py:2684
+#: instances/views.py:2707
 msgid "An empty disk of the size you set"
 msgstr "Belirlediğiniz boyutta boş bir disk"
 
-#: instances/views.py:2685
+#: instances/views.py:2708
 msgid "Volumes already in a pool"
 msgstr "Bir havuzda zaten bulunan birimler"
 
-#: instances/views.py:2686
+#: instances/views.py:2709
 msgid "A copy of a template volume"
 msgstr "Bir şablon biriminin kopyası"
 
-#: instances/views.py:2776
+#: instances/views.py:2799
 msgid ""
 "This host has no running storage pool for the VM's disks: add or start one on"
 " its Storage page."
@@ -7596,29 +7632,29 @@ msgstr ""
 "Bu sunucuda sanal makinenin diskleri için çalışan bir depolama havuzu yok: "
 "Depolama sayfasından bir tane ekleyin ya da başlatın."
 
-#: instances/views.py:2778
+#: instances/views.py:2801
 msgid "This host has no network for the VM: add one on its Networks page."
 msgstr ""
 "Bu sunucuda sanal makine için ağ yok: Ağlar sayfasından bir tane ekleyin."
 
-#: instances/views.py:2810
+#: instances/views.py:2833
 #, python-format
 msgid "The machine type is q35, not %(machine)s: UEFI Secure Boot needs it"
 msgstr "Makine türü %(machine)s değil q35: UEFI Secure Boot bunu gerektiriyor"
 
-#: instances/views.py:2839
+#: instances/views.py:2862
 msgid "Flavor Created"
 msgstr "Flavor Oluşturuldu"
 
-#: instances/views.py:2847
+#: instances/views.py:2870
 msgid "Create Flavor"
 msgstr "Kullanıcı Oluştur"
 
-#: instances/views.py:2859
+#: instances/views.py:2882
 msgid "Flavor Deleted"
 msgstr "Flavor Silindi"
 
-#: instances/views.py:2865
+#: instances/views.py:2888
 msgid "Only the size template goes; VMs made from it keep their size."
 msgstr ""
 "Yalnızca boyut şablonu silinir; ondan oluşturulan sanal makineler boyutlarını"
@@ -11679,13 +11715,35 @@ msgstr ""
 "Anlık görüntü adları 1-64 harf, rakam, '.', '_' veya '-' karakterinden oluşur"
 " ve '.' ile başlamaz"
 
-#: vrtManager/instance.py:747
+#: vrtManager/instance.py:779
 msgid "A VM with a host's or an external TPM is not cloned; remove it first"
 msgstr ""
 "Ana makinenin ya da harici bir TPM'i olan sanal makine klonlanmaz; önce onu "
 "kaldırın"
 
-#: vrtManager/instance.py:1285
+#: vrtManager/instance.py:1215
+msgid "The VM has a saved state: start it, then set the limit"
+msgstr ""
+"Sanal makinenin kaydedilmiş bir durumu var: önce başlatın, sonra sınırı verin"
+
+#: vrtManager/instance.py:1224
+#, python-format
+msgid "The I/O tuning of %(dev)s is set in the VM's XML: change it there"
+msgstr ""
+"%(dev)s diskinin G/Ç ayarları sanal makinenin XML'inde yapılmış: orada "
+"değiştirin"
+
+#: vrtManager/instance.py:1229
+#, python-format
+msgid "The VM has no disk %(dev)s"
+msgstr "Sanal makinenin %(dev)s diski yok"
+
+#: vrtManager/instance.py:1231
+#, python-format
+msgid "%(dev)s is another disk from the next start: set its limit then"
+msgstr "%(dev)s sonraki başlatmada başka bir disk: sınırını o zaman verin"
+
+#: vrtManager/instance.py:1354
 msgid ""
 "A device other than a disk or NIC is in the boot order: change it in the XML "
 "editor"
@@ -11693,47 +11751,47 @@ msgstr ""
 "Önyükleme sırasında disk veya NIC dışında bir aygıt var: bunu XML "
 "düzenleyicide değiştirin"
 
-#: vrtManager/instance.py:1300
+#: vrtManager/instance.py:1369
 #, python-format
 msgid "Boot device %(dev)s is not in the definition"
 msgstr "Ön yükleme aygıtı %(dev)s tanımda yok"
 
-#: vrtManager/instance.py:1320
+#: vrtManager/instance.py:1389
 #, python-format
 msgid "CD-ROM %(dev)s is not in the running definition"
 msgstr "CD-ROM %(dev)s çalışan tanımda yok"
 
-#: vrtManager/instance.py:1321
+#: vrtManager/instance.py:1390
 #, python-format
 msgid "CD-ROM %(dev)s is not in the persistent definition"
 msgstr "CD-ROM %(dev)s kalıcı tanımda yok"
 
-#: vrtManager/instance.py:1334
+#: vrtManager/instance.py:1403
 #, python-format
 msgid "Media of %(dev)s changed in the running VM only: %(err)s"
 msgstr "%(dev)s ortamı yalnızca çalışan sanal makinede değişti: %(err)s"
 
-#: vrtManager/instance.py:1345
+#: vrtManager/instance.py:1414
 #, python-format
 msgid "ISO image %(image)s was not found"
 msgstr "ISO imajı %(image)s bulunamadı"
 
-#: vrtManager/instance.py:1347
+#: vrtManager/instance.py:1416
 #, python-format
 msgid "ISO image %(image)s is in more than one storage pool"
 msgstr "ISO imajı %(image)s birden fazla depolama havuzunda var"
 
-#: vrtManager/instance.py:1442
+#: vrtManager/instance.py:1511
 #, python-format
 msgid "Disk %(target_dev)s is not in the VM's definition"
 msgstr "Disk %(target_dev)s sanal makinenin tanımında yok"
 
-#: vrtManager/instance.py:1574
+#: vrtManager/instance.py:1643
 msgid "Please shutdown the instance then try to enable vCPU hotplug"
 msgstr ""
 "vCPU hotplug özelliğini etkinleştirmek için önce sanal makineyi kapatın"
 
-#: vrtManager/instance.py:1777
+#: vrtManager/instance.py:1846
 #, python-format
 msgid ""
 "The serial console is a %(type)s one, the browser opens only a pty one; "
@@ -11742,11 +11800,11 @@ msgstr ""
 "Seri konsol %(type)s türünde, tarayıcı yalnızca pty türünü açar; bunu XML "
 "düzenleyicide değiştirin"
 
-#: vrtManager/instance.py:1888
+#: vrtManager/instance.py:1957
 msgid "The VM has no video card"
 msgstr "Sanal makinede ekran kartı yok"
 
-#: vrtManager/instance.py:1898
+#: vrtManager/instance.py:1967
 #, python-format
 msgid ""
 "The VM's CPU topology has %(count)s vCPUs: change it in the XML editor to set"
@@ -11755,62 +11813,62 @@ msgstr ""
 "VM'nin CPU topolojisi %(count)s vCPU içeriyor: başka bir en fazla değer için "
 "onu XML düzenleyicide değiştirin"
 
-#: vrtManager/instance.py:1924
+#: vrtManager/instance.py:1993
 #, python-format
 msgid "The VM's next start has a maximum memory of %(max)s MiB"
 msgstr ""
 "Sanal makinenin bir sonraki başlangıcındaki en yüksek bellek %(max)s MiB"
 
-#: vrtManager/instance.py:2065
+#: vrtManager/instance.py:2134
 msgid ""
 "The VM has external snapshots; internal snapshots cannot be mixed with them"
 msgstr ""
 "Sanal makinenin harici anlık görüntüleri var; dahili anlık görüntüler "
 "bunlarla karıştırılamaz"
 
-#: vrtManager/instance.py:2097
+#: vrtManager/instance.py:2166
 msgid "A snapshot with memory is not quiesced; it keeps the whole guest state"
 msgstr ""
 "Bellekli bir anlık görüntüde dosya sistemleri dondurulmaz; tüm konuk durumunu"
 " saklar"
 
-#: vrtManager/instance.py:2099
+#: vrtManager/instance.py:2168
 msgid "Only a running VM's file systems can be frozen"
 msgstr "Yalnızca çalışan bir sanal makinenin dosya sistemleri dondurulabilir"
 
-#: vrtManager/instance.py:2101
+#: vrtManager/instance.py:2170
 msgid "The QEMU guest agent is not connected; it freezes the file systems"
 msgstr "QEMU konuk aracısı bağlı değil; dosya sistemlerini o dondurur"
 
-#: vrtManager/instance.py:2104
+#: vrtManager/instance.py:2173
 msgid ""
 "The VM has internal snapshots; external snapshots cannot be mixed with them"
 msgstr ""
 "Sanal makinenin dahili anlık görüntüleri var; harici anlık görüntüler "
 "bunlarla karıştırılamaz"
 
-#: vrtManager/instance.py:2109
+#: vrtManager/instance.py:2178
 msgid "Newer snapshots exist after the last revert; delete them first"
 msgstr ""
 "Son geri dönüşten sonra daha yeni anlık görüntüler var; önce onları silin"
 
-#: vrtManager/instance.py:2112
+#: vrtManager/instance.py:2181
 msgid "No snapshot is current; revert to a snapshot first"
 msgstr "Geçerli anlık görüntü yok; önce bir anlık görüntüye geri dönün"
 
-#: vrtManager/instance.py:2118
+#: vrtManager/instance.py:2187
 #, python-format
 msgid "Eject the media from %(dev)s first"
 msgstr "Önce %(dev)s içindeki ortamı çıkarın"
 
-#: vrtManager/instance.py:2120
+#: vrtManager/instance.py:2189
 #, python-format
 msgid "Disk %(dev)s is not a file; external snapshots need file disks"
 msgstr ""
 "Disk %(dev)s bir dosya değil; harici anlık görüntüler dosya diskleri "
 "gerektirir"
 
-#: vrtManager/instance.py:2128
+#: vrtManager/instance.py:2197
 #, python-format
 msgid ""
 "The storage pools could not be refreshed, so their free space is unknown: "
@@ -11818,21 +11876,21 @@ msgid ""
 msgstr ""
 "Depolama havuzları yenilenemedi, bu yüzden boş alanları bilinmiyor: %(err)s"
 
-#: vrtManager/instance.py:2151
+#: vrtManager/instance.py:2220
 msgid "Memory is saved only from a running VM"
 msgstr "Bellek yalnızca çalışan bir sanal makineden kaydedilir"
 
-#: vrtManager/instance.py:2153
+#: vrtManager/instance.py:2222
 msgid "The VM has no disk to keep its memory next to"
 msgstr "Sanal makinenin, belleğinin yanına kaydedileceği bir diski yok"
 
-#: vrtManager/instance.py:2157
+#: vrtManager/instance.py:2226
 #, python-format
 msgid "%(disk)s is not in a storage pool; memory is saved only into one"
 msgstr ""
 "%(disk)s bir depolama havuzunda değil; bellek yalnızca bir havuza kaydedilir"
 
-#: vrtManager/instance.py:2188
+#: vrtManager/instance.py:2257
 #, python-format
 msgid ""
 "Storage pool %(pool)s has %(free).1f GiB free; the snapshot needs %(size).1f "
@@ -11843,7 +11901,7 @@ msgstr ""
 "%(size).1f GiB gerektiriyor (sanal makinenin oradaki disklerinin "
 "%%%(percent)g kadarı, en az %(minimum)g GiB, ve kaydediliyorsa bellek)"
 
-#: vrtManager/instance.py:2206
+#: vrtManager/instance.py:2275
 msgid ""
 "This snapshot was taken by an older version on a UEFI VM and cannot be "
 "reverted; delete it instead"
@@ -11851,7 +11909,7 @@ msgstr ""
 "Bu anlık görüntü UEFI bir sanal makinede eski bir sürümle alındı ve geri "
 "dönülemez; bunun yerine silin"
 
-#: vrtManager/instance.py:2236
+#: vrtManager/instance.py:2305
 #, python-format
 msgid ""
 "The revert failed twice; try again in a moment (%(error)s). The VM is "
@@ -11860,7 +11918,7 @@ msgstr ""
 "Geri dönüş iki kez başarısız oldu; biraz sonra tekrar deneyin (%(error)s). "
 "Sanal makine çalışıyor."
 
-#: vrtManager/instance.py:2238
+#: vrtManager/instance.py:2307
 #, python-format
 msgid ""
 "The revert failed twice; try again in a moment (%(error)s). The VM is shut "
@@ -11869,13 +11927,13 @@ msgstr ""
 "Geri dönüş iki kez başarısız oldu; biraz sonra tekrar deneyin (%(error)s). "
 "Sanal makine kapalı."
 
-#: vrtManager/instance.py:2406
+#: vrtManager/instance.py:2475
 msgid "A disk moves when its VM is defined and running, paused or shut off"
 msgstr ""
 "Bir disk, sanal makinesi tanımlıyken ve çalışırken, duraklatılmışken veya "
 "kapalıyken taşınır"
 
-#: vrtManager/instance.py:2408
+#: vrtManager/instance.py:2477
 msgid ""
 "A disk of a VM with snapshots, a saved state or a running block job does not "
 "move"
@@ -11883,7 +11941,7 @@ msgstr ""
 "Anlık görüntüleri, kaydedilmiş durumu veya çalışan bir blok işi olan sanal "
 "makinenin diski taşınmaz"
 
-#: vrtManager/instance.py:2416
+#: vrtManager/instance.py:2485
 #, python-format
 msgid ""
 "%(dev)s is not a disk file of the VM, the same in its running and next "
@@ -11892,121 +11950,121 @@ msgstr ""
 "%(dev)s, sanal makinenin çalışan ve sonraki başlatma tanımlarında aynı olan "
 "bir disk dosyası değil"
 
-#: vrtManager/instance.py:2421
+#: vrtManager/instance.py:2490
 #, python-format
 msgid "%(dev)s does not move: only writable raw and qcow2 disks do"
 msgstr "%(dev)s taşınmaz: yalnızca yazılabilir raw ve qcow2 diskler taşınır"
 
-#: vrtManager/instance.py:2428
+#: vrtManager/instance.py:2497
 #, python-format
 msgid "%(dev)s does not move: no storage pool has %(path)s"
 msgstr "%(dev)s taşınmaz: hiçbir depolama havuzunda %(path)s yok"
 
-#: vrtManager/instance.py:2430
+#: vrtManager/instance.py:2499
 #, python-format
 msgid "%(dev)s does not move: it has a backing file"
 msgstr "%(dev)s taşınmaz: temel (backing) dosyası var"
 
-#: vrtManager/instance.py:2433
+#: vrtManager/instance.py:2502
 #, python-format
 msgid "%(pool_name)s is not an active pool of disk files of this host"
 msgstr "%(pool_name)s bu sunucunun etkin bir disk dosyası havuzu değil"
 
-#: vrtManager/instance.py:2436
+#: vrtManager/instance.py:2505
 #, python-format
 msgid "%(dev)s is in pool %(pool_name)s already"
 msgstr "%(dev)s zaten %(pool_name)s havuzunda"
 
-#: vrtManager/instance.py:2440
+#: vrtManager/instance.py:2509
 #, python-format
 msgid "Pool %(pool_name)s already has a file %(name)s"
 msgstr "%(pool_name)s havuzunda zaten %(name)s dosyası var"
 
-#: vrtManager/instance.py:2464
+#: vrtManager/instance.py:2533
 #, python-format
 msgid "The copy of %(dev)s ended before it was complete"
 msgstr "%(dev)s kopyası tamamlanmadan sona erdi"
 
-#: vrtManager/instance.py:2509
+#: vrtManager/instance.py:2578
 #, python-format
 msgid "%(error)s; remove %(dest)s if it is there: %(cleanup_error)s"
 msgstr "%(error)s; varsa %(dest)s dosyasını kaldırın: %(cleanup_error)s"
 
-#: vrtManager/instance.py:2511
+#: vrtManager/instance.py:2580
 #, python-format
 msgid "%(error)s; the VM may use %(dest)s now: check its disk %(dev)s"
 msgstr ""
 "%(error)s; sanal makine şu anda %(dest)s dosyasını kullanıyor olabilir: "
 "%(dev)s diskini kontrol edin"
 
-#: vrtManager/instance.py:2518
+#: vrtManager/instance.py:2587
 #, python-format
 msgid "The VM has no internal snapshot named %(name)s"
 msgstr "Sanal makinenin %(name)s adlı dahili anlık görüntüsü yok"
 
-#: vrtManager/instance.py:2529
+#: vrtManager/instance.py:2598
 msgid "A snapshot job is still running on this VM; try again when it ends"
 msgstr ""
 "Bu sanal makinede hâlâ bir anlık görüntü işi çalışıyor; bittiğinde tekrar "
 "deneyin"
 
-#: vrtManager/instance.py:2539
+#: vrtManager/instance.py:2608
 msgid "Shut the VM down to revert to an internal snapshot"
 msgstr "Dahili bir anlık görüntüye geri dönmek için sanal makineyi kapatın"
 
-#: vrtManager/instance.py:2606
+#: vrtManager/instance.py:2675
 msgid "Cannot clone a VM whose NVRAM is not a file"
 msgstr "NVRAM'i dosya olmayan bir sanal makine klonlanamaz"
 
-#: vrtManager/instance.py:2677
+#: vrtManager/instance.py:2746
 #, python-format
 msgid "Clone failed (%(err)s); remove these copies by hand: %(path)s"
 msgstr ""
 "Klonlama başarısız oldu (%(err)s); bu kopyaları elle kaldırın: %(path)s"
 
-#: vrtManager/instance.py:2688
+#: vrtManager/instance.py:2757
 msgid "Shut the VM down before cloning it"
 msgstr "Klonlamadan önce sanal makineyi kapatın"
 
-#: vrtManager/instance.py:2715
+#: vrtManager/instance.py:2784
 #, python-format
 msgid "Clone failed (%(err)s); remove these copies by hand: %(leftovers)s"
 msgstr ""
 "Klonlama başarısız oldu (%(err)s); bu kopyaları elle kaldırın: %(leftovers)s"
 
-#: vrtManager/instance.py:2726
+#: vrtManager/instance.py:2795
 msgid "Live clone needs libvirt 11.10 or later; shut the VM down to clone it"
 msgstr ""
 "Canlı klonlama libvirt 11.10 veya sonrasını gerektirir; klonlamak için sanal "
 "makineyi kapatın"
 
-#: vrtManager/instance.py:2729
+#: vrtManager/instance.py:2798
 msgid "A VM with a TPM is cloned only shut down"
 msgstr "TPM'i olan bir sanal makine yalnızca kapalıyken klonlanır"
 
-#: vrtManager/instance.py:2732
+#: vrtManager/instance.py:2801
 #, python-format
 msgid "Disk %(dev)s is not a local file; shut the VM down to clone it"
 msgstr ""
 "Disk %(dev)s yerel bir dosya değil; klonlamak için sanal makineyi kapatın"
 
-#: vrtManager/instance.py:2734
+#: vrtManager/instance.py:2803
 #, python-format
 msgid "Disk %(dev)s is shareable; shut the VM down to clone it"
 msgstr "Disk %(dev)s paylaşılabilir; klonlamak için sanal makineyi kapatın"
 
-#: vrtManager/instance.py:2739
+#: vrtManager/instance.py:2808
 #, python-format
 msgid "Disk %(dev)s changes at the next start; shut the VM down to clone it"
 msgstr ""
 "Disk %(dev)s sonraki başlatmada değişiyor; klonlamak için sanal makineyi "
 "kapatın"
 
-#: vrtManager/instance.py:2741
+#: vrtManager/instance.py:2810
 msgid "Another job is running on the VM; clone it when that ends"
 msgstr "Sanal makinede başka bir iş çalışıyor; o bittiğinde klonlayın"
 
-#: vrtManager/instance.py:2767
+#: vrtManager/instance.py:2836
 #, python-format
 msgid ""
 "Storage pool %(pool)s has %(free).1f GiB free; the clone needs %(size).1f GiB"
@@ -12016,25 +12074,25 @@ msgstr ""
 "gerektiriyor (kopyalanan diskler, artı bunların %%%(percent)g kadarı, en az "
 "%(minimum)g GiB)"
 
-#: vrtManager/instance.py:2784
+#: vrtManager/instance.py:2853
 #, python-format
 msgid "Volume %(name)s already exists in storage pool %(pool)s"
 msgstr "%(name)s birimi %(pool)s depolama havuzunda zaten var"
 
-#: vrtManager/instance.py:2972
+#: vrtManager/instance.py:3041
 msgid "A network interface that is a host device is removed in the XML editor"
 msgstr "Sunucu aygıtı olan bir ağ arabirimi XML düzenleyicide kaldırılır"
 
-#: vrtManager/instance.py:2988
+#: vrtManager/instance.py:3057
 #, python-format
 msgid "No network interface with MAC %(old_mac)s"
 msgstr "MAC adresi %(old_mac)s olan ağ arabirimi yok"
 
-#: vrtManager/instance.py:2991
+#: vrtManager/instance.py:3060
 msgid "A network interface that is a host device is changed in the XML editor"
 msgstr "Sunucu aygıtı olan bir ağ arabirimi XML düzenleyicide değiştirilir"
 
-#: vrtManager/instance.py:3085
+#: vrtManager/instance.py:3154
 msgid ""
 "A VM changes its PCI devices while it runs, or is shut off without a saved "
 "state"
@@ -12042,43 +12100,43 @@ msgstr ""
 "Sanal makine PCI aygıtlarını çalışırken veya kaydedilmiş durumu olmadan "
 "kapalıyken değiştirir"
 
-#: vrtManager/instance.py:3106
+#: vrtManager/instance.py:3175
 #, python-format
 msgid "%(err)s; whether the VM has %(device)s now is not known"
 msgstr "%(err)s; sanal makinede şu anda %(device)s olup olmadığı bilinmiyor"
 
-#: vrtManager/instance.py:3108
+#: vrtManager/instance.py:3177
 #, python-format
 msgid "%(err)s; %(device)s: the VM is not running, its next start has it"
 msgstr "%(err)s; %(device)s: sanal makine çalışmıyor, sonraki başlatmada var"
 
-#: vrtManager/instance.py:3109
+#: vrtManager/instance.py:3178
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the VM is not running, its next start does not have it"
 msgstr "%(err)s; %(device)s: sanal makine çalışmıyor, sonraki başlatmada yok"
 
-#: vrtManager/instance.py:3110
+#: vrtManager/instance.py:3179
 #, python-format
 msgid "%(err)s; %(device)s: the running VM has it, its next start has it"
 msgstr ""
 "%(err)s; %(device)s: çalışan sanal makinede var, sonraki başlatmada var"
 
-#: vrtManager/instance.py:3111
+#: vrtManager/instance.py:3180
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the running VM has it, its next start does not have it"
 msgstr ""
 "%(err)s; %(device)s: çalışan sanal makinede var, sonraki başlatmada yok"
 
-#: vrtManager/instance.py:3112
+#: vrtManager/instance.py:3181
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the running VM does not have it, its next start has it"
 msgstr ""
 "%(err)s; %(device)s: çalışan sanal makinede yok, sonraki başlatmada var"
 
-#: vrtManager/instance.py:3114
+#: vrtManager/instance.py:3183
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the running VM does not have it, its next start does not"
@@ -12086,48 +12144,48 @@ msgid ""
 msgstr ""
 "%(err)s; %(device)s: çalışan sanal makinede yok, sonraki başlatmada yok"
 
-#: vrtManager/instance.py:3148
+#: vrtManager/instance.py:3217
 #, python-format
 msgid "The VM has no PCI device %(address)s"
 msgstr "Sanal makinede %(address)s PCI aygıtı yok"
 
-#: vrtManager/instance.py:3169
+#: vrtManager/instance.py:3238
 msgid "The VM has no USB controller"
 msgstr "Sanal makinede USB denetleyicisi yok"
 
-#: vrtManager/instance.py:3203
+#: vrtManager/instance.py:3272
 msgid "The VM has no such USB device"
 msgstr "Sanal makinede böyle bir USB aygıtı yok"
 
-#: vrtManager/instance.py:3217
+#: vrtManager/instance.py:3286
 #, python-format
 msgid "The VM has no network interface %(mac)s"
 msgstr "Sanal makinede %(mac)s ağ arabirimi yok"
 
-#: vrtManager/instance.py:3249
+#: vrtManager/instance.py:3318
 msgid "The VM has its own RNG device: change it in the XML editor"
 msgstr ""
 "Sanal makinenin kendi RNG aygıtı var: bunu XML düzenleyicide değiştirin"
 
-#: vrtManager/instance.py:3276
+#: vrtManager/instance.py:3345
 msgid "The VM has its own TPM: change it in the XML editor"
 msgstr "Sanal makinenin kendi TPM'i var: bunu XML düzenleyicide değiştirin"
 
-#: vrtManager/instance.py:3295
+#: vrtManager/instance.py:3364
 #, python-format
 msgid "Unknown crash action %(action)s"
 msgstr "Bilinmeyen çökme eylemi %(action)s"
 
-#: vrtManager/instance.py:3322
+#: vrtManager/instance.py:3391
 #, python-format
 msgid "Network interface %(mac)s is not in the definition"
 msgstr "%(mac)s ağ arayüzü tanımda yok"
 
-#: vrtManager/instance.py:3413
+#: vrtManager/instance.py:3482
 msgid "The guest agent did not answer in time; nothing was changed"
 msgstr "Konuk ajanı zamanında yanıt vermedi; hiçbir şey değiştirilmedi"
 
-#: vrtManager/instance.py:3416
+#: vrtManager/instance.py:3485
 msgid "The VM runs Windows: its guest agent sets no root password or SSH key"
 msgstr ""
 "Sanal makinede Windows çalışıyor: konuk ajanı root parolası ya da SSH "

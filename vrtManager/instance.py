@@ -689,6 +689,38 @@ def check_snapshot_name(name):
         raise util.OperationError(gettext_noop("Snapshot names are 1-64 letters, digits, '.', '_' or '-' and do not start with '.'"))
 
 
+# the most the Disks tab's form takes (instances.views.set_disk_limit): IOPS, and bytes/s (MiB/s whole)
+IOPS_MAX, BYTES_MAX = 10**7, 10**6 * 2**20
+
+
+def custom_iotune(disk):
+    """Whether a disk element's I/O tuning is more than set_disk_limit sets: a
+    throttle group or filter, a burst or size, separate read and write limits,
+    or totals the form cannot show (bytes not whole MiB/s, past its range).
+    Such tuning is changed in the VM's XML."""
+    if disk.xpath("throttlefilters/*"):
+        return True
+    for element in disk.xpath("iotune/*"):
+        value = (element.text or "0").strip()
+        if element.tag == "total_iops_sec" and value.isdigit() and int(value) <= IOPS_MAX:
+            continue
+        if element.tag == "total_bytes_sec" and value.isdigit() and int(value) <= BYTES_MAX and int(value) % 2**20 == 0:
+            continue
+        if element.tag == "group_name" or value != "0":
+            return True
+    return False
+
+
+def disk_source(disk):
+    """A disk element's storage, to tell two definitions' disks apart: its type
+    and its source's attributes and hosts, not those a running VM adds (index)."""
+    source = disk.find("source")
+    if source is None:
+        return disk.get("type"), ()
+    return (disk.get("type"), tuple(sorted((k, v) for k, v in source.attrib.items() if k != "index")),
+            tuple(tuple(sorted(host.attrib.items())) for host in source.findall("host")))
+
+
 def agent_command(dom, command, arguments=None):
     """The answer of one guest agent command that waits AGENT_TIMEOUT seconds
     at most: libvirt's own calls for it wait for a hung agent indefinitely,
@@ -1084,6 +1116,8 @@ class wvmInstance(wvmConnect):
                 disk_cache = disk_io = disk_discard = disk_zeroes = "default"
                 readonly = shareable = serial = None
                 backing_file = None
+                iops = mibps = 0
+                iotune_custom = False
 
                 device = disk.xpath("@device")[0]
                 if device == "disk":
@@ -1117,6 +1151,11 @@ class wvmInstance(wvmConnect):
 
                         with contextlib.suppress(Exception):
                             backing_file = disk.xpath("backingStore/source/@file")[0]
+
+                        with contextlib.suppress(ValueError):  # set_disk_limit's; 0: none
+                            iops = int(disk.findtext("iotune/total_iops_sec") or 0)
+                            mibps = int(disk.findtext("iotune/total_bytes_sec") or 0) // 2**20
+                            iotune_custom = custom_iotune(disk)
 
                         readonly = bool(disk.xpath("readonly"))
                         shareable = bool(disk.xpath("shareable"))
@@ -1157,12 +1196,41 @@ class wvmInstance(wvmConnect):
                                 "readonly": readonly,
                                 "shareable": shareable,
                                 "serial": serial,
+                                "iops": iops,
+                                "mibps": mibps,
+                                "iotune_custom": iotune_custom,
                             }
                         )
             return result
 
         flags = VIR_DOMAIN_XML_INACTIVE | VIR_DOMAIN_XML_SECURE if config else 0
         return util.get_xml_path(self._XMLDesc(flags), func=disks)
+
+    def set_disk_limit(self, dev, iops, bytes_sec):
+        """Limits disk dev to iops and bytes_sec, reads and writes together (0: no limit), in each
+        definition that has it: the running VM's, at once, and the one for its next start. Refused
+        for tuning set in the XML (custom_iotune), and for a disk the next start changes."""
+        if not self.instance.isActive() and self.instance.hasManagedSaveImage(0):
+            # it would resume with the saved definition, and its limit then
+            raise util.OperationError(gettext_noop("The VM has a saved state: start it, then set the limit"))
+        flags, sources = 0, set()
+        for affect, has, xml_flags in ((VIR_DOMAIN_AFFECT_LIVE, self.instance.isActive(), 0),
+                                       (VIR_DOMAIN_AFFECT_CONFIG, self.instance.isPersistent(), VIR_DOMAIN_XML_INACTIVE)):
+            disk = etree.fromstring(self.instance.XMLDesc(xml_flags)).xpath(
+                "devices/disk[@device='disk'][target/@dev=$dev]", dev=dev) if has else []
+            if not disk:
+                continue
+            if custom_iotune(disk[0]):
+                raise util.OperationError(gettext_noop("The I/O tuning of %(dev)s is set in the VM's XML: change it there"),
+                                          dev=dev)
+            sources.add(disk_source(disk[0]))
+            flags |= affect
+        if not flags:
+            raise util.OperationError(gettext_noop("The VM has no disk %(dev)s"), dev=dev)
+        if len(sources) > 1:
+            raise util.OperationError(gettext_noop("%(dev)s is another disk from the next start: set its limit then"),
+                                      dev=dev)
+        self.instance.setBlockIoTune(dev, {"total_iops_sec": iops, "total_bytes_sec": bytes_sec}, flags)
 
     def _volume_details(self, path):
         """(name, capacity, allocation, pool name) of the volume at path, or

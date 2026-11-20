@@ -59,7 +59,7 @@ from webvirtcloud.middleware import error_text, same_origin_referer
 from vrtManager import util
 from vrtManager.connection import CONNECT_TIMEOUT
 from vrtManager.create import cpu_choices, wvmCreate
-from vrtManager.instance import USAGE_MAX_WINDOW, VIR_ERR_AGENT_COMMAND_TIMEOUT, wvmInstances
+from vrtManager.instance import BYTES_MAX, IOPS_MAX, USAGE_MAX_WINDOW, VIR_ERR_AGENT_COMMAND_TIMEOUT, wvmInstances
 from vrtManager.interface import wvmInterface
 from vrtManager.nodedevs import (check_hostdevs, device_names, hostdev_problems, hostdev_users, managed_pci,
                                  node_devices, pci_problems, usb_unmatched)
@@ -2545,6 +2545,29 @@ def set_template(request, pk):
         instance.is_template = is_template
         instance.save(update_fields=["is_template"])
     return _back(request, pk, "options")
+
+
+@require_POST
+@superuser_only
+@serialize_instance_mutation
+def set_disk_limit(request, pk):
+    """A disk's I/O limit, IOPS and MiB/s (0: none), at once on a running VM and from its next start."""
+    instance = get_instance(request.user, pk)
+    dev = request.POST.get("dev", "")
+    iops, mibps = (request.POST.get(field, "").strip() for field in ("iops", "mibps"))
+    # both given, as plain digits: a missing one would clear its limit
+    if not all(value.isascii() and value.isdigit() and len(value) <= 8 for value in (iops, mibps)) \
+            or int(iops) > IOPS_MAX or int(mibps) * 2**20 > BYTES_MAX:
+        messages.error(request, _("An I/O limit is whole numbers of IOPS and MiB/s, 0 for none"))
+        return _back(request, pk, "disks")
+    if _disk_changed(request, instance.config_disks):  # the form's disk was replaced since
+        return _back(request, pk, "disks")
+    try:
+        with audit_vm(request, instance, f"disk {dev} I/O limit {int(iops)} IOPS, {int(mibps)} MiB/s"):
+            instance.proxy.set_disk_limit(dev, int(iops), int(mibps) * 2**20)
+    except libvirtError as err:  # the panel's refusals (OperationError) and libvirt's
+        messages.error(request, error_text(request, err))
+    return _back(request, pk, "disks")
 
 
 @require_POST

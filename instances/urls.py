@@ -79,6 +79,7 @@ urlpatterns = [
     path("<int:pk>/change_options/", views.change_options, name="change_options"),
     path("<int:pk>/set_template/", views.set_template, name="set_template"),
     path("<int:pk>/set_protected/", views.set_protected, name="set_protected"),
+    path("<int:pk>/set_disk_limit/", views.set_disk_limit, name="set_disk_limit"),
     path("<int:pk>/set_tags/", views.set_tags, name="set_tags"),
     path(
         "<int:pk>/getvvfile/", views.getvvfile, name="getvvfile"

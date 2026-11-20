@@ -261,8 +261,27 @@
                                 <dt class="col-6 fw-normal text-body-secondary">{% trans "Detect zeroes" %}</dt><dd class="col-6 mb-1">{{ disk.detect_zeroes }}</dd>
                                 <dt class="col-6 fw-normal text-body-secondary">{% trans "Serial" %}</dt><dd class="col-6 mb-1">{{ disk.serial|default:"—" }}</dd>
                                 <dt class="col-6 fw-normal text-body-secondary">{% trans "Read-only" %}</dt><dd class="col-6 mb-1">{{ disk.readonly|yesno }}</dd>
-                                <dt class="col-6 fw-normal text-body-secondary">{% trans "Shareable" %}</dt><dd class="col-6 mb-0">{{ disk.shareable|yesno }}</dd>
+                                <dt class="col-6 fw-normal text-body-secondary">{% trans "Shareable" %}</dt><dd class="col-6 mb-1">{{ disk.shareable|yesno }}</dd>
+                                <dt class="col-6 fw-normal text-body-secondary">{% trans "I/O limit" %}</dt>
+                                <dd class="col-6 mb-0">{% if disk.iotune_custom or disk.dev in instance.live_custom_iotune %}{% trans "Set in the VM's XML" %}{% elif disk.iops or disk.mibps %}{% blocktrans with iops=disk.iops|default:"–" mibps=disk.mibps|default:"–" %}{{ iops }} IOPS, {{ mibps }} MiB/s{% endblocktrans %}{% else %}{% trans "None" %}{% endif %}</dd>
                             </dl>
+                            {% if request.user.is_superuser and not disk.iotune_custom and disk.dev not in instance.live_custom_iotune %}
+                            {# reads and writes together; applied at once on a running VM #}
+                            <form class="d-flex flex-wrap align-items-end gap-2 mt-2" action="{% url 'instances:set_disk_limit' instance.id %}" method="post">{% csrf_token %}
+                                <input type="hidden" name="dev" value="{{ disk.dev }}">
+                                <input type="hidden" name="path" value="{{ disk.path|default:'' }}">
+                                <div>
+                                    <label class="form-label mb-1" for="iops-{{ disk.dev }}">{% trans "IOPS" %}</label>
+                                    <input class="form-control form-control-sm" type="number" min="0" max="10000000" name="iops" id="iops-{{ disk.dev }}" value="{{ disk.iops }}" required style="width: 8rem">
+                                </div>
+                                <div>
+                                    <label class="form-label mb-1" for="mibps-{{ disk.dev }}">{% trans "MiB/s" %}</label>
+                                    <input class="form-control form-control-sm" type="number" min="0" max="1000000" name="mibps" id="mibps-{{ disk.dev }}" value="{{ disk.mibps }}" required style="width: 8rem">
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">{% trans "Set the limit" %}</button>
+                                <span class="form-text w-100 mt-0">{% trans "Reads and writes together; 0: no limit. A running VM gets it at once." %}</span>
+                            </form>
+                            {% endif %}
                         </details>
                     </article>
                 {% endfor %}

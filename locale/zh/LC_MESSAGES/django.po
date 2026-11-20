@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-20 07:10+0000\n"
+"POT-Creation-Date: 2026-11-20 07:56+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -27,17 +27,17 @@ msgid "Instance owned by another user"
 msgstr "该虚拟机属于其他用户"
 
 #: accounts/forms.py:35 accounts/templates/account.html:73
-#: instances/templates/instances/settings_tab.html:676
+#: instances/templates/instances/settings_tab.html:695
 msgid "Change settings"
 msgstr "修改设置"
 
 #: accounts/forms.py:35 accounts/templates/account.html:74
-#: instances/templates/instances/settings_tab.html:676
+#: instances/templates/instances/settings_tab.html:695
 msgid "Delete the VM"
 msgstr "删除虚拟机"
 
 #: accounts/forms.py:36 accounts/templates/account.html:75
-#: instances/templates/instances/settings_tab.html:676
+#: instances/templates/instances/settings_tab.html:695
 msgid "Change console settings"
 msgstr "修改控制台设置"
 
@@ -251,7 +251,7 @@ msgid "Host"
 msgstr "主机"
 
 #: accounts/templates/account.html:76
-#: instances/templates/instances/settings_tab.html:678
+#: instances/templates/instances/settings_tab.html:697
 msgid "Power and console only"
 msgstr "仅电源和控制台"
 
@@ -307,8 +307,8 @@ msgstr "您在此处保持登录；您的其他会话将结束。"
 #: instances/templates/instances/destroy_instance_form.html:56
 #: instances/templates/instances/edit_instance_volume.html:111
 #: instances/templates/instances/move_disk.html:27
-#: instances/templates/instances/settings_tab.html:412
-#: instances/templates/instances/settings_tab.html:653
+#: instances/templates/instances/settings_tab.html:431
+#: instances/templates/instances/settings_tab.html:672
 #: interfaces/templates/create_iface_block.html:147
 #: networks/templates/add_network_qos.html:35
 #: networks/templates/create_net_block.html:126
@@ -468,7 +468,7 @@ msgstr "API 令牌 %(name)s 的操作"
 #: admin/templates/admin/user_list.html:76
 #: instances/templates/create_flavors.html:11
 #: instances/templates/instances/settings_tab.html:251
-#: instances/templates/instances/settings_tab.html:315
+#: instances/templates/instances/settings_tab.html:334
 #: instances/templates/instances/snapshots_tab.html:103
 #: instances/templates/instances/snapshots_tab.html:117
 #: networks/templates/network.html:168 storages/templates/storage.html:180
@@ -687,7 +687,7 @@ msgstr "可以备份虚拟机"
 msgid "Can clone instances"
 msgstr "可克隆虚拟机"
 
-#: admin/forms.py:26 instances/models.py:446
+#: admin/forms.py:26 instances/models.py:451
 msgid "Can access console without password"
 msgstr "可无密码访问控制台"
 
@@ -772,7 +772,7 @@ msgstr "NEW_USER_DEFAULT_INSTANCES：%(name)s 已有所有者，且只允许一�
 #: instances/templates/allinstances_index_nongrouped.html:14
 #: instances/templates/create_instance_w2.html:63
 #: instances/templates/instances/resize_tab.html:30
-#: instances/templates/instances/settings_tab.html:854 instances/views.py:243
+#: instances/templates/instances/settings_tab.html:873 instances/views.py:243
 msgid "vCPUs"
 msgstr "vCPU"
 
@@ -790,7 +790,7 @@ msgstr "vCPU"
 msgid "Memory"
 msgstr "内存"
 
-#: admin/forms.py:224 instances/models.py:243
+#: admin/forms.py:224 instances/models.py:248
 #: instances/templates/create_instance_w2.html:118
 #: instances/templates/instances/settings_tab.html:25
 #: instances/templates/instances/stats_tab.html:53 vmbackups/forms.py:57
@@ -915,7 +915,7 @@ msgstr[0] "%(count)s 项权限"
 #: admin/templates/admin/group_list.html:40
 #: admin/templates/admin/user_list.html:61
 #: instances/templates/instances/edit_instance_volume.html:3
-#: instances/templates/instances/settings_tab.html:309
+#: instances/templates/instances/settings_tab.html:328
 #: networks/templates/network.html:159 networks/templates/network.html:301
 msgid "Edit"
 msgstr "编辑"
@@ -1004,7 +1004,7 @@ msgstr "失败"
 
 #: admin/templates/admin/tag_list.html:6 admin/templates/admin/tag_list.html:8
 #: admin/templates/admin/tag_list.html:17 computes/forms.py:55
-#: instances/templates/instances/settings_tab.html:934 instances/views.py:244
+#: instances/templates/instances/settings_tab.html:953 instances/views.py:244
 #: templates/common/tag_filter.html:6 templates/navbar.html:39
 msgid "Tags"
 msgstr "标签"
@@ -1037,8 +1037,8 @@ msgstr "主机"
 #: computes/templates/computes/list.html:65
 #: instances/templates/allinstances_index_grouped.html:18
 #: instances/templates/allinstances_index_nongrouped.html:16
-#: instances/templates/instances/settings_tab.html:450
-#: instances/templates/instances/settings_tab.html:485
+#: instances/templates/instances/settings_tab.html:469
+#: instances/templates/instances/settings_tab.html:504
 #: networks/templates/network.html:146 networks/templates/network.html:204
 #: networks/templates/network.html:286 nwfilters/templates/nwfilter.html:56
 #: nwfilters/templates/nwfilter.html:100 nwfilters/templates/nwfilters.html:35
@@ -1081,7 +1081,7 @@ msgid "Template"
 msgstr "模板"
 
 #: admin/templates/admin/tombstone_list.html:29
-#: instances/templates/instances/settings_tab.html:926
+#: instances/templates/instances/settings_tab.html:945
 msgid "Protected"
 msgstr "受保护"
 
@@ -2062,8 +2062,8 @@ msgid ""
 msgstr "新标签：字母 a-z、数字、点、短横线和下划线，以字母或数字开头；最多 12 个字符"
 
 #: computes/forms.py:99 computes/templates/computes/instances.html:53
-#: instances/templates/instances/settings_tab.html:872
-#: instances/templates/instances/settings_tab.html:904
+#: instances/templates/instances/settings_tab.html:891
+#: instances/templates/instances/settings_tab.html:923
 #: instances/templates/instances/snapshots_tab.html:27
 #: instances/templates/instances/snapshots_tab.html:71
 msgid "Description"
@@ -2654,7 +2654,7 @@ msgstr "已保存"
 
 #: computes/templates/computes/form.html:42
 #: instances/templates/instances/edit_instance_volume.html:82
-#: instances/templates/instances/settings_tab.html:375
+#: instances/templates/instances/settings_tab.html:394
 #: networks/templates/networks.html:63
 msgid "none"
 msgstr "无"
@@ -2662,10 +2662,10 @@ msgstr "无"
 #: computes/templates/computes/form.html:55
 #: instances/templates/instances/edit_instance_volume.html:112
 #: instances/templates/instances/nic_qos_form.html:23
-#: instances/templates/instances/settings_tab.html:413
-#: instances/templates/instances/settings_tab.html:654
-#: instances/templates/instances/settings_tab.html:908
-#: instances/templates/instances/settings_tab.html:939
+#: instances/templates/instances/settings_tab.html:432
+#: instances/templates/instances/settings_tab.html:673
+#: instances/templates/instances/settings_tab.html:927
+#: instances/templates/instances/settings_tab.html:958
 #: networks/templates/add_network_qos.html:36
 #: networks/templates/network.html:337 networks/templates/network.html:379
 #: networks/templates/network.html:406 networks/templates/network.html:445
@@ -2698,8 +2698,8 @@ msgstr "虚拟机"
 #: computes/templates/computes/host_nav.html:15
 #: computes/templates/computes/host_nav.html:16
 #: computes/templates/overview.html:118
-#: instances/templates/instances/settings_tab.html:551
-#: instances/templates/instances/settings_tab.html:828
+#: instances/templates/instances/settings_tab.html:570
+#: instances/templates/instances/settings_tab.html:847
 #: storages/templates/storage.html:6 storages/templates/storage.html:8
 msgid "Storage"
 msgstr "存储"
@@ -2709,7 +2709,7 @@ msgstr "存储"
 #: instances/templates/add_instance_network_block.html:18
 #: instances/templates/create_instance_w2.html:230
 #: instances/templates/create_instance_w2.html:232
-#: instances/templates/instances/settings_tab.html:376
+#: instances/templates/instances/settings_tab.html:395
 #: networks/templates/networks.html:5 networks/templates/networks.html:7
 msgid "Networks"
 msgstr "网络"
@@ -2717,7 +2717,7 @@ msgstr "网络"
 #: computes/templates/computes/host_nav.html:23
 #: computes/templates/computes/host_nav.html:24
 #: instances/templates/add_instance_network_block.html:23
-#: instances/templates/instances/settings_tab.html:381
+#: instances/templates/instances/settings_tab.html:400
 #: interfaces/templates/interfaces.html:6
 #: interfaces/templates/interfaces.html:8
 msgid "Interfaces"
@@ -2794,7 +2794,7 @@ msgstr "共 %(memory)s"
 #: console/templates/console-vnc.html:13
 #: console/templates/console-xterm.html:16
 #: instances/templates/allinstances_index_grouped.html:36
-#: instances/templates/instances/settings_tab.html:989
+#: instances/templates/instances/settings_tab.html:1008
 #: networks/templates/network.html:260
 msgid "Connected"
 msgstr "已连接"
@@ -3173,7 +3173,8 @@ msgstr "缩放"
 #: instances/templates/create_instance_w2.html:324
 #: instances/templates/instance.html:72
 #: instances/templates/instances/settings_tab.html:180
-#: instances/templates/instances/settings_tab.html:399
+#: instances/templates/instances/settings_tab.html:266
+#: instances/templates/instances/settings_tab.html:418
 #: instances/templates/instances/stats_tab.html:65
 #: interfaces/templates/create_iface_block.html:94
 #: interfaces/templates/create_iface_block.html:117
@@ -3246,8 +3247,8 @@ msgstr "连接"
 #: instances/templates/create_instance_w2.html:367
 #: instances/templates/instances/edit_instance_volume.html:13
 #: instances/templates/instances/move_disk.html:13
-#: instances/templates/instances/settings_tab.html:362
-#: instances/templates/instances/settings_tab.html:645
+#: instances/templates/instances/settings_tab.html:381
+#: instances/templates/instances/settings_tab.html:664
 #: interfaces/templates/create_iface_block.html:20
 #: networks/templates/add_network_qos.html:8
 #: networks/templates/create_net_block.html:20
@@ -3341,7 +3342,7 @@ msgid "Templates cannot be started."
 msgstr "模板无法启动。"
 
 #: instances/forms.py:14 instances/templates/create_instance_w2.html:69
-#: instances/templates/instances/settings_tab.html:858 instances/views.py:243
+#: instances/templates/instances/settings_tab.html:877 instances/views.py:243
 msgid "Memory (MiB)"
 msgstr "内存（MiB）"
 
@@ -3406,7 +3407,7 @@ msgstr "VNC 密码最多 8 个字母、数字或符号，不能有带重音的�
 msgid "A password takes no line breaks or other control characters."
 msgstr "密码不能包含换行或其他控制字符。"
 
-#: instances/forms.py:114 vrtManager/instance.py:1756
+#: instances/forms.py:114 vrtManager/instance.py:1825
 msgid ""
 "The console listens on no address (on a network, a socket or nowhere); change"
 " it in the XML editor"
@@ -3500,7 +3501,7 @@ msgstr "虚拟机未定义；请检查这些卷，然后处理此任务：%(volu
 msgid "Delete snapshot"
 msgstr "删除快照"
 
-#: instances/jobs.py:365 vrtManager/instance.py:2517
+#: instances/jobs.py:365 vrtManager/instance.py:2586
 #, python-format
 msgid "The VM has no external snapshot named %(name)s"
 msgstr "虚拟机没有名为 %(name)s 的外部快照"
@@ -3532,7 +3533,7 @@ msgstr "虚拟机已不在运行该任务的计算节点上"
 msgid "Take snapshot"
 msgstr "创建快照"
 
-#: instances/jobs.py:433 instances/jobs.py:442 vrtManager/instance.py:2106
+#: instances/jobs.py:433 instances/jobs.py:442 vrtManager/instance.py:2175
 #, python-format
 msgid "A snapshot named %(name)s already exists"
 msgstr "名为 %(name)s 的快照已存在"
@@ -3673,12 +3674,12 @@ msgstr "镜像已存在。请检查卷或更改虚拟机名称"
 msgid "Each network card needs a network"
 msgstr "每个网卡都需要一个网络"
 
-#: instances/jobs.py:876 vrtManager/backup.py:387 vrtManager/instance.py:2933
+#: instances/jobs.py:876 vrtManager/backup.py:387 vrtManager/instance.py:3002
 #, python-format
 msgid "This host has no network %(name)s"
 msgstr "此主机没有网络 %(name)s"
 
-#: instances/jobs.py:878 vrtManager/backup.py:391 vrtManager/instance.py:2935
+#: instances/jobs.py:878 vrtManager/backup.py:391 vrtManager/instance.py:3004
 #, python-format
 msgid "This host has no network filter %(name)s"
 msgstr "此主机没有网络过滤器 %(name)s"
@@ -3700,7 +3701,7 @@ msgstr "磁盘缓存 %(cache)s 与设置中的原生 (native) 磁盘 I/O 不兼�
 msgid "Create VM"
 msgstr "创建虚拟机"
 
-#: instances/jobs.py:936 instances/jobs.py:983 instances/views.py:2654
+#: instances/jobs.py:936 instances/jobs.py:983 instances/views.py:2677
 msgid "A virtual machine with this name already exists"
 msgstr "同名虚拟机已存在"
 
@@ -3748,7 +3749,7 @@ msgstr "cloud-init 种子需要为磁盘使用目录类型的存储池"
 msgid "This host offers no firmware %(firmware)s"
 msgstr "此主机不提供固件 %(firmware)s"
 
-#: instances/jobs.py:965 vrtManager/instance.py:3283
+#: instances/jobs.py:965 vrtManager/instance.py:3352
 msgid "This host offers no TPM 2.0: install swtpm on it"
 msgstr "此主机不提供 TPM 2.0：请在主机上安装 swtpm"
 
@@ -3909,12 +3910,12 @@ msgstr "创建时间"
 msgid "drbd"
 msgstr "drbd"
 
-#: instances/models.py:245 instances/templates/create_instance_w2.html:312
+#: instances/models.py:250 instances/templates/create_instance_w2.html:312
 #: instances/templates/instances/settings_tab.html:159
 msgid "CD-ROM"
 msgstr "CD-ROM"
 
-#: instances/models.py:247
+#: instances/models.py:252
 msgid "NIC"
 msgstr "网卡"
 
@@ -4000,23 +4001,23 @@ msgstr "添加虚拟机网络表单"
 #: instances/templates/allinstances.html:108
 #: instances/templates/instances/edit_instance_volume.html:21
 #: instances/templates/instances/settings_tab.html:224
-#: instances/templates/instances/settings_tab.html:372
+#: instances/templates/instances/settings_tab.html:391
 msgid "Source"
 msgstr "来源"
 
 #: instances/templates/add_instance_network_block.html:31
-#: instances/templates/instances/settings_tab.html:389
+#: instances/templates/instances/settings_tab.html:408
 msgid "Model"
 msgstr "型号"
 
 #: instances/templates/add_instance_network_block.html:39
-#: instances/templates/instances/settings_tab.html:397
+#: instances/templates/instances/settings_tab.html:416
 msgid "NWFilter"
 msgstr "网络过滤器"
 
 #: instances/templates/add_instance_network_block.html:48
 #: instances/templates/allinstances.html:107
-#: instances/templates/instances/settings_tab.html:406
+#: instances/templates/instances/settings_tab.html:425
 #: interfaces/templates/interface.html:60
 #: interfaces/templates/interface.html:121
 #: interfaces/templates/interfaces.html:39 networks/templates/network.html:67
@@ -4052,7 +4053,7 @@ msgid "Disk source"
 msgstr "磁盘来源"
 
 #: instances/templates/add_instance_volume.html:21
-#: instances/templates/create_instance_w2.html:134 instances/views.py:2684
+#: instances/templates/create_instance_w2.html:134 instances/views.py:2707
 msgid "New disk"
 msgstr "新磁盘"
 
@@ -4085,7 +4086,7 @@ msgid "Letters, digits, dot, dash and underscore."
 msgstr "字母、数字、点、短横线和下划线。"
 
 #: instances/templates/add_instance_volume.html:44
-#: instances/templates/instances/settings_tab.html:851
+#: instances/templates/instances/settings_tab.html:870
 #: vmbackups/templates/vmbackups/index.html:52
 #: vmbackups/templates/vmbackups/vm_tab.html:42
 msgid "Size"
@@ -4412,7 +4413,7 @@ msgid "Firmware"
 msgstr "固件"
 
 #: instances/templates/create_instance_w2.html:86
-#: instances/templates/instances/settings_tab.html:968
+#: instances/templates/instances/settings_tab.html:987
 msgid "TPM 2.0"
 msgstr "TPM 2.0"
 
@@ -4437,7 +4438,7 @@ msgstr "自定义 CPU 型号"
 msgid "Size (GiB)"
 msgstr "大小（GiB）"
 
-#: instances/templates/create_instance_w2.html:161 instances/views.py:2685
+#: instances/templates/create_instance_w2.html:161 instances/views.py:2708
 msgid "Existing volumes"
 msgstr "已有卷"
 
@@ -4468,13 +4469,13 @@ msgstr "设备"
 #: instances/templates/create_instance_w2.html:188
 #: instances/templates/create_instance_w2.html:246
 #: instances/templates/instances/boot_device.html:14
-#: instances/templates/instances/settings_tab.html:685
+#: instances/templates/instances/settings_tab.html:704
 #: networks/templates/network.html:304
 #: vmbackups/templates/vmbackups/target.html:38
 msgid "Remove"
 msgstr "移除"
 
-#: instances/templates/create_instance_w2.html:194 instances/views.py:2686
+#: instances/templates/create_instance_w2.html:194 instances/views.py:2709
 msgid "Clone from template"
 msgstr "从模板克隆"
 
@@ -4516,7 +4517,7 @@ msgid "Network filter"
 msgstr "网络过滤器"
 
 #: instances/templates/create_instance_w2.html:293
-#: instances/templates/instances/settings_tab.html:951
+#: instances/templates/instances/settings_tab.html:970
 #: vrtManager/nodedevs.py:30
 msgid "Video"
 msgstr "显卡"
@@ -4530,7 +4531,7 @@ msgid "Input device"
 msgstr "输入设备"
 
 #: instances/templates/create_instance_w2.html:334
-#: instances/templates/instances/settings_tab.html:981
+#: instances/templates/instances/settings_tab.html:1000
 msgid "Guest agent"
 msgstr "客户机代理"
 
@@ -4575,8 +4576,8 @@ msgstr "详情"
 #: instances/templates/instance.html:39
 #: instances/templates/instance_actions.html:13
 #: instances/templates/instances/settings_tab.html:53
-#: instances/templates/instances/settings_tab.html:882
-#: instances/templates/instances/settings_tab.html:884
+#: instances/templates/instances/settings_tab.html:901
+#: instances/templates/instances/settings_tab.html:903
 #: nwfilters/templates/nwfilters.html:57 nwfilters/templates/nwfilters.html:94
 #: storages/templates/storage.html:170 storages/templates/storage.html:230
 msgid "Clone"
@@ -4627,8 +4628,8 @@ msgid "IPv4"
 msgstr "IPv4"
 
 #: instances/templates/instance.html:77
-#: instances/templates/instances/settings_tab.html:321
 #: instances/templates/instances/settings_tab.html:340
+#: instances/templates/instances/settings_tab.html:359
 msgid "Reading…"
 msgstr "正在读取…"
 
@@ -4918,7 +4919,7 @@ msgid "Edit %(dev)s"
 msgstr "编辑 %(dev)s"
 
 #: instances/templates/instances/edit_instance_volume.html:18
-#: instances/templates/instances/settings_tab.html:366
+#: instances/templates/instances/settings_tab.html:385
 msgid "The VM is running: the changes apply at its next start."
 msgstr "虚拟机正在运行：更改将在下次启动时生效。"
 
@@ -5005,7 +5006,7 @@ msgid "Add USB device"
 msgstr "添加 USB 设备"
 
 #: instances/templates/instances/host_devices_form.html:18
-#: vrtManager/instance.py:3186
+#: vrtManager/instance.py:3255
 msgid ""
 "A VM with a saved state does not change its USB devices: start it, or start "
 "it without its saved state"
@@ -5097,7 +5098,7 @@ msgid "Mount point"
 msgstr "挂载点"
 
 #: instances/templates/instances/info_tab.html:28
-#: instances/templates/instances/settings_tab.html:338
+#: instances/templates/instances/settings_tab.html:357
 #: interfaces/templates/create_iface_block.html:26
 #: interfaces/templates/interface.html:43
 #: interfaces/templates/interface.html:120
@@ -5215,13 +5216,13 @@ msgid ""
 msgstr "磁盘会被复制到该存储池（运行中的虚拟机无需停止），虚拟机改用副本；随后删除 %(path)s，除非任一主机上的虚拟机或卷仍在使用它。"
 
 #: instances/templates/instances/nic_qos_form.html:3
-#: instances/templates/instances/settings_tab.html:345
+#: instances/templates/instances/settings_tab.html:364
 #: networks/templates/network.html:291
 msgid "inbound"
 msgstr "入站"
 
 #: instances/templates/instances/nic_qos_form.html:3
-#: instances/templates/instances/settings_tab.html:345
+#: instances/templates/instances/settings_tab.html:364
 #: networks/templates/network.html:291
 msgid "outbound"
 msgstr "出站"
@@ -5416,7 +5417,7 @@ msgid "Lets vCPUs up to the maximum be turned on and off while the VM runs."
 msgstr "允许在虚拟机运行时开启或关闭不超过最大数量的 vCPU。"
 
 #: instances/templates/instances/resize_tab.html:78
-#: instances/templates/instances/settings_tab.html:920
+#: instances/templates/instances/settings_tab.html:939
 msgid "Shut the VM down to change this."
 msgstr "请先关闭虚拟机再修改此项。"
 
@@ -5478,7 +5479,7 @@ msgid "Boot"
 msgstr "启动"
 
 #: instances/templates/instances/settings_tab.html:39
-#: instances/templates/instances/settings_tab.html:806
+#: instances/templates/instances/settings_tab.html:825
 #: instances/templates/instances/stats_tab.html:46
 #: networks/templates/network.html:6 networks/templates/network.html:8
 #: networks/templates/network.html:48
@@ -5490,8 +5491,8 @@ msgid "Host devices"
 msgstr "主机设备"
 
 #: instances/templates/instances/settings_tab.html:60
-#: instances/templates/instances/settings_tab.html:617
-#: instances/templates/instances/settings_tab.html:620
+#: instances/templates/instances/settings_tab.html:636
+#: instances/templates/instances/settings_tab.html:639
 msgid "Migrate"
 msgstr "迁移"
 
@@ -5631,7 +5632,7 @@ msgid "Delete %(dev)s? It is detached and its file and data are removed."
 msgstr "删除 %(dev)s？它将被分离，其文件和数据将被删除。"
 
 #: instances/templates/instances/settings_tab.html:256
-#: instances/templates/instances/settings_tab.html:336
+#: instances/templates/instances/settings_tab.html:355
 msgid "Device details"
 msgstr "设备详情"
 
@@ -5643,630 +5644,659 @@ msgstr "缓存"
 msgid "Discard"
 msgstr "Discard"
 
-#: instances/templates/instances/settings_tab.html:276
+#: instances/templates/instances/settings_tab.html:265
+msgid "I/O limit"
+msgstr "I/O 限制"
+
+#: instances/templates/instances/settings_tab.html:266
+msgid "Set in the VM's XML"
+msgstr "在虚拟机的 XML 中设置"
+
+#: instances/templates/instances/settings_tab.html:266
+#, python-format
+msgid "%(iops)s IOPS, %(mibps)s MiB/s"
+msgstr "%(iops)s IOPS，%(mibps)s MiB/s"
+
+#: instances/templates/instances/settings_tab.html:274
+msgid "IOPS"
+msgstr "IOPS"
+
+#: instances/templates/instances/settings_tab.html:278
+msgid "MiB/s"
+msgstr "MiB/s"
+
+#: instances/templates/instances/settings_tab.html:281
+msgid "Set the limit"
+msgstr "设置限制"
+
+#: instances/templates/instances/settings_tab.html:282
+msgid "Reads and writes together; 0: no limit. A running VM gets it at once."
+msgstr "读写合计；0：不限。运行中的虚拟机立即生效。"
+
+#: instances/templates/instances/settings_tab.html:295
 #, python-format
 msgid "PCIe slots: %(free)s free of %(total)s"
 msgstr "PCIe 插槽：%(total)s 个中可用 %(free)s 个"
 
-#: instances/templates/instances/settings_tab.html:276
+#: instances/templates/instances/settings_tab.html:295
 #, python-format
 msgid "%(next_free)s free from the next start"
 msgstr "下次启动后可用 %(next_free)s 个"
 
-#: instances/templates/instances/settings_tab.html:280
+#: instances/templates/instances/settings_tab.html:299
 msgid "Add PCIe slots"
 msgstr "添加 PCIe 插槽"
 
-#: instances/templates/instances/settings_tab.html:292
+#: instances/templates/instances/settings_tab.html:311
 msgid "Network devices"
 msgstr "网络设备"
 
-#: instances/templates/instances/settings_tab.html:311
+#: instances/templates/instances/settings_tab.html:330
 msgid "Add QoS"
 msgstr "添加 QoS"
 
-#: instances/templates/instances/settings_tab.html:313
+#: instances/templates/instances/settings_tab.html:332
 msgid "Delete network device form"
 msgstr "删除网络设备表单"
 
-#: instances/templates/instances/settings_tab.html:315
+#: instances/templates/instances/settings_tab.html:334
 #, python-format
 msgid ""
 "Remove network card %(mac)s? A running VM loses its connection through it at "
 "once."
 msgstr "移除网卡 %(mac)s？运行中的虚拟机将立即失去通过它的连接。"
 
-#: instances/templates/instances/settings_tab.html:321
+#: instances/templates/instances/settings_tab.html:340
 msgid "No IPv4 address known"
 msgstr "无已知 IPv4 地址"
 
-#: instances/templates/instances/settings_tab.html:322
+#: instances/templates/instances/settings_tab.html:341
 msgid "Link state form"
 msgstr "链路状态表单"
 
-#: instances/templates/instances/settings_tab.html:327
+#: instances/templates/instances/settings_tab.html:346
 #: interfaces/templates/link_badge.html:1
 msgid "Link up"
 msgstr "链路启用"
 
-#: instances/templates/instances/settings_tab.html:327
+#: instances/templates/instances/settings_tab.html:346
 #: interfaces/templates/link_badge.html:1
 msgid "Link down"
 msgstr "链路断开"
 
-#: instances/templates/instances/settings_tab.html:331
+#: instances/templates/instances/settings_tab.html:350
 #, python-format
 msgid "filter %(filter)s"
 msgstr "过滤器 %(filter)s"
 
-#: instances/templates/instances/settings_tab.html:331
+#: instances/templates/instances/settings_tab.html:350
 msgid "bandwidth limited"
 msgstr "带宽受限"
 
-#: instances/templates/instances/settings_tab.html:333
+#: instances/templates/instances/settings_tab.html:352
 msgid ""
 "In most configurations, macvtap does not work for host to guest network "
 "communication"
 msgstr "在大多数配置中，macvtap 无法用于主机与客户机之间的网络通信"
 
-#: instances/templates/instances/settings_tab.html:339
+#: instances/templates/instances/settings_tab.html:358
 msgid "Host device"
 msgstr "主机上的设备"
 
-#: instances/templates/instances/settings_tab.html:339
+#: instances/templates/instances/settings_tab.html:358
 msgid "no target"
 msgstr "无目标"
 
-#: instances/templates/instances/settings_tab.html:340
+#: instances/templates/instances/settings_tab.html:359
 msgid "IPv6"
 msgstr "IPv6"
 
-#: instances/templates/instances/settings_tab.html:340
+#: instances/templates/instances/settings_tab.html:359
 msgid "unknown"
 msgstr "未知"
 
-#: instances/templates/instances/settings_tab.html:345
+#: instances/templates/instances/settings_tab.html:364
 msgid "QoS limits"
 msgstr "QoS 限制"
 
-#: instances/templates/instances/settings_tab.html:345
+#: instances/templates/instances/settings_tab.html:364
 msgid "inbound, outbound"
 msgstr "入站、出站"
 
-#: instances/templates/instances/settings_tab.html:348
+#: instances/templates/instances/settings_tab.html:367
 msgid ""
 "Average and peak are in KiB/s, burst in KiB. A running VM gets a change after"
 " it is powered off and on."
 msgstr "平均值和峰值单位为 KiB/s，突发量单位为 KiB。运行中的虚拟机需关机再开机后才会应用更改。"
 
-#: instances/templates/instances/settings_tab.html:359
+#: instances/templates/instances/settings_tab.html:378
 #, python-format
 msgid "Edit eth%(nic)s"
 msgstr "编辑 eth%(nic)s"
 
-#: instances/templates/instances/settings_tab.html:375
+#: instances/templates/instances/settings_tab.html:394
 #, python-format
 msgid "%(nic)s, as it is"
 msgstr "%(nic)s，保持不变"
 
-#: instances/templates/instances/settings_tab.html:420
+#: instances/templates/instances/settings_tab.html:439
 msgid "Add network QoS form"
 msgstr "添加网络 QoS 表单"
 
-#: instances/templates/instances/settings_tab.html:426
+#: instances/templates/instances/settings_tab.html:445
 msgid "The VM has no network device."
 msgstr "该虚拟机没有网络设备。"
 
-#: instances/templates/instances/settings_tab.html:434
+#: instances/templates/instances/settings_tab.html:453
 msgid ""
 "Devices of the host given to the VM. The VM starts only on a host that has "
 "them; it is not migrated while it has them, and its clones get none."
 msgstr "分配给虚拟机的主机设备。虚拟机只能在拥有这些设备的主机上启动；持有这些设备时不会被迁移，其克隆也不会获得这些设备。"
 
-#: instances/templates/instances/settings_tab.html:437
+#: instances/templates/instances/settings_tab.html:456
 msgid "The host's devices could not be read."
 msgstr "无法读取主机的设备。"
 
-#: instances/templates/instances/settings_tab.html:438
+#: instances/templates/instances/settings_tab.html:457
 msgid "Reading the host's devices…"
 msgstr "正在读取主机的设备…"
 
-#: instances/templates/instances/settings_tab.html:446
+#: instances/templates/instances/settings_tab.html:465
 msgid "USB device"
 msgstr "USB 设备"
 
-#: instances/templates/instances/settings_tab.html:447
+#: instances/templates/instances/settings_tab.html:466
 msgid "Chosen by"
 msgstr "匹配方式"
 
-#: instances/templates/instances/settings_tab.html:448
-#: instances/templates/instances/settings_tab.html:483
+#: instances/templates/instances/settings_tab.html:467
+#: instances/templates/instances/settings_tab.html:502
 msgid "Running VM"
 msgstr "运行中的虚拟机"
 
-#: instances/templates/instances/settings_tab.html:449
-#: instances/templates/instances/settings_tab.html:484
+#: instances/templates/instances/settings_tab.html:468
+#: instances/templates/instances/settings_tab.html:503
 msgid "Next start"
 msgstr "下次启动"
 
-#: instances/templates/instances/settings_tab.html:457
+#: instances/templates/instances/settings_tab.html:476
 #, python-format
 msgid "Its address %(bus)s/%(device)s"
 msgstr "按地址 %(bus)s/%(device)s"
 
-#: instances/templates/instances/settings_tab.html:457
+#: instances/templates/instances/settings_tab.html:476
 msgid "Its model: any device of it"
 msgstr "按型号：该型号的任意设备"
 
-#: instances/templates/instances/settings_tab.html:458
+#: instances/templates/instances/settings_tab.html:477
 #, python-format
 msgid "Has %(bus)s/%(device)s"
 msgstr "位于 %(bus)s/%(device)s"
 
-#: instances/templates/instances/settings_tab.html:459
-#: instances/templates/instances/settings_tab.html:493
+#: instances/templates/instances/settings_tab.html:478
+#: instances/templates/instances/settings_tab.html:512
 msgid "Yes"
 msgstr "是"
 
-#: instances/templates/instances/settings_tab.html:459
-#: instances/templates/instances/settings_tab.html:493
+#: instances/templates/instances/settings_tab.html:478
+#: instances/templates/instances/settings_tab.html:512
 msgid "No"
 msgstr "否"
 
-#: instances/templates/instances/settings_tab.html:466
+#: instances/templates/instances/settings_tab.html:485
 msgid "Remove the USB device"
 msgstr "移除该 USB 设备"
 
-#: instances/templates/instances/settings_tab.html:467
+#: instances/templates/instances/settings_tab.html:486
 msgid "Remove this USB device from the VM? A running VM loses it at once."
 msgstr "从虚拟机移除此 USB 设备？运行中的虚拟机将立即失去它。"
 
-#: instances/templates/instances/settings_tab.html:482
+#: instances/templates/instances/settings_tab.html:501
 msgid "PCI device"
 msgstr "PCI 设备"
 
-#: instances/templates/instances/settings_tab.html:492
+#: instances/templates/instances/settings_tab.html:511
 msgid "Has it"
 msgstr "已有"
 
-#: instances/templates/instances/settings_tab.html:498
+#: instances/templates/instances/settings_tab.html:517
 msgid "Remove the PCI device"
 msgstr "移除该 PCI 设备"
 
-#: instances/templates/instances/settings_tab.html:499
+#: instances/templates/instances/settings_tab.html:518
 msgid "A paused VM, or one with a saved state, does not change its PCI devices"
 msgstr "已暂停或有已保存状态的虚拟机无法更改其 PCI 设备"
 
-#: instances/templates/instances/settings_tab.html:500
+#: instances/templates/instances/settings_tab.html:519
 msgid ""
 "Remove this PCI device from the VM? A running VM's guest has to let it go."
 msgstr "从虚拟机移除此 PCI 设备？运行中虚拟机的客户机必须先释放它。"
 
-#: instances/templates/instances/settings_tab.html:512
+#: instances/templates/instances/settings_tab.html:531
 msgid "Network interface"
 msgstr "网络接口"
 
-#: instances/templates/instances/settings_tab.html:513
+#: instances/templates/instances/settings_tab.html:532
 msgid "running VM and next start"
 msgstr "运行中的虚拟机和下次启动"
 
-#: instances/templates/instances/settings_tab.html:513
+#: instances/templates/instances/settings_tab.html:532
 msgid "running VM only"
 msgstr "仅运行中的虚拟机"
 
-#: instances/templates/instances/settings_tab.html:513
+#: instances/templates/instances/settings_tab.html:532
 msgid "next start only"
 msgstr "仅下次启动"
 
-#: instances/templates/instances/settings_tab.html:513
+#: instances/templates/instances/settings_tab.html:532
 msgid "changed in the XML editor"
 msgstr "已在 XML 编辑器中更改"
 
-#: instances/templates/instances/settings_tab.html:517
+#: instances/templates/instances/settings_tab.html:536
 msgid "The VM has no host devices."
 msgstr "该虚拟机没有主机设备。"
 
-#: instances/templates/instances/settings_tab.html:524
+#: instances/templates/instances/settings_tab.html:543
 msgid "Migration route"
 msgstr "迁移路径"
 
-#: instances/templates/instances/settings_tab.html:527
+#: instances/templates/instances/settings_tab.html:546
 #: networks/templates/network.html:396
 msgid "From"
 msgstr "源"
 
-#: instances/templates/instances/settings_tab.html:532
+#: instances/templates/instances/settings_tab.html:551
 #: networks/templates/network.html:400
 msgid "To"
 msgstr "目标"
 
-#: instances/templates/instances/settings_tab.html:541
+#: instances/templates/instances/settings_tab.html:560
 msgid ""
 "The VM is running: it migrates live, or paused for the transfer when Live "
 "migration is off."
 msgstr "虚拟机正在运行：将进行在线迁移；若关闭“在线迁移”，则在传输期间暂停。"
 
-#: instances/templates/instances/settings_tab.html:542
+#: instances/templates/instances/settings_tab.html:561
 msgid "The VM is paused: it stays paused on the destination."
 msgstr "虚拟机已暂停：在目标主机上保持暂停。"
 
-#: instances/templates/instances/settings_tab.html:543
+#: instances/templates/instances/settings_tab.html:562
 msgid "The VM is shut off: it moves offline."
 msgstr "虚拟机已关机：将进行离线迁移。"
 
-#: instances/templates/instances/settings_tab.html:544
+#: instances/templates/instances/settings_tab.html:563
 msgid ""
 "Both hosts need the same emulator; the VM's definition leaves the source "
 "host."
 msgstr "两台主机需要相同的模拟器；虚拟机的定义将从源主机移除。"
 
-#: instances/templates/instances/settings_tab.html:553
+#: instances/templates/instances/settings_tab.html:572
 msgid "Checking the hosts…"
 msgstr "正在检查主机…"
 
-#: instances/templates/instances/settings_tab.html:553
+#: instances/templates/instances/settings_tab.html:572
 msgid "The hosts could not be checked."
 msgstr "无法检查主机。"
 
-#: instances/templates/instances/settings_tab.html:554
+#: instances/templates/instances/settings_tab.html:573
 msgid "No host can take the VM now."
 msgstr "当前没有主机可以接收该虚拟机。"
 
-#: instances/templates/instances/settings_tab.html:554
+#: instances/templates/instances/settings_tab.html:573
 msgid "Checking the disks…"
 msgstr "正在检查磁盘…"
 
-#: instances/templates/instances/settings_tab.html:555
+#: instances/templates/instances/settings_tab.html:574
 msgid "The disks could not be checked."
 msgstr "无法检查磁盘。"
 
-#: instances/templates/instances/settings_tab.html:560
+#: instances/templates/instances/settings_tab.html:579
 msgid "Transfer settings"
 msgstr "传输设置"
 
-#: instances/templates/instances/settings_tab.html:566
+#: instances/templates/instances/settings_tab.html:585
 msgid "Live migration"
 msgstr "在线迁移"
 
-#: instances/templates/instances/settings_tab.html:568
+#: instances/templates/instances/settings_tab.html:587
 msgid ""
 "The VM keeps running while its memory is copied. Off, it is paused for the "
 "transfer."
 msgstr "复制内存期间虚拟机保持运行。关闭此项时，虚拟机在传输期间暂停。"
 
-#: instances/templates/instances/settings_tab.html:574
+#: instances/templates/instances/settings_tab.html:593
 msgid "Auto converge"
 msgstr "自动收敛"
 
-#: instances/templates/instances/settings_tab.html:576
+#: instances/templates/instances/settings_tab.html:595
 msgid ""
 "Slows the guest's CPUs so that a busy VM's live migration can finish. Only "
 "with Live migration."
 msgstr "降低客户机 CPU 速度，使繁忙虚拟机的在线迁移能够完成。仅适用于在线迁移。"
 
-#: instances/templates/instances/settings_tab.html:581
+#: instances/templates/instances/settings_tab.html:600
 msgid "Compressed"
 msgstr "压缩"
 
-#: instances/templates/instances/settings_tab.html:583
+#: instances/templates/instances/settings_tab.html:602
 msgid "Compresses the memory sent: less network, more CPU on both hosts."
 msgstr "压缩发送的内存：占用更少网络，但两台主机的 CPU 占用更多。"
 
-#: instances/templates/instances/settings_tab.html:595
+#: instances/templates/instances/settings_tab.html:614
 msgid "Unsafe migration"
 msgstr "不安全迁移"
 
-#: instances/templates/instances/settings_tab.html:597
+#: instances/templates/instances/settings_tab.html:616
 msgid ""
 "Skips libvirt's safety checks, such as a disk cache mode that can corrupt "
 "data in a migration."
 msgstr "跳过 libvirt 的安全检查，例如可能在迁移中损坏数据的磁盘缓存模式。"
 
-#: instances/templates/instances/settings_tab.html:603
+#: instances/templates/instances/settings_tab.html:622
 msgid "Delete the source files of copied disks"
 msgstr "删除已复制磁盘的源文件"
 
-#: instances/templates/instances/settings_tab.html:605
+#: instances/templates/instances/settings_tab.html:624
 msgid ""
 "After a migration that copied disks, their files on the source host go. Disks"
 " on shared storage stay."
 msgstr "迁移复制磁盘后，删除其在源主机上的文件。共享存储上的磁盘保留。"
 
-#: instances/templates/instances/settings_tab.html:615
+#: instances/templates/instances/settings_tab.html:634
 msgid "Migration runs as a background job."
 msgstr "迁移作为后台任务运行。"
 
-#: instances/templates/instances/settings_tab.html:629
+#: instances/templates/instances/settings_tab.html:648
 msgid ""
 "This is the definition for the VM's next start; a saved change applies then."
 msgstr "这是虚拟机下次启动时使用的定义；保存的更改将在那时生效。"
 
-#: instances/templates/instances/settings_tab.html:636
+#: instances/templates/instances/settings_tab.html:655
 msgid "Review changes"
 msgstr "查看更改"
 
-#: instances/templates/instances/settings_tab.html:640
+#: instances/templates/instances/settings_tab.html:659
 msgid ""
 "The request did not go through; your edit is still in the editor. Try again, "
 "or copy it and reload the page."
 msgstr "请求未成功；您的编辑仍在编辑器中。请重试，或复制内容后重新加载页面。"
 
-#: instances/templates/instances/settings_tab.html:644
+#: instances/templates/instances/settings_tab.html:663
 msgid "Review the XML change"
 msgstr "查看 XML 更改"
 
-#: instances/templates/instances/settings_tab.html:649
+#: instances/templates/instances/settings_tab.html:668
 msgid "The XML is the same as the VM's definition; there is nothing to save."
 msgstr "该 XML 与虚拟机的定义相同，无需保存。"
 
-#: instances/templates/instances/settings_tab.html:650
+#: instances/templates/instances/settings_tab.html:669
 #, python-format
 msgid "Line %(line)s"
 msgstr "第 %(line)s 行"
 
-#: instances/templates/instances/settings_tab.html:663
+#: instances/templates/instances/settings_tab.html:682
 msgid "Instance owners"
 msgstr "虚拟机所有者"
 
-#: instances/templates/instances/settings_tab.html:666
+#: instances/templates/instances/settings_tab.html:685
 msgid ""
 "Every owner can power the VM and open its console. A new owner has no other "
 "right until it is given one."
 msgstr "每个所有者都可以控制虚拟机电源并打开其控制台。新所有者在被授予其他权限之前没有其他权限。"
 
-#: instances/templates/instances/settings_tab.html:684
+#: instances/templates/instances/settings_tab.html:703
 msgid "Edit rights"
 msgstr "编辑权限"
 
-#: instances/templates/instances/settings_tab.html:693
+#: instances/templates/instances/settings_tab.html:712
 msgid "The VM has no owner: only administrators can use it."
 msgstr "该虚拟机没有所有者：只有管理员可以使用。"
 
-#: instances/templates/instances/settings_tab.html:700
+#: instances/templates/instances/settings_tab.html:719
 msgid "Console settings"
 msgstr "控制台设置"
 
-#: instances/templates/instances/settings_tab.html:702
+#: instances/templates/instances/settings_tab.html:721
 msgid ""
 "The running console keeps its current settings; changes here apply after the "
 "VM is shut down and started."
 msgstr "运行中的控制台保持当前设置；此处的更改在虚拟机关机并重新启动后生效。"
 
-#: instances/templates/instances/settings_tab.html:708
+#: instances/templates/instances/settings_tab.html:727
 msgid "The settings below apply to a VNC console."
 msgstr "以下设置适用于 VNC 控制台。"
 
-#: instances/templates/instances/settings_tab.html:710
+#: instances/templates/instances/settings_tab.html:729
 msgid "The VNC settings appear once the console type VNC is saved."
 msgstr "保存控制台类型为 VNC 后，将显示 VNC 设置。"
 
-#: instances/templates/instances/settings_tab.html:718
+#: instances/templates/instances/settings_tab.html:737
 msgid "VNC connection"
 msgstr "VNC 连接"
 
-#: instances/templates/instances/settings_tab.html:723
-#: instances/templates/instances/settings_tab.html:929
+#: instances/templates/instances/settings_tab.html:742
+#: instances/templates/instances/settings_tab.html:948
 msgid "Only administrators can change this."
 msgstr "只有管理员可以更改此项。"
 
-#: instances/templates/instances/settings_tab.html:723
+#: instances/templates/instances/settings_tab.html:742
 msgid "Beyond localhost the console is reachable from the network."
 msgstr "监听 localhost 以外的地址时，可从网络访问控制台。"
 
-#: instances/templates/instances/settings_tab.html:734
+#: instances/templates/instances/settings_tab.html:753
 msgid "VNC password"
 msgstr "VNC 密码"
 
-#: instances/templates/instances/settings_tab.html:737
+#: instances/templates/instances/settings_tab.html:756
 msgid "A password is set."
 msgstr "已设置密码。"
 
-#: instances/templates/instances/settings_tab.html:737
+#: instances/templates/instances/settings_tab.html:756
 msgid "No password is set."
 msgstr "未设置密码。"
 
-#: instances/templates/instances/settings_tab.html:748
+#: instances/templates/instances/settings_tab.html:767
 msgid "Up to 8 letters, digits or symbols, without accents."
 msgstr "最多 8 个字母、数字或符号，不能有带重音的字母。"
 
-#: instances/templates/instances/settings_tab.html:759
+#: instances/templates/instances/settings_tab.html:778
 msgid "Save console settings"
 msgstr "保存控制台设置"
 
-#: instances/templates/instances/settings_tab.html:768
+#: instances/templates/instances/settings_tab.html:787
 msgid "Create a clone"
 msgstr "创建克隆"
 
-#: instances/templates/instances/settings_tab.html:769
+#: instances/templates/instances/settings_tab.html:788
 #, python-format
 msgid "Source VM: %(name)s"
 msgstr "源虚拟机：%(name)s"
 
-#: instances/templates/instances/settings_tab.html:771
+#: instances/templates/instances/settings_tab.html:790
 msgid ""
 "The clone gets a new, empty TPM: keys in this VM's TPM, such as BitLocker's, "
 "do not come along."
 msgstr "克隆将获得一个新的空 TPM：此虚拟机 TPM 中的密钥（例如 BitLocker 的密钥）不会被带过去。"
 
-#: instances/templates/instances/settings_tab.html:776
-#: instances/templates/instances/settings_tab.html:789
-#: instances/templates/instances/settings_tab.html:792
+#: instances/templates/instances/settings_tab.html:795
+#: instances/templates/instances/settings_tab.html:808
+#: instances/templates/instances/settings_tab.html:811
 msgid "Clone name"
 msgstr "克隆名称"
 
-#: instances/templates/instances/settings_tab.html:784
-#: instances/templates/instances/settings_tab.html:816
+#: instances/templates/instances/settings_tab.html:803
+#: instances/templates/instances/settings_tab.html:835
 msgid "Guess"
 msgstr "推测"
 
-#: instances/templates/instances/settings_tab.html:787
+#: instances/templates/instances/settings_tab.html:806
 msgid "The DHCP file has no free name to suggest."
 msgstr "DHCP 文件中没有可建议的空闲名称。"
 
-#: instances/templates/instances/settings_tab.html:790
+#: instances/templates/instances/settings_tab.html:809
 msgid "Automatic"
 msgstr "自动"
 
-#: instances/templates/instances/settings_tab.html:810
+#: instances/templates/instances/settings_tab.html:829
 msgid "New MAC address"
 msgstr "新 MAC 地址"
 
-#: instances/templates/instances/settings_tab.html:813
+#: instances/templates/instances/settings_tab.html:832
 msgid "Random"
 msgstr "随机"
 
-#: instances/templates/instances/settings_tab.html:831
+#: instances/templates/instances/settings_tab.html:850
 #, python-format
 msgid "%(pool)s pool"
 msgstr "%(pool)s 存储池"
 
-#: instances/templates/instances/settings_tab.html:832
+#: instances/templates/instances/settings_tab.html:851
 msgid "New volume name"
 msgstr "新卷名称"
 
-#: instances/templates/instances/settings_tab.html:838
+#: instances/templates/instances/settings_tab.html:857
 msgid "Preallocate qcow2 metadata"
 msgstr "预分配 qcow2 元数据"
 
-#: instances/templates/instances/settings_tab.html:843
+#: instances/templates/instances/settings_tab.html:862
 msgid "The VM has no disk to copy."
 msgstr "该虚拟机没有可复制的磁盘。"
 
-#: instances/templates/instances/settings_tab.html:862
+#: instances/templates/instances/settings_tab.html:881
 msgid "The VM's size to start from; the quota counts the larger of the two."
 msgstr "以虚拟机的大小作为起点；配额按两者中较大的计算。"
 
-#: instances/templates/instances/settings_tab.html:865
+#: instances/templates/instances/settings_tab.html:884
 msgid "Start the clone when it is made"
 msgstr "创建后启动克隆"
 
-#: instances/templates/instances/settings_tab.html:869
+#: instances/templates/instances/settings_tab.html:888
 msgid "Optional details"
 msgstr "可选详情"
 
-#: instances/templates/instances/settings_tab.html:870
-#: instances/templates/instances/settings_tab.html:900
+#: instances/templates/instances/settings_tab.html:889
+#: instances/templates/instances/settings_tab.html:919
 msgid "Title"
 msgstr "标题"
 
-#: instances/templates/instances/settings_tab.html:877
+#: instances/templates/instances/settings_tab.html:896
 msgid ""
 "The clone gets none of the VM's host devices: one VM holds a device of the "
 "host."
 msgstr "克隆不会获得虚拟机的任何主机设备：一个主机设备只能由一台虚拟机持有。"
 
-#: instances/templates/instances/settings_tab.html:880
+#: instances/templates/instances/settings_tab.html:899
 msgid "Cloning runs as a background job."
 msgstr "克隆作为后台任务运行。"
 
-#: instances/templates/instances/settings_tab.html:897
+#: instances/templates/instances/settings_tab.html:916
 msgid "VM details"
 msgstr "虚拟机详情"
 
-#: instances/templates/instances/settings_tab.html:916
+#: instances/templates/instances/settings_tab.html:935
 msgid "Use as a template"
 msgstr "用作模板"
 
-#: instances/templates/instances/settings_tab.html:918
+#: instances/templates/instances/settings_tab.html:937
 msgid ""
 "A template is a VM to clone: it is not counted in quotas and cannot be "
 "started."
 msgstr "模板是用于克隆的虚拟机：不计入配额，且无法启动。"
 
-#: instances/templates/instances/settings_tab.html:919
+#: instances/templates/instances/settings_tab.html:938
 msgid "Only administrators and staff can change this."
 msgstr "只有管理员和工作人员可以更改此项。"
 
-#: instances/templates/instances/settings_tab.html:928
+#: instances/templates/instances/settings_tab.html:947
 msgid "A protected VM is not deleted and no backup is restored over it."
 msgstr "受保护的虚拟机不会被删除，也不会有备份还原到其上。"
 
-#: instances/templates/instances/settings_tab.html:938
+#: instances/templates/instances/settings_tab.html:957
 msgid ""
 "Choose a tag or type a new one. Owners see the tags but cannot change them."
 msgstr "选择一个标签或输入新标签。所有者可以看到标签，但不能更改。"
 
-#: instances/templates/instances/settings_tab.html:947
+#: instances/templates/instances/settings_tab.html:966
 msgid "Devices the guest sees"
 msgstr "客户机看到的设备"
 
-#: instances/templates/instances/settings_tab.html:948
+#: instances/templates/instances/settings_tab.html:967
 msgid "Changes apply from the next start; the guest agent's at once."
 msgstr "更改在下次启动时生效；客户机代理的更改立即生效。"
 
-#: instances/templates/instances/settings_tab.html:957
+#: instances/templates/instances/settings_tab.html:976
 msgid "The graphics device the guest sees."
 msgstr "客户机看到的图形设备。"
 
-#: instances/templates/instances/settings_tab.html:960
+#: instances/templates/instances/settings_tab.html:979
 msgid "Virtio RNG"
 msgstr "Virtio RNG"
 
-#: instances/templates/instances/settings_tab.html:965
+#: instances/templates/instances/settings_tab.html:984
 msgid "The VM has its own RNG device: change it in the XML editor."
 msgstr "该虚拟机有自定义的 RNG 设备：请在 XML 编辑器中更改。"
 
-#: instances/templates/instances/settings_tab.html:965
+#: instances/templates/instances/settings_tab.html:984
 msgid ""
 "Feeds the guest's entropy from the host, so a new VM does not wait for it at "
 "boot."
 msgstr "从主机为客户机提供熵，新虚拟机启动时无需等待。"
 
-#: instances/templates/instances/settings_tab.html:974
+#: instances/templates/instances/settings_tab.html:993
 msgid "The VM has its own TPM: change it in the XML editor."
 msgstr "该虚拟机有自定义的 TPM：请在 XML 编辑器中更改。"
 
-#: instances/templates/instances/settings_tab.html:975
+#: instances/templates/instances/settings_tab.html:994
 msgid "This host offers no TPM 2.0: install swtpm on it."
 msgstr "此主机不提供 TPM 2.0：请在其上安装 swtpm。"
 
-#: instances/templates/instances/settings_tab.html:976
+#: instances/templates/instances/settings_tab.html:995
 msgid ""
 "Turned off, its state stays on the host until the VM is destroyed; turned on "
 "again, it is back."
 msgstr "关闭后，其状态保留在主机上，直到虚拟机被销毁；再次开启时会恢复。"
 
-#: instances/templates/instances/settings_tab.html:977
+#: instances/templates/instances/settings_tab.html:996
 msgid "Windows 11 needs it, with UEFI Secure Boot."
 msgstr "Windows 11 需要它，并需 UEFI 安全启动。"
 
-#: instances/templates/instances/settings_tab.html:986
+#: instances/templates/instances/settings_tab.html:1005
 msgid "The channel to the agent in the guest: a running VM gets it at once."
 msgstr "通往客户机内代理的通道：运行中的虚拟机会立即获得。"
 
-#: instances/templates/instances/settings_tab.html:987
+#: instances/templates/instances/settings_tab.html:1006
 msgid "VM not running"
 msgstr "虚拟机未运行"
 
-#: instances/templates/instances/settings_tab.html:988
+#: instances/templates/instances/settings_tab.html:1007
 msgid "No channel"
 msgstr "无通道"
 
-#: instances/templates/instances/settings_tab.html:990
+#: instances/templates/instances/settings_tab.html:1009
 msgid "Not connected: is the agent installed and running in the guest?"
 msgstr "未连接：客户机中是否已安装并运行代理？"
 
-#: instances/templates/instances/settings_tab.html:995
+#: instances/templates/instances/settings_tab.html:1014
 msgid "When the guest crashes"
 msgstr "客户机崩溃时"
 
-#: instances/templates/instances/settings_tab.html:1000
+#: instances/templates/instances/settings_tab.html:1019
 msgid "Restart"
 msgstr "重启"
 
-#: instances/templates/instances/settings_tab.html:1002
+#: instances/templates/instances/settings_tab.html:1021
 #: interfaces/templates/interface.html:16 networks/templates/network.html:16
 #: storages/templates/storage.html:18
 msgid "Stop"
 msgstr "停止"
 
-#: instances/templates/instances/settings_tab.html:1004
+#: instances/templates/instances/settings_tab.html:1023
 msgid ""
 "For a crash the guest reports, not a hang. Stop keeps a VM that crashes again"
 " and again down for a look. From the next start."
 msgstr "适用于客户机报告的崩溃，而非挂起。“停止”会让反复崩溃的虚拟机保持停止状态以便排查。下次启动时生效。"
 
-#: instances/templates/instances/settings_tab.html:1006
+#: instances/templates/instances/settings_tab.html:1025
 #, python-format
 msgid "%(action)s: change it in the XML editor."
 msgstr "%(action)s：请在 XML 编辑器中更改。"
@@ -6894,7 +6924,7 @@ msgstr "卷已成功更改。"
 msgid "Disk %(dev)s is not a storage volume of this instance"
 msgstr "磁盘 %(dev)s 不是此虚拟机的存储卷"
 
-#: instances/views.py:1619 vrtManager/instance.py:2527
+#: instances/views.py:1619 vrtManager/instance.py:2596
 msgid "The VM has a saved state; start it or remove the saved state first"
 msgstr "虚拟机有保存的状态；请先启动它或删除保存的状态"
 
@@ -6948,7 +6978,7 @@ msgstr "快照未删除：%(err)s"
 msgid "Add at least one device to the boot order."
 msgstr "请至少向启动顺序中添加一个设备。"
 
-#: instances/views.py:1932 vrtManager/instance.py:1297
+#: instances/views.py:1932 vrtManager/instance.py:1366
 msgid "Invalid Device Type for boot order"
 msgstr "启动顺序的设备类型无效"
 
@@ -6964,7 +6994,7 @@ msgstr "启动顺序已成功更改。"
 msgid "The XML is empty"
 msgstr "XML 为空"
 
-#: instances/views.py:1969 instances/views.py:2666
+#: instances/views.py:1969 instances/views.py:2689
 #, python-format
 msgid "The XML is not well-formed: %(error)s"
 msgstr "XML 格式不正确：%(error)s"
@@ -7103,55 +7133,59 @@ msgstr "请关闭虚拟机以更改其是否为模板。"
 msgid "%(quota)s: '%(instance_name)s' stays a template."
 msgstr "%(quota)s：“%(instance_name)s”仍为模板。"
 
-#: instances/views.py:2652
+#: instances/views.py:2561
+msgid "An I/O limit is whole numbers of IOPS and MiB/s, 0 for none"
+msgstr "I/O 限制须为 IOPS 和 MiB/s 的整数，0 表示不限"
+
+#: instances/views.py:2675
 msgid "The XML has no name"
 msgstr "XML 中没有名称"
 
-#: instances/views.py:2670 webvirtcloud/middleware.py:157
+#: instances/views.py:2693 webvirtcloud/middleware.py:157
 #, python-format
 msgid "libvirt Error - %(exception)s"
 msgstr "libvirt 错误 - %(exception)s"
 
-#: instances/views.py:2684
+#: instances/views.py:2707
 msgid "An empty disk of the size you set"
 msgstr "按设定大小创建的空磁盘"
 
-#: instances/views.py:2685
+#: instances/views.py:2708
 msgid "Volumes already in a pool"
 msgstr "存储池中已有的卷"
 
-#: instances/views.py:2686
+#: instances/views.py:2709
 msgid "A copy of a template volume"
 msgstr "模板卷的副本"
 
-#: instances/views.py:2776
+#: instances/views.py:2799
 msgid ""
 "This host has no running storage pool for the VM's disks: add or start one on"
 " its Storage page."
 msgstr "此主机没有可用于虚拟机磁盘的运行中存储池：请在其“存储”页面添加或启动一个。"
 
-#: instances/views.py:2778
+#: instances/views.py:2801
 msgid "This host has no network for the VM: add one on its Networks page."
 msgstr "此主机没有可供虚拟机使用的网络：请在其“网络”页面添加一个。"
 
-#: instances/views.py:2810
+#: instances/views.py:2833
 #, python-format
 msgid "The machine type is q35, not %(machine)s: UEFI Secure Boot needs it"
 msgstr "机器类型为 q35，而不是 %(machine)s：UEFI 安全启动需要它"
 
-#: instances/views.py:2839
+#: instances/views.py:2862
 msgid "Flavor Created"
 msgstr "规格已创建"
 
-#: instances/views.py:2847
+#: instances/views.py:2870
 msgid "Create Flavor"
 msgstr "创建规格"
 
-#: instances/views.py:2859
+#: instances/views.py:2882
 msgid "Flavor Deleted"
 msgstr "规格已删除"
 
-#: instances/views.py:2865
+#: instances/views.py:2888
 msgid "Only the size template goes; VMs made from it keep their size."
 msgstr "仅删除此规格；由它创建的虚拟机保持其大小。"
 
@@ -10970,139 +11004,158 @@ msgid ""
 "with '.'"
 msgstr "快照名称为 1-64 个字母、数字、'.'、'_' 或 '-'，且不能以 '.' 开头"
 
-#: vrtManager/instance.py:747
+#: vrtManager/instance.py:779
 msgid "A VM with a host's or an external TPM is not cloned; remove it first"
 msgstr "带有主机 TPM 或外部 TPM 的虚拟机无法克隆；请先将其移除"
 
-#: vrtManager/instance.py:1285
+#: vrtManager/instance.py:1215
+msgid "The VM has a saved state: start it, then set the limit"
+msgstr "该虚拟机有已保存的状态：请先启动它，再设置限制"
+
+#: vrtManager/instance.py:1224
+#, python-format
+msgid "The I/O tuning of %(dev)s is set in the VM's XML: change it there"
+msgstr "%(dev)s 的 I/O 调优在虚拟机的 XML 中设置：请在那里修改"
+
+#: vrtManager/instance.py:1229
+#, python-format
+msgid "The VM has no disk %(dev)s"
+msgstr "该虚拟机没有磁盘 %(dev)s"
+
+#: vrtManager/instance.py:1231
+#, python-format
+msgid "%(dev)s is another disk from the next start: set its limit then"
+msgstr "%(dev)s 在下次启动时是另一个磁盘：届时再设置其限制"
+
+#: vrtManager/instance.py:1354
 msgid ""
 "A device other than a disk or NIC is in the boot order: change it in the XML "
 "editor"
 msgstr "启动顺序中有磁盘或网卡以外的设备：请在 XML 编辑器中修改"
 
-#: vrtManager/instance.py:1300
+#: vrtManager/instance.py:1369
 #, python-format
 msgid "Boot device %(dev)s is not in the definition"
 msgstr "启动设备 %(dev)s 不在定义中"
 
-#: vrtManager/instance.py:1320
+#: vrtManager/instance.py:1389
 #, python-format
 msgid "CD-ROM %(dev)s is not in the running definition"
 msgstr "CD-ROM %(dev)s 不在运行中的定义中"
 
-#: vrtManager/instance.py:1321
+#: vrtManager/instance.py:1390
 #, python-format
 msgid "CD-ROM %(dev)s is not in the persistent definition"
 msgstr "CD-ROM %(dev)s 不在持久定义中"
 
-#: vrtManager/instance.py:1334
+#: vrtManager/instance.py:1403
 #, python-format
 msgid "Media of %(dev)s changed in the running VM only: %(err)s"
 msgstr "%(dev)s 的介质仅在运行中的虚拟机中更改：%(err)s"
 
-#: vrtManager/instance.py:1345
+#: vrtManager/instance.py:1414
 #, python-format
 msgid "ISO image %(image)s was not found"
 msgstr "未找到 ISO 镜像 %(image)s"
 
-#: vrtManager/instance.py:1347
+#: vrtManager/instance.py:1416
 #, python-format
 msgid "ISO image %(image)s is in more than one storage pool"
 msgstr "ISO 镜像 %(image)s 位于多个存储池中"
 
-#: vrtManager/instance.py:1442
+#: vrtManager/instance.py:1511
 #, python-format
 msgid "Disk %(target_dev)s is not in the VM's definition"
 msgstr "磁盘 %(target_dev)s 不在虚拟机的定义中"
 
-#: vrtManager/instance.py:1574
+#: vrtManager/instance.py:1643
 msgid "Please shutdown the instance then try to enable vCPU hotplug"
 msgstr "请先关闭虚拟机，再启用 vCPU 热插拔"
 
-#: vrtManager/instance.py:1777
+#: vrtManager/instance.py:1846
 #, python-format
 msgid ""
 "The serial console is a %(type)s one, the browser opens only a pty one; "
 "change it in the XML editor"
 msgstr "串行控制台的类型是 %(type)s，浏览器只能打开 pty 类型的；请在 XML 编辑器中更改"
 
-#: vrtManager/instance.py:1888
+#: vrtManager/instance.py:1957
 msgid "The VM has no video card"
 msgstr "虚拟机没有显卡"
 
-#: vrtManager/instance.py:1898
+#: vrtManager/instance.py:1967
 #, python-format
 msgid ""
 "The VM's CPU topology has %(count)s vCPUs: change it in the XML editor to set"
 " another maximum"
 msgstr "该虚拟机的 CPU 拓扑为 %(count)s 个 vCPU：要设置其他最大值，请在 XML 编辑器中修改拓扑"
 
-#: vrtManager/instance.py:1924
+#: vrtManager/instance.py:1993
 #, python-format
 msgid "The VM's next start has a maximum memory of %(max)s MiB"
 msgstr "虚拟机下次启动时的最大内存为 %(max)s MiB"
 
-#: vrtManager/instance.py:2065
+#: vrtManager/instance.py:2134
 msgid ""
 "The VM has external snapshots; internal snapshots cannot be mixed with them"
 msgstr "虚拟机有外部快照；内部快照不能与其混用"
 
-#: vrtManager/instance.py:2097
+#: vrtManager/instance.py:2166
 msgid "A snapshot with memory is not quiesced; it keeps the whole guest state"
 msgstr "含内存的快照不会静默文件系统；它保存整个客户机状态"
 
-#: vrtManager/instance.py:2099
+#: vrtManager/instance.py:2168
 msgid "Only a running VM's file systems can be frozen"
 msgstr "只有运行中的虚拟机的文件系统可以冻结"
 
-#: vrtManager/instance.py:2101
+#: vrtManager/instance.py:2170
 msgid "The QEMU guest agent is not connected; it freezes the file systems"
 msgstr "QEMU 客户机代理未连接；文件系统由它冻结"
 
-#: vrtManager/instance.py:2104
+#: vrtManager/instance.py:2173
 msgid ""
 "The VM has internal snapshots; external snapshots cannot be mixed with them"
 msgstr "虚拟机有内部快照；外部快照不能与其混用"
 
-#: vrtManager/instance.py:2109
+#: vrtManager/instance.py:2178
 msgid "Newer snapshots exist after the last revert; delete them first"
 msgstr "上次还原后存在更新的快照；请先删除它们"
 
-#: vrtManager/instance.py:2112
+#: vrtManager/instance.py:2181
 msgid "No snapshot is current; revert to a snapshot first"
 msgstr "没有当前快照；请先还原到某个快照"
 
-#: vrtManager/instance.py:2118
+#: vrtManager/instance.py:2187
 #, python-format
 msgid "Eject the media from %(dev)s first"
 msgstr "请先弹出 %(dev)s 中的介质"
 
-#: vrtManager/instance.py:2120
+#: vrtManager/instance.py:2189
 #, python-format
 msgid "Disk %(dev)s is not a file; external snapshots need file disks"
 msgstr "磁盘 %(dev)s 不是文件；外部快照需要文件磁盘"
 
-#: vrtManager/instance.py:2128
+#: vrtManager/instance.py:2197
 #, python-format
 msgid ""
 "The storage pools could not be refreshed, so their free space is unknown: "
 "%(err)s"
 msgstr "无法刷新存储池，其可用空间未知：%(err)s"
 
-#: vrtManager/instance.py:2151
+#: vrtManager/instance.py:2220
 msgid "Memory is saved only from a running VM"
 msgstr "只能保存运行中的虚拟机的内存"
 
-#: vrtManager/instance.py:2153
+#: vrtManager/instance.py:2222
 msgid "The VM has no disk to keep its memory next to"
 msgstr "虚拟机没有可存放其内存的磁盘"
 
-#: vrtManager/instance.py:2157
+#: vrtManager/instance.py:2226
 #, python-format
 msgid "%(disk)s is not in a storage pool; memory is saved only into one"
 msgstr "%(disk)s 不在存储池中；内存只能保存到存储池中"
 
-#: vrtManager/instance.py:2188
+#: vrtManager/instance.py:2257
 #, python-format
 msgid ""
 "Storage pool %(pool)s has %(free).1f GiB free; the snapshot needs %(size).1f "
@@ -11112,147 +11165,147 @@ msgstr ""
 "存储池 %(pool)s 可用 %(free).1f GiB；快照需要 %(size).1f GiB（其中虚拟机磁盘的 %(percent)g%%，至少 "
 "%(minimum)g GiB，若保存内存则另加内存）"
 
-#: vrtManager/instance.py:2206
+#: vrtManager/instance.py:2275
 msgid ""
 "This snapshot was taken by an older version on a UEFI VM and cannot be "
 "reverted; delete it instead"
 msgstr "此快照由旧版本在 UEFI 虚拟机上创建，无法还原；请将其删除"
 
-#: vrtManager/instance.py:2236
+#: vrtManager/instance.py:2305
 #, python-format
 msgid ""
 "The revert failed twice; try again in a moment (%(error)s). The VM is "
 "running."
 msgstr "还原两次失败；请稍后重试（%(error)s）。虚拟机正在运行。"
 
-#: vrtManager/instance.py:2238
+#: vrtManager/instance.py:2307
 #, python-format
 msgid ""
 "The revert failed twice; try again in a moment (%(error)s). The VM is shut "
 "off."
 msgstr "还原两次失败；请稍后重试（%(error)s）。虚拟机已关机。"
 
-#: vrtManager/instance.py:2406
+#: vrtManager/instance.py:2475
 msgid "A disk moves when its VM is defined and running, paused or shut off"
 msgstr "仅当虚拟机已定义且处于运行、暂停或关机状态时才能移动磁盘"
 
-#: vrtManager/instance.py:2408
+#: vrtManager/instance.py:2477
 msgid ""
 "A disk of a VM with snapshots, a saved state or a running block job does not "
 "move"
 msgstr "有快照、保存的状态或正在运行块任务的虚拟机的磁盘不能移动"
 
-#: vrtManager/instance.py:2416
+#: vrtManager/instance.py:2485
 #, python-format
 msgid ""
 "%(dev)s is not a disk file of the VM, the same in its running and next "
 "start's definition"
 msgstr "%(dev)s 不是该虚拟机在运行中的定义和下次启动定义中相同的磁盘文件"
 
-#: vrtManager/instance.py:2421
+#: vrtManager/instance.py:2490
 #, python-format
 msgid "%(dev)s does not move: only writable raw and qcow2 disks do"
 msgstr "%(dev)s 不能移动：只能移动可写的 raw 和 qcow2 磁盘"
 
-#: vrtManager/instance.py:2428
+#: vrtManager/instance.py:2497
 #, python-format
 msgid "%(dev)s does not move: no storage pool has %(path)s"
 msgstr "%(dev)s 不能移动：没有存储池包含 %(path)s"
 
-#: vrtManager/instance.py:2430
+#: vrtManager/instance.py:2499
 #, python-format
 msgid "%(dev)s does not move: it has a backing file"
 msgstr "%(dev)s 不能移动：它有后备文件"
 
-#: vrtManager/instance.py:2433
+#: vrtManager/instance.py:2502
 #, python-format
 msgid "%(pool_name)s is not an active pool of disk files of this host"
 msgstr "%(pool_name)s 不是此主机上活动的磁盘文件存储池"
 
-#: vrtManager/instance.py:2436
+#: vrtManager/instance.py:2505
 #, python-format
 msgid "%(dev)s is in pool %(pool_name)s already"
 msgstr "%(dev)s 已在存储池 %(pool_name)s 中"
 
-#: vrtManager/instance.py:2440
+#: vrtManager/instance.py:2509
 #, python-format
 msgid "Pool %(pool_name)s already has a file %(name)s"
 msgstr "存储池 %(pool_name)s 中已有文件 %(name)s"
 
-#: vrtManager/instance.py:2464
+#: vrtManager/instance.py:2533
 #, python-format
 msgid "The copy of %(dev)s ended before it was complete"
 msgstr "%(dev)s 的复制在完成前结束"
 
-#: vrtManager/instance.py:2509
+#: vrtManager/instance.py:2578
 #, python-format
 msgid "%(error)s; remove %(dest)s if it is there: %(cleanup_error)s"
 msgstr "%(error)s；如果 %(dest)s 存在请将其删除：%(cleanup_error)s"
 
-#: vrtManager/instance.py:2511
+#: vrtManager/instance.py:2580
 #, python-format
 msgid "%(error)s; the VM may use %(dest)s now: check its disk %(dev)s"
 msgstr "%(error)s；虚拟机现在可能在使用 %(dest)s：请检查其磁盘 %(dev)s"
 
-#: vrtManager/instance.py:2518
+#: vrtManager/instance.py:2587
 #, python-format
 msgid "The VM has no internal snapshot named %(name)s"
 msgstr "虚拟机没有名为 %(name)s 的内部快照"
 
-#: vrtManager/instance.py:2529
+#: vrtManager/instance.py:2598
 msgid "A snapshot job is still running on this VM; try again when it ends"
 msgstr "此虚拟机上仍有快照任务在运行；请在其结束后重试"
 
-#: vrtManager/instance.py:2539
+#: vrtManager/instance.py:2608
 msgid "Shut the VM down to revert to an internal snapshot"
 msgstr "请关闭虚拟机后再还原到内部快照"
 
-#: vrtManager/instance.py:2606
+#: vrtManager/instance.py:2675
 msgid "Cannot clone a VM whose NVRAM is not a file"
 msgstr "NVRAM 不是文件的虚拟机无法克隆"
 
-#: vrtManager/instance.py:2677
+#: vrtManager/instance.py:2746
 #, python-format
 msgid "Clone failed (%(err)s); remove these copies by hand: %(path)s"
 msgstr "克隆失败（%(err)s）；请手动删除这些副本：%(path)s"
 
-#: vrtManager/instance.py:2688
+#: vrtManager/instance.py:2757
 msgid "Shut the VM down before cloning it"
 msgstr "请先关闭虚拟机再克隆"
 
-#: vrtManager/instance.py:2715
+#: vrtManager/instance.py:2784
 #, python-format
 msgid "Clone failed (%(err)s); remove these copies by hand: %(leftovers)s"
 msgstr "克隆失败（%(err)s）；请手动删除这些副本：%(leftovers)s"
 
-#: vrtManager/instance.py:2726
+#: vrtManager/instance.py:2795
 msgid "Live clone needs libvirt 11.10 or later; shut the VM down to clone it"
 msgstr "在线克隆需要 libvirt 11.10 或更高版本；请关闭虚拟机后再克隆"
 
-#: vrtManager/instance.py:2729
+#: vrtManager/instance.py:2798
 msgid "A VM with a TPM is cloned only shut down"
 msgstr "带 TPM 的虚拟机只能在关机时克隆"
 
-#: vrtManager/instance.py:2732
+#: vrtManager/instance.py:2801
 #, python-format
 msgid "Disk %(dev)s is not a local file; shut the VM down to clone it"
 msgstr "磁盘 %(dev)s 不是本地文件；请关闭虚拟机后再克隆"
 
-#: vrtManager/instance.py:2734
+#: vrtManager/instance.py:2803
 #, python-format
 msgid "Disk %(dev)s is shareable; shut the VM down to clone it"
 msgstr "磁盘 %(dev)s 是可共享的；请关闭虚拟机后再克隆"
 
-#: vrtManager/instance.py:2739
+#: vrtManager/instance.py:2808
 #, python-format
 msgid "Disk %(dev)s changes at the next start; shut the VM down to clone it"
 msgstr "磁盘 %(dev)s 在下次启动时会改变；请关闭虚拟机后再克隆"
 
-#: vrtManager/instance.py:2741
+#: vrtManager/instance.py:2810
 msgid "Another job is running on the VM; clone it when that ends"
 msgstr "虚拟机上有另一个任务正在运行；请在其结束后再克隆"
 
-#: vrtManager/instance.py:2767
+#: vrtManager/instance.py:2836
 #, python-format
 msgid ""
 "Storage pool %(pool)s has %(free).1f GiB free; the clone needs %(size).1f GiB"
@@ -11261,111 +11314,111 @@ msgstr ""
 "存储池 %(pool)s 可用 %(free).1f GiB；克隆需要 %(size).1f GiB（复制的磁盘，再加其 %(percent)g%%，至少"
 " %(minimum)g GiB）"
 
-#: vrtManager/instance.py:2784
+#: vrtManager/instance.py:2853
 #, python-format
 msgid "Volume %(name)s already exists in storage pool %(pool)s"
 msgstr "卷 %(name)s 已存在于存储池 %(pool)s 中"
 
-#: vrtManager/instance.py:2972
+#: vrtManager/instance.py:3041
 msgid "A network interface that is a host device is removed in the XML editor"
 msgstr "作为主机设备的网络接口需在 XML 编辑器中删除"
 
-#: vrtManager/instance.py:2988
+#: vrtManager/instance.py:3057
 #, python-format
 msgid "No network interface with MAC %(old_mac)s"
 msgstr "没有 MAC 为 %(old_mac)s 的网络接口"
 
-#: vrtManager/instance.py:2991
+#: vrtManager/instance.py:3060
 msgid "A network interface that is a host device is changed in the XML editor"
 msgstr "作为主机设备的网络接口需在 XML 编辑器中修改"
 
-#: vrtManager/instance.py:3085
+#: vrtManager/instance.py:3154
 msgid ""
 "A VM changes its PCI devices while it runs, or is shut off without a saved "
 "state"
 msgstr "虚拟机只能在运行时或无保存的状态的关机时更改其 PCI 设备"
 
-#: vrtManager/instance.py:3106
+#: vrtManager/instance.py:3175
 #, python-format
 msgid "%(err)s; whether the VM has %(device)s now is not known"
 msgstr "%(err)s；虚拟机现在是否有 %(device)s 未知"
 
-#: vrtManager/instance.py:3108
+#: vrtManager/instance.py:3177
 #, python-format
 msgid "%(err)s; %(device)s: the VM is not running, its next start has it"
 msgstr "%(err)s；%(device)s：虚拟机未运行，下次启动时有它"
 
-#: vrtManager/instance.py:3109
+#: vrtManager/instance.py:3178
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the VM is not running, its next start does not have it"
 msgstr "%(err)s；%(device)s：虚拟机未运行，下次启动时没有它"
 
-#: vrtManager/instance.py:3110
+#: vrtManager/instance.py:3179
 #, python-format
 msgid "%(err)s; %(device)s: the running VM has it, its next start has it"
 msgstr "%(err)s；%(device)s：运行中的虚拟机有它，下次启动时有它"
 
-#: vrtManager/instance.py:3111
+#: vrtManager/instance.py:3180
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the running VM has it, its next start does not have it"
 msgstr "%(err)s；%(device)s：运行中的虚拟机有它，下次启动时没有它"
 
-#: vrtManager/instance.py:3112
+#: vrtManager/instance.py:3181
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the running VM does not have it, its next start has it"
 msgstr "%(err)s；%(device)s：运行中的虚拟机没有它，下次启动时有它"
 
-#: vrtManager/instance.py:3114
+#: vrtManager/instance.py:3183
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the running VM does not have it, its next start does not"
 " have it"
 msgstr "%(err)s；%(device)s：运行中的虚拟机没有它，下次启动时没有它"
 
-#: vrtManager/instance.py:3148
+#: vrtManager/instance.py:3217
 #, python-format
 msgid "The VM has no PCI device %(address)s"
 msgstr "虚拟机没有 PCI 设备 %(address)s"
 
-#: vrtManager/instance.py:3169
+#: vrtManager/instance.py:3238
 msgid "The VM has no USB controller"
 msgstr "虚拟机没有 USB 控制器"
 
-#: vrtManager/instance.py:3203
+#: vrtManager/instance.py:3272
 msgid "The VM has no such USB device"
 msgstr "虚拟机没有此 USB 设备"
 
-#: vrtManager/instance.py:3217
+#: vrtManager/instance.py:3286
 #, python-format
 msgid "The VM has no network interface %(mac)s"
 msgstr "虚拟机没有网络接口 %(mac)s"
 
-#: vrtManager/instance.py:3249
+#: vrtManager/instance.py:3318
 msgid "The VM has its own RNG device: change it in the XML editor"
 msgstr "虚拟机有自己的 RNG 设备：请在 XML 编辑器中修改"
 
-#: vrtManager/instance.py:3276
+#: vrtManager/instance.py:3345
 msgid "The VM has its own TPM: change it in the XML editor"
 msgstr "虚拟机有自己的 TPM：请在 XML 编辑器中修改"
 
-#: vrtManager/instance.py:3295
+#: vrtManager/instance.py:3364
 #, python-format
 msgid "Unknown crash action %(action)s"
 msgstr "未知的崩溃操作 %(action)s"
 
-#: vrtManager/instance.py:3322
+#: vrtManager/instance.py:3391
 #, python-format
 msgid "Network interface %(mac)s is not in the definition"
 msgstr "网络接口 %(mac)s 不在定义中"
 
-#: vrtManager/instance.py:3413
+#: vrtManager/instance.py:3482
 msgid "The guest agent did not answer in time; nothing was changed"
 msgstr "客户机代理未及时响应；未做任何更改"
 
-#: vrtManager/instance.py:3416
+#: vrtManager/instance.py:3485
 msgid "The VM runs Windows: its guest agent sets no root password or SSH key"
 msgstr "该虚拟机运行 Windows：其客户机代理不能设置 root 密码或 SSH 密钥"
 
