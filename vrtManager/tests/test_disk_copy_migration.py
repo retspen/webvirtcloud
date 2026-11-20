@@ -120,6 +120,19 @@ class DiskCopyTestCase(unittest.TestCase):
         source.instance.migrate.assert_called_once()
         source.instance.migrate3.assert_not_called()
 
+    def test_the_bandwidth_limit_goes_to_libvirt(self):
+        # MiB/s; 0: none
+        source = Source(1, domain(disk(f"{IMAGES}/vm.qcow2")))
+        self.assertEqual(migrate(destination(Pool("default", IMAGES), shared=True), source, {}, bandwidth=100),
+                         ("live, 100 MiB/s", []))
+        self.assertEqual(source.instance.migrate.call_args.args[4], 100)
+        source = Source(1, domain(disk(f"{IMAGES}/vm.qcow2")))
+        migrate(destination(Pool("default", IMAGES)), source, {"vda": "default"}, bandwidth=100)
+        self.assertEqual(source.instance.migrate3.call_args.args[1][libvirt.VIR_MIGRATE_PARAM_BANDWIDTH], 100)
+        source = Source(1, domain(disk(f"{IMAGES}/vm.qcow2")))
+        migrate(destination(Pool("default", IMAGES)), source, {"vda": "default"})
+        self.assertNotIn(libvirt.VIR_MIGRATE_PARAM_BANDWIDTH, source.instance.migrate3.call_args.args[1])
+
     def test_a_disk_the_destination_does_not_share_needs_a_pool(self):
         for pools, shared in (((IMAGES,), False), ((), True)):  # not shared; no pool to probe on the source
             with self.subTest(pools=pools):

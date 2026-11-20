@@ -19,6 +19,7 @@ from django.utils.translation import gettext_noop
 from libvirt import libvirtError
 from logs.audit import reason, write
 from operations.models import Operation
+from operations.utils import migration_bandwidth
 from vrtManager.connection import counted_thread, other_hosts, wvmConnect
 from vrtManager.instance import wvmInstance, wvmInstances
 from vrtManager.util import ConnectionFailed, HostBusy, message, vol_dev_type
@@ -345,6 +346,7 @@ def migrate_instance(
             compress,
             uri=new_compute.migration_uri,
             tls=source.migration_tls and new_compute.migration_tls,
+            bandwidth=migration_bandwidth(),
             pools=disk_pools,
             on_copy=on_copy,
             running_only=running_only,

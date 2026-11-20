@@ -46,6 +46,7 @@ from libvirt import (
     VIR_MIGRATE_PARAM_MIGRATE_DISKS,
     VIR_MIGRATE_PARAM_PERSIST_XML,
     VIR_MIGRATE_PARAM_URI,
+    VIR_MIGRATE_PARAM_BANDWIDTH,
     VIR_MIGRATE_PERSIST_DEST,
     VIR_MIGRATE_UNDEFINE_SOURCE,
     VIR_MIGRATE_UNSAFE,
@@ -160,7 +161,7 @@ class wvmInstances(wvmConnect):
         return sorted(missing), sorted(unlike)
 
     def moveto(self, conn, name, live, unsafe, offline, autoconverge=False, compress=False, uri=None,
-               pools=None, on_copy=None, running_only=False, tls=False):
+               pools=None, on_copy=None, running_only=False, tls=False, bandwidth=0):
         """Migrates the VM of conn (a wvmInstance on the source) here.
 
         The mode follows the VM's state, read once: a running VM migrates
@@ -176,7 +177,8 @@ class wvmInstances(wvmConnect):
         called with the copies ({pool, dest}: a pool here and its path) before
         libvirt makes them. tls: QEMU sends the memory and disks over TLS (the
         hosts' certificates in /etc/pki/qemu); a shut-off VM's definition alone
-        sends none. Returns the mode and options used, for the log,
+        sends none. bandwidth: MiB/s of libvirt's limit, for the memory before the final switchover and for each
+        copied disk; 0 leaves libvirt's own (none unless set on the host). Returns the mode and options used, for the log,
         and each copied disk's path and the path of its copy here."""
         state = conn.get_status()
         if running_only and state != 1:
@@ -259,10 +261,12 @@ class wvmInstances(wvmConnect):
         if tls and (state != 5 or copies or tpm_state):
             flags |= VIR_MIGRATE_TLS
             mode.append("TLS")
+        if bandwidth and (state != 5 or copies or tpm_state):  # an offline move sends only its definition (and NVRAM)
+            mode.append(f"{bandwidth} MiB/s")
         if copies or (state == 5 and tpm_state):
             if copies and on_copy is not None:
                 on_copy([{"pool": copy["pool"].name(), "dest": copy["dest"]} for copy in copies])
-            note = self.migrate_running(conn, state, flags, uri, copies)
+            note = self.migrate_running(conn, state, flags, uri, copies, bandwidth)
             if note:
                 mode.append(note)
         elif state == 5:
@@ -272,10 +276,10 @@ class wvmInstances(wvmConnect):
             # dom.migrate.
             self.move_definition(dom, conn)
         else:
-            dom.migrate(self.wvm, flags, None, uri, 0)
+            dom.migrate(self.wvm, flags, None, uri, bandwidth)
         return ", ".join(mode), [(copy["path"], copy["dest"]) for copy in copies]
 
-    def migrate_running(self, conn, state, flags, uri, copies):
+    def migrate_running(self, conn, state, flags, uri, copies, bandwidth=0):
         """Migrates the VM of conn as a running VM, which carries its TPM
         state, while libvirt copies the disks of copies into their pools here
         (NON_SHARED_DISK), the definitions naming the new paths. A shut-off
@@ -295,6 +299,8 @@ class wvmInstances(wvmConnect):
             flags |= VIR_MIGRATE_NON_SHARED_DISK
         if uri:
             params[VIR_MIGRATE_PARAM_URI] = uri
+        if bandwidth:
+            params[VIR_MIGRATE_PARAM_BANDWIDTH] = bandwidth
         try:
             if state == 5:
                 flags &= ~VIR_MIGRATE_OFFLINE

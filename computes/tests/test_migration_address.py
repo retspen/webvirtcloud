@@ -12,6 +12,7 @@ from computes.models import Compute
 from computes.validators import validate_migration_address
 from instances.models import Instance
 from instances.utils import migrate_instance
+from appsettings.models import AppSettings
 
 
 class MigrationAddressTests(TestCase):
@@ -71,3 +72,13 @@ class MigrationAddressTests(TestCase):
             instances.return_value.moveto.return_value = ("live", [])
             migrate_instance(dest, vm, user, live=True)
         self.assertEqual(instances.return_value.moveto.call_args.kwargs["uri"], "tcp://198.51.100.9")
+        self.assertEqual(instances.return_value.moveto.call_args.kwargs["bandwidth"], 0)  # the default: no limit
+        AppSettings.objects.filter(key="MIGRATION_BANDWIDTH").update(value="200")
+        vm = Instance.objects.create(compute=source, name="vm2", uuid="u-ma2")  # the first was moved
+        with patch.object(Compute, "status", True), \
+             patch("instances.utils.wvmInstances") as instances, \
+             patch("instances.utils.wvmInstance"), \
+             patch.object(Instance, "proxy", MagicMock()):
+            instances.return_value.moveto.return_value = ("live", [])
+            migrate_instance(dest, vm, user, live=True)
+        self.assertEqual(instances.return_value.moveto.call_args.kwargs["bandwidth"], 200)

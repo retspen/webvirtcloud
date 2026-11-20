@@ -61,7 +61,8 @@ NOT_FOUND = gettext_noop("The virtual machine is no longer in the panel.")
 DEVICES_REFUSED = gettext_noop("A host device of this virtual machine is not free on its host now; an administrator "
                                "can see why on its Host devices tab.")
 
-BOUNDS = {"WORKER_CONCURRENCY": (1, 16, 4), "JOB_RETENTION_DAYS": (1, 3650, 30), "LOG_RETENTION_DAYS": (1, 3650, 365)}
+BOUNDS = {"WORKER_CONCURRENCY": (1, 16, 4), "JOB_RETENTION_DAYS": (1, 3650, 30), "LOG_RETENTION_DAYS": (1, 3650, 365),
+          "MIGRATION_BANDWIDTH": (0, 100000, 0)}
 
 
 def safe_text(text):
@@ -225,3 +226,8 @@ def retention_days():
 
 def log_retention_days():
     return _value("LOG_RETENTION_DAYS")
+
+
+def migration_bandwidth():
+    """MiB/s a migration may take at most; 0: no limit."""
+    return _value("MIGRATION_BANDWIDTH")

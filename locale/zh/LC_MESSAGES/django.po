@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-20 06:10+0000\n"
+"POT-Creation-Date: 2026-11-20 06:30+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -1856,6 +1856,16 @@ msgid ""
 "An http(s) URL that gets the same alerts as a JSON POST (subject, text, time)"
 msgstr "以 JSON POST 接收相同告警的 http(s) URL（subject、text、time）"
 
+#: appsettings/migrations/0028_migration_bandwidth.py:5
+msgid "Migration bandwidth"
+msgstr "迁移带宽"
+
+#: appsettings/migrations/0028_migration_bandwidth.py:6
+msgid ""
+"MiB/s for the memory and each copied disk, not the final switchover; 0: "
+"libvirt's default"
+msgstr "内存及每个复制磁盘的 MiB/s 上限，不含最后切换；0：libvirt 默认值"
+
 #: appsettings/models.py:10
 msgid "key"
 msgstr "键"
@@ -1946,88 +1956,92 @@ msgid "Snapshots and jobs"
 msgstr "快照与任务"
 
 #: appsettings/views.py:59
+msgid "Migrations"
+msgstr "迁移"
+
+#: appsettings/views.py:60
 msgid "Login"
 msgstr "登录"
 
-#: appsettings/views.py:60
+#: appsettings/views.py:61
 msgid "Alerts"
 msgstr "告警"
 
-#: appsettings/views.py:61
+#: appsettings/views.py:62
 msgid "Lists and pages"
 msgstr "列表与页面"
 
-#: appsettings/views.py:69
+#: appsettings/views.py:70
 #, python-format
 msgid "%(setting)s takes at most %(length)s characters"
 msgstr "%(setting)s 最多 %(length)s 个字符"
 
-#: appsettings/views.py:74
+#: appsettings/views.py:75
 #, python-format
 msgid "%(setting)s must be a whole number between %(low)s and %(high)s"
 msgstr "%(setting)s 必须是 %(low)s 到 %(high)s 之间的整数"
 
-#: appsettings/views.py:77
+#: appsettings/views.py:78
 #, python-format
 msgid "%(setting)s must be one of %(choices)s"
 msgstr "%(setting)s 必须是以下之一：%(choices)s"
 
-#: appsettings/views.py:81
+#: appsettings/views.py:82
 #, python-format
 msgid "%(setting)s takes letters, digits and '-' only"
 msgstr "%(setting)s 只能包含字母、数字和 '-'"
 
-#: appsettings/views.py:91
+#: appsettings/views.py:92
 #, python-format
 msgid "%(setting)s: %(value)s is not an e-mail address or an http(s) URL"
 msgstr "%(setting)s：%(value)s 不是电子邮件地址或 http(s) URL"
 
-#: appsettings/views.py:100
+#: appsettings/views.py:101
 msgid "Disk I/O native needs disk cache none or directsync"
 msgstr "磁盘 I/O native 需要磁盘缓存为 none 或 directsync"
 
-#: appsettings/views.py:117
+#: appsettings/views.py:118
 msgid "Set an alert e-mail address or webhook and save it first"
 msgstr "请先设置并保存告警邮件地址或 Webhook"
 
-#: appsettings/views.py:119
+#: appsettings/views.py:120
 msgid "E-mail"
 msgstr "电子邮件"
 
-#: appsettings/views.py:119
+#: appsettings/views.py:120
 msgid "Webhook"
 msgstr "Webhook"
 
-#: appsettings/views.py:121
+#: appsettings/views.py:122
 #, python-format
 msgid "%(channel)s: the test alert was sent"
 msgstr "%(channel)s：测试告警已发送"
 
-#: appsettings/views.py:123
+#: appsettings/views.py:124
 #, python-format
 msgid "%(channel)s: the test alert failed: %(error)s"
 msgstr "%(channel)s：测试告警发送失败：%(error)s"
 
-#: appsettings/views.py:128
+#: appsettings/views.py:129
 #, python-format
 msgid "Unknown theme: %(theme)s"
 msgstr "未知主题：%(theme)s"
 
-#: appsettings/views.py:134
+#: appsettings/views.py:135
 #, python-format
 msgid "Theme is changed. Now: %(theme)s"
 msgstr "主题已更改。当前：%(theme)s"
 
-#: appsettings/views.py:171
+#: appsettings/views.py:172
 #, python-format
 msgid "Saved: %(settings)s"
 msgstr "已保存：%(settings)s"
 
-#: appsettings/views.py:173
+#: appsettings/views.py:174
 msgid "Nothing changed"
 msgstr "没有任何更改"
 
-#: appsettings/views.py:180 vrtManager/nodedevs.py:294
+#: appsettings/views.py:181 vrtManager/nodedevs.py:294
 #: vrtManager/nodedevs.py:333
 msgid "Other"
 msgstr "其他"
@@ -3392,7 +3406,7 @@ msgstr "VNC 密码最多 8 个字母、数字或符号，不能有带重音的�
 msgid "A password takes no line breaks or other control characters."
 msgstr "密码不能包含换行或其他控制字符。"
 
-#: instances/forms.py:114 vrtManager/instance.py:1738
+#: instances/forms.py:114 vrtManager/instance.py:1747
 msgid ""
 "The console listens on no address (on a network, a socket or nowhere); change"
 " it in the XML editor"
@@ -3486,7 +3500,7 @@ msgstr "虚拟机未定义；请检查这些卷，然后处理此任务：%(volu
 msgid "Delete snapshot"
 msgstr "删除快照"
 
-#: instances/jobs.py:365 vrtManager/instance.py:2499
+#: instances/jobs.py:365 vrtManager/instance.py:2508
 #, python-format
 msgid "The VM has no external snapshot named %(name)s"
 msgstr "虚拟机没有名为 %(name)s 的外部快照"
@@ -3518,7 +3532,7 @@ msgstr "虚拟机已不在运行该任务的计算节点上"
 msgid "Take snapshot"
 msgstr "创建快照"
 
-#: instances/jobs.py:433 instances/jobs.py:442 vrtManager/instance.py:2088
+#: instances/jobs.py:433 instances/jobs.py:442 vrtManager/instance.py:2097
 #, python-format
 msgid "A snapshot named %(name)s already exists"
 msgstr "名为 %(name)s 的快照已存在"
@@ -3659,12 +3673,12 @@ msgstr "镜像已存在。请检查卷或更改虚拟机名称"
 msgid "Each network card needs a network"
 msgstr "每个网卡都需要一个网络"
 
-#: instances/jobs.py:876 vrtManager/backup.py:387 vrtManager/instance.py:2915
+#: instances/jobs.py:876 vrtManager/backup.py:387 vrtManager/instance.py:2924
 #, python-format
 msgid "This host has no network %(name)s"
 msgstr "此主机没有网络 %(name)s"
 
-#: instances/jobs.py:878 vrtManager/backup.py:391 vrtManager/instance.py:2917
+#: instances/jobs.py:878 vrtManager/backup.py:391 vrtManager/instance.py:2926
 #, python-format
 msgid "This host has no network filter %(name)s"
 msgstr "此主机没有网络过滤器 %(name)s"
@@ -3734,7 +3748,7 @@ msgstr "cloud-init 种子需要为磁盘使用目录类型的存储池"
 msgid "This host offers no firmware %(firmware)s"
 msgstr "此主机不提供固件 %(firmware)s"
 
-#: instances/jobs.py:965 vrtManager/instance.py:3265
+#: instances/jobs.py:965 vrtManager/instance.py:3274
 msgid "This host offers no TPM 2.0: install swtpm on it"
 msgstr "此主机不提供 TPM 2.0：请在主机上安装 swtpm"
 
@@ -4991,7 +5005,7 @@ msgid "Add USB device"
 msgstr "添加 USB 设备"
 
 #: instances/templates/instances/host_devices_form.html:18
-#: vrtManager/instance.py:3168
+#: vrtManager/instance.py:3177
 msgid ""
 "A VM with a saved state does not change its USB devices: start it, or start "
 "it without its saved state"
@@ -6494,65 +6508,65 @@ msgstr "最近的记录，最新的在前。"
 msgid "All of this VM's logs"
 msgstr "该虚拟机的全部日志"
 
-#: instances/utils.py:95 instances/utils.py:127
+#: instances/utils.py:96 instances/utils.py:128
 #, python-format
 msgid ""
 "The disk files cannot be checked on %(host)s: it did not answer within "
 "%(seconds)s seconds"
 msgstr "无法在 %(host)s 上检查磁盘文件：它在 %(seconds)s 秒内没有响应"
 
-#: instances/utils.py:113
+#: instances/utils.py:114
 #, python-format
 msgid "The disk files cannot be checked on %(host)s: %(err)s"
 msgstr "无法在 %(host)s 上检查磁盘文件：%(err)s"
 
-#: instances/utils.py:177
+#: instances/utils.py:178
 msgid ""
 "The quota cannot be checked: a host of your virtual machines cannot be "
 "reached, or the size of one of their disks cannot be read. Nothing was "
 "changed."
 msgstr "无法检查配额：您的某台虚拟机所在主机无法连接，或其某个磁盘的大小无法读取。未做任何更改。"
 
-#: instances/utils.py:184
+#: instances/utils.py:185
 msgid "The quota of virtual machines is reached"
 msgstr "虚拟机配额已用尽"
 
-#: instances/utils.py:185
+#: instances/utils.py:186
 msgid "The vCPU quota is reached"
 msgstr "vCPU 配额已用尽"
 
-#: instances/utils.py:186
+#: instances/utils.py:187
 msgid "The memory quota is reached"
 msgstr "内存配额已用尽"
 
-#: instances/utils.py:187
+#: instances/utils.py:188
 msgid "The disk quota is reached"
 msgstr "磁盘配额已用尽"
 
-#: instances/utils.py:196
+#: instances/utils.py:197
 #, python-format
 msgid "%(quota)s (%(total)s > %(limit)s)"
 msgstr "%(quota)s（%(total)s > %(limit)s）"
 
-#: instances/utils.py:288
+#: instances/utils.py:289
 msgid "None available device name"
 msgstr "没有可用的设备名称"
 
-#: instances/utils.py:481
+#: instances/utils.py:483
 #, python-format
 msgid "Connection Failed: %(host)s did not answer within %(seconds)s seconds"
 msgstr "连接失败：%(host)s 在 %(seconds)s 秒内无响应"
 
-#: instances/utils.py:509
+#: instances/utils.py:511
 #, python-format
 msgid "%(hostname)s via %(address)s"
 msgstr "%(hostname)s，经由 %(address)s"
 
-#: instances/utils.py:542
+#: instances/utils.py:544
 msgid "Invalid MAC address"
 msgstr "无效的 MAC 地址"
 
-#: instances/utils.py:544
+#: instances/utils.py:546
 msgid "More MAC addresses than networks"
 msgstr "MAC 地址数量多于网络数量"
 
@@ -6876,7 +6890,7 @@ msgstr "卷已成功更改。"
 msgid "Disk %(dev)s is not a storage volume of this instance"
 msgstr "磁盘 %(dev)s 不是此虚拟机的存储卷"
 
-#: instances/views.py:1619 vrtManager/instance.py:2509
+#: instances/views.py:1619 vrtManager/instance.py:2518
 msgid "The VM has a saved state; start it or remove the saved state first"
 msgstr "虚拟机有保存的状态；请先启动它或删除保存的状态"
 
@@ -6930,7 +6944,7 @@ msgstr "快照未删除：%(err)s"
 msgid "Add at least one device to the boot order."
 msgstr "请至少向启动顺序中添加一个设备。"
 
-#: instances/views.py:1932 vrtManager/instance.py:1279
+#: instances/views.py:1932 vrtManager/instance.py:1288
 msgid "Invalid Device Type for boot order"
 msgstr "启动顺序的设备类型无效"
 
@@ -8623,23 +8637,23 @@ msgid ""
 "administrator can see why on its Host devices tab."
 msgstr "此虚拟机的某个主机设备目前在其主机上不可用；管理员可以在其“主机设备”选项卡中查看原因。"
 
-#: operations/utils.py:133
+#: operations/utils.py:134
 msgid "The panel failed unexpectedly; its log has the details."
 msgstr "面板发生意外错误；详细信息见面板日志。"
 
-#: operations/utils.py:199
+#: operations/utils.py:200
 msgid ""
 "A short operation is in progress on this resource; try again in a moment."
 msgstr "此资源上正在进行一项短时操作，请稍后重试。"
 
-#: operations/utils.py:204
+#: operations/utils.py:205
 #, python-format
 msgid ""
 "%(label)s is %(state)s on this resource (started by %(user)s, %(since)s ago);"
 " see the Jobs page."
 msgstr "此资源上的%(label)s%(state)s（由 %(user)s 于 %(since)s前发起），请查看任务页面。"
 
-#: operations/utils.py:206
+#: operations/utils.py:207
 #, python-format
 msgid "%(label)s is %(state)s on this resource (since %(since)s)."
 msgstr "此资源上的%(label)s%(state)s（自 %(since)s起）。"
@@ -10667,7 +10681,7 @@ msgid ""
 "Disks %(devs)s change at the next start; back the VM up after it restarts"
 msgstr "磁盘 %(devs)s 将在下次启动时更改；请在虚拟机重启后再备份"
 
-#: vrtManager/backup.py:127 vrtManager/instance.py:502
+#: vrtManager/backup.py:127 vrtManager/instance.py:508
 #, python-format
 msgid ""
 "The NVRAM file %(path)s is not in libvirt's NVRAM directory %(dir)s and "
@@ -10771,320 +10785,320 @@ msgid ""
 "from cannot be checked; start the pool first"
 msgstr "存储池 %(pool)s 未激活：无法检查其中虚拟机磁盘所基于的文件；请先启动该存储池"
 
-#: vrtManager/instance.py:183
+#: vrtManager/instance.py:185
 msgid "The VM is not running"
 msgstr "虚拟机未在运行"
 
-#: vrtManager/instance.py:188
+#: vrtManager/instance.py:190
 msgid "A running or paused VM cannot be migrated offline"
 msgstr "运行中或已暂停的虚拟机不能离线迁移"
 
-#: vrtManager/instance.py:191
+#: vrtManager/instance.py:193
 msgid "The VM can be migrated when it is running, paused or shut off"
 msgstr "虚拟机在运行、暂停或关机时可以迁移"
 
-#: vrtManager/instance.py:214
+#: vrtManager/instance.py:216
 msgid "A VM with snapshots cannot be migrated"
 msgstr "有快照的虚拟机不能迁移"
 
-#: vrtManager/instance.py:217
+#: vrtManager/instance.py:219
 msgid "A VM with a saved state cannot be migrated"
 msgstr "有保存的状态的虚拟机不能迁移"
 
-#: vrtManager/instance.py:224
+#: vrtManager/instance.py:226
 msgid "A VM with host devices cannot be migrated; remove them first"
 msgstr "有主机设备的虚拟机不能迁移；请先移除它们"
 
-#: vrtManager/instance.py:228
+#: vrtManager/instance.py:230
 #, python-format
 msgid "The destination host does not have these networks of the VM: %(names)s"
 msgstr "目标主机没有该虚拟机的这些网络：%(names)s"
 
-#: vrtManager/instance.py:232
+#: vrtManager/instance.py:234
 #, python-format
 msgid ""
 "The destination host does not have these network filters of the VM: %(names)s"
 msgstr "目标主机没有该虚拟机的这些网络过滤器：%(names)s"
 
-#: vrtManager/instance.py:235
+#: vrtManager/instance.py:237
 #, python-format
 msgid ""
 "These network filters of the VM have other rules on the destination host: "
 "%(names)s"
 msgstr "该虚拟机的这些网络过滤器在目标主机上的规则不同：%(names)s"
 
-#: vrtManager/instance.py:238
+#: vrtManager/instance.py:240
 #, python-format
 msgid "The destination host does not have these secrets of the VM: %(names)s"
 msgstr "目标主机没有该虚拟机的这些机密：%(names)s"
 
-#: vrtManager/instance.py:245
+#: vrtManager/instance.py:247
 #, python-format
 msgid "The destination host does not have these disks of the VM: %(disks)s"
 msgstr "目标主机没有该虚拟机的这些磁盘：%(disks)s"
 
-#: vrtManager/instance.py:246
+#: vrtManager/instance.py:248
 #, python-format
 msgid "%(target)s (%(source)s)"
 msgstr "%(target)s（%(source)s）"
 
-#: vrtManager/instance.py:254
+#: vrtManager/instance.py:256
 msgid "Destination host emulator is different. Cannot be migrated"
 msgstr "目标主机的模拟器不同，无法迁移"
 
-#: vrtManager/instance.py:392
+#: vrtManager/instance.py:398
 msgid "an image is not copied; eject it first"
 msgstr "镜像不会被复制；请先弹出它"
 
-#: vrtManager/instance.py:395
+#: vrtManager/instance.py:401
 msgid "a read-only or encrypted disk is not copied"
 msgstr "只读或加密的磁盘不会被复制"
 
-#: vrtManager/instance.py:398
+#: vrtManager/instance.py:404
 msgid "only raw and qcow2 disks are copied"
 msgstr "只复制 raw 和 qcow2 磁盘"
 
-#: vrtManager/instance.py:400
+#: vrtManager/instance.py:406
 msgid "no storage pool of the source host has it"
 msgstr "源主机的任何存储池中都没有它"
 
-#: vrtManager/instance.py:402
+#: vrtManager/instance.py:408
 msgid "a disk with a backing file is not copied"
 msgstr "有后备文件的磁盘不会被复制"
 
-#: vrtManager/instance.py:422
+#: vrtManager/instance.py:428
 #, python-format
 msgid ""
 "%(target)s (%(path)s): the destination host does not share it; choose a pool "
 "to copy it to"
 msgstr "%(target)s (%(path)s)：目标主机不共享它；请选择要复制到的存储池"
 
-#: vrtManager/instance.py:426
+#: vrtManager/instance.py:432
 #, python-format
 msgid "%(target)s (%(path)s): %(refusal)s"
 msgstr "%(target)s (%(path)s)：%(refusal)s"
 
-#: vrtManager/instance.py:431
+#: vrtManager/instance.py:437
 #, python-format
 msgid ""
 "%(target)s (%(path)s): the destination host has no pool %(pool)s for disk "
 "files"
 msgstr "%(target)s (%(path)s)：目标主机没有用于磁盘文件的存储池 %(pool)s"
 
-#: vrtManager/instance.py:438
+#: vrtManager/instance.py:444
 #, python-format
 msgid ""
 "%(target)s (%(path)s): pool %(pool)s of the destination host already has a "
 "file %(file)s"
 msgstr "%(target)s (%(path)s)：目标主机的存储池 %(pool)s 中已有文件 %(file)s"
 
-#: vrtManager/instance.py:445
+#: vrtManager/instance.py:451
 #, python-format
 msgid "%(target)s (%(path)s): another disk is copied to %(dest)s"
 msgstr "%(target)s (%(path)s)：另一个磁盘已复制到 %(dest)s"
 
-#: vrtManager/instance.py:450
+#: vrtManager/instance.py:456
 #, python-format
 msgid "%(target)s: the VM has no disk file to copy"
 msgstr "%(target)s：虚拟机没有可复制的磁盘文件"
 
-#: vrtManager/instance.py:454
+#: vrtManager/instance.py:460
 #, python-format
 msgid ""
 "%(target)s (%(path)s) of the next start: the destination host does not share "
 "it"
 msgstr "下次启动的 %(target)s (%(path)s)：目标主机不共享它"
 
-#: vrtManager/instance.py:458
+#: vrtManager/instance.py:464
 #, python-format
 msgid "The disks cannot be migrated: %(problems)s"
 msgstr "磁盘无法迁移：%(problems)s"
 
-#: vrtManager/instance.py:471
+#: vrtManager/instance.py:477
 #, python-format
 msgid ""
 "%(error)s; remove the partial disk copies from the destination host: "
 "%(copies)s"
 msgstr "%(error)s；请从目标主机删除不完整的磁盘副本：%(copies)s"
 
-#: vrtManager/instance.py:488
+#: vrtManager/instance.py:494
 #, python-format
 msgid ""
 "%(error)s; remove the partial disk copies from the destination host: %(left)s"
 msgstr "%(error)s；请从目标主机删除不完整的磁盘副本：%(left)s"
 
-#: vrtManager/instance.py:511
+#: vrtManager/instance.py:517
 #, python-format
 msgid "The destination host cannot see the NVRAM file %(path)s"
 msgstr "目标主机看不到 NVRAM 文件 %(path)s"
 
-#: vrtManager/instance.py:592
+#: vrtManager/instance.py:598
 #, python-format
 msgid "%(type)s disk, cannot be checked"
 msgstr "%(type)s 磁盘，无法检查"
 
-#: vrtManager/instance.py:632
+#: vrtManager/instance.py:638
 #, python-format
 msgid "The destination host already has a VM %(key)s"
 msgstr "目标主机上已有虚拟机 %(key)s"
 
-#: vrtManager/instance.py:655
+#: vrtManager/instance.py:661
 msgid "The VM was started on the source host during the migration"
 msgstr "迁移期间虚拟机在源主机上被启动"
 
-#: vrtManager/instance.py:671
+#: vrtManager/instance.py:677
 #, python-format
 msgid ""
 "%(error)s; the VM may now be defined only on the destination host: check both"
 " hosts"
 msgstr "%(error)s；虚拟机现在可能只在目标主机上定义：请检查两台主机"
 
-#: vrtManager/instance.py:677
+#: vrtManager/instance.py:683
 #, python-format
 msgid ""
 "%(error)s; the VM is now defined on both hosts, remove it from the "
 "destination: %(undo_error)s"
 msgstr "%(error)s；虚拟机现在在两台主机上都有定义，请从目标主机删除它：%(undo_error)s"
 
-#: vrtManager/instance.py:683
+#: vrtManager/instance.py:689
 msgid ""
 "Snapshot names are 1-64 letters, digits, '.', '_' or '-' and do not start "
 "with '.'"
 msgstr "快照名称为 1-64 个字母、数字、'.'、'_' 或 '-'，且不能以 '.' 开头"
 
-#: vrtManager/instance.py:741
+#: vrtManager/instance.py:747
 msgid "A VM with a host's or an external TPM is not cloned; remove it first"
 msgstr "带有主机 TPM 或外部 TPM 的虚拟机无法克隆；请先将其移除"
 
-#: vrtManager/instance.py:1267
+#: vrtManager/instance.py:1276
 msgid ""
 "A device other than a disk or NIC is in the boot order: change it in the XML "
 "editor"
 msgstr "启动顺序中有磁盘或网卡以外的设备：请在 XML 编辑器中修改"
 
-#: vrtManager/instance.py:1282
+#: vrtManager/instance.py:1291
 #, python-format
 msgid "Boot device %(dev)s is not in the definition"
 msgstr "启动设备 %(dev)s 不在定义中"
 
-#: vrtManager/instance.py:1302
+#: vrtManager/instance.py:1311
 #, python-format
 msgid "CD-ROM %(dev)s is not in the running definition"
 msgstr "CD-ROM %(dev)s 不在运行中的定义中"
 
-#: vrtManager/instance.py:1303
+#: vrtManager/instance.py:1312
 #, python-format
 msgid "CD-ROM %(dev)s is not in the persistent definition"
 msgstr "CD-ROM %(dev)s 不在持久定义中"
 
-#: vrtManager/instance.py:1316
+#: vrtManager/instance.py:1325
 #, python-format
 msgid "Media of %(dev)s changed in the running VM only: %(err)s"
 msgstr "%(dev)s 的介质仅在运行中的虚拟机中更改：%(err)s"
 
-#: vrtManager/instance.py:1327
+#: vrtManager/instance.py:1336
 #, python-format
 msgid "ISO image %(image)s was not found"
 msgstr "未找到 ISO 镜像 %(image)s"
 
-#: vrtManager/instance.py:1329
+#: vrtManager/instance.py:1338
 #, python-format
 msgid "ISO image %(image)s is in more than one storage pool"
 msgstr "ISO 镜像 %(image)s 位于多个存储池中"
 
-#: vrtManager/instance.py:1424
+#: vrtManager/instance.py:1433
 #, python-format
 msgid "Disk %(target_dev)s is not in the VM's definition"
 msgstr "磁盘 %(target_dev)s 不在虚拟机的定义中"
 
-#: vrtManager/instance.py:1556
+#: vrtManager/instance.py:1565
 msgid "Please shutdown the instance then try to enable vCPU hotplug"
 msgstr "请先关闭虚拟机，再启用 vCPU 热插拔"
 
-#: vrtManager/instance.py:1759
+#: vrtManager/instance.py:1768
 #, python-format
 msgid ""
 "The serial console is a %(type)s one, the browser opens only a pty one; "
 "change it in the XML editor"
 msgstr "串行控制台的类型是 %(type)s，浏览器只能打开 pty 类型的；请在 XML 编辑器中更改"
 
-#: vrtManager/instance.py:1870
+#: vrtManager/instance.py:1879
 msgid "The VM has no video card"
 msgstr "虚拟机没有显卡"
 
-#: vrtManager/instance.py:1880
+#: vrtManager/instance.py:1889
 #, python-format
 msgid ""
 "The VM's CPU topology has %(count)s vCPUs: change it in the XML editor to set"
 " another maximum"
 msgstr "该虚拟机的 CPU 拓扑为 %(count)s 个 vCPU：要设置其他最大值，请在 XML 编辑器中修改拓扑"
 
-#: vrtManager/instance.py:1906
+#: vrtManager/instance.py:1915
 #, python-format
 msgid "The VM's next start has a maximum memory of %(max)s MiB"
 msgstr "虚拟机下次启动时的最大内存为 %(max)s MiB"
 
-#: vrtManager/instance.py:2047
+#: vrtManager/instance.py:2056
 msgid ""
 "The VM has external snapshots; internal snapshots cannot be mixed with them"
 msgstr "虚拟机有外部快照；内部快照不能与其混用"
 
-#: vrtManager/instance.py:2079
+#: vrtManager/instance.py:2088
 msgid "A snapshot with memory is not quiesced; it keeps the whole guest state"
 msgstr "含内存的快照不会静默文件系统；它保存整个客户机状态"
 
-#: vrtManager/instance.py:2081
+#: vrtManager/instance.py:2090
 msgid "Only a running VM's file systems can be frozen"
 msgstr "只有运行中的虚拟机的文件系统可以冻结"
 
-#: vrtManager/instance.py:2083
+#: vrtManager/instance.py:2092
 msgid "The QEMU guest agent is not connected; it freezes the file systems"
 msgstr "QEMU 客户机代理未连接；文件系统由它冻结"
 
-#: vrtManager/instance.py:2086
+#: vrtManager/instance.py:2095
 msgid ""
 "The VM has internal snapshots; external snapshots cannot be mixed with them"
 msgstr "虚拟机有内部快照；外部快照不能与其混用"
 
-#: vrtManager/instance.py:2091
+#: vrtManager/instance.py:2100
 msgid "Newer snapshots exist after the last revert; delete them first"
 msgstr "上次还原后存在更新的快照；请先删除它们"
 
-#: vrtManager/instance.py:2094
+#: vrtManager/instance.py:2103
 msgid "No snapshot is current; revert to a snapshot first"
 msgstr "没有当前快照；请先还原到某个快照"
 
-#: vrtManager/instance.py:2100
+#: vrtManager/instance.py:2109
 #, python-format
 msgid "Eject the media from %(dev)s first"
 msgstr "请先弹出 %(dev)s 中的介质"
 
-#: vrtManager/instance.py:2102
+#: vrtManager/instance.py:2111
 #, python-format
 msgid "Disk %(dev)s is not a file; external snapshots need file disks"
 msgstr "磁盘 %(dev)s 不是文件；外部快照需要文件磁盘"
 
-#: vrtManager/instance.py:2110
+#: vrtManager/instance.py:2119
 #, python-format
 msgid ""
 "The storage pools could not be refreshed, so their free space is unknown: "
 "%(err)s"
 msgstr "无法刷新存储池，其可用空间未知：%(err)s"
 
-#: vrtManager/instance.py:2133
+#: vrtManager/instance.py:2142
 msgid "Memory is saved only from a running VM"
 msgstr "只能保存运行中的虚拟机的内存"
 
-#: vrtManager/instance.py:2135
+#: vrtManager/instance.py:2144
 msgid "The VM has no disk to keep its memory next to"
 msgstr "虚拟机没有可存放其内存的磁盘"
 
-#: vrtManager/instance.py:2139
+#: vrtManager/instance.py:2148
 #, python-format
 msgid "%(disk)s is not in a storage pool; memory is saved only into one"
 msgstr "%(disk)s 不在存储池中；内存只能保存到存储池中"
 
-#: vrtManager/instance.py:2170
+#: vrtManager/instance.py:2179
 #, python-format
 msgid ""
 "Storage pool %(pool)s has %(free).1f GiB free; the snapshot needs %(size).1f "
@@ -11094,147 +11108,147 @@ msgstr ""
 "存储池 %(pool)s 可用 %(free).1f GiB；快照需要 %(size).1f GiB（其中虚拟机磁盘的 %(percent)g%%，至少 "
 "%(minimum)g GiB，若保存内存则另加内存）"
 
-#: vrtManager/instance.py:2188
+#: vrtManager/instance.py:2197
 msgid ""
 "This snapshot was taken by an older version on a UEFI VM and cannot be "
 "reverted; delete it instead"
 msgstr "此快照由旧版本在 UEFI 虚拟机上创建，无法还原；请将其删除"
 
-#: vrtManager/instance.py:2218
+#: vrtManager/instance.py:2227
 #, python-format
 msgid ""
 "The revert failed twice; try again in a moment (%(error)s). The VM is "
 "running."
 msgstr "还原两次失败；请稍后重试（%(error)s）。虚拟机正在运行。"
 
-#: vrtManager/instance.py:2220
+#: vrtManager/instance.py:2229
 #, python-format
 msgid ""
 "The revert failed twice; try again in a moment (%(error)s). The VM is shut "
 "off."
 msgstr "还原两次失败；请稍后重试（%(error)s）。虚拟机已关机。"
 
-#: vrtManager/instance.py:2388
+#: vrtManager/instance.py:2397
 msgid "A disk moves when its VM is defined and running, paused or shut off"
 msgstr "仅当虚拟机已定义且处于运行、暂停或关机状态时才能移动磁盘"
 
-#: vrtManager/instance.py:2390
+#: vrtManager/instance.py:2399
 msgid ""
 "A disk of a VM with snapshots, a saved state or a running block job does not "
 "move"
 msgstr "有快照、保存的状态或正在运行块任务的虚拟机的磁盘不能移动"
 
-#: vrtManager/instance.py:2398
+#: vrtManager/instance.py:2407
 #, python-format
 msgid ""
 "%(dev)s is not a disk file of the VM, the same in its running and next "
 "start's definition"
 msgstr "%(dev)s 不是该虚拟机在运行中的定义和下次启动定义中相同的磁盘文件"
 
-#: vrtManager/instance.py:2403
+#: vrtManager/instance.py:2412
 #, python-format
 msgid "%(dev)s does not move: only writable raw and qcow2 disks do"
 msgstr "%(dev)s 不能移动：只能移动可写的 raw 和 qcow2 磁盘"
 
-#: vrtManager/instance.py:2410
+#: vrtManager/instance.py:2419
 #, python-format
 msgid "%(dev)s does not move: no storage pool has %(path)s"
 msgstr "%(dev)s 不能移动：没有存储池包含 %(path)s"
 
-#: vrtManager/instance.py:2412
+#: vrtManager/instance.py:2421
 #, python-format
 msgid "%(dev)s does not move: it has a backing file"
 msgstr "%(dev)s 不能移动：它有后备文件"
 
-#: vrtManager/instance.py:2415
+#: vrtManager/instance.py:2424
 #, python-format
 msgid "%(pool_name)s is not an active pool of disk files of this host"
 msgstr "%(pool_name)s 不是此主机上活动的磁盘文件存储池"
 
-#: vrtManager/instance.py:2418
+#: vrtManager/instance.py:2427
 #, python-format
 msgid "%(dev)s is in pool %(pool_name)s already"
 msgstr "%(dev)s 已在存储池 %(pool_name)s 中"
 
-#: vrtManager/instance.py:2422
+#: vrtManager/instance.py:2431
 #, python-format
 msgid "Pool %(pool_name)s already has a file %(name)s"
 msgstr "存储池 %(pool_name)s 中已有文件 %(name)s"
 
-#: vrtManager/instance.py:2446
+#: vrtManager/instance.py:2455
 #, python-format
 msgid "The copy of %(dev)s ended before it was complete"
 msgstr "%(dev)s 的复制在完成前结束"
 
-#: vrtManager/instance.py:2491
+#: vrtManager/instance.py:2500
 #, python-format
 msgid "%(error)s; remove %(dest)s if it is there: %(cleanup_error)s"
 msgstr "%(error)s；如果 %(dest)s 存在请将其删除：%(cleanup_error)s"
 
-#: vrtManager/instance.py:2493
+#: vrtManager/instance.py:2502
 #, python-format
 msgid "%(error)s; the VM may use %(dest)s now: check its disk %(dev)s"
 msgstr "%(error)s；虚拟机现在可能在使用 %(dest)s：请检查其磁盘 %(dev)s"
 
-#: vrtManager/instance.py:2500
+#: vrtManager/instance.py:2509
 #, python-format
 msgid "The VM has no internal snapshot named %(name)s"
 msgstr "虚拟机没有名为 %(name)s 的内部快照"
 
-#: vrtManager/instance.py:2511
+#: vrtManager/instance.py:2520
 msgid "A snapshot job is still running on this VM; try again when it ends"
 msgstr "此虚拟机上仍有快照任务在运行；请在其结束后重试"
 
-#: vrtManager/instance.py:2521
+#: vrtManager/instance.py:2530
 msgid "Shut the VM down to revert to an internal snapshot"
 msgstr "请关闭虚拟机后再还原到内部快照"
 
-#: vrtManager/instance.py:2588
+#: vrtManager/instance.py:2597
 msgid "Cannot clone a VM whose NVRAM is not a file"
 msgstr "NVRAM 不是文件的虚拟机无法克隆"
 
-#: vrtManager/instance.py:2659
+#: vrtManager/instance.py:2668
 #, python-format
 msgid "Clone failed (%(err)s); remove these copies by hand: %(path)s"
 msgstr "克隆失败（%(err)s）；请手动删除这些副本：%(path)s"
 
-#: vrtManager/instance.py:2670
+#: vrtManager/instance.py:2679
 msgid "Shut the VM down before cloning it"
 msgstr "请先关闭虚拟机再克隆"
 
-#: vrtManager/instance.py:2697
+#: vrtManager/instance.py:2706
 #, python-format
 msgid "Clone failed (%(err)s); remove these copies by hand: %(leftovers)s"
 msgstr "克隆失败（%(err)s）；请手动删除这些副本：%(leftovers)s"
 
-#: vrtManager/instance.py:2708
+#: vrtManager/instance.py:2717
 msgid "Live clone needs libvirt 11.10 or later; shut the VM down to clone it"
 msgstr "在线克隆需要 libvirt 11.10 或更高版本；请关闭虚拟机后再克隆"
 
-#: vrtManager/instance.py:2711
+#: vrtManager/instance.py:2720
 msgid "A VM with a TPM is cloned only shut down"
 msgstr "带 TPM 的虚拟机只能在关机时克隆"
 
-#: vrtManager/instance.py:2714
+#: vrtManager/instance.py:2723
 #, python-format
 msgid "Disk %(dev)s is not a local file; shut the VM down to clone it"
 msgstr "磁盘 %(dev)s 不是本地文件；请关闭虚拟机后再克隆"
 
-#: vrtManager/instance.py:2716
+#: vrtManager/instance.py:2725
 #, python-format
 msgid "Disk %(dev)s is shareable; shut the VM down to clone it"
 msgstr "磁盘 %(dev)s 是可共享的；请关闭虚拟机后再克隆"
 
-#: vrtManager/instance.py:2721
+#: vrtManager/instance.py:2730
 #, python-format
 msgid "Disk %(dev)s changes at the next start; shut the VM down to clone it"
 msgstr "磁盘 %(dev)s 在下次启动时会改变；请关闭虚拟机后再克隆"
 
-#: vrtManager/instance.py:2723
+#: vrtManager/instance.py:2732
 msgid "Another job is running on the VM; clone it when that ends"
 msgstr "虚拟机上有另一个任务正在运行；请在其结束后再克隆"
 
-#: vrtManager/instance.py:2749
+#: vrtManager/instance.py:2758
 #, python-format
 msgid ""
 "Storage pool %(pool)s has %(free).1f GiB free; the clone needs %(size).1f GiB"
@@ -11243,111 +11257,111 @@ msgstr ""
 "存储池 %(pool)s 可用 %(free).1f GiB；克隆需要 %(size).1f GiB（复制的磁盘，再加其 %(percent)g%%，至少"
 " %(minimum)g GiB）"
 
-#: vrtManager/instance.py:2766
+#: vrtManager/instance.py:2775
 #, python-format
 msgid "Volume %(name)s already exists in storage pool %(pool)s"
 msgstr "卷 %(name)s 已存在于存储池 %(pool)s 中"
 
-#: vrtManager/instance.py:2954
+#: vrtManager/instance.py:2963
 msgid "A network interface that is a host device is removed in the XML editor"
 msgstr "作为主机设备的网络接口需在 XML 编辑器中删除"
 
-#: vrtManager/instance.py:2970
+#: vrtManager/instance.py:2979
 #, python-format
 msgid "No network interface with MAC %(old_mac)s"
 msgstr "没有 MAC 为 %(old_mac)s 的网络接口"
 
-#: vrtManager/instance.py:2973
+#: vrtManager/instance.py:2982
 msgid "A network interface that is a host device is changed in the XML editor"
 msgstr "作为主机设备的网络接口需在 XML 编辑器中修改"
 
-#: vrtManager/instance.py:3067
+#: vrtManager/instance.py:3076
 msgid ""
 "A VM changes its PCI devices while it runs, or is shut off without a saved "
 "state"
 msgstr "虚拟机只能在运行时或无保存的状态的关机时更改其 PCI 设备"
 
-#: vrtManager/instance.py:3088
+#: vrtManager/instance.py:3097
 #, python-format
 msgid "%(err)s; whether the VM has %(device)s now is not known"
 msgstr "%(err)s；虚拟机现在是否有 %(device)s 未知"
 
-#: vrtManager/instance.py:3090
+#: vrtManager/instance.py:3099
 #, python-format
 msgid "%(err)s; %(device)s: the VM is not running, its next start has it"
 msgstr "%(err)s；%(device)s：虚拟机未运行，下次启动时有它"
 
-#: vrtManager/instance.py:3091
+#: vrtManager/instance.py:3100
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the VM is not running, its next start does not have it"
 msgstr "%(err)s；%(device)s：虚拟机未运行，下次启动时没有它"
 
-#: vrtManager/instance.py:3092
+#: vrtManager/instance.py:3101
 #, python-format
 msgid "%(err)s; %(device)s: the running VM has it, its next start has it"
 msgstr "%(err)s；%(device)s：运行中的虚拟机有它，下次启动时有它"
 
-#: vrtManager/instance.py:3093
+#: vrtManager/instance.py:3102
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the running VM has it, its next start does not have it"
 msgstr "%(err)s；%(device)s：运行中的虚拟机有它，下次启动时没有它"
 
-#: vrtManager/instance.py:3094
+#: vrtManager/instance.py:3103
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the running VM does not have it, its next start has it"
 msgstr "%(err)s；%(device)s：运行中的虚拟机没有它，下次启动时有它"
 
-#: vrtManager/instance.py:3096
+#: vrtManager/instance.py:3105
 #, python-format
 msgid ""
 "%(err)s; %(device)s: the running VM does not have it, its next start does not"
 " have it"
 msgstr "%(err)s；%(device)s：运行中的虚拟机没有它，下次启动时没有它"
 
-#: vrtManager/instance.py:3130
+#: vrtManager/instance.py:3139
 #, python-format
 msgid "The VM has no PCI device %(address)s"
 msgstr "虚拟机没有 PCI 设备 %(address)s"
 
-#: vrtManager/instance.py:3151
+#: vrtManager/instance.py:3160
 msgid "The VM has no USB controller"
 msgstr "虚拟机没有 USB 控制器"
 
-#: vrtManager/instance.py:3185
+#: vrtManager/instance.py:3194
 msgid "The VM has no such USB device"
 msgstr "虚拟机没有此 USB 设备"
 
-#: vrtManager/instance.py:3199
+#: vrtManager/instance.py:3208
 #, python-format
 msgid "The VM has no network interface %(mac)s"
 msgstr "虚拟机没有网络接口 %(mac)s"
 
-#: vrtManager/instance.py:3231
+#: vrtManager/instance.py:3240
 msgid "The VM has its own RNG device: change it in the XML editor"
 msgstr "虚拟机有自己的 RNG 设备：请在 XML 编辑器中修改"
 
-#: vrtManager/instance.py:3258
+#: vrtManager/instance.py:3267
 msgid "The VM has its own TPM: change it in the XML editor"
 msgstr "虚拟机有自己的 TPM：请在 XML 编辑器中修改"
 
-#: vrtManager/instance.py:3277
+#: vrtManager/instance.py:3286
 #, python-format
 msgid "Unknown crash action %(action)s"
 msgstr "未知的崩溃操作 %(action)s"
 
-#: vrtManager/instance.py:3304
+#: vrtManager/instance.py:3313
 #, python-format
 msgid "Network interface %(mac)s is not in the definition"
 msgstr "网络接口 %(mac)s 不在定义中"
 
-#: vrtManager/instance.py:3395
+#: vrtManager/instance.py:3404
 msgid "The guest agent did not answer in time; nothing was changed"
 msgstr "客户机代理未及时响应；未做任何更改"
 
-#: vrtManager/instance.py:3398
+#: vrtManager/instance.py:3407
 msgid "The VM runs Windows: its guest agent sets no root password or SSH key"
 msgstr "该虚拟机运行 Windows：其客户机代理不能设置 root 密码或 SSH 密钥"
 

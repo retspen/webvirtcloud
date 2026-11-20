@@ -56,6 +56,7 @@ GROUPS = [
                                  "ALLOW_INSTANCE_MULTIPLE_OWNER", "QUOTA_DEBUG"]),
     (gettext_noop("Snapshots and jobs"), ["SNAPSHOT_FREE_SPACE_PERCENT", "SNAPSHOT_FREE_SPACE_MIN_GIB",
                                "WORKER_CONCURRENCY", "JOB_RETENTION_DAYS"]),
+    (gettext_noop("Migrations"), ["MIGRATION_BANDWIDTH"]),
     (gettext_noop("Login"), ["LOGIN_FAILURE_LIMIT", "LOGIN_LOCKOUT_MINUTES"]),
     (gettext_noop("Alerts"), ["ALERT_EMAILS", "ALERT_WEBHOOK"]),
     (gettext_noop("Lists and pages"), ["VIEW_INSTANCES_LIST_STYLE", "VM_DRBD_STATUS", "LOGS_PER_PAGE",
@@ -67,18 +68,18 @@ def refusal(setting, value):
     """Why the value cannot be saved for the setting, or None."""
     if len(value) > AppSettings._meta.get_field("value").max_length:
         return _("%(setting)s takes at most %(length)s characters") % {
-            "setting": setting.name, "length": AppSettings._meta.get_field("value").max_length}
+            "setting": _(setting.name), "length": AppSettings._meta.get_field("value").max_length}
     if setting.key in NUMBERS:
         low, high = NUMBERS[setting.key]
         if not (value.isascii() and value.isdigit() and len(value) <= 10 and low <= int(value) <= high):
             return _("%(setting)s must be a whole number between %(low)s and %(high)s") % {
-                "setting": setting.name, "low": low, "high": high}
+                "setting": _(setting.name), "low": low, "high": high}
     elif setting.choices and value not in setting.choices_as_list():
         return _("%(setting)s must be one of %(choices)s") % {
-            "setting": setting.name, "choices": ", ".join(setting.choices_as_list())}
+            "setting": _(setting.name), "choices": ", ".join(setting.choices_as_list())}
     elif setting.key == "CLONE_INSTANCE_DEFAULT_PREFIX" and not re.fullmatch(r"[a-zA-Z0-9-]+", value):
         # a clone's name is the prefix and a number, and takes only these
-        return _("%(setting)s takes letters, digits and '-' only") % {"setting": setting.name}
+        return _("%(setting)s takes letters, digits and '-' only") % {"setting": _(setting.name)}
     try:
         if setting.key == "ALERT_EMAILS":
             for address in filter(None, (a.strip() for a in value.split(","))):
@@ -88,7 +89,7 @@ def refusal(setting, value):
             if "@" in urlsplit(value.strip()).netloc:  # urllib would take user:password@ for the host
                 raise ValidationError("credentials in the URL")
     except ValidationError:
-        return _("%(setting)s: %(value)s is not an e-mail address or an http(s) URL") % {"setting": setting.name, "value": value}
+        return _("%(setting)s: %(value)s is not an e-mail address or an http(s) URL") % {"setting": _(setting.name), "value": value}
     return None
 
 

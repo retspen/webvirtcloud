@@ -129,8 +129,9 @@ class RepairNumbersTestCase(TestCase):
     def test_a_number_an_older_version_saved_goes_back_to_its_default(self):
         from appsettings.views import NUMBERS
 
-        # the same ranges as the Settings page checks
-        self.assertEqual({key: bounds[:2] for key, bounds in repair_numbers.NUMBERS.items()}, NUMBERS)
+        # the same ranges as the Settings page checks (a setting added since is not the migration's)
+        self.assertEqual({key: bounds[:2] for key, bounds in repair_numbers.NUMBERS.items()},
+                         {key: NUMBERS[key] for key in repair_numbers.NUMBERS})
         for key, value in (("LOGS_PER_PAGE", "abc"), ("WORKER_CONCURRENCY", "0"), ("LOGIN_FAILURE_LIMIT", "")):
             AppSettings.objects.filter(key=key).update(value=value)
         AppSettings.objects.filter(key="LOG_RETENTION_DAYS").update(value="90")
