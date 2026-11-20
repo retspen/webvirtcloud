@@ -429,8 +429,11 @@ class CreateSnapshot(Kind):
 
     def validate(self, user, params):
         check_snapshot_name(params["name"])
+        proxy = _proxy(_authorized(user, params["instance"]))
+        if params["external"]:  # what it reads before taking one, refused before it is queued
+            proxy.check_external_snapshot(params["name"])
         # recovery counts a listed snapshot as taken by the job
-        if params["name"] in _proxy(_authorized(user, params["instance"])).instance.snapshotListNames(0):
+        elif params["name"] in proxy.instance.snapshotListNames(0):
             raise util.OperationError(_("A snapshot named %(name)s already exists"), name=params["name"])
 
     def plan(self, user, params):

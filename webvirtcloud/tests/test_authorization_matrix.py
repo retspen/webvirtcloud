@@ -35,6 +35,7 @@ ALLOWED_FOR_ANY_USER = {
     "instances:index": "lists only the user's own instances",
     "instances:find_address": "searches only the user's own instances",
     "instances:states": "the VM list's poll: only the user's own instances",
+    "instances:bulk_snapshot": "queues a snapshot.create job only for VMs the user may snapshot (its validate)",
     "instances:bulk_power": "queues a job only for VMs the user may power (instances.jobs.PowerVM)",
     "accounts:login": "login page",
     "accounts:email_otp": "part of the login flow (its own issues are tracked separately)",

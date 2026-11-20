@@ -40,15 +40,15 @@
         later = setTimeout(update, 50);
     }).observe(document.querySelector(".table-responsive") || document.body,
                {attributes: true, attributeFilter: ["hidden", "class"], subtree: true});
-    // Enter in the tag box would send the form with its first button, Start: it sends nothing
-    var tagBox = document.getElementById("bulk-tag");
-    if (tagBox) {
-        tagBox.addEventListener("keydown", function (event) {
+    // Enter in a text box (a tag, a snapshot's name) would send the form with its first button,
+    // Start: it sends nothing
+    form.querySelectorAll("input[type='text']").forEach(function (box) {
+        box.addEventListener("keydown", function (event) {
             if (event.key === "Enter") {
                 event.preventDefault();
             }
         });
-    }
+    });
     form.addEventListener("submit", function (event) {
         document.querySelectorAll("input[name='vm'][form='bulk-power']:checked").forEach(function (box) {
             if (!box.getClientRects().length) {

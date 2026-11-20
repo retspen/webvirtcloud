@@ -2150,22 +2150,11 @@ class wvmInstance(wvmConnect):
                   </domainsnapshot>"""
         self.instance.snapshotCreateXML(xml, 0)
 
-    def create_external_snapshot(self, name, desc="", memory=False, quiesce=False, free_percent=10, free_min_gib=1):
-        """A disk-only snapshot, or with memory too (running VMs only). Every
-        disk gets a libvirt-named overlay next to it; the memory file goes
-        next to the first disk. quiesce: the guest agent freezes the guest's
-        file systems for a disk-only snapshot of a running VM (libvirt
-        accepts it only without memory, which keeps the whole state anyway).
-        free_percent, free_min_gib: the free space each pool keeps (see
-        _check_snapshot_space)."""
+    def check_external_snapshot(self, name):
+        """Refuses (OperationError) an external snapshot of name the VM cannot take, reading only:
+        its state, internal snapshots, the name taken, snapshots newer than the current one, a disk
+        that is no file or media still inserted. The VM's live definition, parsed."""
         check_snapshot_name(name)
-        if quiesce:
-            if memory:
-                raise util.OperationError(gettext_noop("A snapshot with memory is not quiesced; it keeps the whole guest state"))
-            if self.get_status() != 1:
-                raise util.OperationError(gettext_noop("Only a running VM's file systems can be frozen"))
-            if not self.is_agent_ready():
-                raise util.OperationError(gettext_noop("The QEMU guest agent is not connected; it freezes the file systems"))
         self._check_snapshot_state()
         if self.instance.snapshotListNames(VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL):
             raise util.OperationError(gettext_noop("The VM has internal snapshots; external snapshots cannot be mixed with them"))
@@ -2185,6 +2174,24 @@ class wvmInstance(wvmConnect):
                     raise util.OperationError(gettext_noop("Eject the media from %(dev)s first"), dev=dev)
             elif disk.get("type") != "file":
                 raise util.OperationError(gettext_noop("Disk %(dev)s is not a file; external snapshots need file disks"), dev=dev)
+        return tree
+
+    def create_external_snapshot(self, name, desc="", memory=False, quiesce=False, free_percent=10, free_min_gib=1):
+        """A disk-only snapshot, or with memory too (running VMs only). Every
+        disk gets a libvirt-named overlay next to it; the memory file goes
+        next to the first disk. quiesce: the guest agent freezes the guest's
+        file systems for a disk-only snapshot of a running VM (libvirt
+        accepts it only without memory, which keeps the whole state anyway).
+        free_percent, free_min_gib: the free space each pool keeps (see
+        _check_snapshot_space)."""
+        if quiesce:
+            if memory:
+                raise util.OperationError(gettext_noop("A snapshot with memory is not quiesced; it keeps the whole guest state"))
+            if self.get_status() != 1:
+                raise util.OperationError(gettext_noop("Only a running VM's file systems can be frozen"))
+            if not self.is_agent_ready():
+                raise util.OperationError(gettext_noop("The QEMU guest agent is not connected; it freezes the file systems"))
+        tree = self.check_external_snapshot(name)
         disks = list(self._disk_sources(tree).values())
         # free space, and the top overlays, are known to the pools only after
         # a refresh; nothing has changed yet when it fails

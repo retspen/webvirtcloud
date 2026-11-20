@@ -60,7 +60,8 @@ from webvirtcloud.middleware import error_text, same_origin_referer
 from vrtManager import util
 from vrtManager.connection import CONNECT_TIMEOUT
 from vrtManager.create import cpu_choices, wvmCreate
-from vrtManager.instance import BYTES_MAX, IOPS_MAX, USAGE_MAX_WINDOW, VIR_ERR_AGENT_COMMAND_TIMEOUT, wvmInstances
+from vrtManager.instance import (BYTES_MAX, IOPS_MAX, USAGE_MAX_WINDOW, VIR_ERR_AGENT_COMMAND_TIMEOUT, check_snapshot_name,
+                                 wvmInstances)
 from vrtManager.interface import wvmInterface
 from vrtManager.nodedevs import (check_hostdevs, device_names, hostdev_problems, hostdev_users, managed_pci,
                                  node_devices, pci_problems, usb_unmatched)
@@ -136,6 +137,9 @@ def index(request):
          # a superuser's bulk tag box offers every tag, as the Settings tab's picker
          "tag_names": list(Tag.objects.order_by("name").values_list("name", flat=True)) if request.user.is_superuser else [],
          "bulk_max": BULK_MAX,
+         # the bulk snapshot box: for one who may snapshot a listed VM (change rights and the permission)
+         "snapshotable": request.user.is_superuser or (request.user.has_perm("instances.snapshot_instances") and
+                                                      UserInstance.objects.filter(user=request.user, is_change=True).exists()),
          "powerable": {i.pk for i in instances} if request.user.is_superuser else
          set(UserInstance.objects.filter(user=request.user).values_list("instance_id", flat=True))},
     )
@@ -748,22 +752,11 @@ def bulk_tag(request):
     return redirect("instances:index")
 
 
-@require_POST
-def bulk_power(request):
-    """Starts, shuts down or forces off the VMs chosen on the VM list: a job each
-    (instances.jobs.POWER), followed on the Jobs page. A VM the user may not
-    power, gone, or held by another job is named (if the user may see it);
-    the others are queued."""
-    from instances.jobs import POWER  # instances.jobs imports this module
-
-    action, key = request.POST.get("action", ""), request.POST.get("submission_key", "")
-    vms = _chosen_vms(request)
-    if action not in POWER or not vms or not KEY_RE.fullmatch(key) or len(key) > 50:
-        messages.error(request, _("Choose the VMs you may power, and Start, Shut down or Force off"))
-        return redirect("instances:index")
-    if len(vms) > BULK_MAX:
-        messages.error(request, _("Choose at most %(count)s VMs at once") % {"count": BULK_MAX})
-        return redirect("instances:index")
+def _queue_each(request, vms, kind, raw, refused):
+    """A job of kind for each of vms (raw: its parameters, the VM given), followed on the Jobs page.
+    A VM refused (refused: the words, with %(vm)s), gone or held by another job is named, if the
+    user may see it; the others are queued. One key per VM: a resent form queues none twice."""
+    key = request.POST.get("submission_key", "")
     names = dict(Instance.objects.filter(pk__in=vms).values_list("pk", "name"))
     seen = names if request.user.is_superuser else dict(Instance.objects.filter(
         pk__in=vms, userinstance__user=request.user).values_list("pk", "name"))
@@ -771,20 +764,75 @@ def bulk_power(request):
     for pk in vms:
         name = seen.get(pk) or _("a chosen VM")  # one the user may not see is not named
         try:
-            # one key per VM: a resent form queues none twice
-            jobs.submit(POWER[action], request.user, {"instance": pk}, f"{key}-{pk}")
+            jobs.submit(kind, request.user, {**raw, "instance": pk}, f"{key}-{pk}")
             queued += 1
         except claims.Busy as busy:
             messages.error(request, f"{name}: {busy_message(busy, request.user)}")
         except (Http404, PermissionDenied, Instance.DoesNotExist):
-            messages.error(request, _("%(vm)s: you may not power it now") % {"vm": name})
+            messages.error(request, refused % {"vm": name})
         except (jobs.SubmissionConflict, libvirtError) as err:
             messages.error(request, f"{name}: {error_text(request, err)}")
     if not queued:
         return redirect("instances:index")
     messages.success(request, ngettext("%(count)s VM is queued; the Jobs page follows it.",
                                        "%(count)s VMs are queued; the Jobs page follows them.", queued) % {"count": queued})
-    return redirect(reverse("operations:jobs") + f"?kind={POWER[action]}")
+    return redirect(reverse("operations:jobs") + f"?kind={kind}")
+
+
+def _bulk_refused(request, vms, text):
+    """Why the VM list's bulk form cannot be taken (text when nothing fits), or None."""
+    key = request.POST.get("submission_key", "")
+    if not vms or not KEY_RE.fullmatch(key) or len(key) > 50:
+        return text
+    if len(vms) > BULK_MAX:
+        return _("Choose at most %(count)s VMs at once") % {"count": BULK_MAX}
+    return None
+
+
+@require_POST
+def bulk_power(request):
+    """Starts, shuts down or forces off the VMs chosen on the VM list: a job each
+    (instances.jobs.POWER), as their pages' buttons do."""
+    from instances.jobs import POWER  # instances.jobs imports this module
+
+    action, vms = request.POST.get("action", ""), _chosen_vms(request)
+    refusal = _bulk_refused(request, vms, _("Choose the VMs you may power, and Start, Shut down or Force off"))
+    if action not in POWER or refusal:
+        messages.error(request, refusal or _("Choose the VMs you may power, and Start, Shut down or Force off"))
+        return redirect("instances:index")
+    return _queue_each(request, vms, POWER[action], {}, _("%(vm)s: you may not power it now"))
+
+
+@require_POST
+def bulk_snapshot(request):
+    """An external snapshot, of one name and without memory, of each VM chosen on the VM list: a
+    snapshot.create job each, as on its Snapshots tab, which has the other choices."""
+    name, vms = request.POST.get("snapshot_name", "").strip(), _chosen_vms(request)
+    refusal = _bulk_refused(request, vms, _("Choose the VMs and write the snapshot's name"))
+    if not name or refusal:
+        messages.error(request, refusal or _("Choose the VMs and write the snapshot's name"))
+        return redirect("instances:index")
+    try:
+        check_snapshot_name(name)
+    except util.OperationError as err:
+        messages.error(request, error_text(request, err))
+        return redirect("instances:index")
+    # a template's page has no snapshot controls: none is taken here either
+    templates = set(Instance.objects.filter(pk__in=vms, is_template=True).values_list("pk", flat=True))
+    for pk in templates:
+        messages.error(request, _("%(vm)s: a template's snapshots are not taken here") % {"vm": _visible_name(request, pk)})
+    if templates and not set(vms) - templates:
+        return redirect("instances:index")
+    return _queue_each(request, [pk for pk in vms if pk not in templates], "snapshot.create",
+                       {"name": name, "external": True}, _("%(vm)s: you may not snapshot it"))
+
+
+def _visible_name(request, pk):
+    """The VM's name if the user may see it, else words that do not name it."""
+    visible = Instance.objects.filter(pk=pk)
+    if not request.user.is_superuser:
+        visible = visible.filter(userinstance__user=request.user)
+    return visible.values_list("name", flat=True).first() or _("a chosen VM")
 
 
 def from_script(request):

@@ -14,6 +14,7 @@ urlpatterns = [
     path("<int:pk>/", views.instance, name="instance"),
     path("bulk_power/", views.bulk_power, name="bulk_power"),
     path("bulk_tag/", views.bulk_tag, name="bulk_tag"),
+    path("bulk_snapshot/", views.bulk_snapshot, name="bulk_snapshot"),
     path("<int:pk>/poweron/", views.poweron, name="poweron"),
     path("<int:pk>/powercycle/", views.powercycle, name="powercycle"),
     path("<int:pk>/poweroff/", views.poweroff, name="poweroff"),

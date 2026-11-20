@@ -66,15 +66,16 @@ class BulkTagTestCase(TestCase):
         with patch("instances.views.utils.vm_states", return_value={}), \
                 patch("instances.views.refresh_instance_database"), patch("instances.views.utils.read_list_rows"):
             page = html.fromstring(self.client.get(reverse("instances:index")).content)
-        self.assertFalse(page.xpath("//button[@formaction]"))
+        self.assertFalse(page.xpath("//button[starts-with(@value, 'tag_')]"))
 
     def test_the_list_offers_them_to_a_superuser(self):
         with patch("instances.views.utils.vm_states", return_value={}), \
                 patch("instances.views.refresh_instance_database"), patch("instances.views.utils.read_list_rows"):
             page = html.fromstring(self.client.get(reverse("instances:index")).content)
         (form,) = page.xpath("//form[@id='bulk-power']")
-        self.assertEqual(form.xpath(".//button[@formaction]/@value"), ["tag_add", "tag_remove"])
-        self.assertEqual(set(form.xpath(".//button[@formaction]/@formaction")), {reverse("instances:bulk_tag")})
+        tag_buttons = form.xpath(".//button[starts-with(@value, 'tag_')]")
+        self.assertEqual([b.get("value") for b in tag_buttons], ["tag_add", "tag_remove"])
+        self.assertEqual({b.get("formaction") for b in tag_buttons}, {reverse("instances:bulk_tag")})
         self.assertTrue(form.xpath(".//input[@name='tag']"))
         # every tag offered, also one no VM has
         Tag.objects.create(name="hosts-only")

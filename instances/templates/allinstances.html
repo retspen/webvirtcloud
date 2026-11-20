@@ -72,6 +72,15 @@
                     <button type="submit" class="btn btn-outline-danger" name="action" value="force_off" disabled
                             data-confirm="{% trans "Force off the chosen VMs? They stop at once, as if unplugged, and may lose unsaved data." %}">{% trans "Force off" %}</button>
                 </div>
+                {% if snapshotable %}
+                {# external, without memory and without freezing file systems: the VM's Snapshots tab has those choices #}
+                <div class="input-group input-group-sm w-auto">
+                    <input class="form-control" type="text" name="snapshot_name" maxlength="64" placeholder="{% trans "Snapshot name" %}"
+                           aria-label="{% trans "Snapshot name" %}" style="width: 10rem">
+                    <button type="submit" class="btn btn-outline-primary" name="action" value="snapshot" formaction="{% url 'instances:bulk_snapshot' %}" disabled
+                            title="{% trans "An external snapshot of each chosen VM, without memory and without freezing its file systems" %}">{% trans "Take snapshots" %}</button>
+                </div>
+                {% endif %}
                 {% if request.user.is_superuser %}
                 {# tags are a superuser's, as on the VM's Settings tab #}
                 <div class="input-group input-group-sm w-auto">
