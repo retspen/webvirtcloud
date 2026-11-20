@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-20 05:17+0000\n"
+"POT-Creation-Date: 2026-11-20 05:53+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -257,7 +257,7 @@ msgstr "仅电源和控制台"
 
 #: accounts/templates/account.html:81 computes/templates/computes/list.html:110
 #: instances/templates/instance_actions.html:9
-#: storages/templates/storage.html:166
+#: storages/templates/storage.html:167
 #, python-format
 msgid "Actions for %(name)s"
 msgstr "%(name)s 的操作"
@@ -321,7 +321,7 @@ msgstr "您在此处保持登录；您的其他会话将结束。"
 #: storages/templates/create_stg_block.html:183
 #: storages/templates/create_stg_vol_block.html:35
 #: storages/templates/create_stg_vol_block.html:68
-#: storages/templates/storage.html:228 templates/base.html:65
+#: storages/templates/storage.html:229 templates/base.html:65
 #: templates/common/confirm_delete.html:25 templates/common/form.html:27
 #: virtsecrets/templates/create_secret_block.html:48
 #: virtsecrets/templates/secrets.html:106
@@ -463,7 +463,7 @@ msgstr "API 令牌 %(name)s 的操作"
 #: accounts/templates/ssh_key_list.html:13
 #: admin/templates/admin/group_list.html:44
 #: admin/templates/admin/tag_list.html:38
-#: admin/templates/admin/tombstone_list.html:44
+#: admin/templates/admin/tombstone_list.html:50
 #: admin/templates/admin/user_list.html:74
 #: admin/templates/admin/user_list.html:76
 #: instances/templates/create_flavors.html:11
@@ -471,7 +471,7 @@ msgstr "API 令牌 %(name)s 的操作"
 #: instances/templates/instances/settings_tab.html:315
 #: instances/templates/instances/snapshots_tab.html:103
 #: instances/templates/instances/snapshots_tab.html:117
-#: networks/templates/network.html:168 storages/templates/storage.html:179
+#: networks/templates/network.html:168 storages/templates/storage.html:180
 #: templates/common/confirm_delete.html:5
 #: templates/common/confirm_delete.html:9
 #: templates/common/confirm_delete.html:26
@@ -985,16 +985,16 @@ msgstr "结果"
 msgid "IP"
 msgstr "IP"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:397 instances/states.py:19
+#: admin/templates/admin/logs.html:56 admin/views.py:398 instances/states.py:19
 #: instances/views.py:491 logs/views.py:18
 msgid "Unknown"
 msgstr "未知"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:397 logs/views.py:18
+#: admin/templates/admin/logs.html:56 admin/views.py:398 logs/views.py:18
 msgid "Done"
 msgstr "完成"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:397 logs/views.py:18
+#: admin/templates/admin/logs.html:56 admin/views.py:398 logs/views.py:18
 #: operations/templates/operations/job.html:110
 #: vmbackups/templates/vmbackups/index.html:34
 #: vmbackups/templates/vmbackups/policy.html:39
@@ -1093,15 +1093,29 @@ msgstr "已离开"
 msgid "Owners"
 msgstr "所有者"
 
-#: admin/templates/admin/tombstone_list.html:39
+#: admin/templates/admin/tombstone_list.html:40
+#: vmbackups/templates/vmbackups/index.html:12
+#: vmbackups/templates/vmbackups/policies.html:8
+#: vmbackups/templates/vmbackups/policy.html:10
+#: vmbackups/templates/vmbackups/policy_new.html:8
+msgid "Schedules"
+msgstr "计划"
+
+#: admin/templates/admin/tombstone_list.html:41
+#, python-format
+msgid "%(counter)s backup"
+msgid_plural "%(counter)s backups"
+msgstr[0] "%(counter)s 个备份"
+
+#: admin/templates/admin/tombstone_list.html:45
 msgid "Removed"
 msgstr "移除时间"
 
-#: admin/templates/admin/tombstone_list.html:40
+#: admin/templates/admin/tombstone_list.html:46
 msgid "expires"
 msgstr "过期"
 
-#: admin/templates/admin/tombstone_list.html:51
+#: admin/templates/admin/tombstone_list.html:57
 msgid "No removed VM matches the search."
 msgstr "没有与搜索匹配的已移除虚拟机。"
 
@@ -1186,7 +1200,7 @@ msgstr "创建用户"
 msgid "New user"
 msgstr "新建用户"
 
-#: admin/templates/admin/user_list.html:19 admin/views.py:181
+#: admin/templates/admin/user_list.html:19 admin/views.py:182
 #: instances/templates/instances/settings_tab.html:79 templates/navbar.html:35
 msgid "Users"
 msgstr "用户"
@@ -1244,94 +1258,94 @@ msgstr "使用此处设置的密码登录。"
 msgid "Signs in another way, such as LDAP. The current password is removed."
 msgstr "通过其他方式（如 LDAP）登录。当前密码将被移除。"
 
-#: admin/views.py:44
+#: admin/views.py:45
 #, python-format
 msgid ""
 "%(name)s was changed meanwhile: here it is as it is now; make your change "
 "again"
 msgstr "%(name)s 在此期间已更改：以下是其当前状态；请重新进行更改"
 
-#: admin/views.py:77
+#: admin/views.py:78
 msgid "Create Group"
 msgstr "创建用户组"
 
-#: admin/views.py:119
+#: admin/views.py:120
 msgid "Update Group"
 msgstr "更新用户组"
 
-#: admin/views.py:135
+#: admin/views.py:136
 msgid "Its members stay but lose the permissions it gave them."
 msgstr "其成员仍保留，但会失去该用户组授予的权限。"
 
-#: admin/views.py:141
+#: admin/views.py:142
 msgid "You cannot block, delete or demote your own account"
 msgstr "不能禁用、删除或降级你自己的账户"
 
-#: admin/views.py:142
+#: admin/views.py:143
 msgid "This would leave no active superuser"
 msgstr "这将导致没有可用的超级用户"
 
-#: admin/views.py:216
+#: admin/views.py:217
 msgid "Create User"
 msgstr "创建用户"
 
-#: admin/views.py:289
+#: admin/views.py:290
 msgid "Update User"
 msgstr "更新用户"
 
-#: admin/views.py:313
+#: admin/views.py:314
 #, python-format
 msgid "Password changed for %(user)s"
 msgstr "已为 %(user)s 修改密码"
 
-#: admin/views.py:340
+#: admin/views.py:341
 msgid "Their access to VMs, SSH keys and settings go; the VMs themselves stay."
 msgstr "其对虚拟机、SSH 密钥和设置的访问将被移除；虚拟机本身保留。"
 
-#: admin/views.py:446
+#: admin/views.py:452
 msgid "deleted user"
 msgstr "已删除的用户"
 
-#: admin/views.py:458
+#: admin/views.py:466
 #, python-format
 msgid "Removed VM %(name)s deleted"
 msgstr "已删除已移除的虚拟机 %(name)s"
 
-#: admin/views.py:465
+#: admin/views.py:473
 msgid ""
 "Its owners, tags, protection and schedules no longer come back if its UUID "
 "shows up again, nor are its backups linked to it again."
 msgstr "若其 UUID 再次出现，其所有者、标签、保护和计划将不再恢复，其备份也不会重新关联到它。"
 
-#: admin/views.py:512
+#: admin/views.py:520
 #, python-format
 msgid "Rename tag %(tag)s"
 msgstr "重命名标签 %(tag)s"
 
-#: admin/views.py:517
+#: admin/views.py:525
 #, python-format
 msgid "The backup schedule %(schedules)s backs up its VMs: change it first"
 msgid_plural ""
 "The backup schedules %(schedules)s back up its VMs: change them first"
 msgstr[0] "备份计划 %(schedules)s 正在备份该标签的虚拟机：请先修改计划"
 
-#: admin/views.py:535
+#: admin/views.py:543
 #, python-format
 msgid "Tag %(tag)s deleted"
 msgstr "标签 %(tag)s 已删除"
 
-#: admin/views.py:543
+#: admin/views.py:551
 #, python-format
 msgid "It is taken off %(vms)s and %(hosts)s."
 msgstr "它将从 %(vms)s 和 %(hosts)s 上移除。"
 
-#: admin/views.py:544
+#: admin/views.py:552
 #, python-format
 msgid "%(count)s VM"
 msgid_plural "%(count)s VMs"
 msgstr[0] "%(count)s 个虚拟机"
 
-#: admin/views.py:545
+#: admin/views.py:553
 #, python-format
 msgid "%(count)s host"
 msgid_plural "%(count)s hosts"
@@ -3230,7 +3244,7 @@ msgstr "连接"
 #: storages/templates/create_stg_block.html:21
 #: storages/templates/create_stg_vol_block.html:16
 #: storages/templates/create_stg_vol_block.html:54
-#: storages/templates/storage.html:201 templates/base.html:61
+#: storages/templates/storage.html:202 templates/base.html:61
 #: virtsecrets/templates/create_secret_block.html:16
 #: virtsecrets/templates/secrets.html:97
 msgid "Close"
@@ -4052,7 +4066,7 @@ msgstr "存储池"
 
 #: instances/templates/add_instance_volume.html:41
 #: instances/templates/create_instance_w2.html:46 storages/forms.py:119
-#: storages/templates/storage.html:209
+#: storages/templates/storage.html:210
 msgid "Letters, digits, dot, dash and underscore."
 msgstr "字母、数字、点、短横线和下划线。"
 
@@ -4065,14 +4079,14 @@ msgstr "大小"
 
 #: instances/templates/add_instance_volume.html:51
 #: instances/templates/instances/edit_instance_volume.html:82
-#: storages/templates/storage.html:141 storages/templates/storage.html:216
+#: storages/templates/storage.html:141 storages/templates/storage.html:217
 msgid "Format"
 msgstr "格式"
 
 #: instances/templates/add_instance_volume.html:61
 #: instances/templates/create_instance_w2.html:154
 #: instances/templates/create_instance_w2.html:220 storages/forms.py:125
-#: storages/forms.py:145 storages/templates/storage.html:224
+#: storages/forms.py:145 storages/templates/storage.html:225
 msgid "Preallocate metadata (qcow2)"
 msgstr "预分配元数据（qcow2）"
 
@@ -4550,7 +4564,7 @@ msgstr "详情"
 #: instances/templates/instances/settings_tab.html:882
 #: instances/templates/instances/settings_tab.html:884
 #: nwfilters/templates/nwfilters.html:57 nwfilters/templates/nwfilters.html:94
-#: storages/templates/storage.html:169 storages/templates/storage.html:229
+#: storages/templates/storage.html:170 storages/templates/storage.html:230
 msgid "Clone"
 msgstr "克隆"
 
@@ -4657,7 +4671,7 @@ msgstr "关机"
 #: instances/templates/instance_actions.html:39
 #: interfaces/templates/interface.html:22 networks/templates/network.html:22
 #: networks/templates/network.html:162 storages/templates/storage.html:26
-#: storages/templates/storage.html:173
+#: storages/templates/storage.html:174
 msgid "More actions"
 msgstr "更多操作"
 
@@ -8307,7 +8321,7 @@ msgstr "没有与搜索匹配的过滤器。"
 msgid "Clone filter"
 msgstr "克隆过滤器"
 
-#: nwfilters/templates/nwfilters.html:88 storages/templates/storage.html:207
+#: nwfilters/templates/nwfilters.html:88 storages/templates/storage.html:208
 msgid "Name of the copy"
 msgstr "副本名称"
 
@@ -9053,55 +9067,60 @@ msgstr "搜索卷"
 msgid "Volume use"
 msgstr "卷使用情况"
 
-#: storages/templates/storage.html:128 storages/templates/storage.html:156
+#: storages/templates/storage.html:128 storages/templates/storage.html:157
 msgid "In use"
 msgstr "使用中"
 
-#: storages/templates/storage.html:131 storages/templates/storage.html:157
+#: storages/templates/storage.html:131 storages/templates/storage.html:158
 msgid "Not used on this host"
 msgstr "未在此主机上使用"
 
-#: storages/templates/storage.html:156
+#: storages/templates/storage.html:155
+#, python-format
+msgid "Backup of %(vm)s"
+msgstr "%(vm)s 的备份"
+
+#: storages/templates/storage.html:157
 msgid "Another volume is built on it"
 msgstr "另一个卷基于它"
 
-#: storages/templates/storage.html:163
+#: storages/templates/storage.html:164
 #, python-format
 msgid "%(allocated)s allocated"
 msgstr "已分配 %(allocated)s"
 
-#: storages/templates/storage.html:175
+#: storages/templates/storage.html:176
 msgid "Download"
 msgstr "下载"
 
-#: storages/templates/storage.html:179
+#: storages/templates/storage.html:180
 #, python-format
 msgid ""
 "Delete volume %(name)s? Its file and data are removed; a volume a VM uses is "
 "not deleted."
 msgstr "删除卷 %(name)s？其文件和数据将被删除；虚拟机正在使用的卷不会被删除。"
 
-#: storages/templates/storage.html:192
+#: storages/templates/storage.html:193
 msgid "No volume matches the search."
 msgstr "没有与搜索匹配的卷。"
 
-#: storages/templates/storage.html:200
+#: storages/templates/storage.html:201
 msgid "Clone image"
 msgstr "克隆镜像"
 
-#: storages/templates/storage.html:213
+#: storages/templates/storage.html:214
 msgid "Convert it to another format"
 msgstr "转换为其他格式"
 
-#: storages/templates/storage.html:218
+#: storages/templates/storage.html:219
 msgid "raw"
 msgstr "raw"
 
-#: storages/templates/storage.html:219
+#: storages/templates/storage.html:220
 msgid "qcow2"
 msgstr "qcow2"
 
-#: storages/templates/storage.html:236
+#: storages/templates/storage.html:237
 msgid "This pool has no volumes."
 msgstr "此存储池中没有卷。"
 
@@ -10099,13 +10118,6 @@ msgid ""
 "%(target)s; this cannot be undone."
 msgstr "删除 %(vm)s 于 %(time)s 的备份？其文件将从 %(target)s 中移除；此操作无法撤销。"
 
-#: vmbackups/templates/vmbackups/index.html:12
-#: vmbackups/templates/vmbackups/policies.html:8
-#: vmbackups/templates/vmbackups/policy.html:10
-#: vmbackups/templates/vmbackups/policy_new.html:8
-msgid "Schedules"
-msgstr "计划"
-
 #: vmbackups/templates/vmbackups/index.html:13
 #: vmbackups/templates/vmbackups/target.html:7
 #: vmbackups/templates/vmbackups/target.html:9
@@ -10482,26 +10494,26 @@ msgstr "计划："
 msgid "No backup of this VM yet."
 msgstr "此虚拟机还没有备份。"
 
-#: vmbackups/utils.py:28
+#: vmbackups/utils.py:36
 #, python-format
 msgid ""
 "Volume %(volume)s belongs to a backup of %(vm)s; delete the backup on the "
 "Backups page"
 msgstr "卷 %(volume)s 属于 %(vm)s 的备份；请在备份页面删除该备份"
 
-#: vmbackups/utils.py:38
+#: vmbackups/utils.py:46
 #, python-format
 msgid ""
 "Storage pool %(pool)s is backup target %(target)s; remove it from the target "
 "first"
 msgstr "存储池 %(pool)s 是备份目标 %(target)s；请先将其从目标中移除"
 
-#: vmbackups/utils.py:65
+#: vmbackups/utils.py:73
 msgid ""
 "No backup target open to VM owners has a storage pool on this VM's host."
 msgstr "没有向虚拟机所有者开放的备份目标在此虚拟机的主机上有存储池。"
 
-#: vmbackups/utils.py:66
+#: vmbackups/utils.py:74
 msgid "No backup target has a storage pool on this VM's host."
 msgstr "没有备份目标在此虚拟机的主机上有存储池。"
 

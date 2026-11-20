@@ -139,7 +139,7 @@
                 <tr>
                     <th scope="col">{% trans "Name" %}</th>
                     <th scope="col">{% trans "Format" %}</th>
-                    {% if users_read %}<th scope="col" data-sort-method="text">{% trans "Used by" %}</th>{% endif %}
+                    {% if users_read or has_backups %}<th scope="col" data-sort-method="text">{% trans "Used by" %}</th>{% endif %}
                     <th scope="col" class="d-none d-sm-table-cell" data-sort-method="number">{% trans "Capacity" %}</th>
                     <th scope="col" data-sort-method="none"><span class="visually-hidden">{% trans "Actions" %}</span></th>
                 </tr>
@@ -149,12 +149,13 @@
                 <tr data-search="{{ volume.name }}{% for vm in volume.users %} {{ vm }}{% endfor %}">
                     <td class="text-break">{{ volume.name }}</td>
                     <td><span class="badge text-bg-light border">{{ volume.type }}</span></td>
-                    {% if users_read %}
+                    {% if users_read or has_backups %}
                     {# a delete still asks the other hosts: one sharing this storage may use the volume #}
                     <td class="text-break small">
-                        {% if volume.users %}<span data-state="used">{{ volume.users|join:", " }}</span>
+                        {% if volume.backup %}<span data-state="used">{% blocktrans with vm=volume.backup.vm_name %}Backup of {{ vm }}{% endblocktrans %}</span>
+                        {% elif volume.users %}<span data-state="used">{{ volume.users|join:", " }}</span>
                         {% elif volume.users is not None %}<span data-state="used" title="{% trans "Another volume is built on it" %}">{% trans "In use" %}</span>
-                        {% else %}<span class="text-body-secondary" data-state="unused">{% trans "Not used on this host" %}</span>{% endif %}
+                        {% elif users_read %}<span class="text-body-secondary" data-state="unused">{% trans "Not used on this host" %}</span>{% endif %}
                     </td>
                     {% endif %}
                     {# capacity: what the guest sees; allocated: what it takes on the storage now #}

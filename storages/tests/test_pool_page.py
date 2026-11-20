@@ -13,6 +13,7 @@ from libvirt import libvirtError
 from lxml import html
 
 from storages.forms import CreateVolumeForm
+from vmbackups.models import Backup, BackupTarget, BackupTargetPool
 
 
 class PoolPageTests(TestCase):
@@ -137,6 +138,27 @@ class PoolPageTests(TestCase):
         self.assertEqual(page.xpath("//tbody/tr//@data-state"), ["used", "used", "unused"])
         self.assertEqual(page.xpath("//tbody/tr/@data-search"), ["a.img vm1 vm2", "b.img", "c.img"])
         self.assertEqual(page.xpath("//div[@id='state-pills']/button/@data-pill"), ["", "used", "unused"])
+
+    def test_a_backups_files_say_whose_backup_they_are(self):
+        # in a backup target's pool: deleted with their backup, not as unused volumes
+        target = BackupTarget.objects.create(name="t")
+        BackupTargetPool.objects.create(target=target, compute=self.compute, pool="default", pool_uuid="u")
+        backup = Backup.objects.create(target=target, vm_uuid="00000000-0000-4000-8000-000000000001", vm_name="web",
+                                       compute_name="pp", state=Backup.READY)
+        self.conn.get_size.return_value = (10, 4)
+        self.conn.update_volumes.return_value = [
+            {"name": name, "path": f"/p/{name}", "size": 1, "allocation": 1, "type": "qcow2"}
+            for name in (f"{backup.prefix}-vda.qcow2", "left.qcow2")]
+        page = html.fromstring(self.client.get(reverse("storage", args=[self.compute.pk, "default"])).content)
+        self.assertEqual([" ".join(t.split()) for t in page.xpath("//tbody/tr/td[3]//text()[normalize-space()]")],
+                         ["Backup of web", "Not used on this host"])
+        self.assertEqual(page.xpath("//tbody/tr//@data-state"), ["used", "unused"])
+        # the VMs' use not read: the backup is still told, the other volume is not called unused
+        self.conn.volume_users.side_effect = libvirtError("cannot read the domains")
+        page = html.fromstring(self.client.get(reverse("storage", args=[self.compute.pk, "default"])).content)
+        self.assertEqual([" ".join(t.split()) for t in page.xpath("//tbody/tr/td[3]//text()[normalize-space()]")],
+                         ["Backup of web"])
+        self.assertFalse(page.xpath("//div[@id='state-pills']"))
 
     def test_volumes_whose_use_cannot_be_read_are_listed(self):
         self.conn.get_size.return_value = (10, 4)

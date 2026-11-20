@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-20 05:17+0000\n"
+"POT-Creation-Date: 2026-11-20 05:53+0000\n"
 "PO-Revision-Date: 2020-11-04 12:00+0000\n"
 "Last-Translator: catborise <muhammetalisag@gmail.com>, 2020\n"
 "Language-Team: Turkish (https://www.transifex.com/catborise/teams/110663/tr/)\n"
@@ -262,7 +262,7 @@ msgstr "Yalnızca güç ve konsol"
 
 #: accounts/templates/account.html:81 computes/templates/computes/list.html:110
 #: instances/templates/instance_actions.html:9
-#: storages/templates/storage.html:166
+#: storages/templates/storage.html:167
 #, python-format
 msgid "Actions for %(name)s"
 msgstr "%(name)s için işlemler"
@@ -326,7 +326,7 @@ msgstr "Burada oturumunuz açık kalır; diğer oturumlarınız kapanır."
 #: storages/templates/create_stg_block.html:183
 #: storages/templates/create_stg_vol_block.html:35
 #: storages/templates/create_stg_vol_block.html:68
-#: storages/templates/storage.html:228 templates/base.html:65
+#: storages/templates/storage.html:229 templates/base.html:65
 #: templates/common/confirm_delete.html:25 templates/common/form.html:27
 #: virtsecrets/templates/create_secret_block.html:48
 #: virtsecrets/templates/secrets.html:106
@@ -470,7 +470,7 @@ msgstr "%(name)s API anahtarı için işlemler"
 #: accounts/templates/ssh_key_list.html:13
 #: admin/templates/admin/group_list.html:44
 #: admin/templates/admin/tag_list.html:38
-#: admin/templates/admin/tombstone_list.html:44
+#: admin/templates/admin/tombstone_list.html:50
 #: admin/templates/admin/user_list.html:74
 #: admin/templates/admin/user_list.html:76
 #: instances/templates/create_flavors.html:11
@@ -478,7 +478,7 @@ msgstr "%(name)s API anahtarı için işlemler"
 #: instances/templates/instances/settings_tab.html:315
 #: instances/templates/instances/snapshots_tab.html:103
 #: instances/templates/instances/snapshots_tab.html:117
-#: networks/templates/network.html:168 storages/templates/storage.html:179
+#: networks/templates/network.html:168 storages/templates/storage.html:180
 #: templates/common/confirm_delete.html:5
 #: templates/common/confirm_delete.html:9
 #: templates/common/confirm_delete.html:26
@@ -1013,16 +1013,16 @@ msgstr "Sonuç"
 msgid "IP"
 msgstr "IP"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:397 instances/states.py:19
+#: admin/templates/admin/logs.html:56 admin/views.py:398 instances/states.py:19
 #: instances/views.py:491 logs/views.py:18
 msgid "Unknown"
 msgstr "Bilinmeyen"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:397 logs/views.py:18
+#: admin/templates/admin/logs.html:56 admin/views.py:398 logs/views.py:18
 msgid "Done"
 msgstr "Tamamlandı"
 
-#: admin/templates/admin/logs.html:56 admin/views.py:397 logs/views.py:18
+#: admin/templates/admin/logs.html:56 admin/views.py:398 logs/views.py:18
 #: operations/templates/operations/job.html:110
 #: vmbackups/templates/vmbackups/index.html:34
 #: vmbackups/templates/vmbackups/policy.html:39
@@ -1127,15 +1127,30 @@ msgstr "Ayrıldığı sunucu"
 msgid "Owners"
 msgstr "Sahipler"
 
-#: admin/templates/admin/tombstone_list.html:39
+#: admin/templates/admin/tombstone_list.html:40
+#: vmbackups/templates/vmbackups/index.html:12
+#: vmbackups/templates/vmbackups/policies.html:8
+#: vmbackups/templates/vmbackups/policy.html:10
+#: vmbackups/templates/vmbackups/policy_new.html:8
+msgid "Schedules"
+msgstr "Zamanlamalar"
+
+#: admin/templates/admin/tombstone_list.html:41
+#, python-format
+msgid "%(counter)s backup"
+msgid_plural "%(counter)s backups"
+msgstr[0] "%(counter)s yedek"
+msgstr[1] "%(counter)s yedek"
+
+#: admin/templates/admin/tombstone_list.html:45
 msgid "Removed"
 msgstr "Kaldırılma"
 
-#: admin/templates/admin/tombstone_list.html:40
+#: admin/templates/admin/tombstone_list.html:46
 msgid "expires"
 msgstr "sona erer"
 
-#: admin/templates/admin/tombstone_list.html:51
+#: admin/templates/admin/tombstone_list.html:57
 msgid "No removed VM matches the search."
 msgstr "Aramayla eşleşen kaldırılmış sanal makine yok."
 
@@ -1224,7 +1239,7 @@ msgstr "Kullanıcı oluştur"
 msgid "New user"
 msgstr "Yeni kullanıcı"
 
-#: admin/templates/admin/user_list.html:19 admin/views.py:181
+#: admin/templates/admin/user_list.html:19 admin/views.py:182
 #: instances/templates/instances/settings_tab.html:79 templates/navbar.html:35
 msgid "Users"
 msgstr "Kullanıcılar"
@@ -1283,7 +1298,7 @@ msgstr "Burada belirlenen parolayla oturum açar."
 msgid "Signs in another way, such as LDAP. The current password is removed."
 msgstr "LDAP gibi başka bir yolla oturum açar. Mevcut parola kaldırılır."
 
-#: admin/views.py:44
+#: admin/views.py:45
 #, python-format
 msgid ""
 "%(name)s was changed meanwhile: here it is as it is now; make your change "
@@ -1291,55 +1306,55 @@ msgid ""
 msgstr ""
 "%(name)s bu arada değişti: güncel hâli aşağıda; değişikliğinizi yeniden yapın"
 
-#: admin/views.py:77
+#: admin/views.py:78
 msgid "Create Group"
 msgstr "Grup Oluştur"
 
-#: admin/views.py:119
+#: admin/views.py:120
 msgid "Update Group"
 msgstr "Grubu Güncelle"
 
-#: admin/views.py:135
+#: admin/views.py:136
 msgid "Its members stay but lose the permissions it gave them."
 msgstr "Üyeleri kalır ancak grubun onlara verdiği izinleri kaybeder."
 
-#: admin/views.py:141
+#: admin/views.py:142
 msgid "You cannot block, delete or demote your own account"
 msgstr "Kendi hesabınızı engelleyemez, silemez veya yetkisini düşüremezsiniz"
 
-#: admin/views.py:142
+#: admin/views.py:143
 msgid "This would leave no active superuser"
 msgstr "Bu işlem hiç etkin süper kullanıcı bırakmaz"
 
-#: admin/views.py:216
+#: admin/views.py:217
 msgid "Create User"
 msgstr "Kullanıcı Oluştur"
 
-#: admin/views.py:289
+#: admin/views.py:290
 msgid "Update User"
 msgstr "Kullanıcı Güncelle"
 
-#: admin/views.py:313
+#: admin/views.py:314
 #, python-format
 msgid "Password changed for %(user)s"
 msgstr "%(user)s parolası değiştirildi"
 
-#: admin/views.py:340
+#: admin/views.py:341
 msgid "Their access to VMs, SSH keys and settings go; the VMs themselves stay."
 msgstr ""
 "Sanal makinelere erişimi, SSH anahtarları ve ayarları silinir; sanal "
 "makinelerin kendisi kalır."
 
-#: admin/views.py:446
+#: admin/views.py:452
 msgid "deleted user"
 msgstr "silinmiş kullanıcı"
 
-#: admin/views.py:458
+#: admin/views.py:466
 #, python-format
 msgid "Removed VM %(name)s deleted"
 msgstr "Kaldırılan sanal makine %(name)s silindi"
 
-#: admin/views.py:465
+#: admin/views.py:473
 msgid ""
 "Its owners, tags, protection and schedules no longer come back if its UUID "
 "shows up again, nor are its backups linked to it again."
@@ -1347,12 +1362,12 @@ msgstr ""
 "UUID'si yeniden görünse bile sahipleri, etiketleri, koruması ve zamanlamaları"
 " artık geri gelmez, yedekleri de ona yeniden bağlanmaz."
 
-#: admin/views.py:512
+#: admin/views.py:520
 #, python-format
 msgid "Rename tag %(tag)s"
 msgstr "%(tag)s etiketini yeniden adlandır"
 
-#: admin/views.py:517
+#: admin/views.py:525
 #, python-format
 msgid "The backup schedule %(schedules)s backs up its VMs: change it first"
 msgid_plural ""
@@ -1364,24 +1379,24 @@ msgstr[1] ""
 "%(schedules)s yedekleme zamanlamaları bu etiketin sanal makinelerini "
 "yedekliyor: önce onları değiştirin"
 
-#: admin/views.py:535
+#: admin/views.py:543
 #, python-format
 msgid "Tag %(tag)s deleted"
 msgstr "%(tag)s etiketi silindi"
 
-#: admin/views.py:543
+#: admin/views.py:551
 #, python-format
 msgid "It is taken off %(vms)s and %(hosts)s."
 msgstr "%(vms)s ve %(hosts)s üzerinden kaldırılır."
 
-#: admin/views.py:544
+#: admin/views.py:552
 #, python-format
 msgid "%(count)s VM"
 msgid_plural "%(count)s VMs"
 msgstr[0] "%(count)s sanal makine"
 msgstr[1] "%(count)s sanal makine"
 
-#: admin/views.py:545
+#: admin/views.py:553
 #, python-format
 msgid "%(count)s host"
 msgid_plural "%(count)s hosts"
@@ -3397,7 +3412,7 @@ msgstr "Bağlan"
 #: storages/templates/create_stg_block.html:21
 #: storages/templates/create_stg_vol_block.html:16
 #: storages/templates/create_stg_vol_block.html:54
-#: storages/templates/storage.html:201 templates/base.html:61
+#: storages/templates/storage.html:202 templates/base.html:61
 #: virtsecrets/templates/create_secret_block.html:16
 #: virtsecrets/templates/secrets.html:97
 msgid "Close"
@@ -4284,7 +4299,7 @@ msgstr "Depolama havuzu"
 
 #: instances/templates/add_instance_volume.html:41
 #: instances/templates/create_instance_w2.html:46 storages/forms.py:119
-#: storages/templates/storage.html:209
+#: storages/templates/storage.html:210
 msgid "Letters, digits, dot, dash and underscore."
 msgstr "Harf, rakam, nokta, tire ve alt çizgi."
 
@@ -4297,14 +4312,14 @@ msgstr "Boyut"
 
 #: instances/templates/add_instance_volume.html:51
 #: instances/templates/instances/edit_instance_volume.html:82
-#: storages/templates/storage.html:141 storages/templates/storage.html:216
+#: storages/templates/storage.html:141 storages/templates/storage.html:217
 msgid "Format"
 msgstr "Biçem"
 
 #: instances/templates/add_instance_volume.html:61
 #: instances/templates/create_instance_w2.html:154
 #: instances/templates/create_instance_w2.html:220 storages/forms.py:125
-#: storages/forms.py:145 storages/templates/storage.html:224
+#: storages/forms.py:145 storages/templates/storage.html:225
 msgid "Preallocate metadata (qcow2)"
 msgstr "Meta veriyi önceden ayır (qcow2)"
 
@@ -4796,7 +4811,7 @@ msgstr "Ayrıntılar"
 #: instances/templates/instances/settings_tab.html:882
 #: instances/templates/instances/settings_tab.html:884
 #: nwfilters/templates/nwfilters.html:57 nwfilters/templates/nwfilters.html:94
-#: storages/templates/storage.html:169 storages/templates/storage.html:229
+#: storages/templates/storage.html:170 storages/templates/storage.html:230
 msgid "Clone"
 msgstr "Klonla"
 
@@ -4905,7 +4920,7 @@ msgstr "Kapat"
 #: instances/templates/instance_actions.html:39
 #: interfaces/templates/interface.html:22 networks/templates/network.html:22
 #: networks/templates/network.html:162 storages/templates/storage.html:26
-#: storages/templates/storage.html:173
+#: storages/templates/storage.html:174
 msgid "More actions"
 msgstr "Diğer işlemler"
 
@@ -8836,7 +8851,7 @@ msgstr "Aramayla eşleşen filtre yok."
 msgid "Clone filter"
 msgstr "Filtreyi klonla"
 
-#: nwfilters/templates/nwfilters.html:88 storages/templates/storage.html:207
+#: nwfilters/templates/nwfilters.html:88 storages/templates/storage.html:208
 msgid "Name of the copy"
 msgstr "Kopyanın adı"
 
@@ -9619,28 +9634,33 @@ msgstr "Birimlerde ara"
 msgid "Volume use"
 msgstr "Disk kullanımı"
 
-#: storages/templates/storage.html:128 storages/templates/storage.html:156
+#: storages/templates/storage.html:128 storages/templates/storage.html:157
 msgid "In use"
 msgstr "Kullanımda"
 
-#: storages/templates/storage.html:131 storages/templates/storage.html:157
+#: storages/templates/storage.html:131 storages/templates/storage.html:158
 msgid "Not used on this host"
 msgstr "Bu sunucuda kullanılmıyor"
 
-#: storages/templates/storage.html:156
+#: storages/templates/storage.html:155
+#, python-format
+msgid "Backup of %(vm)s"
+msgstr "%(vm)s yedeği"
+
+#: storages/templates/storage.html:157
 msgid "Another volume is built on it"
 msgstr "Başka bir disk bunun üzerine kurulu"
 
-#: storages/templates/storage.html:163
+#: storages/templates/storage.html:164
 #, python-format
 msgid "%(allocated)s allocated"
 msgstr "%(allocated)s ayrılmış"
 
-#: storages/templates/storage.html:175
+#: storages/templates/storage.html:176
 msgid "Download"
 msgstr "İndir"
 
-#: storages/templates/storage.html:179
+#: storages/templates/storage.html:180
 #, python-format
 msgid ""
 "Delete volume %(name)s? Its file and data are removed; a volume a VM uses is "
@@ -9649,27 +9669,27 @@ msgstr ""
 "%(name)s birimi silinsin mi? Dosyası ve verisi kaldırılır; bir sanal "
 "makinenin kullandığı birim silinmez."
 
-#: storages/templates/storage.html:192
+#: storages/templates/storage.html:193
 msgid "No volume matches the search."
 msgstr "Aramayla eşleşen birim yok."
 
-#: storages/templates/storage.html:200
+#: storages/templates/storage.html:201
 msgid "Clone image"
 msgstr "İmaj Klonla"
 
-#: storages/templates/storage.html:213
+#: storages/templates/storage.html:214
 msgid "Convert it to another format"
 msgstr "Başka bir biçime dönüştür"
 
-#: storages/templates/storage.html:218
+#: storages/templates/storage.html:219
 msgid "raw"
 msgstr "raw"
 
-#: storages/templates/storage.html:219
+#: storages/templates/storage.html:220
 msgid "qcow2"
 msgstr "qcow2"
 
-#: storages/templates/storage.html:236
+#: storages/templates/storage.html:237
 msgid "This pool has no volumes."
 msgstr "Bu havuzda birim yok."
 
@@ -10736,13 +10756,6 @@ msgstr ""
 "%(vm)s VM'inin %(time)s tarihli yedeği silinsin mi? Dosyaları %(target)s "
 "hedefinden kaldırılır; bu geri alınamaz."
 
-#: vmbackups/templates/vmbackups/index.html:12
-#: vmbackups/templates/vmbackups/policies.html:8
-#: vmbackups/templates/vmbackups/policy.html:10
-#: vmbackups/templates/vmbackups/policy_new.html:8
-msgid "Schedules"
-msgstr "Zamanlamalar"
-
 #: vmbackups/templates/vmbackups/index.html:13
 #: vmbackups/templates/vmbackups/target.html:7
 #: vmbackups/templates/vmbackups/target.html:9
@@ -11146,7 +11159,7 @@ msgstr "Zamanlamalar:"
 msgid "No backup of this VM yet."
 msgstr "Bu sanal makinenin henüz yedeği yok."
 
-#: vmbackups/utils.py:28
+#: vmbackups/utils.py:36
 #, python-format
 msgid ""
 "Volume %(volume)s belongs to a backup of %(vm)s; delete the backup on the "
@@ -11154,7 +11167,7 @@ msgid ""
 msgstr ""
 "%(volume)s birimi %(vm)s yedeğine ait; yedeği Yedekler sayfasından silin"
 
-#: vmbackups/utils.py:38
+#: vmbackups/utils.py:46
 #, python-format
 msgid ""
 "Storage pool %(pool)s is backup target %(target)s; remove it from the target "
@@ -11162,14 +11175,14 @@ msgid ""
 msgstr ""
 "%(pool)s depolama havuzu %(target)s yedek hedefidir; önce hedeften çıkarın"
 
-#: vmbackups/utils.py:65
+#: vmbackups/utils.py:73
 msgid ""
 "No backup target open to VM owners has a storage pool on this VM's host."
 msgstr ""
 "VM sahiplerine açık hiçbir yedek hedefinin bu VM'in sunucusunda depolama "
 "havuzu yok."
 
-#: vmbackups/utils.py:66
+#: vmbackups/utils.py:74
 msgid "No backup target has a storage pool on this VM's host."
 msgstr ""
 "Hiçbir yedek hedefinin bu sanal makinenin sunucusunda depolama havuzu yok."

@@ -20,15 +20,23 @@ def inside_vm_pool(conn, pool):
     return None
 
 
+def backups_of(compute, pool, volumes):
+    """{volume name: its backup} for those of volumes that are files of a backup in the compute's pool."""
+    if not volumes:
+        return {}
+    backups = list(Backup.objects.filter(target__pools__compute=compute, target__pools__pool=pool)
+                   .only("prefix", "vm_name"))
+    return {volume: backup for volume in volumes for backup in backups if backup.owns(volume)}
+
+
 def refuse_backup_volume(compute, pool, volume):
     """A volume of a backup is deleted with its backup, on the Backups pages."""
-    for backup in Backup.objects.filter(target__pools__compute=compute, target__pools__pool=pool):
-        if backup.owns(volume):
-            raise InUse(
-                gettext_noop("Volume %(volume)s belongs to a backup of %(vm)s; delete the backup on the Backups page"),
-                volume=volume,
-                vm=backup.vm_name,
-            )
+    if backup := backups_of(compute, pool, [volume]).get(volume):
+        raise InUse(
+            gettext_noop("Volume %(volume)s belongs to a backup of %(vm)s; delete the backup on the Backups page"),
+            volume=volume,
+            vm=backup.vm_name,
+        )
 
 
 def refuse_target_pool(compute, pool):

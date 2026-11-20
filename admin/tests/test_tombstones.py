@@ -1,6 +1,6 @@
 """Superusers list the ownership kept for VMs that vanished and can remove it."""
 
-from datetime import timedelta
+from datetime import time, timedelta
 
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
@@ -9,6 +9,9 @@ from django.utils import timezone
 
 from instances.models import InstanceTombstone
 from logs.models import Logs
+from lxml import html
+from computes.models import Tag
+from vmbackups.models import Backup, BackupPolicy, BackupTarget
 
 UUID = "00000000-0000-4000-8000-000000000001"
 
@@ -49,6 +52,22 @@ class TombstoneTests(TestCase):
         url = reverse("admin:tombstone_delete", args=[self.tombstone.pk])
         self.assertEqual(self.client.post(url).status_code, 403)
         self.assertTrue(InstanceTombstone.objects.exists())
+
+    def test_the_list_names_its_schedules_and_counts_its_backups(self):
+        # a VM kept for its backups or schedules alone has no owner to show; only what would come back is told
+        target = BackupTarget.objects.create(name="t")
+        chosen, by_tag = (BackupPolicy.objects.create(name=name, target=target, time=time(2), keep=1)
+                          for name in ("nightly", "by-tag"))
+        BackupPolicy.objects.filter(pk=by_tag.pk).update(tag=Tag.objects.create(name="web"))
+        kept = [Backup.objects.create(target=target, vm_uuid=UUID, vm_name="ts-vm", compute_name="ts-host").pk
+                for _ in range(2)]
+        InstanceTombstone.objects.filter(pk=self.tombstone.pk).update(
+            owners=[], tags=[], policies=[chosen.pk, by_tag.pk, 999999], backups=[*kept, 999999])
+        page = html.fromstring(self.client.get(reverse("admin:tombstone_list")).content)
+        (row,) = page.xpath("//div[@data-search][contains(@data-search, 'ts-vm')]")
+        text = " ".join(row.text_content().split())
+        self.assertIn("Schedules: nightly · 2 backups", text)
+        self.assertNotIn("by-tag", text)
 
     def test_a_get_only_asks_for_confirmation(self):
         response = self.client.get(reverse("admin:tombstone_delete", args=[self.tombstone.pk]))

@@ -23,7 +23,7 @@ from vrtManager.storage import wvmStorage, wvmStorages
 from storages.forms import AddStgPool, CloneImage, CreateVolumeForm
 from storages.jobs import is_iso
 from storages.upload import write_chunk
-from vmbackups.utils import refuse_backup_volume, refuse_target_pool
+from vmbackups.utils import backups_of, refuse_backup_volume, refuse_target_pool
 from webvirtcloud.gunicorn_worker import request_progressed
 
 
@@ -237,8 +237,10 @@ def storage(request, compute_id, pool):
         # which VMs of this host use each volume; the page lists them without it when it cannot be read
         with contextlib.suppress(libvirtError):
             users = conn.volume_users()
+    backups = backups_of(compute, pool, [volume["name"] for volume in volumes or []])
     for volume in volumes or []:
         volume["iso"] = is_iso(volume["name"])
+        volume["backup"] = backups.get(volume["name"])
         volume["users"] = users.get(volume["path"]) if users is not None else None
     try:
         size, free = conn.get_size()
@@ -258,6 +260,7 @@ def storage(request, compute_id, pool):
         "state": state,
         "volumes": volumes,
         "users_read": users is not None,
+        "has_backups": bool(backups),
         "size": size,
         "free": free,
         "used": used,

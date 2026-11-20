@@ -35,6 +35,12 @@
                             {% trans "Left" %} <span class="fw-semibold">{{ tombstone.host }}</span>
                             <span class="text-body-secondary">· {% trans "Owners" %}:</span> {{ tombstone.owner_names|join:", "|default:"–" }}
                         </div>
+                        {% if tombstone.policy_names or tombstone.backup_count %}
+                        <div class="mt-1">
+                            {% if tombstone.policy_names %}<span class="text-body-secondary">{% trans "Schedules" %}:</span> {{ tombstone.policy_names|join:", " }}{% endif %}
+                            {% if tombstone.backup_count %}{% if tombstone.policy_names %} · {% endif %}{% blocktrans count counter=tombstone.backup_count %}{{ counter }} backup{% plural %}{{ counter }} backups{% endblocktrans %}{% endif %}
+                        </div>
+                        {% endif %}
                         <div class="text-body-secondary mt-1">
                             {% trans "Removed" %} <span class="text-nowrap">{{ tombstone.removed|date:"Y-m-d H:i" }}</span>
                             · {% trans "expires" %} <span class="text-nowrap">{{ tombstone.expires|date:"Y-m-d H:i" }}</span>

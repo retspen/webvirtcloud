@@ -27,6 +27,7 @@ from logs.models import Logs
 from operations import claims
 from operations.utils import busy_message
 from vrtManager import util
+from vmbackups.models import Backup, BackupPolicy
 
 from . import forms
 from .decorators import superuser_only
@@ -442,8 +443,15 @@ def tombstone_list(request):
     ids = {owner["user"] for tombstone in tombstones for owner in tombstone.owners}
     names = dict(User.objects.filter(id__in=ids).values_list("id", "username"))
     retention = timedelta(days=getattr(settings, "INSTANCE_OWNERSHIP_RETENTION_DAYS", 30))
+    # what would come back (computes.utils._restore): schedules that choose their VMs one by one, backups unlinked
+    policies = dict(BackupPolicy.objects.filter(pk__in={pk for t in tombstones for pk in t.policies}, compute=None,
+                                                tag=None).values_list("pk", "name"))
+    backups = set(Backup.objects.filter(pk__in={pk for t in tombstones for pk in t.backups}, instance=None)
+                  .values_list("pk", flat=True))
     for tombstone in tombstones:
         tombstone.owner_names = [names.get(owner["user"], _("deleted user")) for owner in tombstone.owners]
+        tombstone.policy_names = sorted(policies[pk] for pk in tombstone.policies if pk in policies)
+        tombstone.backup_count = len(backups.intersection(tombstone.backups))
         tombstone.expires = tombstone.removed + retention
     return render(request, "admin/tombstone_list.html", {"tombstones": tombstones})
 
