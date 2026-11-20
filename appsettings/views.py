@@ -57,7 +57,7 @@ GROUPS = [
     (gettext_noop("Snapshots and jobs"), ["SNAPSHOT_FREE_SPACE_PERCENT", "SNAPSHOT_FREE_SPACE_MIN_GIB",
                                "WORKER_CONCURRENCY", "JOB_RETENTION_DAYS"]),
     (gettext_noop("Migrations"), ["MIGRATION_BANDWIDTH"]),
-    (gettext_noop("Login"), ["LOGIN_FAILURE_LIMIT", "LOGIN_LOCKOUT_MINUTES"]),
+    (gettext_noop("Login"), ["LOGIN_FAILURE_LIMIT", "LOGIN_LOCKOUT_MINUTES", "LOGIN_NOTICE"]),
     (gettext_noop("Alerts"), ["ALERT_EMAILS", "ALERT_WEBHOOK"]),
     (gettext_noop("Lists and pages"), ["VIEW_INSTANCES_LIST_STYLE", "VM_DRBD_STATUS", "LOGS_PER_PAGE",
                                          "LOG_RETENTION_DAYS"]),

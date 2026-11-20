@@ -15,6 +15,13 @@
                     <p class="text-body-secondary small mb-0">{% trans "Virtualization Management Console" %}</p>
                 </div>
 
+                {% if app_settings.LOGIN_NOTICE %}
+                    <div class="alert alert-info d-flex align-items-center mb-4" role="note">
+                        <i class="bi bi-info-circle-fill fs-5 me-2 flex-shrink-0"></i>
+                        <div>{{ app_settings.LOGIN_NOTICE }}</div>
+                    </div>
+                {% endif %}
+
                 {% if form.errors %}
                     <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
                         <i class="bi bi-exclamation-triangle-fill fs-5 me-2 flex-shrink-0"></i>
@@ -28,7 +35,7 @@
                         <label class="form-label small fw-medium" for="id_username">{% trans "Username" %}</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-person"></i></span>
-                            <input type="text" id="id_username" class="form-control" name="username" placeholder="{% trans 'Enter username' %}" autocapitalize="none" autocorrect="off" autofocus required>
+                            <input type="text" id="id_username" class="form-control" name="username" value="{{ form.username.value|default:'' }}" placeholder="{% trans 'Enter username' %}" autocomplete="username" autocapitalize="none" autocorrect="off" {% if not form.non_field_errors %}autofocus {% endif %}required>
                         </div>
                     </div>
 
@@ -36,11 +43,12 @@
                         <label class="form-label small fw-medium" for="id_password">{% trans "Password" %}</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
-                            <input type="password" id="id_password" class="form-control" name="password" placeholder="{% trans 'Enter password' %}" required>
-                            <button class="btn btn-outline-secondary" type="button" id="btn-toggle-pwd" tabindex="-1" aria-label="{% trans 'Toggle password visibility' %}">
+                            <input type="password" id="id_password" class="form-control{% if form.non_field_errors %} is-invalid{% endif %}" name="password" placeholder="{% trans 'Enter password' %}" autocomplete="current-password" {% if form.non_field_errors %}autofocus {% endif %}required>
+                            <button class="btn btn-outline-secondary" type="button" id="btn-toggle-pwd" aria-label="{% trans 'Toggle password visibility' %}">
                                 <i class="bi bi-eye" id="toggle-icon"></i>
                             </button>
                         </div>
+                        <div id="caps-lock" class="form-text d-none"><i class="bi bi-capslock-fill text-warning me-1"></i>{% trans "Caps Lock is on" %}</div>
                     </div>
 
                     <input type="hidden" name="next" value="{{ next }}">
@@ -50,11 +58,6 @@
                         <span id="btn-text">{% trans "Sign In" %}</span>
                     </button>
                 </form>
-
-                <div class="d-flex align-items-center small text-body-secondary border-top mt-4 pt-3">
-                    <span class="d-inline-block rounded-circle p-1 bg-success me-2" aria-hidden="true"></span>
-                    KVM / Libvirt
-                </div>
             </div>
         </div>
     </div>

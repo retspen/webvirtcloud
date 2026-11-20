@@ -28,7 +28,7 @@ class SequenceAfterFixedIdsTestCase(TransactionTestCase):
             with connection.cursor() as cursor:
                 cursor.execute("SELECT setval(pg_get_serial_sequence('appsettings_appsettings', 'id'), 1, false)")
             login_lockout.add_settings(apps, schema_editor)
-        self.assertEqual(AppSettings.objects.filter(key__startswith="LOGIN_").count(), 2)
+        self.assertEqual(AppSettings.objects.filter(key__in=["LOGIN_FAILURE_LIMIT", "LOGIN_LOCKOUT_MINUTES"]).count(), 2)
 
 
 nic_type = importlib.import_module("appsettings.migrations.0016_nic_type_rtl8139")

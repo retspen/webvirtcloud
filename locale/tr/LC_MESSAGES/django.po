@@ -419,9 +419,6 @@ msgstr "Doğrulanıyor..."
 msgid "Verify & Sign In"
 msgstr "Doğrula ve oturum aç"
 
-#: accounts/templates/accounts/otp_login.html:67
-msgid "2FA Protection Active"
-msgstr "2FA Koruması Etkin"
 
 #: accounts/templates/accounts/otp_qr.html:4
 #: accounts/templates/accounts/otp_qr.html:6 accounts/utils.py:66
@@ -13020,3 +13017,33 @@ msgstr "Yerel sunucu"
 #: webvirtcloud/settings.py:346
 msgid "All interfaces"
 msgstr "Tüm arabirimler"
+
+#: accounts/templates/accounts/lockout.html:4
+#: accounts/templates/accounts/lockout.html:12
+msgid "Sign-in locked"
+msgstr "Oturum açma kilitlendi"
+
+#: accounts/templates/accounts/lockout.html:14
+#, python-format
+msgid "Too many failed sign-ins. The lock ends within %(minutes)s minute."
+msgid_plural "Too many failed sign-ins. The lock ends within %(minutes)s minutes."
+msgstr[0] "Çok fazla başarısız oturum açma denemesi. Kilit en geç %(minutes)s dakika içinde kalkar."
+msgstr[1] "Çok fazla başarısız oturum açma denemesi. Kilit en geç %(minutes)s dakika içinde kalkar."
+
+#: accounts/templates/accounts/lockout.html:20
+msgid "Back to sign in"
+msgstr "Oturum açmaya dön"
+
+#: accounts/templates/accounts/otp_login.html:52 accounts/templates/login.html:51
+msgid "Caps Lock is on"
+msgstr "Caps Lock açık"
+
+#: appsettings/migrations/0029_login_notice.py:5
+msgid "Sign-in notice"
+msgstr "Oturum açma duyurusu"
+
+#: appsettings/migrations/0029_login_notice.py:6
+msgid ""
+"Shown above the sign-in form, e.g. planned maintenance or a terms-of-use "
+"line; empty: none"
+msgstr "Oturum açma formunun üstünde gösterilir; örneğin planlı bakım ya da kullanım koşulları satırı; boş: yok"

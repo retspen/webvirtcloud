@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "WebVirtCloud" %} - {% trans "Sign-in locked" %}{% endblock title %}
+
+{% block content %}
+<div class="row justify-content-center pt-5">
+    <div class="col-sm-9 col-md-7 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-body p-4 p-sm-5 text-center">
+                <div class="d-inline-block rounded-3 text-bg-warning fs-2 lh-1 p-3 mb-3"><i class="bi bi-lock"></i></div>
+                <h1 class="h3 fw-bold mb-3">{% trans "Sign-in locked" %}</h1>
+                <p class="mb-4">
+                    {% blocktrans trimmed count minutes=minutes %}
+                        Too many failed sign-ins. The lock ends within {{ minutes }} minute.
+                    {% plural %}
+                        Too many failed sign-ins. The lock ends within {{ minutes }} minutes.
+                    {% endblocktrans %}
+                </p>
+                <a href="{% url 'accounts:login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}" class="btn btn-primary w-100 py-2">{% trans "Back to sign in" %}</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

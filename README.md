@@ -783,7 +783,7 @@ What an update from an older version changes for operators and users. `manage.py
 - Requests for a host not in `ALLOWED_HOSTS` get 400. The installer writes the server's names and IPs; add more with the `ALLOWED_HOSTS` env var. The cloud-init datasource host must be allowed too.
 - Logging out needs a POST; a GET to `/accounts/logout/` gets 405.
 - The API accepts only a session from the login form or an API token (no HTTP Basic), and the API docs need a login. Sessions opened through the old password-only doors skip OTP; end them once after the update (everyone signs in again): `manage.py shell -c "from django.contrib.sessions.models import Session; Session.objects.all().delete()"`.
-- Failed logins lock a user (django-axes). The limit and lock time are on the Settings page; unlock with `manage.py axes_reset_username <username>`.
+- Failed logins lock a user (django-axes): the sign-in page then says how long. The limit and lock time are on the Settings page; unlock with `manage.py axes_reset_username <username>`. A sign-in notice set there (e.g. planned maintenance) is shown above the sign-in form.
 - Changing one's own password is the "Can change password" permission (per user or group; new users have it); `SHOW_PROFILE_EDIT_PASSWORD` is gone.
 - The admin's first-login password change survives losing `data/admin_password` (migration `accounts.0007`); run `migrate` as a user who can read that file.
 - A new VM and each clone get a random VNC password of their own (clones no longer share their source's). The console page sends it for a user with **Open a console without the VM's console password**, which a new user has unless unticked; others are asked for it. Existing VMs keep theirs.

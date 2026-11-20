@@ -220,6 +220,7 @@ AXES_RESET_ON_SUCCESS = True
 # successful logins are on the Logs page; django-axes' own record of them would only grow
 AXES_DISABLE_ACCESS_LOG = True
 AXES_CLIENT_IP_CALLABLE = "accounts.lockout.client_ip"
+AXES_LOCKOUT_CALLABLE = "accounts.lockout.lockout_response"
 # Reverse proxies other than a local one whose X-Real-IP header gives the
 # client address, e.g. ["10.0.0.5", "172.18.0.0/16"]
 LOGIN_TRUSTED_PROXIES = []

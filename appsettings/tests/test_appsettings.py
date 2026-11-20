@@ -218,7 +218,7 @@ class AppSettingsTestCase(TestCase):
         AppSettings.objects.filter(key="LOGIN_FAILURE_LIMIT").update(value="10")
         self.client.post(reverse("appsettings"), {"LOGIN_FAILURE_LIMIT": "5", "was-LOGIN_FAILURE_LIMIT": "5",
                                                   "LOGIN_LOCKOUT_MINUTES": "30", "was-LOGIN_LOCKOUT_MINUTES": "15"})
-        values = dict(AppSettings.objects.filter(key__startswith="LOGIN_").values_list("key", "value"))
+        values = dict(AppSettings.objects.filter(key__in=["LOGIN_FAILURE_LIMIT", "LOGIN_LOCKOUT_MINUTES"]).values_list("key", "value"))
         self.assertEqual(values, {"LOGIN_FAILURE_LIMIT": "10", "LOGIN_LOCKOUT_MINUTES": "30"})
 
     def test_a_failed_save_changes_none_of_its_group(self):

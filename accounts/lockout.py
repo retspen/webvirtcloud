@@ -8,6 +8,7 @@ from ipaddress import ip_address, ip_network
 
 from appsettings.models import AppSettings
 from django.conf import settings
+from django.shortcuts import render
 
 DEFAULT_FAILURE_LIMIT = 5
 DEFAULT_LOCKOUT_MINUTES = 15
@@ -52,3 +53,9 @@ def client_ip(request):
     remote = request.META.get("REMOTE_ADDR", "")
     real_ip = request.META.get("HTTP_X_REAL_IP", "").strip()
     return real_ip if real_ip and _from_trusted_proxy(remote) else remote
+
+
+def lockout_response(request, original_response, credentials):
+    """AXES_LOCKOUT_CALLABLE: the locked sign-in page, with the lock time."""
+    minutes = cooloff_time(request) // timedelta(minutes=1)
+    return render(request, "accounts/lockout.html", {"minutes": minutes}, status=429)
