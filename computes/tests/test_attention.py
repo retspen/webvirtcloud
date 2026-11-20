@@ -6,10 +6,11 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth import get_user_model
-from libvirt import libvirtError
+from libvirt import VIR_DOMAIN_XML_INACTIVE, VIR_ERR_NO_DOMAIN, libvirtError
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+from lxml import html
 
 from computes import views
 from computes.models import Compute
@@ -37,10 +38,42 @@ class AttentionBoxTests(TestCase):
     def read(self, compute):
         return (False, "refused", None, "") if compute.name == "down" else (True, None, None, "")
 
-    def page(self, pools=(), snapshots=()):
+    def page(self, pools=(), snapshots=(), needs=None):
         with patch("computes.views._read_host", side_effect=self.read), patch(
-                "computes.views._read_attention", return_value={"pools": list(pools), "snapshots": list(snapshots)}):
+                "computes.views._read_attention", return_value={"pools": list(pools), "snapshots": list(snapshots)}), \
+                patch("computes.views._read_needs", side_effect=lambda compute: (needs or {}).get(compute.name)):
+            views._reading.clear()  # no read of what VMs need kept from another test
             return self.client.get(reverse("computes"))
+
+    def test_what_a_vm_could_not_find_on_another_host(self):
+        # a network, a filter or a secret its VMs use that another host lacks, or a filter of other rules there
+        self.down.delete()
+        up2 = Compute.objects.create(name="up2", hostname="192.0.2.3", login="wvc", password="", type=1,
+                                     host_uuid="44444444-0000-0000-0000-000000000000")
+        none = {"networks": [], "filters": [], "secrets": [], "usages": []}
+        needs = {"up": {"uses": {"networks": ["prod", "lab"], "filters": ["base", "web", "gone"], "secrets": ["s-1"],
+                                 "usages": [("ceph", "client.vm")]},
+                        "has": {"networks": ["prod", "lab"], "secrets": ["s-1"], "usages": [("ceph", "client.vm")],
+                                "filters": {"web": "<filter name='web'/>", "base": "<filter name='base'/>"}}},
+                 "up2": {"uses": none,
+                         "has": {"networks": ["prod"], "secrets": [], "usages": [],
+                                 "filters": {"web": "<filter name='web'><rule/></filter>", "gone": "<filter name='gone'/>"}}}}
+        text = " ".join(html.fromstring(self.page(needs=needs).content).text_content().split())
+        # "gone": up's VMs name it, up lacks it too: not another host's rules
+        self.assertIn("up2: VMs of up could not migrate here: no active network lab; no network filter base; network "
+                      "filter web with other rules; no secret client.vm, s-1", text)
+        self.assertNotIn("VMs of up2", text)  # what up2's VMs use, up has
+        Compute.objects.filter(pk=up2.pk).update(maintenance_since=timezone.now())  # no destination now
+        self.assertNotIn("could not migrate", " ".join(html.fromstring(self.page(needs=needs).content).text_content().split()))
+
+    def test_what_vms_need_is_read_apart_from_the_pools(self):
+        # its read failing or slow hides no full pool; it reads the host's migration_needs
+        page = self.page(pools=[{"name": "default", "percent": 91}], needs={})
+        self.assertContains(page, "91% full")
+        compute = SimpleNamespace(status=True, proxy=MagicMock(**{"migration_needs.return_value": {"uses": {}}}))
+        self.assertEqual(views._read_needs(compute), {"uses": {}})
+        compute.proxy.migration_needs.side_effect = libvirtError("refused")
+        self.assertIsNone(views._read_needs(compute))
 
     def test_nothing_to_look_at_shows_no_box(self):
         self.down.delete()
@@ -129,3 +162,41 @@ class HostAttentionTests(TestCase):
                                           domain("new", snapshot(2))])
         self.assertEqual(host.get_attention(85, NOW - datetime.timedelta(days=30)),
                          {"pools": [{"name": "default", "percent": 90}], "snapshots": [{"vm": "old", "count": 2}]})
+
+    def test_what_the_hosts_vms_need_of_another_host(self):
+        # its VMs' networks, filters (with those they reference) and secrets, of their running definition and the
+        # one for the next start; its active networks, filters and secrets
+        def domain(live, config=None):
+            xml = {0: live, VIR_DOMAIN_XML_INACTIVE: config or live}
+            return MagicMock(**{"XMLDesc.side_effect": lambda flags: xml[flags], "isPersistent.return_value": config is not None})
+
+        def nwfilter(name, rules, refs=()):
+            refs = "".join(f"<filterref filter='{ref}'/>" for ref in refs)
+            return MagicMock(**{"name.return_value": name,
+                                "XMLDesc.return_value": f"<filter name='{name}'><uuid>u-{name}</uuid>{rules}{refs}</filter>"})
+
+        def nic(network, filterref=""):
+            return (f"<interface type='network'><source network='{network}'/>"
+                    f"{f'<filterref filter={chr(39)}{filterref}{chr(39)}/>' if filterref else ''}</interface>")
+
+        host = wvmHostDetails.__new__(wvmHostDetails)
+        gone = MagicMock(**{"XMLDesc.side_effect": libvirtError("gone meanwhile")})
+        gone.XMLDesc.side_effect.get_error_code = lambda: VIR_ERR_NO_DOMAIN
+        secret = MagicMock(**{"UUIDString.return_value": "S-2", "XMLDesc.return_value":
+                              "<secret><usage type='ceph'><name>client.other</name></usage></secret>"})
+        host.wvm = SimpleNamespace(
+            listAllDomains=lambda flags=0: [gone, domain(
+                f"<domain><devices>{nic('prod', 'web')}<disk><source><auth><secret type='ceph' uuid='S-1'/></auth>"
+                "</source></disk><disk><source><auth><secret type='ceph' usage='client.vm'/></auth></source></disk>"
+                "</devices></domain>",
+                f"<domain><devices>{nic('lab')}</devices></domain>")],  # lab: at the next start
+            listAllNetworks=lambda flags=0: [MagicMock(**{"name.return_value": "prod"})] if flags else [],
+            listAllNWFilters=lambda flags=0: [nwfilter("web", "<rule/>", ["base"]), nwfilter("base", "<rule x='1'/>")],
+            listAllSecrets=lambda flags=0: [secret])
+        self.assertEqual(host.migration_needs(), {
+            "uses": {"networks": ["lab", "prod"], "filters": ["base", "web"], "secrets": ["s-1"],
+                     "usages": [("ceph", "client.vm")]},
+            "has": {"networks": ["prod"], "secrets": ["s-2"], "usages": [("ceph", "client.other")],
+                    "filters": {"web": "<filter name=\"web\"><rule/><filterref filter=\"base\"/></filter>",
+                                "base": "<filter name=\"base\"><rule x=\"1\"/></filter>"}}})
+

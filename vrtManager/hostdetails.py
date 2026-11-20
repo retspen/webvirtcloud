@@ -6,6 +6,7 @@ from libvirt import (
     libvirtError,
     VIR_CONNECT_GET_ALL_DOMAINS_STATS_NOWAIT,
     VIR_CONNECT_LIST_DOMAINS_HAS_SNAPSHOT,
+    VIR_CONNECT_LIST_NETWORKS_ACTIVE,
     VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE,
     VIR_ERR_NO_DOMAIN,
     VIR_DOMAIN_BLOCKED,
@@ -20,6 +21,8 @@ from libvirt import (
 from lxml import etree
 
 from vrtManager.connection import wvmConnect
+from vrtManager.nwfilters import filter_rules
+from vrtManager.virtsecrets import REF_USAGE_TYPES
 from vrtManager.util import get_xml_path
 
 
@@ -79,6 +82,42 @@ class wvmHostDetails(wvmConnect):
             if count:
                 snapshots.append({"vm": domain.name(), "count": count})
         return {"pools": pools, "snapshots": snapshots}
+
+    def migration_needs(self):
+        """What the host's VMs need of a host they migrate to, as the migration check reads
+        it, and what this host has: {"uses": {"networks", "filters", "secrets", "usages"},
+        "has": {"networks" (active), "filters" {name: rules}, "secrets", "usages"}}. A VM's
+        running definition and the one for its next start count; its filters include those
+        these reference here; a secret is named by UUID ("secrets") or by usage type and
+        usage ("usages", [type, usage]). A VM or filter gone meanwhile is passed over."""
+        networks, filters_used, secrets, usages = set(), set(), set(), set()
+        for _name, trees in self.domain_trees():
+            for tree in trees:
+                networks.update(tree.xpath("devices/interface[@type='network']/source/@network"))
+                filters_used.update(tree.xpath("devices/interface/filterref/@filter"))
+                for ref in tree.xpath("devices//secret"):
+                    if ref.get("uuid"):
+                        secrets.add(ref.get("uuid").lower())
+                    elif ref.get("usage"):
+                        usages.add((REF_USAGE_TYPES.get(ref.get("type")), ref.get("usage")))
+                secrets.update(uuid.lower() for uuid in tree.xpath("devices/tpm/backend/encryption/@secret"))
+        filters = {}
+        for nwfilter in self.wvm.listAllNWFilters(0):
+            with suppress(libvirtError):  # undefined meanwhile
+                filters[nwfilter.name()] = filter_rules(nwfilter)
+        todo = list(filters_used)
+        while todo:  # and those they reference
+            for ref in filters.get(todo.pop(), ("", []))[1]:
+                if ref not in filters_used:
+                    filters_used.add(ref)
+                    todo.append(ref)
+        have = self.get_secrets_info()
+        return {"uses": {"networks": sorted(networks), "filters": sorted(filters_used), "secrets": sorted(secrets),
+                         "usages": sorted(usages, key=str)},
+                "has": {"networks": sorted(n.name() for n in self.wvm.listAllNetworks(VIR_CONNECT_LIST_NETWORKS_ACTIVE)),
+                        "filters": {name: rules for name, (rules, _refs) in filters.items()},
+                        "secrets": sorted(secret["uuid"].lower() for secret in have),
+                        "usages": sorted(((secret["usage_type"], secret["usage"]) for secret in have), key=str)}}
 
     def get_memory_usage(self):
         """

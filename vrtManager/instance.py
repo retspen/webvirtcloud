@@ -78,7 +78,7 @@ from lxml import etree
 from vrtManager import util
 from vrtManager.connection import NVRAM_DIR, wvmConnect
 from vrtManager.nodedevs import check_hostdevs, pci_address, pci_label, usb_selector, usb_selector_label
-from vrtManager.nwfilters import same_text
+from vrtManager.nwfilters import filter_rules
 from vrtManager.storage import wvmStorage, wvmStorages
 from vrtManager.virtsecrets import REF_USAGE_TYPES
 
@@ -138,10 +138,7 @@ class wvmInstances(wvmConnect):
         source (another connection), each sorted. A VM runs with its host's
         filters of those names, whatever their rules."""
         def rules(wvm, name):
-            tree = etree.fromstring(wvm.nwfilterLookupByName(name).XMLDesc(0))
-            for uuid in tree.findall("uuid"):  # each host's own
-                tree.remove(uuid)
-            return same_text(etree.tostring(tree, encoding="unicode")), tree.xpath("filterref/@filter")
+            return filter_rules(wvm.nwfilterLookupByName(name))
 
         if not names:  # the hosts are asked only about what the cards name
             return [], []

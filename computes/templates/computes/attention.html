@@ -13,6 +13,9 @@
         <li>{% if vm %}<a href="{% url 'instances:instance' vm.pk %}{% if not vm.is_template %}#snapshots{% endif %}">{{ compute.name }} / {{ vm.name }}</a>{% else %}{{ compute.name }} / {{ snapshots.vm }}{% endif %}:
             {% blocktrans count counter=snapshots.count %}{{ counter }} snapshot older than 30 days{% plural %}{{ counter }} snapshots older than 30 days{% endblocktrans %}</li>
         {% endfor %}
+        {% for target, source, what in attention.lacking %}
+        <li><a href="{% url 'overview' target.pk %}">{{ target.name }}</a>: {% blocktrans with host=source.name %}VMs of {{ host }} could not migrate here:{% endblocktrans %} {{ what|join:"; " }}</li>
+        {% endfor %}
         {% if attention.failed %}
         <li><a href="{% url 'operations:jobs' %}?kind=backup.create&amp;state=failed">{% blocktrans count counter=attention.failed %}{{ counter }} backup failed in the last 7 days{% plural %}{{ counter }} backups failed in the last 7 days{% endblocktrans %}</a></li>
         {% endif %}

@@ -18,6 +18,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_noop
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_POST
 from webvirtcloud.middleware import error_text
@@ -122,16 +123,26 @@ def _read_attention(compute):
     return None
 
 
+def _read_needs(compute):
+    """What the compute's VMs need of another host and what it has (migration_needs); None when
+    they cannot be read. Read apart from _read_attention: a slow or failed read hides no pool."""
+    if compute.status is True:
+        with suppress(libvirtError):
+            return compute.proxy.migration_needs()
+    return None
+
+
 class _HostRead(threading.Thread):
-    """One read of a host (read: _read_host or _read_attention) on a daemon
+    """One read of a host (read: _read_host, _read_attention or _read_needs) on a daemon
     thread: one stuck on its host does not hold the process when it exits."""
 
     def __init__(self, compute, read):
         super().__init__(daemon=True, name=f"wvc-host-{compute.pk}")
-        self.compute, self.read, self.result = compute, read, None
+        self.compute, self.read, self.result, self.ended = compute, read, None, None
 
     def run(self):
         self.result = self.read(self.compute)
+        self.ended = time.monotonic()
 
 
 # the reads of the Computes pages of this process, one of a host at a time: a host that
@@ -139,8 +150,13 @@ class _HostRead(threading.Thread):
 _reading = {}  # (its kind, compute pk, its connection settings): its last read
 _reading_lock = threading.Lock()
 
-# the box's reads (_read_attention) are waited for this long at most: one slow does not hold the page
+# the box's reads (_read_attention, _read_needs) are waited for this long at most: one slow does not hold the page
 ATTENTION_WAIT = 2
+# a read of what a host's VMs need is used again for this long (seconds): a host of many VMs, whose
+# read outlasts ATTENTION_WAIT, is still compared, and networks and filters seldom change
+NEEDS_KEPT = 300
+
+READ_KINDS = ("host", "attention", "needs")  # _read_host, _read_attention, _read_needs
 
 
 def _read_key(compute):
@@ -150,11 +166,15 @@ def _read_key(compute):
 
 
 def _start(compute, kind):
-    """compute's read of kind ("host": _read_host, "attention": _read_attention): one of an earlier load
-    still running, else a new one. Callers hold _reading_lock."""
+    """compute's read of kind (READ_KINDS): one of an earlier load still running, or for "needs" one
+    ended within NEEDS_KEPT, else a new one. Callers hold _reading_lock."""
     key = (kind, *_read_key(compute))
-    if key not in _reading or not _reading[key].is_alive():
-        _reading[key] = _HostRead(copy(compute), _read_host if kind == "host" else _read_attention)
+    read = _reading.get(key)
+    kept = kind == "needs" and read is not None and read.ended is not None and read.result is not None \
+        and time.monotonic() - read.ended < NEEDS_KEPT
+    if read is None or not (read.is_alive() or kept):
+        _reading[key] = _HostRead(copy(compute), {"host": _read_host, "attention": _read_attention,
+                                                  "needs": _read_needs}[kind])
         _reading[key].start()
     return _reading[key]
 
@@ -168,23 +188,26 @@ def read_hosts(computes, attention=False):
     one's full pools and old snapshots too (_read_attention, compute.attention),
     waited for up to ATTENTION_WAIT: None for one that comes later."""
     with _reading_lock:
-        keys = {(kind, *_read_key(compute)) for compute in computes for kind in ("host", "attention")}
+        keys = {(kind, *_read_key(compute)) for compute in computes for kind in READ_KINDS}
         # reads ended of computes deleted or changed since: their copies (and credentials) go
         for key in [key for key, read in _reading.items() if key not in keys and not read.is_alive()]:
             del _reading[key]
         reads = {compute: _start(compute, "host") for compute in computes}
         scans = {compute: _start(compute, "attention") for compute in computes} if attention else {}
+        needs = {compute: _start(compute, "needs") for compute in computes} if attention else {}
     started = time.monotonic()
     for read in reads.values():
         read.join(max(0, started + LIST_WAIT - time.monotonic()))
-    for scan in scans.values():
+    for scan in [*scans.values(), *needs.values()]:
         scan.join(max(0, started + ATTENTION_WAIT - time.monotonic()))
     for compute, read in reads.items():
         compute.attention = scans[compute].result if compute in scans else None
+        compute.needs = needs[compute].result if compute in needs else None
         if read.result is not None:
             compute.status, compute.connection_error, compute.shown_capacity, compute.read_uuid = read.result
         else:
             compute.status, compute.shown_capacity, compute.read_uuid, compute.attention = False, None, "", None
+            compute.needs = None
             compute.connection_error = _("The host did not answer within %(seconds)s seconds") % {"seconds": LIST_WAIT}
 
 
@@ -237,7 +260,35 @@ def attention(computes):
         "uncertain": Operation.objects.filter(state=Operation.UNCERTAIN).count(),
         "waiting": Operation.objects.filter(state=Operation.QUEUED, created_at__lt=timezone.now() - timedelta(hours=1)).count(),
     }
+    found["lacking"] = lacking(computes)
     return found if any(found.values()) else {}
+
+
+def lacking(computes):
+    """[(host, other host, [what])]: what the VMs of a host use (migration_needs) that the other
+    host lacks or has otherwise, so that the migration check refuses moving them there: an active
+    network, a network filter or one of other rules, a secret (by UUID or usage). Only hosts whose
+    needs were read; a host in maintenance is no destination, but its VMs still need one."""
+    needs = {c: c.needs for c in computes if c.needs}
+    found = []
+    for source, need in needs.items():
+        for target, other in needs.items():
+            if target is source or target.maintenance:
+                continue
+            uses, has, own = need["uses"], other["has"], need["has"]["filters"]
+            usages = {tuple(usage) for usage in has["usages"]}
+            what = [(gettext_noop("no active network %(names)s"), sorted(set(uses["networks"]) - set(has["networks"]))),
+                    (gettext_noop("no network filter %(names)s"), sorted(set(uses["filters"]) - set(has["filters"]))),
+                    # compared only with the source's own filter: one it lacks too is not another's rules
+                    (gettext_noop("network filter %(names)s with other rules"),
+                     sorted(n for n in uses["filters"] if n in has["filters"] and n in own and has["filters"][n] != own[n])),
+                    (gettext_noop("no secret %(names)s"),
+                     sorted([*(set(uses["secrets"]) - set(has["secrets"])),
+                             *(usage for usage_type, usage in uses["usages"] if (usage_type, usage) not in usages)]))]
+            what = [_(text) % {"names": ", ".join(names)} for text, names in what if names]
+            if what:
+                found.append((target, source, what))
+    return found
 
 
 @superuser_only

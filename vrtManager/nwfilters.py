@@ -13,6 +13,15 @@ from vrtManager.connection import wvmConnect
 NAME = re.compile(r"[A-Za-z0-9._-]+")
 
 
+def filter_rules(nwfilter):
+    """A network filter's rules as text, to compare two hosts' filters of a name (its
+    UUID, each host's own, left out), and the filters it references."""
+    tree = etree.fromstring(nwfilter.XMLDesc(0))
+    for uuid in tree.findall("uuid"):
+        tree.remove(uuid)
+    return same_text(etree.tostring(tree, encoding="unicode")), tree.xpath("filterref/@filter")
+
+
 def element_text(element):
     """An element as the page shows it and sends it back: a rule or reference
     is changed only while it still reads the same."""
