@@ -31,9 +31,10 @@ check "local settings written" "[ \"\$(cat '$tmp/data/local_settings.py')\" = FI
 check "local settings mode 600" "[ \"\$(stat -c %a '$tmp/data/local_settings.py')\" = 600 ]"
 check "local settings return 1 when present" "! echo SECOND | wvc_ensure_local_settings '$tmp/data' >/dev/null"
 check "existing local settings kept" "[ \"\$(cat '$tmp/data/local_settings.py')\" = FIRST ]"
-mkdir "$tmp/ro" && chmod 500 "$tmp/ro"
+# a directory where the part file goes: the write fails, for root too
+mkdir -p "$tmp/ro/local_settings.py.part"
 wvc_ensure_local_settings "$tmp/ro" < /dev/null 2>/dev/null; rc=$?
-check "a failed write returns 2 and leaves no file" "[ $rc = 2 ] && [ ! -e '$tmp/ro/local_settings.py' ] && [ ! -e '$tmp/ro/local_settings.py.part' ]"
+check "a failed write returns 2 and leaves no file" "[ $rc = 2 ] && [ ! -e '$tmp/ro/local_settings.py' ]"
 
 # wvc_harden_modes
 mkdir -p "$tmp/app/data"
