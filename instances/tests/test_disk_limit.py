@@ -83,10 +83,20 @@ class DiskLimitTestCase(TestCase):
         self.assertEqual(form.xpath(".//input[@name='mibps']/@value"), ["100"])
         # tuning set in the XML, of the next start or of the running VM alone: no form
         custom = {**limited("vda"), "iotune_custom": True}
-        for live, config in (([custom], [custom]), ([custom], [limited("vda")])):
+        form = reverse("instances:set_disk_limit", args=[self.instance.id])
+        for live, config, told in (([custom], [custom], "Set in the VM's XML"),
+                                   ([custom], [limited("vda")], "Running: set in the VM's XML")):
             doc = self.page(live=live, config=config)
-            self.assertIn("Set in the VM's XML", doc.text_content())
-            self.assertFalse(doc.xpath("//form[@action=$a]", a=reverse("instances:set_disk_limit", args=[self.instance.id])))
+            self.assertIn(told, " ".join(doc.text_content().split()))
+            self.assertFalse(doc.xpath("//form[@action=$a]", a=form))
+        # the running VM's limit, when it differs from the next start's
+        for live, told in ((limited("vda", 200, 20), "Running: 200 IOPS, 20 MiB/s"), (limited("vda"), "Running: none")):
+            doc = self.page(live=[live], config=[limited("vda", 500, 100)])
+            text = " ".join(doc.text_content().split())
+            self.assertIn(f"I/O limit 500 IOPS, 100 MiB/s {told}", text)
+            self.assertTrue(doc.xpath("//form[@action=$a]", a=form))
+        self.assertNotIn("Running:", " ".join(self.page(live=[limited("vda", 500, 100)],
+                                                        config=[limited("vda", 500, 100)]).text_content().split()))
 
 
 def domain(*disks):
@@ -123,6 +133,11 @@ class SetDiskLimitTestCase(TestCase):
         # a running VM's source has more attributes: the same disk all the same
         running = domain(disk_xml().replace("<source file='/pool/vda.qcow2'/>", "<source file='/pool/vda.qcow2' index='1'/>"))
         self.assertEqual(self.flags(self.vm(running, both)), VIR_DOMAIN_AFFECT_LIVE | VIR_DOMAIN_AFFECT_CONFIG)
+        # and an NBD disk's tls, which libvirt fills in from the host's settings
+        nbd = ("<disk type='network' device='disk'><source protocol='nbd' name='export'{tls}><host name='192.0.2.5' "
+               "port='10809'/></source><target dev='vda' bus='virtio'/></disk>")
+        self.assertEqual(self.flags(self.vm(domain(nbd.format(tls=" tls='no'")), domain(nbd.format(tls="")))),
+                         VIR_DOMAIN_AFFECT_LIVE | VIR_DOMAIN_AFFECT_CONFIG)
 
     def test_refused(self):
         for case, live, config, text in (

@@ -705,8 +705,8 @@ BULK_POWER_MAX = 500
 
 @require_POST
 def bulk_power(request):
-    """Starts, shuts down or forces off the VMs chosen on the VM list: an
-    instance.power job each, followed on the Jobs page. A VM the user may not
+    """Starts, shuts down or forces off the VMs chosen on the VM list: a job each
+    (instances.jobs.POWER), followed on the Jobs page. A VM the user may not
     power, gone, or held by another job is named (if the user may see it);
     the others are queued."""
     from instances.jobs import POWER  # instances.jobs imports this module
@@ -727,7 +727,7 @@ def bulk_power(request):
         name = seen.get(pk) or _("a chosen VM")  # one the user may not see is not named
         try:
             # one key per VM: a resent form queues none twice
-            jobs.submit("instance.power", request.user, {"instance": pk, "action": action}, f"{key}-{pk}")
+            jobs.submit(POWER[action], request.user, {"instance": pk}, f"{key}-{pk}")
             queued += 1
         except claims.Busy as busy:
             messages.error(request, f"{name}: {busy_message(busy, request.user)}")
@@ -739,7 +739,7 @@ def bulk_power(request):
         return redirect("instances:index")
     messages.success(request, ngettext("%(count)s VM is queued; the Jobs page follows it.",
                                        "%(count)s VMs are queued; the Jobs page follows them.", queued) % {"count": queued})
-    return redirect(reverse("operations:jobs") + "?kind=instance.power")
+    return redirect(reverse("operations:jobs") + f"?kind={POWER[action]}")
 
 
 def from_script(request):

@@ -713,11 +713,12 @@ def custom_iotune(disk):
 
 def disk_source(disk):
     """A disk element's storage, to tell two definitions' disks apart: its type
-    and its source's attributes and hosts, not those a running VM adds (index)."""
+    and its source's attributes and hosts, not those a running VM adds (index,
+    and an NBD disk's tls, which libvirt fills in from the host's settings)."""
     source = disk.find("source")
     if source is None:
         return disk.get("type"), ()
-    return (disk.get("type"), tuple(sorted((k, v) for k, v in source.attrib.items() if k != "index")),
+    return (disk.get("type"), tuple(sorted((k, v) for k, v in source.attrib.items() if k not in ("index", "tls"))),
             tuple(tuple(sorted(host.attrib.items())) for host in source.findall("host")))
 
 

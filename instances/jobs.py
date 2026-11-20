@@ -15,7 +15,7 @@ from django.template.loader import render_to_string
 from django.utils.translation import gettext_noop
 from django.utils.translation import gettext_noop as _
 from libvirt import (VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE, VIR_DOMAIN_JOB_NONE, VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL,
-                     VIR_DOMAIN_SHUTOFF, VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA, VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_MANAGED_SAVE,
+                     VIR_DOMAIN_RUNNING, VIR_DOMAIN_SHUTOFF, VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA, VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_MANAGED_SAVE,
                      VIR_DOMAIN_UNDEFINE_NVRAM, VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA, VIR_DOMAIN_XML_INACTIVE,
                      VIR_ERR_NO_DOMAIN, VIR_ERR_NO_STORAGE_VOL, libvirtError)
 from lxml import etree
@@ -1519,12 +1519,8 @@ class DeleteInstance(Kind):
         return _log(op, state, "delete")
 
 
-# the power actions the VM list's chosen VMs take (instance.power), by the name its form sends, and their log words
-POWER = {
-    "start": "power on",
-    "shutdown": "power off",
-    "force_off": "force off",
-}
+# the power actions the VM list's chosen VMs take, by the name its form sends: their job kind
+POWER = {"start": "instance.start", "shutdown": "instance.shutdown", "force_off": "instance.force_off"}
 
 
 def _powerable(user, pk):
@@ -1539,19 +1535,16 @@ def _powerable(user, pk):
         raise PermissionDenied from None
 
 
-@register
-class PowerVM(Kind):
+class _Power(Kind):
     """Starts, shuts down or forces off one VM chosen on the VM list: a job of
     its own, so each VM is held, checked when it runs, scheduled and recovered
-    on its own, and has its own log row."""
+    on its own, and has its own log row. A kind for each action, which its
+    label names on the Jobs page."""
 
-    name = "instance.power"
-    label = gettext_noop("Power")
+    action = ""  # its log row's words
 
     def normalize(self, raw):
-        if raw["action"] not in POWER:
-            raise ValueError(raw["action"])
-        return {"instance": int(raw["instance"]), "action": raw["action"]}
+        return {"instance": int(raw["instance"])}
 
     def validate(self, user, params):
         # the owner only: whether an administrator paused it is read by the worker, not in the request
@@ -1566,27 +1559,90 @@ class PowerVM(Kind):
         if _powerable(op.user, op.params["instance"]).compute_id != op.intent["compute"]:
             raise util.OperationError(MOVED)
 
+    def check(self, instance):
+        """Refuses, before anything changes, a VM the action does not apply to."""
+        raise NotImplementedError
+
+    def power(self, proxy):
+        raise NotImplementedError
+
+    def done(self, dom):
+        """Whether the VM, its domain or None when its host has none, is as the action leaves it, for recovery."""
+        raise NotImplementedError
+
     def run(self, op, ctx):
-        instance, action = _instance(op.params["instance"]), op.params["action"]
-        if action == "start":  # the start button's checks, before anything changes
-            if instance.is_template:
-                raise util.OperationError(gettext_noop("Templates cannot be started."))
-            instance.proxy.check_start_hostdevs()
-            instance.compute.refuse_start()
-        ctx.record_intent(powering=True)  # libvirt is asked from here: recovery cannot tell what it did
-        if action == "start":
-            instance.proxy.start()
-        elif action == "shutdown":
-            instance.proxy.shutdown()
-        else:
-            instance.proxy.force_shutdown()
+        instance = _instance(op.params["instance"])
+        self.check(instance)
+        ctx.record_intent(powering=True)  # libvirt is asked from here: recovery reads what it did
+        self.power(instance.proxy)
         return {}
+
+    # recovery's word when the VM is not as the action leaves it
+    not_done = gettext_noop("The VM was not powered")
 
     def reconcile(self, op):
         if not op.intent.get("powering"):
-            return Outcome(Operation.FAILED, error=say(gettext_noop("The job stopped before the VM was powered")))
-        return Outcome(Operation.UNCERTAIN, error=say(gettext_noop(
-            "The job stopped while the VM was powered: check its state")))
+            return Outcome(Operation.FAILED, error=say(self.not_done))
+        if self.done(_domain(op.intent["compute"], op.intent["uuid"])):
+            return Outcome(Operation.SUCCEEDED)
+        return Outcome(Operation.FAILED, error=say(self.not_done))
 
     def log_entry(self, op, state):
-        return _log(op, state, POWER[op.params["action"]])
+        return _log(op, state, self.action)
+
+
+@register
+class StartVM(_Power):
+    name = "instance.start"
+    label = gettext_noop("Start")
+    action = "power on"
+
+    def check(self, instance):  # the start button's checks
+        if instance.is_template:
+            raise util.OperationError(gettext_noop("Templates cannot be started."))
+        if instance.proxy.get_status() != 5:
+            raise util.OperationError(gettext_noop("The VM is not shut off"))
+        instance.proxy.check_start_hostdevs()
+        instance.compute.refuse_start()
+
+    def power(self, proxy):
+        proxy.start()
+
+    def done(self, dom):  # running: not a guest that crashed while starting
+        return dom is not None and dom.state()[0] == VIR_DOMAIN_RUNNING
+
+
+@register
+class ShutdownVM(_Power):
+    name = "instance.shutdown"
+    label = gettext_noop("Shut down")
+    action = "power off"
+
+    def check(self, instance):
+        if instance.proxy.get_status() != 1:
+            raise util.OperationError(gettext_noop("The VM is not running"))
+
+    not_done = gettext_noop("The VM was still running when the job was checked: its guest may still shut it down")
+
+    def power(self, proxy):
+        proxy.shutdown()
+
+    def done(self, dom):  # shut off, or gone: a transient VM is removed as it stops
+        return dom is None or not dom.isActive()
+
+
+@register
+class ForceOffVM(_Power):
+    name = "instance.force_off"
+    label = gettext_noop("Force off")
+    action = "force off"
+
+    def check(self, instance):
+        if instance.proxy.get_status() == 5:
+            raise util.OperationError(gettext_noop("The VM is already shut off"))
+
+    def power(self, proxy):
+        proxy.force_shutdown()
+
+    def done(self, dom):  # shut off, or gone: a transient VM is removed as it stops
+        return dom is None or not dom.isActive()

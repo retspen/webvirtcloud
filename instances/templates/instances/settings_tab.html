@@ -1,6 +1,7 @@
 {% load i18n %}
 {% load django_bootstrap5 %}
 {% load bootstrap_icons %}
+{% load vm_states %}
 {% load operations %}
 <div class="tab-pane" id="settings" role="tabpanel">
     <!-- Nav tabs -->
@@ -263,9 +264,13 @@
                                 <dt class="col-6 fw-normal text-body-secondary">{% trans "Read-only" %}</dt><dd class="col-6 mb-1">{{ disk.readonly|yesno }}</dd>
                                 <dt class="col-6 fw-normal text-body-secondary">{% trans "Shareable" %}</dt><dd class="col-6 mb-1">{{ disk.shareable|yesno }}</dd>
                                 <dt class="col-6 fw-normal text-body-secondary">{% trans "I/O limit" %}</dt>
-                                <dd class="col-6 mb-0">{% if disk.iotune_custom or disk.dev in instance.live_custom_iotune %}{% trans "Set in the VM's XML" %}{% elif disk.iops or disk.mibps %}{% blocktrans with iops=disk.iops|default:"–" mibps=disk.mibps|default:"–" %}{{ iops }} IOPS, {{ mibps }} MiB/s{% endblocktrans %}{% else %}{% trans "None" %}{% endif %}</dd>
+                                {% with running=disk|running_limit:instance %}
+                                <dd class="col-6 mb-0">{% if disk.iotune_custom %}{% trans "Set in the VM's XML" %}{% elif disk.iops or disk.mibps %}{% blocktrans with iops=disk.iops|default:"–" mibps=disk.mibps|default:"–" %}{{ iops }} IOPS, {{ mibps }} MiB/s{% endblocktrans %}{% else %}{% trans "None" %}{% endif %}
+                                    {# the running VM's, when the next start's above differs from it #}
+                                    {% if running %}<div class="text-body-secondary">{% if running.2 %}{% trans "Running: set in the VM's XML" %}{% elif running.0 or running.1 %}{% blocktrans with iops=running.0|default:"–" mibps=running.1|default:"–" %}Running: {{ iops }} IOPS, {{ mibps }} MiB/s{% endblocktrans %}{% else %}{% trans "Running: none" %}{% endif %}</div>{% endif %}</dd>
+                                {% endwith %}
                             </dl>
-                            {% if request.user.is_superuser and not disk.iotune_custom and disk.dev not in instance.live_custom_iotune %}
+                            {% with running=disk|running_limit:instance %}{% if request.user.is_superuser and not disk.iotune_custom and not running.2 %}
                             {# reads and writes together; applied at once on a running VM #}
                             <form class="d-flex flex-wrap align-items-end gap-2 mt-2" action="{% url 'instances:set_disk_limit' instance.id %}" method="post">{% csrf_token %}
                                 <input type="hidden" name="dev" value="{{ disk.dev }}">
@@ -281,7 +286,7 @@
                                 <button type="submit" class="btn btn-sm btn-outline-secondary">{% trans "Set the limit" %}</button>
                                 <span class="form-text w-100 mt-0">{% trans "Reads and writes together; 0: no limit. A running VM gets it at once." %}</span>
                             </form>
-                            {% endif %}
+                            {% endif %}{% endwith %}
                         </details>
                     </article>
                 {% endfor %}

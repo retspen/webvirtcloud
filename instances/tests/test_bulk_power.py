@@ -1,6 +1,7 @@
-"""Start, shut down or force off the VMs chosen on the VM list: an
-instance.power job each, so each VM is held, checked when it runs and
-recovered on its own, with its own log row. A VM the user may not power, or
+"""Start, shut down or force off the VMs chosen on the VM list: a job each
+(instance.start, .shutdown, .force_off), so each VM is held, checked when it
+runs and recovered on its own, with its own log row and its action named on
+the Jobs page. A VM the user may not power, or
 that another job holds, is named and the others are queued. Who may power a
 VM may choose it, as on its own page."""
 from types import SimpleNamespace
@@ -15,7 +16,7 @@ from lxml import html
 
 from accounts.models import UserInstance
 from computes.models import Compute
-from instances.jobs import PowerVM
+from instances.jobs import ForceOffVM, ShutdownVM, StartVM
 from instances.models import Instance
 from operations import claims
 from operations.jobs import Context
@@ -48,16 +49,17 @@ class BulkPowerTestCase(TransactionTestCase):
         Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker="wvc-test:1:a")
         op.refresh_from_db()
         ctx = Context(op, SimpleNamespace(identity="wvc-test:1:a"))
-        PowerVM().precheck(op, ctx)
-        return PowerVM().run(op, ctx)
+        kind = {"instance.start": StartVM, "instance.shutdown": ShutdownVM, "instance.force_off": ForceOffVM}[op.kind]()
+        kind.precheck(op, ctx)
+        return kind.run(op, ctx)
 
     def test_the_list_queues_a_job_for_each_vm(self):
         response, said = self.submit("start", self.vms)
-        self.assertRedirects(response, reverse("operations:jobs") + "?kind=instance.power", fetch_redirect_response=False)
+        self.assertRedirects(response, reverse("operations:jobs") + "?kind=instance.start", fetch_redirect_response=False)
         self.assertEqual(said, ["2 VMs are queued; the Jobs page follows them."])
         ops = list(Operation.objects.order_by("resource_label"))
         self.assertEqual([(op.kind, op.params, op.resource_label) for op in ops],
-                         [("instance.power", {"instance": vm.pk, "action": "start"}, f"bp-host/{vm.name}") for vm in self.vms])
+                         [("instance.start", {"instance": vm.pk}, f"bp-host/{vm.name}") for vm in self.vms])
         # each holds its VM and shares its host, as a job on the VM's page does
         self.assertEqual(set(Claim.objects.filter(operation=ops[0]).values_list("resource", "mode")),
                          {(f"compute:{self.vms[0].compute_id}", "shared"), (f"instance:{self.vms[0].uuid}", "exclusive")})
@@ -67,6 +69,8 @@ class BulkPowerTestCase(TransactionTestCase):
         self.assertEqual(Operation.objects.count(), 2)
 
     def test_each_job_powers_its_vm(self):
+        for proxy in self.proxies.values():
+            proxy.get_status.return_value = 1  # running
         self.submit("force_off", self.vms)
         for op in Operation.objects.all():
             self.run_job(op)
@@ -81,7 +85,60 @@ class BulkPowerTestCase(TransactionTestCase):
         _response, said = self.submit("shutdown", self.vms)
         self.assertTrue(said[0].startswith("bp-vm1: "), said)
         self.assertEqual(said[1:], ["1 VM is queued; the Jobs page follows it."])
-        self.assertEqual(Operation.objects.get(kind="instance.power").params["instance"], self.vms[1].pk)
+        self.assertEqual(Operation.objects.get(kind="instance.shutdown").params["instance"], self.vms[1].pk)
+
+    def test_an_action_that_does_not_apply_fails_before_libvirt_is_asked(self):
+        # an already shut off VM forced off, a running one started: refused, its claims go with the failed job
+        for action, status in (("force_off", 5), ("shutdown", 5), ("start", 1)):
+            with self.subTest(action=action):
+                Operation.objects.all().delete()
+                self.proxies["bp-vm1"].get_status.return_value = status
+                self.submit(action, self.vms[:1])
+                op = Operation.objects.get()
+                with self.assertRaises(OperationError):
+                    self.run_job(op)
+                op.refresh_from_db()
+                self.assertNotIn("powering", op.intent)
+        for call in ("start", "shutdown", "force_shutdown"):
+            getattr(self.proxies["bp-vm1"], call).assert_not_called()
+
+    def test_recovery_reads_what_libvirt_did(self):
+        op = SimpleNamespace(intent={"compute": 1, "uuid": "u", "powering": True})
+        dom = {name: MagicMock(**{"state.return_value": [state, 0], "isActive.return_value": active})
+               for name, state, active in (("running", 1, 1), ("crashed", 6, 1), ("off", 5, 0))}
+        for kind, found, state in ((StartVM, "running", Operation.SUCCEEDED), (StartVM, "crashed", Operation.FAILED),
+                                   (StartVM, "off", Operation.FAILED), (StartVM, None, Operation.FAILED),
+                                   (ForceOffVM, "off", Operation.SUCCEEDED), (ForceOffVM, "running", Operation.FAILED),
+                                   (ForceOffVM, None, Operation.SUCCEEDED),  # a transient VM is removed as it stops
+                                   (ShutdownVM, "off", Operation.SUCCEEDED), (ShutdownVM, None, Operation.SUCCEEDED),
+                                   (ShutdownVM, "running", Operation.FAILED)):
+            with self.subTest(kind=kind.name, found=found), patch("instances.jobs._domain", return_value=dom.get(found)):
+                self.assertEqual(kind().reconcile(op).state, state)
+        with patch("instances.jobs._domain", return_value=dom["running"]):  # its guest may yet shut it down
+            self.assertIn("may still shut it down", ShutdownVM().reconcile(op).error[0]["text"])
+
+    def test_a_refused_job_frees_its_vm(self):
+        # through the worker: the job fails and its claims go, so the VM can be powered again
+        from operations.worker import execute
+
+        self.proxies["bp-vm1"].get_status.return_value = 5
+        self.submit("force_off", self.vms[:1])
+        op = Operation.objects.get()
+        acquire("wvc-test:1:a", "wvc-test")
+        Operation.objects.filter(pk=op.pk).update(state=Operation.RUNNING, worker="wvc-test:1:a")
+        execute(SimpleNamespace(identity="wvc-test:1:a", recovery=MagicMock()), op.pk)
+        op.refresh_from_db()
+        self.assertEqual((op.state, Claim.objects.filter(operation=op).count()), (Operation.FAILED, 0))
+
+    def test_the_jobs_page_follows_an_owners_power_jobs(self):
+        # an owner is sent to ?kind=...: the page filters it for them too
+        owner = get_user_model().objects.create_user("bp-owner4", password="pw")
+        UserInstance.objects.create(instance=self.vms[0], user=owner)
+        response, _said = self.submit("start", self.vms[:1], user=owner)
+        Operation.objects.create(kind="instance.snapshot", user=owner, username="bp-owner4", state=Operation.SUCCEEDED,
+                                 resource="y", resource_label="bp-host/bp-vm1")
+        page = self.client.get(response.url)
+        self.assertEqual([op.kind for op, _data in page.context["rows"]], ["instance.start"])
 
     def test_a_template_is_not_started_and_nothing_is_uncertain(self):
         # refused before libvirt is asked: the job fails (its claims go), recovery is not needed
@@ -92,7 +149,7 @@ class BulkPowerTestCase(TransactionTestCase):
             self.run_job(op)
         op.refresh_from_db()
         self.assertNotIn("powering", op.intent)
-        self.assertEqual(PowerVM().reconcile(op).state, Operation.FAILED)
+        self.assertEqual(StartVM().reconcile(op).state, Operation.FAILED)
         self.proxies["bp-vm1"].start.assert_not_called()
 
     def test_a_vm_paused_by_an_administrator_or_gone_is_refused_when_the_job_runs(self):
@@ -105,7 +162,7 @@ class BulkPowerTestCase(TransactionTestCase):
             self.run_job(op)
         Instance.objects.filter(pk=self.vms[0].pk).delete()
         with self.assertRaises(PermissionDenied):
-            PowerVM().precheck(op, None)
+            StartVM().precheck(op, None)
 
     def test_the_worker_checks_the_user_again(self):
         # disabled after the form was sent: the job powers nothing

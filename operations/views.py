@@ -37,9 +37,10 @@ def jobs(request):
             qs = qs.filter(resource_label__istartswith=compute)
         if username := request.GET.get("username"):
             qs = qs.filter(username__icontains=username)
-        for field in ("state", "kind"):
-            if value := request.GET.get(field):
-                qs = qs.filter(**{field: value})
+    # a state or kind for every user: the VM list sends its owners to their power jobs
+    for field in ("state", "kind"):
+        if value := request.GET.get(field):
+            qs = qs.filter(**{field: value})
     page = Paginator(qs, 50).get_page(request.GET.get("page"))
     # the model for its datetimes, the serialized job for its labels
     rows = [(op, OperationSerializer(op, context={"request": request}).data) for op in page.object_list]
