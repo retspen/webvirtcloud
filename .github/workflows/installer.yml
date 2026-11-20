@@ -1,0 +1,46 @@
+name: Installer
+
+# install.sh on each supported distribution (dev/test-installer.sh): on each
+# push to master (the panel it installs changed), on a pull request that
+# changes the installer or what it installs, and weekly, as the
+# distributions' packages change under it
+on:
+  push:
+    branches: [master]
+  pull_request:
+    paths:
+      - install.sh
+      - webvirtcloud.sh
+      - conf/**
+      - dev/test-installer.sh
+      - .github/workflows/installer.yml
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    name: ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - ubuntu:22.04
+          - ubuntu:24.04
+          - ubuntu:26.04
+          - debian:12
+          - debian:13
+          - almalinux:10
+          - opensuse/leap:15.6
+          - openeuler/openeuler:24.03-lts
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install and check the panel
+        run: dev/test-installer.sh "${{ matrix.image }}"
