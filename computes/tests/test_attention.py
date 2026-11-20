@@ -1,6 +1,7 @@
 """The box above the Computes page's hosts: what wants a look, each with a link to where it is handled."""
 
 import datetime
+import threading
 import time
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -38,12 +39,78 @@ class AttentionBoxTests(TestCase):
     def read(self, compute):
         return (False, "refused", None, "") if compute.name == "down" else (True, None, None, "")
 
-    def page(self, pools=(), snapshots=(), needs=None):
+    def page(self, pools=(), snapshots=(), needs=None, read_needs=None, fresh=True):
         with patch("computes.views._read_host", side_effect=self.read), patch(
                 "computes.views._read_attention", return_value={"pools": list(pools), "snapshots": list(snapshots)}), \
-                patch("computes.views._read_needs", side_effect=lambda compute: (needs or {}).get(compute.name)):
-            views._reading.clear()  # no read of what VMs need kept from another test
+                patch("computes.views._read_needs", side_effect=read_needs or (lambda compute: (needs or {}).get(compute.name))):
+            if fresh:  # no read of what VMs need kept from another test
+                views._reading.clear()
             return self.client.get(reverse("computes"))
+
+    def test_what_vms_need_is_read_on_each_load_the_last_standing_in_when_late(self):
+        self.down.delete()
+        Compute.objects.create(name="up2", hostname="192.0.2.3", login="wvc", password="", type=1,
+                               host_uuid="44444444-0000-0000-0000-000000000000")
+        none = {"networks": [], "filters": [], "secrets": [], "usages": []}
+        lacking = {"up": {"uses": {**none, "networks": ["lab"]}, "has": {**none, "networks": ["lab"], "filters": {}}},
+                   "up2": {"uses": none, "has": {**none, "filters": {}}}}
+        fixed = {**lacking, "up2": {"uses": none, "has": {**none, "networks": ["lab"], "filters": {}}}}
+        held = threading.Event()
+        self.addCleanup(held.set)
+
+        def settle():  # every read of the load ended: the next load starts its own
+            held.set()
+            for read in list(views._reading.values()):
+                read.join(5)
+            held.clear()
+
+        def text(**kwargs):
+            page = self.page(fresh=False, **kwargs)
+            settle()
+            return " ".join(html.fromstring(page.content).text_content().split())
+
+        def late(compute):  # a read that outlasts the wait, then says the network is added
+            held.wait(5)
+            return fixed.get(compute.name)
+
+        self.page(needs=lacking)
+        settle()
+        self.assertNotIn("could not migrate", text(needs=fixed))  # the network added: told at the next load
+        # a host whose listing could not be read: the others still count
+        unread = {**lacking, "up2": {"uses": none, "has": {**none, "networks": None, "filters": {}, "secrets": None,
+                                                           "usages": None}}}
+        self.assertNotIn("could not migrate", text(needs=unread))
+        secrets_unread = {**lacking, "up2": {"uses": none, "has": {**none, "filters": {}, "secrets": None, "usages": None}}}
+        self.assertIn("could not migrate here: no active network lab", text(needs=secrets_unread))
+
+        # a late read: the last stands in, waited for NEEDS_GRACE only, not ATTENTION_WAIT
+        self.assertIn("could not migrate", text(needs=lacking))
+        with patch("computes.views.NEEDS_GRACE", 0.1), patch("computes.views.ATTENTION_WAIT", 5):
+            began = time.monotonic()
+            page = self.page(fresh=False, read_needs=late)
+            self.assertLess(time.monotonic() - began, 2)
+        settle()
+        self.assertContains(page, "could not migrate")
+
+        # a host that stopped answering: its stand-in, with the warning, is not told, nor waited for
+        self.assertIn("could not migrate", text(needs=lacking))
+        with patch.object(self, "read", lambda compute: (False, "refused", None, "") if compute.name == "up2"
+                          else (True, None, None, "")), patch("computes.views.NEEDS_GRACE", 5):
+            began = time.monotonic()  # only the silent host's read is late: it would be waited 5 s
+            page = self.page(fresh=False, read_needs=lambda c: late(c) if c.name == "up2" else lacking.get(c.name))
+            self.assertLess(time.monotonic() - began, 2)
+        settle()
+        shown = " ".join(html.fromstring(page.content).text_content().split())
+        self.assertIn("up2: not answering", shown)
+        self.assertNotIn("could not migrate", shown)
+
+        # a read that failed leaves no stand-in: a late read after it tells no older warning
+        self.assertIn("could not migrate", text(needs=lacking))
+        text(needs={})  # this load's read fails (None)
+        with patch("computes.views.ATTENTION_WAIT", 0.1):
+            page = self.page(fresh=False, read_needs=late)
+        settle()
+        self.assertNotContains(page, "could not migrate")
 
     def test_what_a_vm_could_not_find_on_another_host(self):
         # a network, a filter or a secret its VMs use that another host lacks, or a filter of other rules there
@@ -69,6 +136,11 @@ class AttentionBoxTests(TestCase):
     def test_what_vms_need_is_read_apart_from_the_pools(self):
         # its read failing or slow hides no full pool; it reads the host's migration_needs
         page = self.page(pools=[{"name": "default", "percent": 91}], needs={})
+        self.assertContains(page, "91% full")
+        late = threading.Event()
+        with patch("computes.views.ATTENTION_WAIT", 0.2):
+            page = self.page(pools=[{"name": "default", "percent": 91}], read_needs=lambda compute: late.wait(5) and None)
+        late.set()
         self.assertContains(page, "91% full")
         compute = SimpleNamespace(status=True, proxy=MagicMock(**{"migration_needs.return_value": {"uses": {}}}))
         self.assertEqual(views._read_needs(compute), {"uses": {}})
@@ -199,4 +271,27 @@ class HostAttentionTests(TestCase):
             "has": {"networks": ["prod"], "secrets": ["s-2"], "usages": [("ceph", "client.other")],
                     "filters": {"web": "<filter name=\"web\"><rule/><filterref filter=\"base\"/></filter>",
                                 "base": "<filter name=\"base\"><rule x=\"1\"/></filter>"}}})
+
+    def test_a_listing_that_cannot_be_read_is_none_and_the_others_count(self):
+        host = wvmHostDetails.__new__(wvmHostDetails)
+        refused = MagicMock(side_effect=libvirtError("secrets driver down"))
+        host.wvm = SimpleNamespace(listAllDomains=lambda flags=0: [], listAllNWFilters=lambda flags=0: [],
+                                   listAllSecrets=refused,
+                                   listAllNetworks=lambda flags=0: [MagicMock(**{"name.return_value": "prod"})])
+        has = host.migration_needs()["has"]
+        self.assertEqual((has["networks"], has["filters"], has["secrets"], has["usages"]), (["prod"], {}, None, None))
+
+    def test_a_host_whose_vms_cannot_be_listed_is_still_a_destination(self):
+        host = wvmHostDetails.__new__(wvmHostDetails)
+        host.wvm = SimpleNamespace(listAllDomains=MagicMock(side_effect=libvirtError("refused")),
+                                   listAllNWFilters=lambda flags=0: [], listAllSecrets=lambda flags=0: [],
+                                   listAllNetworks=lambda flags=0: [MagicMock(**{"name.return_value": "prod"})])
+        needs = host.migration_needs()
+        self.assertIsNone(needs["uses"])
+        self.assertEqual(needs["has"]["networks"], ["prod"])
+        none = {"networks": [], "filters": [], "secrets": [], "usages": []}
+        source = MagicMock(status=True, maintenance=False, needs={"uses": {**none, "networks": ["lab"]},
+                                                                         "has": {**none, "filters": {}}})
+        target = MagicMock(status=True, maintenance=False, needs=needs)
+        self.assertEqual([(t, s) for t, s, _what in views.lacking([source, target])], [(target, source)])
 

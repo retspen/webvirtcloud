@@ -13,8 +13,9 @@
     function update() {
         var boxes = onScreen();
         var chosen = boxes.filter(function (box) { return box.checked; }).length;
-        form.querySelectorAll("button[name='action']").forEach(function (button) { button.disabled = chosen === 0; });
-        count.textContent = chosen ? count.dataset.text.replace("%(count)s", chosen) : "";
+        var tooMany = chosen > Number(count.dataset.max);  // the server takes at most that many
+        form.querySelectorAll("button[name='action']").forEach(function (button) { button.disabled = chosen === 0 || tooMany; });
+        count.textContent = chosen ? (tooMany ? count.dataset.tooMany : count.dataset.text).replace("%(count)s", chosen) : "";
         shown.disabled = boxes.length === 0;
         shown.checked = boxes.length > 0 && chosen === boxes.length;
         shown.indeterminate = chosen > 0 && chosen < boxes.length;
@@ -48,12 +49,17 @@
             }
         });
     }
-    form.addEventListener("submit", function () {
+    form.addEventListener("submit", function (event) {
         document.querySelectorAll("input[name='vm'][form='bulk-power']:checked").forEach(function (box) {
             if (!box.getClientRects().length) {
                 box.checked = false;  // hidden: not sent
             }
         });
+        // counted again: rows may have come on screen since the buttons were last set
+        if (document.querySelectorAll("input[name='vm'][form='bulk-power']:checked").length > Number(count.dataset.max)) {
+            event.preventDefault();
+            update();
+        }
     });
     update();
 })();

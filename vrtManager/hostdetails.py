@@ -89,35 +89,53 @@ class wvmHostDetails(wvmConnect):
         "has": {"networks" (active), "filters" {name: rules}, "secrets", "usages"}}. A VM's
         running definition and the one for its next start count; its filters include those
         these reference here; a secret is named by UUID ("secrets") or by usage type and
-        usage ("usages", [type, usage]). A VM or filter gone meanwhile is passed over."""
+        usage ("usages", [type, usage]). A VM or filter gone meanwhile is passed over; a
+        listing that cannot be read is None (its VMs': "uses"), and the others still count."""
+        def read(listing):
+            try:
+                return listing()
+            except libvirtError:
+                return None
+
         networks, filters_used, secrets, usages = set(), set(), set(), set()
-        for _name, trees in self.domain_trees():
-            for tree in trees:
-                networks.update(tree.xpath("devices/interface[@type='network']/source/@network"))
-                filters_used.update(tree.xpath("devices/interface/filterref/@filter"))
-                for ref in tree.xpath("devices//secret"):
-                    if ref.get("uuid"):
-                        secrets.add(ref.get("uuid").lower())
-                    elif ref.get("usage"):
-                        usages.add((REF_USAGE_TYPES.get(ref.get("type")), ref.get("usage")))
-                secrets.update(uuid.lower() for uuid in tree.xpath("devices/tpm/backend/encryption/@secret"))
-        filters = {}
-        for nwfilter in self.wvm.listAllNWFilters(0):
-            with suppress(libvirtError):  # undefined meanwhile
-                filters[nwfilter.name()] = filter_rules(nwfilter)
+        def uses():  # one VM's definitions at a time
+            for _name, trees in self.domain_trees():
+                for tree in trees:  # plain strings: none keeps its definition's tree alive
+                    networks.update(tree.xpath("devices/interface[@type='network']/source/@network", smart_strings=False))
+                    filters_used.update(tree.xpath("devices/interface/filterref/@filter", smart_strings=False))
+                    for ref in tree.xpath("devices//secret"):
+                        if ref.get("uuid"):
+                            secrets.add(ref.get("uuid").lower())
+                        elif ref.get("usage"):
+                            usages.add((REF_USAGE_TYPES.get(ref.get("type")), ref.get("usage")))
+                    secrets.update(uuid.lower() for uuid in tree.xpath("devices/tpm/backend/encryption/@secret",
+                                                                       smart_strings=False))
+            return True
+
+        vms_read = read(uses)
+
+        def own_filters():
+            filters = {}
+            for nwfilter in self.wvm.listAllNWFilters(0):
+                with suppress(libvirtError):  # undefined meanwhile
+                    filters[nwfilter.name()] = filter_rules(nwfilter)
+            return filters
+
+        filters = read(own_filters)
         todo = list(filters_used)
         while todo:  # and those they reference
-            for ref in filters.get(todo.pop(), ("", []))[1]:
+            for ref in (filters or {}).get(todo.pop(), ("", []))[1]:
                 if ref not in filters_used:
                     filters_used.add(ref)
                     todo.append(ref)
-        have = self.get_secrets_info()
-        return {"uses": {"networks": sorted(networks), "filters": sorted(filters_used), "secrets": sorted(secrets),
-                         "usages": sorted(usages, key=str)},
-                "has": {"networks": sorted(n.name() for n in self.wvm.listAllNetworks(VIR_CONNECT_LIST_NETWORKS_ACTIVE)),
-                        "filters": {name: rules for name, (rules, _refs) in filters.items()},
-                        "secrets": sorted(secret["uuid"].lower() for secret in have),
-                        "usages": sorted(((secret["usage_type"], secret["usage"]) for secret in have), key=str)}}
+        have = read(self.get_secrets_info)
+        active = read(lambda: self.wvm.listAllNetworks(VIR_CONNECT_LIST_NETWORKS_ACTIVE))
+        return {"uses": None if vms_read is None else {"networks": sorted(networks), "filters": sorted(filters_used),
+                                                    "secrets": sorted(secrets), "usages": sorted(usages, key=str)},
+                "has": {"networks": None if active is None else sorted(n.name() for n in active),
+                        "filters": None if filters is None else {name: rules for name, (rules, _refs) in filters.items()},
+                        "secrets": None if have is None else sorted(secret["uuid"].lower() for secret in have),
+                        "usages": None if have is None else sorted(((s["usage_type"], s["usage"]) for s in have), key=str)}}
 
     def get_memory_usage(self):
         """

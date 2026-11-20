@@ -135,6 +135,7 @@ def index(request):
          # the VMs this user may power (_power_instance): theirs, or every one for a superuser
          # a superuser's bulk tag box offers every tag, as the Settings tab's picker
          "tag_names": list(Tag.objects.order_by("name").values_list("name", flat=True)) if request.user.is_superuser else [],
+         "bulk_max": BULK_MAX,
          "powerable": {i.pk for i in instances} if request.user.is_superuser else
          set(UserInstance.objects.filter(user=request.user).values_list("instance_id", flat=True))},
     )
@@ -701,8 +702,8 @@ def _power_instance(user, pk):
     return instance
 
 
-# the most VMs the VM list's bulk power form takes at once
-BULK_POWER_MAX = 500
+# the most VMs the VM list's bulk form takes at once (a form of more fields Django refuses: 1000)
+BULK_MAX = 500
 
 
 def _chosen_vms(request):
@@ -719,6 +720,9 @@ def bulk_tag(request):
     action, vms = request.POST.get("action"), _chosen_vms(request)
     if action not in ("tag_add", "tag_remove") or not vms:
         messages.error(request, _("Choose the VMs and write the tag"))
+        return redirect("instances:index")
+    if len(vms) > BULK_MAX:
+        messages.error(request, _("Choose at most %(count)s VMs at once") % {"count": BULK_MAX})
         return redirect("instances:index")
     remove, changed = action == "tag_remove", 0
     with transaction.atomic():
@@ -757,8 +761,8 @@ def bulk_power(request):
     if action not in POWER or not vms or not KEY_RE.fullmatch(key) or len(key) > 50:
         messages.error(request, _("Choose the VMs you may power, and Start, Shut down or Force off"))
         return redirect("instances:index")
-    if len(vms) > BULK_POWER_MAX:
-        messages.error(request, _("Choose at most %(count)s VMs at once") % {"count": BULK_POWER_MAX})
+    if len(vms) > BULK_MAX:
+        messages.error(request, _("Choose at most %(count)s VMs at once") % {"count": BULK_MAX})
         return redirect("instances:index")
     names = dict(Instance.objects.filter(pk__in=vms).values_list("pk", "name"))
     seen = names if request.user.is_superuser else dict(Instance.objects.filter(

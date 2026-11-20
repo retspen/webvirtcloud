@@ -48,6 +48,10 @@ class BulkTagTestCase(TestCase):
         self.assertIn("A tag is letters a-z", self.post("tag_add", "no spaces", self.vms)[0])
         self.assertEqual(self.post("tag_remvoe", "web", self.vms), ["Choose the VMs and write the tag"])  # no add
         self.assertEqual(self.post("tag_remove", "none", self.vms), ["There is no tag none"])
+        many = self.client.post(reverse("instances:bulk_tag"), {"action": "tag_add", "tag": "web",
+                                                                 "vm": [str(n) for n in range(1, 502)]})
+        self.assertIn("at most 500 VMs", " ".join(map(str, get_messages(many.wsgi_request))))
+        self.client.cookies.pop("messages", None)
         self.assertEqual(self.vm_tags(), [[], []])
         Instance.objects.filter(pk__in=[vm.pk for vm in self.vms]).delete()
         self.assertEqual(self.post("tag_add", "fresh", self.vms), ["Choose the VMs and write the tag"])  # VMs gone

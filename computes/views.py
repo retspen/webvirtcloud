@@ -136,9 +136,10 @@ class _HostRead(threading.Thread):
     """One read of a host (read: _read_host, _read_attention or _read_needs) on a daemon
     thread: one stuck on its host does not hold the process when it exits."""
 
-    def __init__(self, compute, read):
+    def __init__(self, compute, read, stand_in=(None, 0)):
         super().__init__(daemon=True, name=f"wvc-host-{compute.pk}")
         self.compute, self.read, self.result, self.ended = compute, read, None, None
+        self.stand_in = stand_in  # a "needs" read's: (the result, when it ended) of the one before, if it read
 
     def run(self):
         self.result = self.read(self.compute)
@@ -152,9 +153,10 @@ _reading_lock = threading.Lock()
 
 # the box's reads (_read_attention, _read_needs) are waited for this long at most: one slow does not hold the page
 ATTENTION_WAIT = 2
-# a read of what a host's VMs need is used again for this long (seconds): a host of many VMs, whose
-# read outlasts ATTENTION_WAIT, is still compared, and networks and filters seldom change
+# what a host's VMs need is read again on each load; the last read that ended stands in for this
+# long (seconds) when the new one outlasts ATTENTION_WAIT, so a host of many VMs is still compared
 NEEDS_KEPT = 300
+NEEDS_GRACE = 0.5  # how long a new read is waited for when one stands in for it (seconds)
 
 READ_KINDS = ("host", "attention", "needs")  # _read_host, _read_attention, _read_needs
 
@@ -166,17 +168,24 @@ def _read_key(compute):
 
 
 def _start(compute, kind):
-    """compute's read of kind (READ_KINDS): one of an earlier load still running, or for "needs" one
-    ended within NEEDS_KEPT, else a new one. Callers hold _reading_lock."""
+    """compute's read of kind (READ_KINDS): one of an earlier load still running, else a new one.
+    Callers hold _reading_lock."""
     key = (kind, *_read_key(compute))
     read = _reading.get(key)
-    kept = kind == "needs" and read is not None and read.ended is not None and read.result is not None \
-        and time.monotonic() - read.ended < NEEDS_KEPT
-    if read is None or not (read.is_alive() or kept):
+    if read is None or not read.is_alive():
+        # a "needs" read that ended stands in for the new one; one that failed leaves none
+        stand_in = (read.result, read.ended) if kind == "needs" and read is not None and read.result is not None \
+            else (None, 0)
         _reading[key] = _HostRead(copy(compute), {"host": _read_host, "attention": _read_attention,
-                                                  "needs": _read_needs}[kind])
+                                                  "needs": _read_needs}[kind], stand_in)
         _reading[key].start()
     return _reading[key]
+
+
+def _stand_in(read):
+    """What the read of what VMs need before read said, if it ended within NEEDS_KEPT, else None."""
+    result, ended = read.stand_in
+    return result if time.monotonic() - ended < NEEDS_KEPT else None
 
 
 def read_hosts(computes, attention=False):
@@ -195,16 +204,26 @@ def read_hosts(computes, attention=False):
         reads = {compute: _start(compute, "host") for compute in computes}
         scans = {compute: _start(compute, "attention") for compute in computes} if attention else {}
         needs = {compute: _start(compute, "needs") for compute in computes} if attention else {}
+        stand_ins = {compute: _stand_in(read) for compute, read in needs.items()}
     started = time.monotonic()
     for read in reads.values():
         read.join(max(0, started + LIST_WAIT - time.monotonic()))
-    for scan in [*scans.values(), *needs.values()]:
+    for scan in scans.values():
         scan.join(max(0, started + ATTENTION_WAIT - time.monotonic()))
+    # a host's needs with a stand-in are waited for NEEDS_GRACE at most, not ATTENTION_WAIT; those of a
+    # host that does not answer not at all: they are not told
+    for compute, read in needs.items():
+        if reads[compute].result is not None and reads[compute].result[0] is True:
+            read.join(max(0, started + (ATTENTION_WAIT if stand_ins[compute] is None else NEEDS_GRACE) - time.monotonic()))
     for compute, read in reads.items():
         compute.attention = scans[compute].result if compute in scans else None
-        compute.needs = needs[compute].result if compute in needs else None
+        # this load's read if it ended, else the stand-in
+        compute.needs = (stand_ins[compute] if needs[compute].is_alive() else needs[compute].result) \
+            if compute in needs else None
         if read.result is not None:
             compute.status, compute.connection_error, compute.shown_capacity, compute.read_uuid = read.result
+            if compute.status is not True:  # what it said before it stopped answering is not told
+                compute.attention = compute.needs = None
         else:
             compute.status, compute.shown_capacity, compute.read_uuid, compute.attention = False, None, "", None
             compute.needs = None
@@ -267,24 +286,29 @@ def attention(computes):
 def lacking(computes):
     """[(host, other host, [what])]: what the VMs of a host use (migration_needs) that the other
     host lacks or has otherwise, so that the migration check refuses moving them there: an active
-    network, a network filter or one of other rules, a secret (by UUID or usage). Only hosts whose
-    needs were read; a host in maintenance is no destination, but its VMs still need one."""
-    needs = {c: c.needs for c in computes if c.needs}
+    network, a network filter or one of other rules, a secret (by UUID or usage). Only hosts that
+    answer and whose needs were read, and of these only the listings read; a host in maintenance
+    is no destination, but its VMs still need one."""
+    needs = {c: c.needs for c in computes if c.status is True and c.needs}
     found = []
     for source, need in needs.items():
         for target, other in needs.items():
-            if target is source or target.maintenance:
+            if target is source or target.maintenance or need["uses"] is None:  # its VMs not read: no source
                 continue
-            uses, has, own = need["uses"], other["has"], need["has"]["filters"]
-            usages = {tuple(usage) for usage in has["usages"]}
-            what = [(gettext_noop("no active network %(names)s"), sorted(set(uses["networks"]) - set(has["networks"]))),
-                    (gettext_noop("no network filter %(names)s"), sorted(set(uses["filters"]) - set(has["filters"]))),
-                    # compared only with the source's own filter: one it lacks too is not another's rules
-                    (gettext_noop("network filter %(names)s with other rules"),
-                     sorted(n for n in uses["filters"] if n in has["filters"] and n in own and has["filters"][n] != own[n])),
-                    (gettext_noop("no secret %(names)s"),
-                     sorted([*(set(uses["secrets"]) - set(has["secrets"])),
-                             *(usage for usage_type, usage in uses["usages"] if (usage_type, usage) not in usages)]))]
+            uses, has, own = need["uses"], other["has"], need["has"]["filters"] or {}
+            what = []
+            if has["networks"] is not None:
+                what.append((gettext_noop("no active network %(names)s"), sorted(set(uses["networks"]) - set(has["networks"]))))
+            if has["filters"] is not None:
+                what.append((gettext_noop("no network filter %(names)s"), sorted(set(uses["filters"]) - set(has["filters"]))))
+                # compared only with the source's own filter: one it lacks too is not another's rules
+                what.append((gettext_noop("network filter %(names)s with other rules"),
+                             sorted(n for n in uses["filters"] if n in has["filters"] and n in own and has["filters"][n] != own[n])))
+            if has["secrets"] is not None:
+                usages = {tuple(usage) for usage in has["usages"]}
+                what.append((gettext_noop("no secret %(names)s"),
+                             sorted([*(set(uses["secrets"]) - set(has["secrets"])),
+                                     *(usage for usage_type, usage in uses["usages"] if (usage_type, usage) not in usages)])))
             what = [_(text) % {"names": ", ".join(names)} for text, names in what if names]
             if what:
                 found.append((target, source, what))
