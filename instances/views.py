@@ -133,6 +133,8 @@ def index(request):
          "tags": Tag.counts(instances),
          "states_url": reverse("instances:states"), "vm_states": vm_states,
          # the VMs this user may power (_power_instance): theirs, or every one for a superuser
+         # a superuser's bulk tag box offers every tag, as the Settings tab's picker
+         "tag_names": list(Tag.objects.order_by("name").values_list("name", flat=True)) if request.user.is_superuser else [],
          "powerable": {i.pk for i in instances} if request.user.is_superuser else
          set(UserInstance.objects.filter(user=request.user).values_list("instance_id", flat=True))},
     )
@@ -703,6 +705,45 @@ def _power_instance(user, pk):
 BULK_POWER_MAX = 500
 
 
+def _chosen_vms(request):
+    """The VMs chosen on the VM list (its bulk form's boxes), as ids, each once."""
+    return list(dict.fromkeys(int(pk) for pk in request.POST.getlist("vm") if pk.isascii() and pk.isdigit() and len(pk) <= 10))
+
+
+@require_POST
+@superuser_only
+def bulk_tag(request):
+    """Adds a tag to, or removes it from, the VMs chosen on the VM list, as each VM's Settings tab
+    does: a log row for each VM changed, not while the VM's tags are kept or given back (forget)
+    nor while a tag is renamed or deleted (the tag checked under the same lock)."""
+    action, vms = request.POST.get("action"), _chosen_vms(request)
+    if action not in ("tag_add", "tag_remove") or not vms:
+        messages.error(request, _("Choose the VMs and write the tag"))
+        return redirect("instances:index")
+    remove, changed = action == "tag_remove", 0
+    with transaction.atomic():
+        lock_ownership()
+        form = TagsForm({"tags": [request.POST.get("tag", "")]})
+        instances = Instance.objects.filter(pk__in=vms).select_related("compute")
+        if not form.is_valid() or not form.cleaned_data["tags"] or not instances.exists():
+            messages.error(request, " ".join(form.errors.get("tags", [])) or _("Choose the VMs and write the tag"))
+            return redirect("instances:index")
+        (name,) = form.cleaned_data["tags"]
+        tag = Tag.objects.filter(name=name).first() if remove else Tag.named([name])[0]
+        if tag is None:
+            messages.error(request, _("There is no tag %(tag)s") % {"tag": name})
+            return redirect("instances:index")
+        # those it changes: with the tag to remove it from, without it to add it
+        for instance in instances.filter(tags=tag) if remove else instances.exclude(tags=tag):
+            with audit_vm(request, instance, f"{'untag' if remove else 'tag'} {name}"):
+                (instance.tags.remove if remove else instance.tags.add)(tag)
+            changed += 1
+    text = (ngettext("Tag %(tag)s removed from %(count)s VM", "Tag %(tag)s removed from %(count)s VMs", changed) if remove
+            else ngettext("Tag %(tag)s added to %(count)s VM", "Tag %(tag)s added to %(count)s VMs", changed))
+    messages.success(request, text % {"tag": name, "count": changed})
+    return redirect("instances:index")
+
+
 @require_POST
 def bulk_power(request):
     """Starts, shuts down or forces off the VMs chosen on the VM list: a job each
@@ -712,7 +753,7 @@ def bulk_power(request):
     from instances.jobs import POWER  # instances.jobs imports this module
 
     action, key = request.POST.get("action", ""), request.POST.get("submission_key", "")
-    vms = list(dict.fromkeys(int(pk) for pk in request.POST.getlist("vm") if pk.isascii() and pk.isdigit() and len(pk) <= 10))
+    vms = _chosen_vms(request)
     if action not in POWER or not vms or not KEY_RE.fullmatch(key) or len(key) > 50:
         messages.error(request, _("Choose the VMs you may power, and Start, Shut down or Force off"))
         return redirect("instances:index")

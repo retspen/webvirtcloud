@@ -197,7 +197,7 @@ class BulkPowerTestCase(TransactionTestCase):
         self.assertEqual(sorted(int(box.get("value")) for box in boxes), [vm.pk for vm in self.vms])
         (form,) = page.xpath("//form[@id='bulk-power']")
         self.assertEqual(form.get("action"), reverse("instances:bulk_power"))
-        self.assertEqual(form.xpath(".//button[@name='action']/@value"), ["start", "shutdown", "force_off"])
+        self.assertEqual(form.xpath(".//button[@name='action'][not(@formaction)]/@value"), ["start", "shutdown", "force_off"])
         # an owner: a box on their own VM only
         owner = get_user_model().objects.create_user("bp-lister", password="pw")
         UserInstance.objects.create(instance=self.vms[1], user=owner)

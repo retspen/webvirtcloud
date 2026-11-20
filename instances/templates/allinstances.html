@@ -71,6 +71,15 @@
                     <button type="submit" class="btn btn-outline-danger" name="action" value="force_off" disabled
                             data-confirm="{% trans "Force off the chosen VMs? They stop at once, as if unplugged, and may lose unsaved data." %}">{% trans "Force off" %}</button>
                 </div>
+                {% if request.user.is_superuser %}
+                {# tags are a superuser's, as on the VM's Settings tab #}
+                <div class="input-group input-group-sm w-auto">
+                    <input class="form-control" type="text" name="tag" id="bulk-tag" list="bulk-tag-names" placeholder="{% trans "Tag" %}" aria-label="{% trans "Tag" %}" style="width: 9rem">
+                    <datalist id="bulk-tag-names">{% for tag in tag_names %}<option value="{{ tag }}">{% endfor %}</datalist>
+                    <button type="submit" class="btn btn-outline-primary" name="action" value="tag_add" formaction="{% url 'instances:bulk_tag' %}" disabled>{% trans "Add tag" %}</button>
+                    <button type="submit" class="btn btn-outline-secondary" name="action" value="tag_remove" formaction="{% url 'instances:bulk_tag' %}" disabled>{% trans "Remove tag" %}</button>
+                </div>
+                {% endif %}
             </form>
             {% endif %}
             <div id="filter-status" class="visually-hidden" role="status" data-text="{% trans "%(shown)s of %(all)s VMs match" %}"></div>
