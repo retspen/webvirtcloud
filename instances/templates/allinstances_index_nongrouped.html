@@ -3,6 +3,7 @@
     <table class="table table-hover align-middle" data-sortable>
         <thead>
             <tr>
+                <th scope="col" data-sort-method="none"><span class="visually-hidden">{% trans "Chosen" %}</span></th>
                 <th scope="col">{% trans 'Name' %}</th>
                 {% if show_hosts %}
                     <th scope="col">{% trans 'Host' %}</th>
@@ -20,6 +21,7 @@
             {% for instance in instances  %}
                     {# searched for its name, title, host and owners, not its buttons #}
                     <tr data-tags="{% for tag in instance.tags.all %}{{ tag }}{% if not forloop.last %} {% endif %}{% endfor %}" data-search="{{ instance.name }}{% if instance.info %} {{ instance.title }}{% endif %}{% if show_hosts %} {{ instance.compute.name }}{% for owner in instance.userinstance_set.all %} {{ owner.user }}{% endfor %}{% endif %}">
+                        <td>{% include 'instances/bulk_power_box.html' %}</td>
                         <td>{% include 'instance_name_cell.html' with owners=show_hosts %}</td>
                         {% if show_hosts %}
                             <td>

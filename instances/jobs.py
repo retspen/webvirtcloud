@@ -8,6 +8,7 @@ from uuid import uuid4
 
 from django.db import transaction
 from django.core.exceptions import PermissionDenied
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.template.loader import render_to_string
@@ -1516,3 +1517,76 @@ class DeleteInstance(Kind):
 
     def log_entry(self, op, state):
         return _log(op, state, "delete")
+
+
+# the power actions the VM list's chosen VMs take (instance.power), by the name its form sends, and their log words
+POWER = {
+    "start": "power on",
+    "shutdown": "power off",
+    "force_off": "force off",
+}
+
+
+def _powerable(user, pk):
+    """The page's rule (_power_instance): an owner or a superuser, and not a VM an administrator paused."""
+    from instances.views import _power_instance
+
+    if user is None or not user.is_active:
+        raise PermissionDenied
+    try:
+        return _power_instance(user, pk)
+    except Http404:  # gone, or no longer the user's
+        raise PermissionDenied from None
+
+
+@register
+class PowerVM(Kind):
+    """Starts, shuts down or forces off one VM chosen on the VM list: a job of
+    its own, so each VM is held, checked when it runs, scheduled and recovered
+    on its own, and has its own log row."""
+
+    name = "instance.power"
+    label = gettext_noop("Power")
+
+    def normalize(self, raw):
+        if raw["action"] not in POWER:
+            raise ValueError(raw["action"])
+        return {"instance": int(raw["instance"]), "action": raw["action"]}
+
+    def validate(self, user, params):
+        # the owner only: whether an administrator paused it is read by the worker, not in the request
+        from instances.views import get_instance
+
+        get_instance(user, params["instance"], perm_type="power")
+
+    def plan(self, user, params):
+        return _vm_plan(params)
+
+    def precheck(self, op, ctx):
+        if _powerable(op.user, op.params["instance"]).compute_id != op.intent["compute"]:
+            raise util.OperationError(MOVED)
+
+    def run(self, op, ctx):
+        instance, action = _instance(op.params["instance"]), op.params["action"]
+        if action == "start":  # the start button's checks, before anything changes
+            if instance.is_template:
+                raise util.OperationError(gettext_noop("Templates cannot be started."))
+            instance.proxy.check_start_hostdevs()
+            instance.compute.refuse_start()
+        ctx.record_intent(powering=True)  # libvirt is asked from here: recovery cannot tell what it did
+        if action == "start":
+            instance.proxy.start()
+        elif action == "shutdown":
+            instance.proxy.shutdown()
+        else:
+            instance.proxy.force_shutdown()
+        return {}
+
+    def reconcile(self, op):
+        if not op.intent.get("powering"):
+            return Outcome(Operation.FAILED, error=say(gettext_noop("The job stopped before the VM was powered")))
+        return Outcome(Operation.UNCERTAIN, error=say(gettext_noop(
+            "The job stopped while the VM was powered: check its state")))
+
+    def log_entry(self, op, state):
+        return _log(op, state, POWER[op.params["action"]])

@@ -38,7 +38,7 @@ from django.urls import reverse
 from django.template.defaultfilters import filesizeformat
 from django.utils import timezone
 from django.utils.translation import gettext as _
-from django.utils.translation import gettext_lazy, gettext_noop
+from django.utils.translation import gettext_lazy, gettext_noop, ngettext
 from django.views.decorators.http import require_POST
 from django.views.decorators.debug import sensitive_post_parameters
 from passlib.exc import PasswordValueError
@@ -54,6 +54,7 @@ from libvirt import (VIR_DOMAIN_PAUSED,
 from logs.audit import audit, audit_vm, failed_vm
 from lxml import etree
 from operations import claims, jobs
+from operations.jobs import KEY_RE
 from operations.utils import HOST_BUSY, busy_message, summary
 from webvirtcloud.middleware import error_text, same_origin_referer
 from vrtManager import util
@@ -130,7 +131,10 @@ def index(request):
          "unreachable_computes": [c for c in computes if c.status is not True],
          "states": [label for label, _color in STATES.values()] + [UNKNOWN[0]],
          "tags": Tag.counts(instances),
-         "states_url": reverse("instances:states"), "vm_states": vm_states},
+         "states_url": reverse("instances:states"), "vm_states": vm_states,
+         # the VMs this user may power (_power_instance): theirs, or every one for a superuser
+         "powerable": {i.pk for i in instances} if request.user.is_superuser else
+         set(UserInstance.objects.filter(user=request.user).values_list("instance_id", flat=True))},
     )
 
 
@@ -693,6 +697,49 @@ def _power_instance(user, pk):
     if not user.is_superuser and instance.proxy.get_status() == VIR_DOMAIN_PAUSED:
         raise PermissionDenied
     return instance
+
+
+# the most VMs the VM list's bulk power form takes at once
+BULK_POWER_MAX = 500
+
+
+@require_POST
+def bulk_power(request):
+    """Starts, shuts down or forces off the VMs chosen on the VM list: an
+    instance.power job each, followed on the Jobs page. A VM the user may not
+    power, gone, or held by another job is named (if the user may see it);
+    the others are queued."""
+    from instances.jobs import POWER  # instances.jobs imports this module
+
+    action, key = request.POST.get("action", ""), request.POST.get("submission_key", "")
+    vms = list(dict.fromkeys(int(pk) for pk in request.POST.getlist("vm") if pk.isascii() and pk.isdigit() and len(pk) <= 10))
+    if action not in POWER or not vms or not KEY_RE.fullmatch(key) or len(key) > 50:
+        messages.error(request, _("Choose the VMs you may power, and Start, Shut down or Force off"))
+        return redirect("instances:index")
+    if len(vms) > BULK_POWER_MAX:
+        messages.error(request, _("Choose at most %(count)s VMs at once") % {"count": BULK_POWER_MAX})
+        return redirect("instances:index")
+    names = dict(Instance.objects.filter(pk__in=vms).values_list("pk", "name"))
+    seen = names if request.user.is_superuser else dict(Instance.objects.filter(
+        pk__in=vms, userinstance__user=request.user).values_list("pk", "name"))
+    queued = 0
+    for pk in vms:
+        name = seen.get(pk) or _("a chosen VM")  # one the user may not see is not named
+        try:
+            # one key per VM: a resent form queues none twice
+            jobs.submit("instance.power", request.user, {"instance": pk, "action": action}, f"{key}-{pk}")
+            queued += 1
+        except claims.Busy as busy:
+            messages.error(request, f"{name}: {busy_message(busy, request.user)}")
+        except (Http404, PermissionDenied, Instance.DoesNotExist):
+            messages.error(request, _("%(vm)s: you may not power it now") % {"vm": name})
+        except (jobs.SubmissionConflict, libvirtError) as err:
+            messages.error(request, f"{name}: {error_text(request, err)}")
+    if not queued:
+        return redirect("instances:index")
+    messages.success(request, ngettext("%(count)s VM is queued; the Jobs page follows it.",
+                                       "%(count)s VMs are queued; the Jobs page follows them.", queued) % {"count": queued})
+    return redirect(reverse("operations:jobs") + "?kind=instance.power")
 
 
 def from_script(request):

@@ -12,6 +12,7 @@ urlpatterns = [
     path("flavor/create/", views.flavor_create, name="flavor_create"),
     path("flavor/<int:pk>/delete/", views.flavor_delete, name="flavor_delete"),
     path("<int:pk>/", views.instance, name="instance"),
+    path("bulk_power/", views.bulk_power, name="bulk_power"),
     path("<int:pk>/poweron/", views.poweron, name="poweron"),
     path("<int:pk>/powercycle/", views.powercycle, name="powercycle"),
     path("<int:pk>/poweroff/", views.poweroff, name="poweroff"),

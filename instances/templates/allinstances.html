@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load static %}
+{% load operations %}
 {% block title %}{% trans "Instances" %}{% endblock %}
 {% block page_heading %}{% trans "Instances" %}{% endblock page_heading %}
 
@@ -55,6 +56,23 @@
                 </div>
             </nav>
             {% include 'common/tag_filter.html' %}
+            {% if powerable %}
+            {# the VMs chosen in the list (bulk_power_box.html), an instance.power job each; bulk_power.js counts those on screen #}
+            <form id="bulk-power" class="d-flex flex-wrap align-items-center gap-2 mb-2" action="{% url 'instances:bulk_power' %}" method="post">{% csrf_token %}{% submission_key %}
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="checkbox" id="bulk-power-shown">
+                    <label class="form-check-label" for="bulk-power-shown">{% trans "Choose the VMs shown" %}</label>
+                </div>
+                <span class="small text-body-secondary" id="bulk-power-count" data-text="{% trans "%(count)s chosen" %}" aria-live="polite"></span>
+                <div class="btn-group btn-group-sm" role="group" aria-label="{% trans "Power the chosen VMs" %}">
+                    <button type="submit" class="btn btn-outline-primary" name="action" value="start" disabled>{% trans "Start" %}</button>
+                    <button type="submit" class="btn btn-outline-primary" name="action" value="shutdown" disabled
+                            data-confirm="{% trans "Shut down the chosen VMs? Their guests are asked to power off." %}">{% trans "Shut down" %}</button>
+                    <button type="submit" class="btn btn-outline-danger" name="action" value="force_off" disabled
+                            data-confirm="{% trans "Force off the chosen VMs? They stop at once, as if unplugged, and may lose unsaved data." %}">{% trans "Force off" %}</button>
+                </div>
+            </form>
+            {% endif %}
             <div id="filter-status" class="visually-hidden" role="status" data-text="{% trans "%(shown)s of %(all)s VMs match" %}"></div>
         {% endif %}
         {% if not instances %}
@@ -126,6 +144,8 @@
     {% if app_settings.VIEW_INSTANCES_LIST_STYLE == 'grouped' and request.user.is_superuser %}
         <script src="{% static 'js/host_groups.js' %}"></script>
     {% endif %}
+    {# after host_groups.js: the hosts it collapses are off screen #}
+    {% if powerable %}<script src="{% static 'js/bulk_power.js' %}"></script>{% endif %}
     {% if request.user.is_superuser %}
         <script src="{% static 'js/new_vm_dialog.js' %}"></script>
     {% endif %}

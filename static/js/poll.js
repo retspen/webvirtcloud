@@ -50,11 +50,12 @@ function pollWhileVisible(interval, request, onData, firstDelay) {
     };
 }
 
-// The user is in the page: a dialog open, a field in use or an XML edit not
-// saved. A poll that would reload the page waits for its next answer.
+// The user is in the page: a dialog open, a field in use, an XML edit not
+// saved or VMs chosen on the VM list. A poll that would reload the page waits for its next answer.
 function pageInUse() {
     var active = document.activeElement;
     return !!document.querySelector(".modal.show")
         || !!(active && active.matches && active.matches("input, select, textarea"))
-        || !!(window.xmlEditUnsaved && window.xmlEditUnsaved());
+        || !!(window.xmlEditUnsaved && window.xmlEditUnsaved())
+        || (typeof bulkPowerChosen === "function" && bulkPowerChosen());  // VMs chosen on the VM list (bulk_power.js)
 }

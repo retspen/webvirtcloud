@@ -60,7 +60,7 @@
                     {% for instance in compute.instance_set.all %}
                         {# searched for its name, title and owners, not its buttons #}
                         <tr host="{{ compute.id }}" data-tags="{% for tag in instance.tags.all %}{{ tag }}{% if not forloop.last %} {% endif %}{% endfor %}" data-search="{{ instance.name }}{% if instance.info %} {{ instance.title }}{% endif %}{% for owner in instance.userinstance_set.all %} {{ owner.user }}{% endfor %}">
-                            <td></td>
+                            <td>{% include 'instances/bulk_power_box.html' %}</td>
                             <td>{% include 'instance_name_cell.html' with owners=True %}</td>
                             <td>
                                 {% include 'instance_state.html' %}
