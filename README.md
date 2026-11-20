@@ -654,7 +654,7 @@ The TLS client certificates (`/var/www/.pki`) go into the backup and back into t
 
 ### Moving from supervisor to systemd
 
-Versions up to v3.0.0 ran the panel under supervisor. Once, before the update steps below, stop it there, keep its config and remove it:
+Versions up to v3.0.0 ran the panel under supervisor. Once, before the update below, stop it there, keep its config and remove it:
 
 ```bash
 supervisorctl stop webvirtcloud novncd socketiod webvirt-worker
@@ -663,88 +663,25 @@ mv /etc/supervisord.d/webvirtcloud.ini /root/webvirtcloud-supervisor.conf       
 supervisorctl update
 ```
 
-Move the `environment=` values of that config into `/etc/default/webvirtcloud` (root, mode 600), one `NAME='value'` per line; leave out the worker's `WEBVIRTCLOUD_LOG_FILE`. Step 4 installs and starts the systemd units. Remove supervisor once nothing else uses it; a compute moves gstfsd as in [Adding a Compute Node](#adding-a-compute-node), step 3.
+Move the `environment=` values of that config into `/etc/default/webvirtcloud` (root, mode 600), one `NAME='value'` per line; leave out the worker's `WEBVIRTCLOUD_LOG_FILE`. The update installs and starts the systemd units. Remove supervisor once nothing else uses it; a compute moves gstfsd as in [Adding a Compute Node](#adding-a-compute-node), step 3.
 
 ### Installer and manual installation
 
-`git pull` never changes `data/` (the database, the secret key, [`data/local_settings.py`](#local-settings)) or `/etc/nginx/conf.d/webvirtcloud.conf`; step 4 brings the nginx config up to date. Run the steps from a root shell; they use `$b`, so in a new shell set it again to the backup directory.
+From a root shell:
 
-1. Stop the panel, back up and pull:
+```bash
+(set -o pipefail &&
+ git -C /srv/webvirtcloud -c safe.directory=/srv/webvirtcloud fetch -q origin &&
+ git -C /srv/webvirtcloud -c safe.directory=/srv/webvirtcloud show origin/master:update.sh | bash)
+```
 
-   ```bash
-   systemctl stop webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
-   # once: root may use the repo, which belongs to the service user
-   git config --global --add safe.directory /srv/webvirtcloud
-   b=/root/webvirtcloud-backup-$(date +%Y%m%d-%H%M%S)
-   cd /srv/webvirtcloud &&
-   ! systemctl is-active --quiet webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker &&
-   mkdir -m 700 "$b" &&
-   venv/bin/python3 -c "import sqlite3,sys; sqlite3.connect('db.sqlite3').backup(sqlite3.connect(sys.argv[1]))" "$b/db.sqlite3.part" &&
-   mv "$b/db.sqlite3.part" "$b/db.sqlite3" &&
-   cp -p /etc/nginx/conf.d/webvirtcloud.conf "$b"/ &&
-   { [ ! -f data/local_settings.py ] || cp -p data/local_settings.py "$b"/; } &&
-   { git ls-files --error-unmatch webvirtcloud/settings.py >/dev/null 2>&1 || [ ! -f webvirtcloud/settings.py ] || mv webvirtcloud/settings.py "$b"/; } &&
-   { [ ! -f /etc/default/webvirtcloud ] || cp -p /etc/default/webvirtcloud "$b"/; } &&
-   git rev-parse HEAD > "$b/commit" &&
-   git ls-files -z --others --exclude-standard -- '*/migrations/*.py' | tar --null -T - --remove-files -cf "$b/local-migrations.tar" &&
-   git checkout -- $(git ls-files -m -- static dev/scss install.sh webvirtcloud.sh) &&
-   git checkout master && git pull
-   ```
-
-   Older installers collected static files into the tracked `static/` and deleted the tracked `install.sh` and `webvirtcloud.sh`; the second-to-last line puts those files back, so that `git pull` can update them. Older versions also had a `settings.py` of their own, not in the repository: step 1 moves it into the backup, as `git pull` now brings `settings.py`.
-
-2. Once, coming from a version with its own `settings.py` (step 1 moved it to `$b`): put your own values into [`data/local_settings.py`](#local-settings); the `diff` lists them:
-
-   ```bash
-   diff "$b/settings.py" webvirtcloud/settings.py
-   ```
-
-   Typical ones are `TIME_ZONE`, `WS_*`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, LDAP and, with PostgreSQL, your `DATABASES`: the default is sqlite, so without it `migrate` would make a new, empty sqlite database and the panel would start on that. Two need care:
-   - a literal `SECRET_KEY = "..."` (older installers wrote it there): put the value into `data/secret_key` instead (`mkdir -p data` first if there is no `data/`). With no key, `migrate` in step 3 stops with "The SECRET_KEY setting must not be empty" and every page fails; with another key, every user is signed out;
-   - `SHOW_PROFILE_EDIT_PASSWORD`: keep it for this one `migrate` if you have it (migration `accounts.0008` reads it), then delete it.
-
-3. Load `/etc/default/webvirtcloud` if you use it (its database is the one to migrate), install, migrate, and fix ownership and modes (`nginx:nginx` instead of `www-data:www-data` on RHEL / openSUSE). With LDAP, also run `venv/bin/pip3 install -U -r conf/requirements-ldap.txt` (headers: [LDAP](#ldap)):
-
-   ```bash
-   { [ ! -f /etc/default/webvirtcloud ] || { set -a; . /etc/default/webvirtcloud; set +a; }; } &&
-   venv/bin/pip3 install -U -r conf/requirements.txt &&
-   { ! tar -tf "$b/local-migrations.tar" | grep -qx accounts/migrations/0006_alter_userattributes_id_alter_userinstance_id_and_more.py ||
-     venv/bin/python3 manage.py migrate accounts 0005 --fake; } &&
-   venv/bin/python3 manage.py migrate &&
-   venv/bin/python3 manage.py collectstatic --noinput &&
-   chown -R www-data:www-data /srv/webvirtcloud &&
-   chmod -R go-rwx data db.sqlite3
-   ```
-
-   Installers from before September 2025 generated migrations of their own; step 1 moved them into `local-migrations.tar`. One of them has the name of a tracked migration, which `migrate` would skip; the second line marks it unapplied so that the tracked one runs.
-
-4. Update the nginx config, then put back your own lines; the `diff` lists them:
-
-   ```bash
-   cp conf/nginx/webvirtcloud.conf /etc/nginx/conf.d/webvirtcloud.conf
-   diff "$b/webvirtcloud.conf" /etc/nginx/conf.d/webvirtcloud.conf
-   ```
-
-   Put back your own lines (`server_name`, TLS, the noVNC port). Install the systemd units; your own service settings stay in `/etc/default/webvirtcloud` and in drop-ins. Debian / Ubuntu:
-
-   ```bash
-   cp conf/systemd/webvirt-{cloud,novncd,socketiod,worker,backup}.service conf/systemd/webvirt-backup.timer /etc/systemd/system/
-   ```
-
-   RHEL / openSUSE:
-
-   ```bash
-   for u in cloud novncd socketiod worker backup; do sed 's/^\(User\|Group\)=.*/\1=nginx/' conf/systemd/webvirt-$u.service > /etc/systemd/system/webvirt-$u.service; done
-   cp conf/systemd/webvirt-backup.timer /etc/systemd/system/
-   ```
-
-   Then reload nginx and start the panel:
-
-   ```bash
-   nginx -t && systemctl reload nginx && systemctl daemon-reload && systemctl enable --now webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker webvirt-backup.timer
-   ```
-
-Older versions collected static files into `static/`; `git clean -n static/` lists the leftovers, which can be deleted.
+- It runs the newest `update.sh` of the repository, also on an installation that has none yet. Another directory than `/srv/webvirtcloud`: set it in the command and `APP_PATH` for `bash`; the units get it.
+- Nothing in the installation changes until its checks pass; files of the repository changed by hand stop it, listed. With PostgreSQL (the database Django is set up with), back that database up first and run it with `... | bash -s -- --database-backed-up`.
+- An installation of an older version has its own `webvirtcloud/settings.py`: it stops and lists the lines that differ from that version's template: your own. Put your own values into [`data/local_settings.py`](#local-settings) and run it again. Typical ones are `TIME_ZONE`, `WS_*`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, LDAP and, with PostgreSQL, your `DATABASES`: the default is sqlite, so without it `migrate` would make a new, empty sqlite database and the panel would start on that. A literal `SECRET_KEY = "..."` (older installers wrote it there) goes into `data/secret_key` instead (with no key every page fails, with another every user is signed out); keep `SHOW_PROFILE_EDIT_PASSWORD` for this one update if you have it (migration `accounts.0008` reads it), then delete it.
+- It stops the panel and backs it up into `/root/webvirtcloud-backup-<date>`: the database, the commit, `data/local_settings.py`, the nginx config, `/etc/default/webvirtcloud`, an older version's own `settings.py` and the migrations an old installer generated (`local-migrations.tar`). Then it pulls `master`, installs the requirements (the LDAP ones too if installed), migrates, collects the static files, gives the files to the panel's user (the owner of `/srv/webvirtcloud`), installs the systemd units and starts the panel.
+- It does not replace `/etc/nginx/conf.d/webvirtcloud.conf`, which holds your `server_name`, TLS and noVNC port: when the new version changes that config, it prints the change to apply by hand.
+- A failure stops it with the reason and the backup's directory. A failed backup starts the panel again; a later failure leaves it stopped until the cause is fixed and the command runs again, which goes on with that backup, or it is [rolled back](#restore-and-rollback).
+- Older versions collected static files into `static/`; `git clean -n static/` lists the leftovers, which can be deleted.
 
 ### Restore and rollback
 
@@ -798,7 +735,7 @@ Put back `/etc/default/webvirtcloud` if the backup has it (`cp -p "$b/webvirtclo
 nginx -t && systemctl reload nginx && systemctl start webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
 ```
 
-A version from before v3.0.0 has no worker: `systemctl disable --now webvirt-worker`. A rollback keeps the systemd units. A rollback leaves the clone on a detached HEAD at the restored commit; the update steps record that commit before they switch back to `master`.
+A version from before v3.0.0 has no worker: `systemctl disable --now webvirt-worker`. A rollback keeps the systemd units. A rollback leaves the clone on a detached HEAD at the restored commit; `update.sh` records that commit before it switches back to `master`.
 
 ### Moving to a new machine
 
@@ -849,7 +786,7 @@ What an update from an older version changes for operators and users. `manage.py
 - The admin's first-login password change survives losing `data/admin_password` (migration `accounts.0007`); run `migrate` as a user who can read that file.
 - A new VM and each clone get a random VNC password of their own (clones no longer share their source's). The console page sends it for a user with **Open a console without the VM's console password**, which a new user has unless unticked; others are asked for it. Existing VMs keep theirs.
 - An `admin` account that still has the password `admin` (the first user of versions up to v2.0.0) must change it at its next login, and its API tokens are refused until then (migration `accounts.0013`).
-- `webvirtcloud/settings.py` is part of the code, and every update replaces it; an installation's own settings are in [`data/local_settings.py`](#local-settings). Step 2 of the update moves them there once from an older version's own `settings.py`; in Docker, remove a mounted `settings.py` from `docker-compose.override.yml`.
+- `webvirtcloud/settings.py` is part of the code, and every update replaces it; an installation's own settings are in [`data/local_settings.py`](#local-settings). `update.sh` has them moved there once from an older version's own `settings.py`; in Docker, remove a mounted `settings.py` from `docker-compose.override.yml`.
 - The VNC console connects to `/novncd/` on the panel's own address through nginx, and the serial console to `/socket.io/`: they work on HTTPS and behind another proxy without settings. `WS_PUBLIC_PORT`, `WS_PUBLIC_HOST`, `WS_PUBLIC_PATH`, `WS_CERT` and `SOCKETIO_PUBLIC_HOST`/`_PORT`/`_PATH` are gone; remove them from `docker-compose.override.yml`, `/etc/default/webvirtcloud` or `data/local_settings.py`, and close port 6080 in the firewall.
 - Installer and manual installations run the panel as systemd units (`webvirt-cloud`, `webvirt-novncd`, `webvirt-socketiod`, `webvirt-worker`, `webvirt-backup.timer`) and computes run `webvirt-gstfsd`, instead of supervisor; see [Moving from supervisor to systemd](#moving-from-supervisor-to-systemd). Service settings go into `/etc/default/webvirtcloud`, service output into the journal (`journalctl -u webvirt-cloud`); the app log stays in `data/`. novncd and socketiod run sandboxed (read-only system directories, no `/home`).
 - gstfsd does only what the panel signs with the host's key: it does not start without `GSTFSD_KEY` in `/etc/default/webvirt-gstfsd`. On every compute, update gstfsd and its unit and make the key as in [Adding a Compute Node](#adding-a-compute-node), step 3 (a remote panel's `GSTFSD_BIND_HOST` and `GSTFSD_ALLOW_REMOTE` move into that file from `systemctl edit webvirt-gstfsd`), then enter the key on each compute's edit page.

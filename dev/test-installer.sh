@@ -2,13 +2,15 @@
 # Installs the panel with install.sh in a systemd container of one distribution
 # and checks that it answers: its services run, it has a secret key, an admin
 # password and its local settings, and the login page loads. It installs the
-# committed HEAD.
+# committed HEAD; with FROM, it installs that version and updates it to HEAD
+# with update.sh.
 #
 # Usage, from the repository root (needs docker):
-#   dev/test-installer.sh IMAGE      e.g. debian:13, almalinux:10, opensuse/leap:15.6
+#   dev/test-installer.sh IMAGE [FROM]    e.g. debian:13, almalinux:10 v4.3.0
 set -euo pipefail
 
-image=${1:?usage: dev/test-installer.sh IMAGE}
+image=${1:?usage: dev/test-installer.sh IMAGE [FROM]}
+from=${2:-}
 case $image in
   ubuntu:* | debian:*) prepare="apt-get update && apt-get install -y systemd systemd-sysv" ;;
   almalinux:* | */openeuler:*) prepare="dnf -y install systemd findutils" ;;
@@ -27,8 +29,16 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# the installer clones the repository: a clone of HEAD (root in the container reads it)
+# the installer clones the repository: a clone of HEAD as master (root in the
+# container reads it), and of FROM for an update
 git clone -q --no-hardlinks . "$repo/webvirtcloud"
+git -C "$repo/webvirtcloud" checkout -q -B master
+installed=$repo/webvirtcloud
+if [ -n "$from" ]; then
+  git clone -q --no-hardlinks . "$repo/from"
+  git -C "$repo/from" checkout -q -B master "$from"
+  installed=$repo/from
+fi
 
 docker build -q -t "$name" - > /dev/null <<EOF
 FROM $image
@@ -36,7 +46,7 @@ RUN $prepare
 CMD ["/usr/lib/systemd/systemd"]
 EOF
 docker run -d --name "$name" --privileged --cgroupns=private --tmpfs /run --tmpfs /run/lock \
-  -v "$repo/webvirtcloud:/repo:ro" "$name" > /dev/null
+  -v "$repo/webvirtcloud:/repo:ro" -v "$installed:/installed:ro" "$name" > /dev/null
 
 for _ in $(seq 60); do
   state=$(docker exec "$name" systemctl is-system-running 2>/dev/null || true)
@@ -49,9 +59,41 @@ done
 docker exec "$name" bash -c '
   # git comes with the installer; the mounted clone is not root'"'"'s
   printf "[safe]\n\tdirectory = *\n" >> /etc/gitconfig
-  mkdir -p /root/inst && cp /repo/install.sh /repo/webvirtcloud.sh /root/inst/
-  cd /root/inst && printf "n\n\n" | APP_REPO_URL=/repo ./install.sh' ||
+  mkdir -p /root/inst && cp /installed/install.sh /installed/webvirtcloud.sh /root/inst/
+  cd /root/inst && printf "n\n\n" | APP_REPO_URL=/installed ./install.sh' ||
   { docker exec "$name" tail -n 50 /var/log/webvirtcloud-install.log; exit 1; }
+
+if [ -n "$from" ]; then
+  # the README's update command, from HEAD as the origin's master
+  docker exec "$name" bash -e -c '
+    update() {
+      (set -o pipefail &&
+       git -C /srv/webvirtcloud fetch -q origin && git -C /srv/webvirtcloud show origin/master:update.sh | bash)
+    }
+    git -C /srv/webvirtcloud remote set-url origin /repo
+    if [ -f /srv/webvirtcloud/webvirtcloud/settings.py ] && [ ! -f /srv/webvirtcloud/data/local_settings.py ]; then
+      # an older version'"'"'s own settings.py: it stops before changing anything ...
+      commit=$(git -C /srv/webvirtcloud rev-parse HEAD)
+      if update 2>/root/refused; then echo "update.sh did not refuse"; exit 1; fi
+      grep -q "has its own webvirtcloud/settings.py" /root/refused
+      systemctl is-active --quiet webvirt-cloud
+      [ "$(git -C /srv/webvirtcloud rev-parse HEAD)" = "$commit" ]
+      if ls -d /root/webvirtcloud-backup-* >/dev/null 2>&1; then echo "a refused update made a backup"; exit 1; fi
+      # ... until the operator moved its values into the local file
+      grep -E "^(TIME_ZONE|WS_PORT|ALLOWED_HOSTS|CSRF_TRUSTED_ORIGINS) = " /srv/webvirtcloud/webvirtcloud/settings.py \
+        > /srv/webvirtcloud/data/local_settings.py
+    fi
+    # a failure after the backup (pip): run again, it goes on with that backup
+    old=$(git -C /srv/webvirtcloud rev-parse HEAD)
+    chmod -x /srv/webvirtcloud/venv/bin/pip3
+    if update; then echo "update.sh did not stop at pip"; exit 1; fi
+    chmod +x /srv/webvirtcloud/venv/bin/pip3
+    update
+    [ "$(ls -d /root/webvirtcloud-backup-* | wc -l)" = 1 ]
+    [ "$(cat /root/webvirtcloud-backup-*/commit)" = "$old" ]
+    [ "$(git -C /srv/webvirtcloud rev-parse HEAD)" = "$(git -C /repo rev-parse HEAD)" ]
+    update  # once more, with nothing new: it runs again as safely'
+fi
 
 docker exec "$name" bash -e -c '
   test -s /srv/webvirtcloud/data/secret_key || { echo "No secret key"; exit 1; }
@@ -80,4 +122,4 @@ PY
   for unit in webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker nginx; do
     systemctl is-active --quiet "$unit" || { systemctl status "$unit" --no-pager; exit 1; }
   done'
-echo "$image: installed, the login page and its stylesheet load"
+echo "$image: ${from:+$from updated to HEAD, }installed, the login page and its stylesheet load"
