@@ -37,16 +37,15 @@
 
     <div role="main" id="main" class="container">
       {% block page_header %}{# a page with a heading of its own leaves it out #}
-      <div>
-        <div>
-          <div class="float-end">
-            {% block page_heading_extra %}
-            {% endblock page_heading_extra %}
-          </div>
-          <h1 class="h3 mb-3">
-            {% block page_heading %}
-            {% endblock page_heading %}
-          </h1>
+      {# the heading first, the page's buttons beside it, or under it on a narrow screen #}
+      <div class="d-flex flex-wrap align-items-start justify-content-between column-gap-3 row-gap-2 mb-3">
+        <h1 class="h3 mb-0">
+          {% block page_heading %}
+          {% endblock page_heading %}
+        </h1>
+        <div class="d-flex flex-wrap align-items-center gap-1">
+          {% block page_heading_extra %}
+          {% endblock page_heading_extra %}
         </div>
       </div>
       {% endblock page_header %}
