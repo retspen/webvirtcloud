@@ -105,6 +105,7 @@ def interface(request, compute_id, iface):
                 if "delete" in request.POST:
                     with audit(request, compute, subject, "delete"):
                         conn.delete_iface()
+                    messages.success(request, _("Interface %(iface)s deleted") % {"iface": iface})
                     return HttpResponseRedirect(reverse("interfaces", args=[compute_id]))
             except libvirtError as err:  # OperationError too: an active one, a bridge whose addresses go nowhere
                 messages.error(request, err)

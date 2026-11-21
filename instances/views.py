@@ -2688,6 +2688,7 @@ def change_options(request, pk):
     options = {key: request.POST.get(key, "") for key in ("title", "description") if key in request.POST}
     with audit_vm(request, instance, "edit options"):
         instance.proxy.set_options(options)
+    messages.success(request, _("Title and description saved"))
     return get_safe_redirect(
         request, default=reverse("instances:instance", args=[instance.id]) + "#options"
     )

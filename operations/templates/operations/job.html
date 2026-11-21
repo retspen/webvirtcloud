@@ -28,7 +28,8 @@
                     {% if job.cancellable %}
                         <form method="post" action="{% url 'operations:cancel' job.id %}" aria-label="{% trans 'Cancel job form' %}">
                             {% csrf_token %}
-                            <button class="btn btn-sm btn-outline-warning" type="submit">{% trans "Cancel" %}</button>
+                            <button class="btn btn-sm btn-outline-warning" type="submit"
+                                    data-confirm="{% blocktrans with job=job.label %}Cancel {{ job }}? It stops where it is.{% endblocktrans %}">{% trans "Cancel the job" %}</button>
                         </form>
                     {% endif %}
                 </div>

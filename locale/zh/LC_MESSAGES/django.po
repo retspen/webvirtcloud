@@ -12265,3 +12265,71 @@ msgstr "所选的虚拟机"
 #: instances/templates/allinstances.html
 msgid "Clear the choice"
 msgstr "清除选择"
+
+#: admin/views.py
+#, python-format
+msgid "User %(user)s deleted"
+msgstr "用户 %(user)s 已删除"
+
+#: admin/views.py
+#, python-format
+msgid "Group %(group)s deleted"
+msgstr "组 %(group)s 已删除"
+
+#: admin/views.py
+#, python-format
+msgid "%(user)s is blocked: signed out, API tokens deleted"
+msgstr "%(user)s 已禁用：已注销登录，API 令牌已删除"
+
+#: admin/views.py
+#, python-format
+msgid "%(user)s may sign in again"
+msgstr "%(user)s 可以再次登录"
+
+#: admin/views.py
+#, python-format
+msgid "Tag %(old)s renamed to %(tag)s"
+msgstr "标签 %(old)s 已重命名为 %(tag)s"
+
+#: computes/views.py
+#, python-format
+msgid "Host %(host)s removed from the panel"
+msgstr "主机 %(host)s 已从面板中移除"
+
+#: accounts/views.py
+#, python-format
+msgid "%(user)s is no longer an owner of %(vm)s"
+msgstr "%(user)s 不再是 %(vm)s 的所有者"
+
+#: interfaces/views.py
+#, python-format
+msgid "Interface %(iface)s deleted"
+msgstr "接口 %(iface)s 已删除"
+
+#: nwfilters/views.py
+#, python-format
+msgid "Network filter %(name)s deleted"
+msgstr "网络过滤器 %(name)s 已删除"
+
+#: virtsecrets/views.py
+#, python-format
+msgid "Secret %(uuid)s deleted"
+msgstr "机密 %(uuid)s 已删除"
+
+#: instances/views.py
+msgid "Title and description saved"
+msgstr "标题和描述已保存"
+
+#: operations/templates/operations/job.html
+msgid "Cancel the job"
+msgstr "取消任务"
+
+#: operations/templates/operations/job.html
+#, python-format
+msgid "Cancel %(job)s? It stops where it is."
+msgstr "取消 %(job)s？它将停在当前进度。"
+
+#: admin/templates/admin/user_list.html
+#, python-format
+msgid "Block %(name)s? They are signed out and their API tokens are deleted; unblocking does not bring the tokens back."
+msgstr "禁用 %(name)s？其登录将被注销，API 令牌将被删除；解除禁用不会恢复这些令牌。"

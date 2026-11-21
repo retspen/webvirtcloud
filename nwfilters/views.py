@@ -1,6 +1,7 @@
 from admin.decorators import superuser_only
 from computes.models import Compute
 from django.contrib import messages
+from django.utils.translation import gettext as _
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
@@ -48,6 +49,7 @@ def nwfilters(request, compute_id):
                 elif "del_nwfilter" in request.POST:
                     with audit(request, compute, f"Network filter {name}", "delete"):
                         conn.delete_nwfilter(name)
+                    messages.success(request, _("Network filter %(name)s deleted") % {"name": name})
             return HttpResponseRedirect(request.get_full_path())
 
         # the VMs first: a list without them would offer to delete filters in use

@@ -47,7 +47,8 @@ class FilterRowTests(TestCase):
         self.assertRedirects(self.client.post(self.list_url, {"create_nwfilter": "", "nwfilter_xml": NEW}),
                              self.list_url, fetch_redirect_response=False)
         self.client.post(self.list_url, {"cln_nwfilter": "", "nwfiltername": "web", "cln_name": "web-copy"})
-        self.client.post(self.list_url, {"del_nwfilter": "", "nwfiltername": "web"})
+        deleted = self.client.post(self.list_url, {"del_nwfilter": "", "nwfiltername": "web"}, follow=True)
+        self.assertContains(deleted, "Network filter web deleted")
         self.assertEqual(rows(), [
             ("Network filter f1: add", True),
             ("Network filter web: clone as web-copy", True),

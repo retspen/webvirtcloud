@@ -129,7 +129,9 @@ def group_delete(request, pk):
     group = get_object_or_404(Group, pk=pk)
     if request.method == "POST":
         with audit(request, None, f"Group {group.name}", "delete"):
-            group.delete()
+            deleted, _rows = group.delete()
+        if deleted:  # not by another request just before
+            messages.success(request, _("Group %(group)s deleted") % {"group": group.name})
         return redirect("admin:group_list")
 
     return render(
@@ -333,7 +335,9 @@ def user_delete(request, pk):
     if request.method == "POST":
         try:
             with audit(request, None, f"User {user.username}", "delete"), users_change():
-                user.delete()
+                deleted, _rows = user.delete()
+            if deleted:  # not by another request just before
+                messages.success(request, _("User %(user)s deleted") % {"user": user.username})
         except (NoSuperuser, claims.Busy) as err:
             refused(request, err)
         return redirect("admin:user_list")
@@ -369,6 +373,7 @@ def user_block(request, pk):
             # an unblock must not bring back the tokens of someone who took the account over
             ApiToken.objects.filter(user=user).delete()
             end_sessions(user)
+        messages.success(request, _("%(user)s is blocked: signed out, API tokens deleted") % {"user": user.username})
     except (NoSuperuser, claims.Busy) as err:
         refused(request, err)
     return redirect("admin:user_list")
@@ -383,6 +388,7 @@ def user_unblock(request, pk):
             entry.skip = user.is_active  # not blocked
             user.is_active = True
             user.save(update_fields=["is_active"])
+        messages.success(request, _("%(user)s may sign in again") % {"user": user.username})
     except claims.Busy as busy:
         messages.error(request, busy_message(busy, request.user))
     return redirect("admin:user_list")
@@ -529,6 +535,7 @@ def tag_update(request, pk):
         except IntegrityError:  # the name was given to another tag meanwhile
             form.add_error("name", form.fields["name"].error_messages["unique"])
         else:
+            messages.success(request, _("Tag %(old)s renamed to %(tag)s") % {"old": current, "tag": tag.name})
             return redirect("admin:tag_list")
     return render(request, "common/form.html", {"form": form, "title": _("Rename tag %(tag)s") % {"tag": old}})
 

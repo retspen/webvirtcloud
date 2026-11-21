@@ -68,7 +68,8 @@
                             <li><a class="dropdown-item" href="{% url 'accounts:account' user.id %}">{% bs_icon 'person' %} {% trans "View profile" %}</a></li>
                             {# an administrator does not block or delete their own account #}
                             <li><form method="post" action="{% if user.is_active %}{% url 'admin:user_block' user.id %}{% else %}{% url 'admin:user_unblock' user.id %}{% endif %}">{% csrf_token %}
-                                <button type="submit" class="dropdown-item"{% if user == request.user %} disabled{% endif %}>
+                                <button type="submit" class="dropdown-item"{% if user == request.user %} disabled{% endif %}
+                                        {% if user.is_active %}data-confirm="{% blocktrans with name=user.username %}Block {{ name }}? They are signed out and their API tokens are deleted; unblocking does not bring the tokens back.{% endblocktrans %}"{% endif %}>
                                     {% if user.is_active %}{% bs_icon 'slash-circle' %} {% trans "Block" %}{% else %}{% bs_icon 'play' %} {% trans "Unblock" %}{% endif %}
                                 </button>
                             </form></li>

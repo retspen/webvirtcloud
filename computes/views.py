@@ -635,7 +635,9 @@ def compute_delete(request, compute_id):
     compute = get_object_or_404(Compute, pk=compute_id)
     if request.method == "POST":
         with audit(request, compute, f"Compute {compute.name} ({compute.hostname})", "delete"):
-            compute.delete()
+            deleted, _rows = compute.delete()
+        if deleted:  # not by another request just before
+            messages.success(request, _("Host %(host)s removed from the panel") % {"host": compute.name})
         return redirect("computes")
 
     return render(

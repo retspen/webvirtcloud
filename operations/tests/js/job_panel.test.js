@@ -53,7 +53,7 @@ const urls = { resource: "/r", job: (id) => "/j/" + id, cancel: (id) => "/c/" + 
 // the labels and texts the page gives (job_panel_script), here as in English
 const STATES = { queued: "queued", running: "running", cancelling: "cancelling", succeeded: "succeeded",
                  failed: "failed", cancelled: "cancelled", uncertain: "uncertain" };
-const TEXT = { cancel: "Cancel", open: "Open", refresh: "Refresh", dismiss: "Dismiss", finishing: "Finishing\u2026",
+const TEXT = { cancel: "Cancel", cancel_confirm: "Cancel %(job)s?", open: "Open", refresh: "Refresh", dismiss: "Dismiss", finishing: "Finishing\u2026",
                not_removed: "Files not removed:", short_operation: "A short operation is in progress.",
                worker_unavailable: "Worker unavailable, last seen", never: "never",
                cancel_failed: "Cancel failed (HTTP %(status)s).",
@@ -224,9 +224,15 @@ const queued = { ...running, id: "q", state: "queued", cancellable: true, progre
 jobPanel(el9, urls, "tok", undefined, STATES, TEXT);
 advance(0);
 answer("/r", { ...empty, jobs: [queued] });
-assert.ok(el9.innerHTML.includes('data-cancel="q">Cancel</button>'), "an enabled cancel button");
-click9({ target: { dataset: { cancel: "q" } } });
-assert.ok(el9.innerHTML.includes('data-cancel="q" disabled>'), "disabled while the request runs");
+assert.ok(el9.innerHTML.includes('data-cancel="q" data-label="' + queued.label + '">Cancel</button>'), "an enabled cancel button");
+// asked first (confirm_dialog.js): nothing is sent until it is confirmed
+let asked = [];
+global.confirmAction = (action, question, danger, act) => asked.push({ action, question, act });
+click9({ target: { dataset: { cancel: "q", label: queued.label } } });
+assert.deepStrictEqual(asked.map((a) => [a.action, a.question]), [["Cancel", "Cancel " + queued.label + "?"]]);
+assert.ok(!open.some((r) => r.url === "/c/q"), "not cancelled before it is confirmed");
+asked[0].act();
+assert.ok(el9.innerHTML.includes('data-label="' + queued.label + '" disabled>'), "disabled while the request runs");
 answer("/c/q", { status: 400, responseJSON: { detail: "This job cannot be cancelled once it has started" } }, false);
 assert.ok(el9.innerHTML.includes("This job cannot be cancelled once it has started")
     && el9.innerHTML.includes('class="alert alert-danger'), "the server's reason shows");
@@ -238,7 +244,8 @@ click9({ target: { dataset: { dismissError: "1" } } });
 assert.ok(!el9.innerHTML.includes("cannot be cancelled"), "the reason can be dismissed");
 advance(3000);
 answer("/r", { ...empty, jobs: [queued] });
-click9({ target: { dataset: { cancel: "q" } } });
+click9({ target: { dataset: { cancel: "q", label: queued.label } } });
+asked[asked.length - 1].act();
 answer("/c/q", { status: 0 }, false);
 assert.ok(el9.innerHTML.includes("could not be reached"), "a network error shows");
 

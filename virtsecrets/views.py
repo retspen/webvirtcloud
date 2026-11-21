@@ -1,6 +1,7 @@
 from admin.decorators import superuser_only
 from computes.models import Compute
 from django.contrib import messages
+from django.utils.translation import gettext as _
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.debug import sensitive_post_parameters
@@ -42,6 +43,7 @@ def secrets(request, compute_id):
             elif "delete" in request.POST:
                 with audit(request, compute, f"Secret {uuid}", "delete"):
                     conn.delete_secret(uuid)
+                messages.success(request, _("Secret %(uuid)s deleted") % {"uuid": uuid})
             return HttpResponseRedirect(request.get_full_path())
 
         # shown only with their users: a list without them would offer to delete secrets in use

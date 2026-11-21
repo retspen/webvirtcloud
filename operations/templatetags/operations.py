@@ -87,7 +87,8 @@ def job_panel_script(context, resource):
         "remembered": take_remembered(context["request"], resource),
         "states": {state: str(label) for state, label in STATE_LABELS.items()},
         "text": {
-            "cancel": gettext("Cancel"),
+            "cancel": gettext("Cancel the job"),
+            "cancel_confirm": gettext("Cancel %(job)s? It stops where it is."),
             "open": pgettext("verb", "Open"),
             "refresh": gettext("Refresh"),
             "dismiss": gettext("Dismiss"),

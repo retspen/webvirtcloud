@@ -67,7 +67,7 @@ function jobPanel(element, urls, csrfToken, initialIds, states, text) {
 
     function jobHtml(job) {
         var cancel = job.cancellable ? '<button type="button" class="btn btn-sm btn-outline-danger" data-cancel="'
-            + esc(job.id) + '"' + (cancelling[job.id] ? " disabled" : "") + ">" + esc(text.cancel) + "</button>" : "";
+            + esc(job.id) + '" data-label="' + esc(job.label) + '"' + (cancelling[job.id] ? " disabled" : "") + ">" + esc(text.cancel) + "</button>" : "";
         // an uncertain job keeps its claims, so it stays in the list with its error
         return alertHtml(job.state, header(job.label, job.state, job.phase, cancel) + errorHtml(job) + bar(job));
     }
@@ -190,7 +190,12 @@ function jobPanel(element, urls, csrfToken, initialIds, states, text) {
         if (t.dataset.refresh) { window.location.reload(); }
         if (t.dataset.dismiss) { dismissed[t.dataset.dismiss] = true; delete outcomes[t.dataset.dismiss]; render(); }
         if (t.dataset.dismissError) { notice = ""; render(); }
-        if (t.dataset.cancel && !cancelling[t.dataset.cancel]) { cancel(t.dataset.cancel); }
+        // asked first (confirm_dialog.js); the list may be drawn again meanwhile
+        if (t.dataset.cancel && !cancelling[t.dataset.cancel]) {
+            var id = t.dataset.cancel;
+            confirmAction(text.cancel, text.cancel_confirm.replace("%(job)s", t.dataset.label), true,
+                function () { if (!cancelling[id]) { cancel(id); } }, t);
+        }
     });
 
     function cancel(id) {

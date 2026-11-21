@@ -33,7 +33,8 @@ class SecretRowTests(TestCase):
         self.client.post(self.url, {"create": "", "private": "on", "usage_type": "ceph", "usage": "client.admin",
                                     "value": VALUE})
         self.client.post(self.url, {"set_value": "", "uuid": UUID, "value": VALUE})
-        self.client.post(self.url, {"delete": "", "uuid": UUID})
+        deleted = self.client.post(self.url, {"delete": "", "uuid": UUID}, follow=True)
+        self.assertContains(deleted, f"Secret {UUID} deleted")
         self.assertEqual(rows(), [
             ("Secret ceph client.admin: add", True),
             (f"Secret {UUID}: set value", True),

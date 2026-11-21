@@ -314,7 +314,9 @@ def user_instance_delete(request, pk):
     if request.method == "POST":
         user, instance = user_instance.user, user_instance.instance
         with audit_vm(request, instance, f"remove owner {user.username}"):
-            user_instance.delete()
+            deleted, _rows = user_instance.delete()
+        if deleted:  # not by another request just before
+            messages.success(request, _("%(user)s is no longer an owner of %(vm)s") % {"user": user.username, "vm": instance.name})
         return _next_or(request, reverse("accounts:account", args=[user.id]))
 
     return render(

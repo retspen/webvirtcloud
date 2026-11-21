@@ -13094,3 +13094,71 @@ msgstr "Seçilen sanal makineler"
 #: instances/templates/allinstances.html
 msgid "Clear the choice"
 msgstr "Seçimi temizle"
+
+#: admin/views.py
+#, python-format
+msgid "User %(user)s deleted"
+msgstr "%(user)s kullanıcısı silindi"
+
+#: admin/views.py
+#, python-format
+msgid "Group %(group)s deleted"
+msgstr "%(group)s grubu silindi"
+
+#: admin/views.py
+#, python-format
+msgid "%(user)s is blocked: signed out, API tokens deleted"
+msgstr "%(user)s engellendi: oturumları kapatıldı, API anahtarları silindi"
+
+#: admin/views.py
+#, python-format
+msgid "%(user)s may sign in again"
+msgstr "%(user)s yeniden oturum açabilir"
+
+#: admin/views.py
+#, python-format
+msgid "Tag %(old)s renamed to %(tag)s"
+msgstr "%(old)s etiketinin adı %(tag)s oldu"
+
+#: computes/views.py
+#, python-format
+msgid "Host %(host)s removed from the panel"
+msgstr "%(host)s sunucusu panelden kaldırıldı"
+
+#: accounts/views.py
+#, python-format
+msgid "%(user)s is no longer an owner of %(vm)s"
+msgstr "%(user)s artık %(vm)s sanal makinesinin sahibi değil"
+
+#: interfaces/views.py
+#, python-format
+msgid "Interface %(iface)s deleted"
+msgstr "%(iface)s arabirimi silindi"
+
+#: nwfilters/views.py
+#, python-format
+msgid "Network filter %(name)s deleted"
+msgstr "%(name)s ağ filtresi silindi"
+
+#: virtsecrets/views.py
+#, python-format
+msgid "Secret %(uuid)s deleted"
+msgstr "%(uuid)s parolası silindi"
+
+#: instances/views.py
+msgid "Title and description saved"
+msgstr "Başlık ve açıklama kaydedildi"
+
+#: operations/templates/operations/job.html
+msgid "Cancel the job"
+msgstr "İşi iptal et"
+
+#: operations/templates/operations/job.html
+#, python-format
+msgid "Cancel %(job)s? It stops where it is."
+msgstr "%(job)s iptal edilsin mi? Olduğu yerde durur."
+
+#: admin/templates/admin/user_list.html
+#, python-format
+msgid "Block %(name)s? They are signed out and their API tokens are deleted; unblocking does not bring the tokens back."
+msgstr "%(name)s engellensin mi? Oturumları kapatılır ve API anahtarları silinir; engeli kaldırmak anahtarları geri getirmez."
