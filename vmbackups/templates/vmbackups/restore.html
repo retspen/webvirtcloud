@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load static %}
 {% load bootstrap_icons %}
 {% load django_bootstrap5 %}
 {% load operations %}
@@ -22,3 +23,4 @@
         </div>
     </div>
 {% endblock %}
+{% block script %}<script src="{% static 'vmbackups/pool_choices.js' %}"></script>{% endblock %}

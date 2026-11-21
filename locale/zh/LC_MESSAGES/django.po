@@ -9904,14 +9904,6 @@ msgstr "备份目标"
 msgid "Every VM of a compute"
 msgstr "某计算节点的所有虚拟机"
 
-#: vmbackups/forms.py:83
-msgid "Or these VMs"
-msgstr "或这些虚拟机"
-
-#: vmbackups/forms.py:83
-msgid "Or every VM with a tag"
-msgstr "或带某个标签的所有虚拟机"
-
 #: vmbackups/forms.py:83 vmbackups/templates/vmbackups/policies.html:17
 msgid "Daily at"
 msgstr "每天时间"
@@ -9955,10 +9947,6 @@ msgid ""
 "1: every backup is full. Above 1, the backups between copy only what changed "
 "(running VMs with qcow2 disks)."
 msgstr "1：每次备份都是完整备份。大于 1 时，中间的备份只复制变化的部分（适用于使用 qcow2 磁盘的运行中虚拟机）。"
-
-#: vmbackups/forms.py:109
-msgid "Choose a compute, VMs or a tag: one of them"
-msgstr "选择一个计算节点、若干虚拟机或一个标签：只选其一"
 
 #: vmbackups/forms.py:119 vmbackups/jobs.py:115
 #, python-format
@@ -12333,3 +12321,19 @@ msgstr "您已退出登录：此页面不再更新。"
 #: templates/base.html
 msgid "Sign in again"
 msgstr "重新登录"
+
+#: vmbackups/forms.py
+msgid "These VMs"
+msgstr "这些虚拟机"
+
+#: vmbackups/forms.py
+msgid "Every VM with a tag"
+msgstr "带有某标签的所有虚拟机"
+
+#: vmbackups/forms.py
+msgid "Which VMs"
+msgstr "哪些虚拟机"
+
+#: vmbackups/forms.py
+msgid "Choose the VMs to back up"
+msgstr "请选择要备份的虚拟机"

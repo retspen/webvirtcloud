@@ -53,7 +53,7 @@
     {% endif %}
     <div class="border-top pt-3 d-flex flex-wrap align-items-center gap-2">
         <span class="small text-danger me-auto">{% trans "This cannot be undone." %}</span>
-        <a class="btn btn-secondary" href="{% url 'instances:instance' instance.id %}">{% trans "Cancel" %}</a>
+        <a class="btn btn-outline-secondary" href="{% url 'instances:instance' instance.id %}">{% trans "Cancel" %}</a>
         <button class="btn btn-danger" type="submit" name="delete">{% trans "Destroy VM" %}</button>
     </div>
 </form>

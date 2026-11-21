@@ -1,10 +1,19 @@
 from django import forms
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from computes.models import Compute
 from instances.models import Instance
 
+from vrtManager.backup import TARGET_TYPES
+
 from .models import BackupPolicy, BackupTarget
+
+
+def offer_pools(field, types=()):
+    """The pool field offers the chosen compute's active file pools (of these types), as
+    pool_choices.js reads them (views.pools); a name can still be typed."""
+    field.widget.attrs["data-pools"] = reverse("vmbackups:pools", args=[0]) + "?types=" + ",".join(types)
 
 
 class TargetPoolForm(forms.Form):
@@ -15,6 +24,7 @@ class TargetPoolForm(forms.Form):
 
     def __init__(self, *args, target=None, **kwargs):
         super().__init__(*args, **kwargs)
+        offer_pools(self.fields["pool"], TARGET_TYPES)
         if target is not None:
             self.fields["compute"].queryset = Compute.objects.exclude(backuptargetpool__target=target)
 
@@ -45,6 +55,7 @@ class RestoreForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields["compute"].queryset = Compute.objects.filter(backuptargetpool__target=backup.target).order_by("name")
         self.fields["name"].initial = f"{backup.vm_name}-restored"
+        offer_pools(self.fields["pool"])
         if backup.instance_id:  # the VM's host, when it has the target's pool
             self.fields["compute"].initial = self.fields["compute"].queryset.filter(instance=backup.instance_id).first()
         if place:  # a VM owner's: the VM's compute and pool, shown on the page
@@ -63,6 +74,7 @@ class RestoreDiskForm(forms.Form):
         super().__init__(*args, **kwargs)
         disks = list(backup.files.filter(role="disk").order_by("dev"))
         self.fields["dev"].choices = [(d.dev, d.dev) for d in disks]
+        offer_pools(self.fields["pool"])
         self.fields["compute"].queryset = Compute.objects.filter(backuptargetpool__target=backup.target).order_by("name")
         if backup.instance_id:  # the VM's host, when it has the target's pool
             self.fields["compute"].initial = self.fields["compute"].queryset.filter(instance=backup.instance_id).first()
@@ -72,15 +84,19 @@ class RestoreDiskForm(forms.Form):
 
 
 class PolicyForm(forms.ModelForm):
-    """A backup schedule: a compute's VMs, chosen VMs or a tag's VMs, all on
-    hosts that have a pool of its target (a tag's: those that have it now)."""
+    """A backup schedule: a compute's VMs, chosen VMs or a tag's VMs, as scope says, all on
+    hosts that have a pool of its target (a tag's: those that have it now). The fields of
+    the other two are not read: a choice left in them is not saved."""
+
+    SCOPES = {"compute": _("Every VM of a compute"), "instances": _("These VMs"), "tag": _("Every VM with a tag")}
+    scope = forms.ChoiceField(label=_("Which VMs"), choices=SCOPES.items(), widget=forms.RadioSelect, initial="compute")
 
     class Meta:
         model = BackupPolicy
-        fields = ["name", "target", "compute", "instances", "tag", "time", "keep", "keep_weekly", "keep_monthly", "full_every",
+        fields = ["name", "target", "scope", "compute", "instances", "tag", "time", "keep", "keep_weekly", "keep_monthly", "full_every",
                   "frozen", "enabled"]
-        labels = {"name": _("Name"), "target": _("Backup target"), "compute": _("Every VM of a compute"),
-                  "instances": _("Or these VMs"), "tag": _("Or every VM with a tag"), "time": _("Daily at"), "keep": _("Backups kept per VM"),
+        labels = {"name": _("Name"), "target": _("Backup target"), "compute": _("Compute"),
+                  "instances": _("VMs"), "tag": _("Tag"), "time": _("Daily at"), "keep": _("Backups kept per VM"),
                   "keep_weekly": _("Weekly backups kept"), "keep_monthly": _("Monthly backups kept"),
                   "full_every": _("A full backup every N backups"),
                   "frozen": _("Require frozen file systems"), "enabled": _("Enabled")}
@@ -89,6 +105,15 @@ class PolicyForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if self.is_bound:  # the other scopes' fields, hidden, are not read: a VM deleted meanwhile is no error there
+            self.data = self.data.copy()
+            for name in ("compute", "instances", "tag"):
+                if name != self.data.get("scope"):
+                    self.data.pop(name, None)
+        if self.instance.tag_id:
+            self.fields["scope"].initial = "tag"
+        elif self.instance.pk and not self.instance.compute_id:
+            self.fields["scope"].initial = "instances"
         self.fields["instances"].queryset = Instance.objects.filter(is_template=False).select_related("compute").order_by(
             "name")
         self.fields["instances"].label_from_instance = lambda vm: f"{vm.name} ({vm.compute.name})"
@@ -104,10 +129,11 @@ class PolicyForm(forms.ModelForm):
 
     def clean(self):
         data = super().clean()
+        scope = data.get("scope")
+        if scope and not data.get(scope):
+            self.add_error(scope, _("Choose the VMs to back up"))
         compute, vms, tag, target = data.get("compute"), data.get("instances"), data.get("tag"), data.get("target")
-        if [bool(compute), bool(vms), bool(tag)].count(True) != 1:
-            raise forms.ValidationError(_("Choose a compute, VMs or a tag: one of them"))
-        if target is not None:
+        if target is not None and (compute or vms or tag):
             if compute:
                 hosts = {compute}
             elif tag:

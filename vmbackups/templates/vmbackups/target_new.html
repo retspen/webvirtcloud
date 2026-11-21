@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load static %}
 {% load bootstrap_icons %}
 {% load django_bootstrap5 %}
 
@@ -14,9 +15,12 @@
             <form method="post">
                 {% csrf_token %}
                 {% bootstrap_form form %}
-                <button type="submit" class="btn btn-primary">{% bs_icon 'plus' %} {% trans "Add" %}</button>
-                <a class="btn btn-outline-secondary ms-1" href="{% url 'vmbackups:targets' %}">{% trans "Cancel" %}</a>
+                <div class="d-flex justify-content-end gap-2">
+                    <a class="btn btn-outline-secondary" href="{% url 'vmbackups:targets' %}">{% trans "Cancel" %}</a>
+                    <button type="submit" class="btn btn-primary">{% bs_icon 'plus' %} {% trans "Add" %}</button>
+                </div>
             </form>
         </div>
     </div>
 {% endblock %}
+{% block script %}<script src="{% static 'vmbackups/pool_choices.js' %}"></script>{% endblock %}

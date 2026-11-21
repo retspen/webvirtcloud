@@ -7,6 +7,7 @@ from django.db import transaction
 from django.conf import settings
 from django.core.paginator import Paginator
 from django.db.models import Count
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -14,8 +15,10 @@ from django.views.decorators.http import require_POST
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import gettext_noop
 from libvirt import libvirtError
+from lxml import etree
 
 from admin.decorators import superuser_only
+from computes.models import Compute
 from instances.jobs import unprotected
 from instances.models import Instance, InstanceTombstone
 from instances.views import get_instance
@@ -192,6 +195,22 @@ def create(request, instance_id):
     else:
         jobs.remember_job(request, op)
     return redirect(page)
+
+
+@superuser_only
+def pools(request, compute_id):
+    """The compute's active pools that keep disks as files (vrtManager file_pools: where a restore
+    copies them), each with its type, for a form's pool suggestions (pool_choices.js); ?types=dir,netfs
+    keeps those types only. Read as they are, not refreshed; none from a host not reached."""
+    compute = get_object_or_404(Compute, pk=compute_id)
+    types = request.GET.get("types", "").split(",")
+    try:
+        found = [{"name": name, "type": etree.fromstring(pool.XMLDesc(0)).get("type")}
+                 for name, (pool, _path) in wvmConnect(compute.hostname, compute.login, compute.password,
+                                                       compute.type).file_pools().items()]
+    except libvirtError:
+        found = []
+    return JsonResponse([p for p in sorted(found, key=lambda p: p["name"]) if not types[0] or p["type"] in types], safe=False)
 
 
 @superuser_only

@@ -34,7 +34,7 @@ class PolicyPageTests(TestCase):
         return self.client.post(reverse("vmbackups:policy_new"), data)
 
     def test_a_schedule_of_chosen_vms(self):
-        response = self.post(instances=[self.vm1.pk])
+        response = self.post(scope="instances", instances=[self.vm1.pk])
         policy = BackupPolicy.objects.get()
         # back to the list, which says it is saved: the schedule's page is its edit form
         self.assertRedirects(response, reverse("vmbackups:policies"), fetch_redirect_response=False)
@@ -44,34 +44,41 @@ class PolicyPageTests(TestCase):
         self.assertTrue(Logs.objects.filter(message__contains="Backup schedule nightly").exists())
 
     def test_a_schedule_of_a_compute(self):
-        self.post(compute=self.c1.pk)
+        self.post(scope="compute", compute=self.c1.pk)
         self.assertEqual(BackupPolicy.objects.get().compute, self.c1)
 
     def test_a_schedule_of_a_tag(self):
         prod = Tag.objects.create(name="prod")
         self.vm1.tags.add(prod)
-        self.post(tag=prod.pk)
+        self.post(scope="tag", tag=prod.pk)
         self.assertEqual(BackupPolicy.objects.get().tag, prod)
         self.assertContains(self.client.get(reverse("vmbackups:policies")), "VMs tagged prod")
 
-    def test_compute_vms_or_tag_one_only(self):
+    def test_the_vms_chosen_are_those_of_the_scope_only(self):
         prod = Tag.objects.create(name="prod")
-        for fields in ({}, {"compute": self.c1.pk, "instances": [self.vm1.pk]}, {"compute": self.c1.pk, "tag": prod.pk},
-                       {"instances": [self.vm1.pk], "tag": prod.pk}):
+        for fields in ({}, {"scope": "compute"}, {"scope": "tag", "compute": self.c1.pk}):
             with self.subTest(fields):
                 response = self.post(**fields)
                 self.assertEqual(response.status_code, 200)
-                self.assertContains(response, "Choose a compute, VMs or a tag: one of them")
+                self.assertContains(response, "Choose the VMs to back up" if fields else "This field is required")
         self.assertFalse(BackupPolicy.objects.exists())
+        # a VM gone from another scope's (hidden) field is no error
+        self.post(scope="compute", compute=self.c1.pk, instances=[99999])
+        self.assertEqual(BackupPolicy.objects.get().compute, self.c1)
+        BackupPolicy.objects.all().delete()
+        # a choice left in another scope's field is not saved
+        self.post(scope="instances", instances=[self.vm1.pk], compute=self.c1.pk, tag=prod.pk)
+        policy = BackupPolicy.objects.get()
+        self.assertEqual((list(policy.instances.all()), policy.compute, policy.tag), ([self.vm1], None, None))
 
     def test_vms_on_a_host_without_the_target_are_refused(self):
-        response = self.post(instances=[self.vm3.pk])
+        response = self.post(scope="instances", instances=[self.vm3.pk])
         self.assertContains(response, "has no storage pool on h2")
-        response = self.post(compute=self.c2.pk)
+        response = self.post(scope="compute", compute=self.c2.pk)
         self.assertContains(response, "has no storage pool on h2")
         prod = Tag.objects.create(name="prod")
         self.vm3.tags.add(prod)
-        self.assertContains(self.post(tag=prod.pk), "has no storage pool on h2")  # the tag's VMs now
+        self.assertContains(self.post(scope="tag", tag=prod.pk), "has no storage pool on h2")  # the tag's VMs now
         self.assertFalse(BackupPolicy.objects.exists())
 
     def test_the_list_leads_to_the_new_schedule_page(self):
@@ -84,10 +91,10 @@ class PolicyPageTests(TestCase):
         self.assertTrue(new.xpath("//input[@name='name']"))
 
     def test_keep_and_full_every_at_least_one(self):
-        self.assertEqual(self.post(instances=[self.vm1.pk], keep="0").status_code, 200)
-        self.assertEqual(self.post(instances=[self.vm1.pk], full_every="0").status_code, 200)
+        self.assertEqual(self.post(scope="instances", instances=[self.vm1.pk], keep="0").status_code, 200)
+        self.assertEqual(self.post(scope="instances", instances=[self.vm1.pk], full_every="0").status_code, 200)
         self.assertFalse(BackupPolicy.objects.exists())
-        self.post(instances=[self.vm1.pk], full_every="7")
+        self.post(scope="instances", instances=[self.vm1.pk], full_every="7")
         self.assertEqual(BackupPolicy.objects.get().full_every, 7)
 
     def schedule(self):
@@ -104,7 +111,7 @@ class PolicyPageTests(TestCase):
         page = self.client.get(url)
         self.assertContains(page, "The host was in maintenance")
         self.client.post(url, {"name": "nightly", "target": self.target.pk, "time": "03:30", "keep": "3", "keep_weekly": "4",
-                               "keep_monthly": "6", "full_every": "1", "instances": [self.vm1.pk]})
+                               "keep_monthly": "6", "full_every": "1", "scope": "instances", "instances": [self.vm1.pk]})
         policy.refresh_from_db()
         self.assertEqual((policy.time, policy.keep, policy.keep_weekly, policy.keep_monthly, policy.enabled),
                          (datetime.time(3, 30), 3, 4, 6, False))

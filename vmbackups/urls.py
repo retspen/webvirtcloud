@@ -16,6 +16,7 @@ urlpatterns = [
     path("schedules/<int:policy_id>/", views.policy, name="policy"),
     path("targets/", views.targets, name="targets"),
     path("targets/new/", views.target_new, name="target_new"),
+    path("computes/<int:compute_id>/pools/", views.pools, name="pools"),
     path("targets/<int:target_id>/", views.target, name="target"),
     path("vm/<int:instance_id>/create/", views.create, name="create"),
 ]

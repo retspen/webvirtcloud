@@ -250,7 +250,8 @@ USE_I18N = True
 USE_TZ = True
 
 # a sent form marks only its fields in error (django-bootstrap5 marks the others green)
-BOOTSTRAP5 = {"field_renderers": {"default": "webvirtcloud.bootstrap.FieldRenderer"}}
+# a field's label is above it, not again in it
+BOOTSTRAP5 = {"field_renderers": {"default": "webvirtcloud.bootstrap.FieldRenderer"}, "set_placeholder": False}
 
 STATIC_URL = "/static/"
 

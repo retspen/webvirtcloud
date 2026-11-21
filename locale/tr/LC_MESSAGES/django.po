@@ -10522,14 +10522,6 @@ msgstr "Yedek hedefi"
 msgid "Every VM of a compute"
 msgstr "Bir sunucunun bütün sanal makineleri"
 
-#: vmbackups/forms.py:83
-msgid "Or these VMs"
-msgstr "Ya da bu sanal makineler"
-
-#: vmbackups/forms.py:83
-msgid "Or every VM with a tag"
-msgstr "Ya da bir etiketin bütün sanal makineleri"
-
 #: vmbackups/forms.py:83 vmbackups/templates/vmbackups/policies.html:17
 msgid "Daily at"
 msgstr "Her gün saat"
@@ -10576,10 +10568,6 @@ msgid ""
 msgstr ""
 "1: her yedek tamdır. 1'den büyükse aradaki yedekler yalnızca değişenleri "
 "kopyalar (qcow2 diskli, çalışan VM'ler)."
-
-#: vmbackups/forms.py:109
-msgid "Choose a compute, VMs or a tag: one of them"
-msgstr "Bir sunucu, sanal makineler ya da bir etiket seçin: yalnız birini"
 
 #: vmbackups/forms.py:119 vmbackups/jobs.py:115
 #, python-format
@@ -13162,3 +13150,19 @@ msgstr "Oturumunuz kapandı: bu sayfa artık güncellenmiyor."
 #: templates/base.html
 msgid "Sign in again"
 msgstr "Yeniden giriş yapın"
+
+#: vmbackups/forms.py
+msgid "These VMs"
+msgstr "Bu sanal makineler"
+
+#: vmbackups/forms.py
+msgid "Every VM with a tag"
+msgstr "Bir etiketin bütün sanal makineleri"
+
+#: vmbackups/forms.py
+msgid "Which VMs"
+msgstr "Hangi sanal makineler"
+
+#: vmbackups/forms.py
+msgid "Choose the VMs to back up"
+msgstr "Yedeklenecek sanal makineleri seçin"
