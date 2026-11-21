@@ -74,7 +74,7 @@ class MaintenanceSwitchTests(TestCase):
         self.compute.maintenance_since = timezone.now()
         self.compute.save()
         self.assertFalse(page().xpath("//a[@href=$u]", u=create))
-        self.assertTrue(page().xpath("//button[@disabled][contains(@aria-label, 'New Instance')]"))
+        self.assertTrue(page().xpath("//button[@disabled][contains(., 'New VM')]"))
 
 
 class MaintenanceGuardTests(TestCase):

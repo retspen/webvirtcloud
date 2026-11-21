@@ -182,6 +182,25 @@ class BulkPowerTestCase(TransactionTestCase):
         self.assertEqual(said, ["a chosen VM: you may not power it now", "1 VM is queued; the Jobs page follows it."])
         self.assertEqual(Operation.objects.get().params["instance"], self.vms[0].pk)
 
+    def test_a_refusal_goes_back_to_the_list_it_came_from(self):
+        host_list = reverse("instances", args=[self.vms[0].compute_id])
+        for given, back in ((host_list, host_list), ("?page=2", reverse("instances:index")), ("//example.com/", reverse("instances:index")),
+                             ("https://example.com/", reverse("instances:index"))):
+            response = self.client.post(reverse("instances:bulk_power"), {"action": "reboot", "vm": [self.vms[0].pk],
+                                                                           "submission_key": "key-bulkpow1", "next": given})
+            self.assertRedirects(response, back, fetch_redirect_response=False)
+
+    def test_a_host_s_instances_page_has_the_vm_list_and_its_bar(self):
+        host_list = reverse("instances", args=[self.vms[0].compute_id])
+        with patch("computes.views.vm_states", return_value={}), \
+                patch("computes.views.utils.refresh_instance_database"), patch("computes.views.read_list_rows"):
+            page = html.fromstring(self.client.get(host_list).content)
+        self.assertEqual(sorted(int(box.get("value")) for box in page.xpath("//input[@name='vm']")), [vm.pk for vm in self.vms])
+        (form,) = page.xpath("//form[@id='bulk-power']")
+        self.assertEqual(form.xpath(".//input[@name='next']/@value"), [host_list])
+        self.assertTrue(page.xpath("//*[@id='state-pills']"))
+        self.assertNotIn("Host", page.xpath("//thead//th/text()"))  # one host: no host column
+
     def test_an_unknown_action_or_too_many_vms_is_refused(self):
         self.submit("reboot", self.vms)
         response = self.client.post(reverse("instances:bulk_power"), {"action": "start", "vm": [str(n) for n in range(1, 502)],

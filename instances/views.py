@@ -30,13 +30,14 @@ from django.contrib.auth.decorators import permission_required
 from django.contrib.auth.models import User
 from django.core import signing
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.http import Http404, HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, HttpResponseRedirect, JsonResponse
 from django.db import transaction
 from django.db.models import Prefetch, prefetch_related_objects
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.template.defaultfilters import filesizeformat
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy, gettext_noop, ngettext
 from django.views.decorators.http import require_POST
@@ -112,6 +113,22 @@ def index(request):
         # a host of their own VMs is down
         own_hosts_down = any(c.status is not True for c in computes)
     utils.read_list_rows(instances, computes)
+
+    return render(
+        request,
+        "allinstances.html",
+        {"computes": computes, "show_hosts": show_hosts, "own_hosts_down": own_hosts_down,
+         # the hosts a new VM can go to: one that stopped answering since status has no numbers
+         "reachable_computes": [c for c in computes if c.status is True and c.ram_usage is not None],
+         "unreachable_computes": [c for c in computes if c.status is not True],
+         **vm_list_context(request, instances, reverse("instances:states"), vm_states)},
+    )
+
+
+def vm_list_context(request, instances, states_url, vm_states):
+    """What the VM list (instances/vm_list.html) shows of instances, read with their info, on the
+    VM list and on a host's Instances page: its filters, its states' poll and its bulk bar; their DRBD
+    states read afresh while the list shows them."""
     if app_settings.VM_DRBD_STATUS == "True":
         # read here, once per host and all hosts at once (a list waits DRBD_STATUS_TIMEOUT at most):
         # the VM page alone left the list showing an old state
@@ -123,27 +140,21 @@ def index(request):
             if state != instance.drbd:
                 instance.drbd = state
                 Instance.objects.filter(pk=instance.pk).update(drbd=state)
-
-    return render(
-        request,
-        "allinstances.html",
-        {"computes": computes, "instances": instances, "show_hosts": show_hosts, "own_hosts_down": own_hosts_down,
-         # the hosts a new VM can go to: one that stopped answering since status has no numbers
-         "reachable_computes": [c for c in computes if c.status is True and c.ram_usage is not None],
-         "unreachable_computes": [c for c in computes if c.status is not True],
-         "states": [label for label, _color in STATES.values()] + [UNKNOWN[0]],
-         "tags": Tag.counts(instances),
-         "states_url": reverse("instances:states"), "vm_states": vm_states,
-         # the VMs this user may power (_power_instance): theirs, or every one for a superuser
-         # a superuser's bulk tag box offers every tag, as the Settings tab's picker
-         "tag_names": list(Tag.objects.order_by("name").values_list("name", flat=True)) if request.user.is_superuser else [],
-         "bulk_max": BULK_MAX,
-         # the bulk snapshot box: for one who may snapshot a listed VM (change rights and the permission)
-         "snapshotable": request.user.is_superuser or (request.user.has_perm("instances.snapshot_instances") and
-                                                      UserInstance.objects.filter(user=request.user, is_change=True).exists()),
-         "powerable": {i.pk for i in instances} if request.user.is_superuser else
-         set(UserInstance.objects.filter(user=request.user).values_list("instance_id", flat=True))},
-    )
+    return {
+        "instances": instances,
+        "states": [label for label, _color in STATES.values()] + [UNKNOWN[0]],
+        "tags": Tag.counts(instances),
+        "states_url": states_url, "vm_states": vm_states,
+        # a superuser's bulk tag box offers every tag, as the Settings tab's picker
+        "tag_names": list(Tag.objects.order_by("name").values_list("name", flat=True)) if request.user.is_superuser else [],
+        "bulk_max": BULK_MAX,
+        # the bulk snapshot box: for one who may snapshot a listed VM (change rights and the permission)
+        "snapshotable": request.user.is_superuser or (request.user.has_perm("instances.snapshot_instances") and
+                                                     UserInstance.objects.filter(user=request.user, is_change=True).exists()),
+        # the VMs this user may power (_power_instance): theirs, or every one for a superuser
+        "powerable": {i.pk for i in instances} if request.user.is_superuser else
+        set(UserInstance.objects.filter(user=request.user).values_list("instance_id", flat=True)),
+    }
 
 
 def _listed_computes(user, computes):
@@ -711,6 +722,15 @@ def _power_instance(user, pk):
 BULK_MAX = 500
 
 
+def _back_to_list(request):
+    """The VM list the bulk form was sent from (its next field): the VM list or a host's Instances page."""
+    url = request.POST.get("next", "")
+    # a path of this site; not "?page=2", which is the bulk view's own address, nor redirect()'s view names
+    if url.startswith("/") and url_has_allowed_host_and_scheme(url, allowed_hosts={request.get_host()}):
+        return HttpResponseRedirect(url)
+    return redirect("instances:index")
+
+
 def _chosen_vms(request):
     """The VMs chosen on the VM list (its bulk form's boxes), as ids, each once."""
     return list(dict.fromkeys(int(pk) for pk in request.POST.getlist("vm") if pk.isascii() and pk.isdigit() and len(pk) <= 10))
@@ -725,10 +745,10 @@ def bulk_tag(request):
     action, vms = request.POST.get("action"), _chosen_vms(request)
     if action not in ("tag_add", "tag_remove") or not vms:
         messages.error(request, _("Choose the VMs and write the tag"))
-        return redirect("instances:index")
+        return _back_to_list(request)
     if len(vms) > BULK_MAX:
         messages.error(request, _("Choose at most %(count)s VMs at once") % {"count": BULK_MAX})
-        return redirect("instances:index")
+        return _back_to_list(request)
     remove, changed = action == "tag_remove", 0
     with transaction.atomic():
         lock_ownership()
@@ -736,12 +756,12 @@ def bulk_tag(request):
         instances = Instance.objects.filter(pk__in=vms).select_related("compute")
         if not form.is_valid() or not form.cleaned_data["tags"] or not instances.exists():
             messages.error(request, " ".join(form.errors.get("tags", [])) or _("Choose the VMs and write the tag"))
-            return redirect("instances:index")
+            return _back_to_list(request)
         (name,) = form.cleaned_data["tags"]
         tag = Tag.objects.filter(name=name).first() if remove else Tag.named([name])[0]
         if tag is None:
             messages.error(request, _("There is no tag %(tag)s") % {"tag": name})
-            return redirect("instances:index")
+            return _back_to_list(request)
         # those it changes: with the tag to remove it from, without it to add it
         for instance in instances.filter(tags=tag) if remove else instances.exclude(tags=tag):
             with audit_vm(request, instance, f"{'untag' if remove else 'tag'} {name}"):
@@ -750,7 +770,7 @@ def bulk_tag(request):
     text = (ngettext("Tag %(tag)s removed from %(count)s VM", "Tag %(tag)s removed from %(count)s VMs", changed) if remove
             else ngettext("Tag %(tag)s added to %(count)s VM", "Tag %(tag)s added to %(count)s VMs", changed))
     messages.success(request, text % {"tag": name, "count": changed})
-    return redirect("instances:index")
+    return _back_to_list(request)
 
 
 def _queue_each(request, vms, kind, raw, refused):
@@ -774,7 +794,7 @@ def _queue_each(request, vms, kind, raw, refused):
         except (jobs.SubmissionConflict, libvirtError) as err:
             messages.error(request, f"{name}: {error_text(request, err)}")
     if not queued:
-        return redirect("instances:index")
+        return _back_to_list(request)
     messages.success(request, ngettext("%(count)s VM is queued; the Jobs page follows it.",
                                        "%(count)s VMs are queued; the Jobs page follows them.", queued) % {"count": queued})
     return redirect(reverse("operations:jobs") + f"?kind={kind}")
@@ -800,7 +820,7 @@ def bulk_power(request):
     refusal = _bulk_refused(request, vms, _("Choose the VMs you may power, and Start, Shut down or Force off"))
     if action not in POWER or refusal:
         messages.error(request, refusal or _("Choose the VMs you may power, and Start, Shut down or Force off"))
-        return redirect("instances:index")
+        return _back_to_list(request)
     return _queue_each(request, vms, POWER[action], {}, _("%(vm)s: you may not power it now"))
 
 
@@ -812,18 +832,18 @@ def bulk_snapshot(request):
     refusal = _bulk_refused(request, vms, _("Choose the VMs and write the snapshot's name"))
     if not name or refusal:
         messages.error(request, refusal or _("Choose the VMs and write the snapshot's name"))
-        return redirect("instances:index")
+        return _back_to_list(request)
     try:
         check_snapshot_name(name)
     except util.OperationError as err:
         messages.error(request, error_text(request, err))
-        return redirect("instances:index")
+        return _back_to_list(request)
     # a template's page has no snapshot controls: none is taken here either
     templates = set(Instance.objects.filter(pk__in=vms, is_template=True).values_list("pk", flat=True))
     for pk in templates:
         messages.error(request, _("%(vm)s: a template's snapshots are not taken here") % {"vm": _visible_name(request, pk)})
     if templates and not set(vms) - templates:
-        return redirect("instances:index")
+        return _back_to_list(request)
     return _queue_each(request, [pk for pk in vms if pk not in templates], "snapshot.create",
                        {"name": name, "external": True}, _("%(vm)s: you may not snapshot it"))
 

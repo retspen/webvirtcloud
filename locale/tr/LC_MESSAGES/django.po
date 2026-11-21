@@ -2888,11 +2888,6 @@ msgstr "Parolalar"
 msgid "Devices"
 msgstr "Aygıtlar"
 
-#: computes/templates/computes/instances.html:13
-#: computes/templates/computes/instances.html:17
-msgid "New Instance"
-msgstr "Yeni sanal makine"
-
 #: computes/templates/computes/instances.html:38
 #, python-format
 msgid "Problem occurred with host %(name)s: %(error)s"
@@ -2902,14 +2897,6 @@ msgstr "%(name)s sunucusuyla ilgili bir sorun oluştu: %(error)s"
 #: computes/templates/computes/list.html:20
 msgid "Warning"
 msgstr "Uyarı"
-
-#: computes/templates/computes/instances.html:45
-msgid "Hypervisor doesn't have any Instances"
-msgstr "Hipervizör üzerinde hiç sanal makine yok"
-
-#: computes/templates/computes/instances.html:56
-msgid "VCPU"
-msgstr "VCPU"
 
 #: computes/templates/computes/list.html:20
 msgid "You don't have any computes"

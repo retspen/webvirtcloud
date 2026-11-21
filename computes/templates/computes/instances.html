@@ -7,96 +7,31 @@
 {% block page_heading %}{{ compute.name }} - {% trans "Instances" %}{% endblock page_heading %}
 
 {% block page_heading_extra %}
+<input id="filter" class="form-control w-auto" type="text" placeholder="{% trans 'Search' %}" aria-label="{% trans 'Search' %}">
+{% if instances %}
+<a href="{% url 'bulk_migrate' compute.id %}" class="btn btn-outline-primary">{% trans "Bulk Migrate" %}</a>
+{% endif %}
 {% if compute.maintenance %}
 {# a disabled button shows no title: its wrapper says why #}
-<span class="d-inline-block mt-1 float-end" tabindex="0" title="{% blocktrans with compute=compute.name %}{{ compute }} is in maintenance: no new VM or migration comes to it{% endblocktrans %}">
-    <button type="button" class="btn btn-success" disabled aria-label="{% trans "New Instance" %}">{% bs_icon 'plus-circle-fill' %}</button>
+<span class="d-inline-block" tabindex="0" title="{% blocktrans with compute=compute.name %}{{ compute }} is in maintenance: no new VM or migration comes to it{% endblocktrans %}">
+    <button type="button" class="btn btn-primary" disabled>{% bs_icon 'plus-lg' %} {% trans "New VM" %}</button>
 </span>
 {% else %}
-<a href="{% url 'instances:create_instance_select_type' compute.id %}"
-    class="btn btn-success mt-1 float-end" title="{% trans "New Instance" %}">
-    {% bs_icon 'plus-circle-fill' %}
-</a>
-{% endif %}
-{% if instances %}
-<a href="{% url 'bulk_migrate' compute.id %}" class="btn btn-outline-primary mt-1 me-1 float-end">{% trans "Bulk Migrate" %}</a>
-    {% include 'search_block.html' %}
+<a href="{% url 'instances:create_instance_select_type' compute.id %}" class="btn btn-primary">{% bs_icon 'plus-lg' %} {% trans "New VM" %}</a>
 {% endif %}
 {% endblock page_heading_extra %}
 
 {% block content %}
 <div id="job-panel" aria-live="polite"></div>
-<div class="row">
-    <div class="col-lg-12">
-        {% include "computes/host_nav.html" with section="instances" %}
+{% include "computes/host_nav.html" with section="instances" %}
+{% if compute.status is not True %}
+    <div class="alert alert-danger shadow-sm">
+        {% blocktrans with name=compute.name error=compute.connection_error %}Problem occurred with host {{ name }}: {{ error }}{% endblocktrans %}
     </div>
-</div>
-<div class="row">
-    <div class="col-lg-12">
-        {% if compute.status is not True %}
-            <div class="alert alert-danger shadow-sm">
-                {% blocktrans with name=compute.name error=compute.connection_error %}Problem occurred with host {{ name }}: {{ error }}{% endblocktrans %}
-            </div>
-        {% endif %}
-        {% if not instances %}
-            {% if compute.status is True %}
-            <div class="alert alert-warning shadow-sm fade show">
-                {% bs_icon 'exclamation-triangle' %} <strong>{% trans "Warning" %}:</strong>
-                {% trans "Hypervisor doesn't have any Instances" %}
-            </div>
-            {% endif %}
-        {% else %}
-            <div class="table-responsive">
-                <table class="table table-hover align-middle" data-sortable>
-                    <thead>
-                        <tr>
-                            <th scope="col">{% trans 'Name' %}<br>{% trans 'Description' %}</th>
-                            <th scope="col">{% trans 'User' %}</th>
-                            <th scope="col">{% trans 'Status' %}</th>
-                            <th scope="col" data-sort-method="number">{% trans 'VCPU' %}</th>
-                            <th scope="col" class="text-end" data-sort-method="number">{% trans 'Memory' %}</th>
-                            <th scope="col" data-sort-method="none">{% trans 'Actions' %}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="searchable">
-                        {% for instance in instances  %}
-                        <tr>
-                            <td>
-                                <a class="link-primary" href="{% url 'instances:instance' instance.id %}">{{ instance.name }}</a>
-                                <br>
-                                {% if instance.info %}<p class="m-0 small fst-italic">{{ instance.title }}</p>{% endif %}
-                                {% with tags=instance.tags.all %}{% include 'common/tag_badges.html' with tags=tags|slice:":3" more=tags|slice:"3:" %}{% endwith %}
-                            </td>
-                            <td>
-                                <em>
-                                    {% if instance.userinstance_set.all.count > 0 %}
-                                    {{ instance.userinstance_set.all.0.user }}
-                                    {% if instance.userinstance_set.all.count > 1 %}
-                                    (+{{ instance.userinstance_set.all.count|add:"-1" }})
-                                    {% endif %}
-                                    {% endif %}
-                                </em>
-                            </td>
-                            <td>
-                                {% include 'instance_state.html' %}
-                            </td>
-                            <td data-sort="{{ instance.info.3 }}">{{ instance.info.3 }}</td>
-                            <td data-sort="{{ instance.info.2 }}"><p class="text-end">{% if instance.info %}{% widthratio instance.info.2 1024 1  %} MiB{% endif %}</p></td>
-                            <td class="text-nowrap">
-                                {% include 'instance_actions.html' %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% endif %}
-    </div>
-</div>
+{% endif %}
+{% include 'instances/vm_list.html' %}
 {% endblock %}
 {% block script %}
-<script src="{% static 'js/poll.js' %}"></script>
+{% include 'instances/vm_list_scripts.html' %}
 {% job_panel_script job_resource %}
-{% include "instances/vm_states_poll.html" %}
-<script src="{% static 'js/table_filter.js' %}"></script>
 {% endblock %}

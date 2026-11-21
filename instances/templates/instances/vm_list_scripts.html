@@ -1,0 +1,9 @@
+{% load static %}{# the scripts of instances/vm_list.html #}
+<script src="{% static 'js/poll.js' %}"></script>
+{% include "instances/vm_states_poll.html" %}
+<script src="{% static 'js/table_filter.js' %}"></script>
+{% if app_settings.VIEW_INSTANCES_LIST_STYLE == 'grouped' and request.user.is_superuser and not one_host %}
+    <script src="{% static 'js/host_groups.js' %}"></script>
+{% endif %}
+{# after host_groups.js: the hosts it collapses are off screen #}
+{% if powerable %}<script src="{% static 'js/bulk_power.js' %}"></script>{% endif %}

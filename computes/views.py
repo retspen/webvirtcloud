@@ -24,6 +24,7 @@ from django.views.decorators.http import require_POST
 from webvirtcloud.middleware import error_text
 from instances.models import Instance
 from instances.utils import read_list_rows, vm_states
+from instances.views import vm_list_context
 from libvirt import libvirtError
 from logs.audit import audit, changed_fields, snapshot
 from operations import claims, jobs
@@ -367,13 +368,13 @@ def instances(request, compute_id):
     # read first: the poll's first answer then tells a change made while the page was read
     states = vm_states(request.user, [compute])
     utils.refresh_instance_database(compute)
-    instances = list(Instance.objects.filter(compute=compute).order_by("name").prefetch_related("userinstance_set", "tags"))
+    instances = list(Instance.objects.filter(compute=compute).order_by("name").prefetch_related("userinstance_set__user", "tags"))
     read_list_rows(instances, [compute])
-
+    # the VM list's own list, of this host's VMs
     return render(
         request, "computes/instances.html",
-        {"compute": compute, "instances": instances, "job_resource": claims.compute_key(compute.id),
-         "states_url": reverse("instances:states") + f"?compute={compute.id}", "vm_states": states},
+        {"compute": compute, "one_host": compute, "show_hosts": True, "job_resource": claims.compute_key(compute.id),
+         **vm_list_context(request, instances, reverse("instances:states") + f"?compute={compute.id}", states)},
     )
 
 

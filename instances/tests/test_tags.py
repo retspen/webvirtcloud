@@ -98,8 +98,9 @@ class VmTagsTests(TestCase):
         with patch("computes.views.utils.refresh_instance_database"), patch("computes.views.vm_states", return_value={}), \
                 patch("computes.views.read_list_rows"):
             page = lxml_html.fromstring(self.client.get(reverse("instances", args=[self.vm.compute_id])).content)
-        self.assertEqual(page.xpath("//td//span[contains(@class,'tag-badge')][not(ancestor::*[@hidden])]/text()[last()]"),
-                         [" a1", " b2", " c3"])
+        # the VM list's badges: each chooses its tag in the tag filter
+        self.assertEqual(page.xpath("//td//button[@data-tag-filter][not(ancestor::*[@hidden])]/@data-tag-filter"),
+                         ["a1", "b2", "c3"])
         self.assertEqual(page.xpath("//button[@data-show-tags]/@title"), ["d4"])
         # the tags "…" shows take the focus from it (table_filter.js), not buttons here
         self.assertEqual(page.xpath("//button[@data-show-tags]/following-sibling::span[1]/@tabindex"), ["-1"])
