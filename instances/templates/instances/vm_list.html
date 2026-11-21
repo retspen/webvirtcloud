@@ -22,7 +22,7 @@
         {# and shows this bar at the foot of the window while any is chosen #}
         <form id="bulk-power" class="fixed-bottom bg-body border-top shadow-lg py-2" action="{% url 'instances:bulk_power' %}" method="post"
               aria-label="{% trans "The chosen VMs" %}" hidden>{% csrf_token %}{% submission_key %}
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <input type="hidden" name="next" value="{{ request.path }}">
             <div class="container d-flex flex-wrap align-items-center gap-2">
                 <span class="fw-semibold me-2" id="bulk-power-count" data-text="{% trans "%(count)s chosen" %}"
                       data-too-many="{% blocktrans with max=bulk_max %}%(count)s chosen: at most {{ max }} at once{% endblocktrans %}" data-max="{{ bulk_max }}" aria-live="polite"></span>

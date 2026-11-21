@@ -63,6 +63,7 @@ class LogsPageTests(TestCase):
         self.assertEqual(self.rows(page)[0][1], log.date.strftime("%Y-%m-%d %H:%M:%S"))
 
     def test_a_vm_row_links_the_vm_while_it_is_there(self):
+        # not its user or host: the row keeps their names, which another may take later
         page = self.page(q="alice")
         self.assertEqual(page.xpath("//tbody/tr/td/a/@href"), [reverse("instances:instance", args=[self.vm.pk])])
         self.vm.delete()

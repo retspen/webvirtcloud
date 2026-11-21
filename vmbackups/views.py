@@ -17,7 +17,7 @@ from libvirt import libvirtError
 
 from admin.decorators import superuser_only
 from instances.jobs import unprotected
-from instances.models import Instance
+from instances.models import Instance, InstanceTombstone
 from instances.views import get_instance
 from logs.audit import audit
 from operations import claims, jobs
@@ -209,6 +209,11 @@ def index(request):
         rows = rows.filter(state=Backup.READY).exclude(damage=[])
     # schedules add a backup of each VM a night: the list is read a page at a time, as the jobs are
     page = Paginator(rows, 50).get_page(request.GET.get("page"))
+    # a removed VM's badge links to the Removed VMs page while it is listed there
+    removed = set(InstanceTombstone.objects.filter(uuid__in={b.vm_uuid for b in page if not b.instance_id})
+                  .values_list("uuid", flat=True))
+    for backup in page:
+        backup.tombstone = backup.vm_uuid in removed
     return render(request, "vmbackups/index.html", {
         "rows": page.object_list, "page": page, "targets": BackupTarget.objects.order_by("name"),
         "vm": vm, "target": target, "state": state, "pending_deletes": pending_deletes(),

@@ -60,10 +60,10 @@
                 <tr>
                     {# date and time wrap apart on a phone #}
                     <td class="text-nowrap">{{ backup.created_at|date:"Y-m-d" }}<br class="d-sm-none"><span class="d-none d-sm-inline"> </span>{{ backup.created_at|date:"H:i" }}
-                        <div class="small text-body-secondary text-nowrap" title="{% trans "Target" %}">{{ backup.target.name }}</div></td>
+                        <div class="small text-nowrap" title="{% trans "Target" %}"><a class="link-secondary" href="{% url 'vmbackups:target' backup.target_id %}">{{ backup.target.name }}</a></div></td>
                     <td style="max-width: min(12rem, 30vw);">{# a long name is cut, whole on hover #}
                         {% if backup.instance %}<a class="d-inline-block text-truncate mw-100 align-bottom" title="{{ backup.vm_name }}" href="{% url 'instances:instance' backup.instance.id %}">{{ backup.vm_name }}</a>
-                        {% else %}<span class="d-inline-block text-truncate mw-100 align-bottom" title="{{ backup.vm_name }}">{{ backup.vm_name }}</span> <span class="badge text-bg-secondary">{% trans "removed" %}</span>{% endif %}
+                        {% else %}<span class="d-inline-block text-truncate mw-100 align-bottom" title="{{ backup.vm_name }}">{{ backup.vm_name }}</span> {% if backup.tombstone %}<a class="badge text-bg-secondary" href="{% url 'admin:tombstone_list' %}">{% trans "removed" %}</a>{% else %}<span class="badge text-bg-secondary">{% trans "removed" %}</span>{% endif %}{% endif %}
                         <div class="small text-body-secondary text-truncate">{{ backup.compute_name }}{% if backup.policy %}, <a href="{% url 'vmbackups:policy' backup.policy_id %}" title="{% trans "Schedule" %}">{{ backup.policy.name }}</a>{% endif %}</div>
                     </td>
                     <td class="d-none d-md-table-cell">{% include "vmbackups/consistency.html" %}</td>

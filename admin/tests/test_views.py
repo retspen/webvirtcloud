@@ -139,6 +139,20 @@ class AdminTestCase(TestCase):
         self.assertEqual(said(self.client.post(reverse("admin:tag_update", args=[tag.id]), {"name": "new-name"})),
                          ["Tag old-name renamed to new-name"])
 
+    def test_a_tag_s_counts_link_its_vms_and_hosts(self):
+        from computes.models import Compute, Tag
+        from instances.models import Instance
+
+        host = Compute.objects.create(name="tg-host", hostname="192.0.2.8", login="", password="", type=4)
+        tag = Tag.objects.create(name="web")
+        Instance.objects.create(compute=host, name="tg-vm", uuid="00000000-0000-4000-8000-0000000000cc").tags.add(tag)
+        page = html.fromstring(self.client.get(reverse("admin:tag_list")).content)
+        self.assertEqual(page.xpath("//tbody//td/a[not(contains(@class, 'btn'))]/@href"), [reverse("instances:index") + "?tag=web"])
+        host.tags.add(tag)
+        page = html.fromstring(self.client.get(reverse("admin:tag_list")).content)
+        self.assertEqual(page.xpath("//tbody//td/a[not(contains(@class, 'btn'))]/@href"),
+                         [reverse("instances:index") + "?tag=web", reverse("computes") + "?tag=web"])
+
     def test_users(self):
         response = self.client.get(reverse("admin:user_create"))
         self.assertEqual(response.status_code, 200)

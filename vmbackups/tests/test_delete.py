@@ -244,6 +244,19 @@ class IndexTests(TransactionTestCase):
         self.assertNotIn(reverse("vmbackups:restore_over", args=[ready.uuid]),
                          page.xpath("//table[@id='backups']//a/@href"))
 
+    def test_a_row_links_its_target_and_a_removed_vm_listed_as_removed(self):
+        from instances.models import InstanceTombstone
+
+        links = lambda page: set(page.xpath("//table[@id='backups']//td//a[not(contains(@class, 'dropdown-item'))]/@href"))
+        self.client.force_login(self.admin)
+        page = lxml_html.fromstring(self.client.get(reverse("vmbackups:index")).content)
+        self.assertTrue({reverse("vmbackups:target", args=[self.t1.pk]), reverse("vmbackups:target", args=[self.t2.pk])}
+                        <= links(page))
+        self.assertNotIn(reverse("admin:tombstone_list"), links(page))  # db1 is not on the Removed VMs page
+        InstanceTombstone.objects.create(uuid="u2", name="db1", host="h1")
+        page = lxml_html.fromstring(self.client.get(reverse("vmbackups:index")).content)
+        self.assertIn(reverse("admin:tombstone_list"), links(page))
+
     def test_the_list_shows_fifty_a_page_and_keeps_the_filter(self):
         vm = Instance.objects.get(name="web1")
         for _n in range(60):

@@ -15,7 +15,7 @@
 <div class="card mb-3">
     <div class="card-header">
         <div class="d-flex flex-wrap align-items-center gap-2">
-            <span class="fw-semibold text-break me-auto">{{ job.resource_label }}</span>
+            <span class="fw-semibold text-break me-auto">{% include "operations/resource_link.html" with url=op.resource_url label=job.resource_label %}</span>
             {% include "operations/state_badge.html" with state=op.state %}
         </div>
         <div class="small text-body-secondary mt-1">{% trans "User" %}: {{ job.username }}</div>

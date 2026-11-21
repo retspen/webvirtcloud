@@ -1,0 +1,1 @@
+{% load operations %}{# what a job works on, a link to its page where it has one (operations.views.link_resources) #}{% if url %}<a href="{{ url }}">{{ label|wrap_at_slash }}</a>{% else %}{{ label|wrap_at_slash }}{% endif %}

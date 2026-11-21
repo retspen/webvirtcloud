@@ -93,6 +93,37 @@ class JobsPageTestCase(TransactionTestCase):
         Operation.objects.all().delete()
         self.assertFalse(page().xpath("//form[@data-filter-form]"))
 
+    def test_a_job_links_what_it_works_on_to_who_may_see_it(self):
+        from types import SimpleNamespace
+
+        from accounts.models import UserInstance
+        from computes.models import Compute
+        from instances.models import Instance
+        from operations.views import link_resources
+        from vmbackups.models import BackupTarget
+
+        host = Compute.objects.create(name="lk-host", hostname="192.0.2.9", login="", password="", type=4)
+        vm = Instance.objects.create(compute=host, name="lk-vm", uuid="00000000-0000-4000-8000-0000000000aa")
+        target = BackupTarget.objects.create(name="lk-target")
+        resources = [f"instance:{vm.uuid}", f"compute:{host.pk}", f"pool:{host.pk}:default", f"backup_target:{target.pk}",
+                     "bulk_migrate", "instance:00000000-0000-4000-8000-0000000000bb", "compute:999"]
+        ops = [SimpleNamespace(resource=r) for r in resources]
+        link_resources(self.admin, ops)
+        self.assertEqual([op.resource_url for op in ops], [
+            reverse("instances:instance", args=[vm.pk]), reverse("overview", args=[host.pk]),
+            None, reverse("vmbackups:target", args=[target.pk]), reverse("computes"), None, None])
+        # a copy of the VM on another host has its UUID: neither is linked
+        Instance.objects.create(compute=Compute.objects.create(name="lk-host2", hostname="192.0.2.10", login="", password="",
+                                                               type=4), name="lk-vm", uuid=vm.uuid)
+        link_resources(self.admin, ops)
+        self.assertIsNone(ops[0].resource_url)
+        Instance.objects.filter(compute__name="lk-host2").delete()
+        # an owner: their VM's page only
+        UserInstance.objects.create(user=self.user, instance=vm)
+        ops = [SimpleNamespace(resource=r) for r in resources]
+        link_resources(self.user, ops)
+        self.assertEqual([op.resource_url for op in ops], [reverse("instances:instance", args=[vm.pk])] + [None] * 6)
+
     def test_a_finished_job_opens_what_it_made(self):
         from lxml import html as lxml_html
 

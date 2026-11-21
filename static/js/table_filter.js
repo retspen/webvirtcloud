@@ -191,6 +191,19 @@ if (typeof module !== "undefined") {
     if (!tagPills) {
         keep("", key + "_tag");  // no row has a tag: none is kept to come back later
     }
+    // a link may ask for one tag's rows (the Tags page: ?tag=name): only that tag then, on a
+    // list that has it. The address loses it, so the list's own reload keeps what is chosen afterwards.
+    var query = new URLSearchParams(window.location.search);
+    if (query.has("tag") && chooseTag && chooseTag(query.get("tag"))) {
+        search.value = "";
+        keep("");
+        if (chooseState) {
+            chooseState("");
+        }
+        filterTable(document);
+        query.delete("tag");
+        history.replaceState(null, "", window.location.pathname + (query.size ? "?" + query : "") + window.location.hash);
+    }
     document.addEventListener("click", function (event) {
         var more = event.target.closest("[data-show-tags]");
         if (more) {

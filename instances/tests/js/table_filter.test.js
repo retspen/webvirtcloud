@@ -176,13 +176,18 @@ function pillRow(values) {
                  addEventListener: (name, fn) => { row.click = fn; }};
     return row;
 }
-// runs table_filter.js on a page of these elements, the stored values given; its document click listener
-function run(elements, stored) {
+// runs table_filter.js on a page of these elements, the stored values given, at an address with
+// this query; its document click listener
+let replaced = null;
+function run(elements, stored, search = "") {
     const listeners = {};
     const doc = {title: "VMs", getElementById: (id) => elements[id], querySelectorAll: () => [],
                  addEventListener: (name, fn) => { listeners[name] = fn; }};
     const storage = {getItem: (k) => stored[k] || null, setItem: (k, v) => { stored[k] = v; }, removeItem: (k) => { delete stored[k]; }};
-    vmModule.runInNewContext(fs.readFileSync(process.argv[2], "utf8"), {document: doc, sessionStorage: storage});
+    const window = {location: {search: search, pathname: "/instances/", hash: ""}};
+    const history = {replaceState: (state, title, url) => { replaced = url; }};
+    vmModule.runInNewContext(fs.readFileSync(process.argv[2], "utf8"),
+                             {document: doc, sessionStorage: storage, window: window, history: history, URLSearchParams: URLSearchParams});
     return listeners.click;
 }
 const listPage = () => ({
@@ -192,6 +197,21 @@ const listPage = () => ({
     "tag-filter": {value: ""},
     "tag-pills": pillRow(["", "-", "prod", "web"]),
 });
+{
+    // a link to one tag's rows (the Tags page): that tag only, and the address loses it
+    const stored = {"VMs_filter": "db", "VMs_filter_state": "Off", "VMs_filter_tag": "prod"};
+    const elements = listPage();
+    run(elements, stored, "?tag=web&page=2");
+    assert.deepStrictEqual([elements.filter.value, elements["state-filter"].value, elements["tag-filter"].value], ["", "", "web"]);
+    assert.strictEqual(stored.VMs_filter, undefined, "the search is not kept either");
+    assert.strictEqual(replaced, "/instances/?page=2", "the address keeps the rest");
+    // a tag the list does not have: nothing is changed
+    replaced = null;
+    const other = listPage();
+    const kept = {"VMs_filter": "db"};
+    run(other, kept, "?tag=gone");
+    assert.deepStrictEqual([kept.VMs_filter, replaced], ["db", null]);
+}
 {
     const stored = {"VMs_filter_state": "Off", "VMs_filter_tag": "prod"};
     const elements = listPage();

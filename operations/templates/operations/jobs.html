@@ -88,9 +88,9 @@
                                 {% endif %}
                                 <div class="small text-body-secondary">{{ op.created_at|date:"Y-m-d H:i:s T" }}{% if request.user.is_superuser %}<span class="d-md-none"> &middot; {{ row.username }}</span>{% endif %}</div>
                                 {# below md the hidden columns show here #}
-                                <div class="d-md-none small">{{ row.resource_label|wrap_at_slash }}</div>
+                                <div class="d-md-none small">{% include "operations/resource_link.html" with url=op.resource_url label=row.resource_label %}</div>
                             </td>
-                            <td class="d-none d-md-table-cell">{{ row.resource_label|wrap_at_slash }}</td>
+                            <td class="d-none d-md-table-cell">{% include "operations/resource_link.html" with url=op.resource_url label=row.resource_label %}</td>
                             {% if request.user.is_superuser %}<td class="text-nowrap d-none d-md-table-cell">{{ row.username }}</td>{% endif %}
                             <td class="text-end">{% include "operations/state_badge.html" with state=op.state %}</td>
                         </tr>
