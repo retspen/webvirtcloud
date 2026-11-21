@@ -13108,3 +13108,11 @@ msgstr "IPv6 adresi"
 #: interfaces/forms.py
 msgid "IPv6 gateway"
 msgstr "IPv6 ağ geçidi"
+
+#: instances/templates/allinstances.html
+msgid "The chosen VMs"
+msgstr "Seçilen sanal makineler"
+
+#: instances/templates/allinstances.html
+msgid "Clear the choice"
+msgstr "Seçimi temizle"

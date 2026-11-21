@@ -58,38 +58,50 @@
             {% include 'common/tag_filter.html' %}
             {% if powerable %}
             {# the VMs chosen in the list (bulk_power_box.html), a job each (instances.jobs.POWER); bulk_power.js counts those on screen #}
-            <form id="bulk-power" class="d-flex flex-wrap align-items-center gap-2 mb-2" action="{% url 'instances:bulk_power' %}" method="post">{% csrf_token %}{% submission_key %}
-                <div class="form-check mb-0">
-                    <input class="form-check-input" type="checkbox" id="bulk-power-shown">
-                    <label class="form-check-label" for="bulk-power-shown">{% trans "Choose the VMs shown" %}</label>
+            {# and shows this bar at the foot of the window while any is chosen #}
+            <form id="bulk-power" class="fixed-bottom bg-body border-top shadow-lg py-2" action="{% url 'instances:bulk_power' %}" method="post"
+                  aria-label="{% trans "The chosen VMs" %}" hidden>{% csrf_token %}{% submission_key %}
+                <div class="container d-flex flex-wrap align-items-center gap-2">
+                    <span class="fw-semibold me-2" id="bulk-power-count" data-text="{% trans "%(count)s chosen" %}"
+                          data-too-many="{% blocktrans with max=bulk_max %}%(count)s chosen: at most {{ max }} at once{% endblocktrans %}" data-max="{{ bulk_max }}" aria-live="polite"></span>
+                    <div class="btn-group btn-group-sm" role="group" aria-label="{% trans "Power the chosen VMs" %}">
+                        <button type="submit" class="btn btn-outline-primary" name="action" value="start">{% trans "Start" %}</button>
+                        <button type="submit" class="btn btn-outline-primary" name="action" value="shutdown"
+                                data-confirm="{% trans "Shut down the chosen VMs? Their guests are asked to power off." %}">{% trans "Shut down" %}</button>
+                        <button type="submit" class="btn btn-outline-danger" name="action" value="force_off"
+                                data-confirm="{% trans "Force off the chosen VMs? They stop at once, as if unplugged, and may lose unsaved data." %}">{% trans "Force off" %}</button>
+                    </div>
+                    {% if snapshotable %}
+                    {# external, without memory and without freezing file systems: the VM's Snapshots tab has those choices #}
+                    <div class="dropup">
+                        <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                                aria-expanded="false">{% trans "Snapshot" %}</button>
+                        <div class="dropdown-menu p-3" style="width: 20rem">
+                            <label class="form-label" for="bulk-snapshot-name">{% trans "Snapshot name" %}</label>
+                            <div class="input-group input-group-sm">
+                                <input class="form-control" type="text" name="snapshot_name" id="bulk-snapshot-name" maxlength="64" aria-describedby="bulk-snapshot-help">
+                                <button type="submit" class="btn btn-primary" name="action" value="snapshot" formaction="{% url 'instances:bulk_snapshot' %}">{% trans "Take snapshots" %}</button>
+                            </div>
+                            <div class="form-text" id="bulk-snapshot-help">{% trans "An external snapshot of each chosen VM, without memory and without freezing its file systems" %}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if request.user.is_superuser %}
+                    {# tags are a superuser's, as on the VM's Settings tab #}
+                    <div class="dropup">
+                        <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                                aria-expanded="false">{% trans "Tag" %}</button>
+                        <div class="dropdown-menu p-3" style="width: 20rem">
+                            <label class="form-label" for="bulk-tag">{% trans "Tag" %}</label>
+                            <input class="form-control form-control-sm mb-2" type="text" name="tag" id="bulk-tag" list="bulk-tag-names">
+                            <datalist id="bulk-tag-names">{% for tag in tag_names %}<option value="{{ tag }}">{% endfor %}</datalist>
+                            <button type="submit" class="btn btn-sm btn-primary" name="action" value="tag_add" formaction="{% url 'instances:bulk_tag' %}">{% trans "Add tag" %}</button>
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" name="action" value="tag_remove" formaction="{% url 'instances:bulk_tag' %}">{% trans "Remove tag" %}</button>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <button type="button" class="btn btn-sm btn-link ms-auto" id="bulk-power-clear">{% trans "Clear the choice" %}</button>
                 </div>
-                <span class="small text-body-secondary" id="bulk-power-count" data-text="{% trans "%(count)s chosen" %}"
-                      data-too-many="{% blocktrans with max=bulk_max %}%(count)s chosen: at most {{ max }} at once{% endblocktrans %}" data-max="{{ bulk_max }}" aria-live="polite"></span>
-                <div class="btn-group btn-group-sm" role="group" aria-label="{% trans "Power the chosen VMs" %}">
-                    <button type="submit" class="btn btn-outline-primary" name="action" value="start" disabled>{% trans "Start" %}</button>
-                    <button type="submit" class="btn btn-outline-primary" name="action" value="shutdown" disabled
-                            data-confirm="{% trans "Shut down the chosen VMs? Their guests are asked to power off." %}">{% trans "Shut down" %}</button>
-                    <button type="submit" class="btn btn-outline-danger" name="action" value="force_off" disabled
-                            data-confirm="{% trans "Force off the chosen VMs? They stop at once, as if unplugged, and may lose unsaved data." %}">{% trans "Force off" %}</button>
-                </div>
-                {% if snapshotable %}
-                {# external, without memory and without freezing file systems: the VM's Snapshots tab has those choices #}
-                <div class="input-group input-group-sm w-auto">
-                    <input class="form-control" type="text" name="snapshot_name" maxlength="64" placeholder="{% trans "Snapshot name" %}"
-                           aria-label="{% trans "Snapshot name" %}" style="width: 10rem">
-                    <button type="submit" class="btn btn-outline-primary" name="action" value="snapshot" formaction="{% url 'instances:bulk_snapshot' %}" disabled
-                            title="{% trans "An external snapshot of each chosen VM, without memory and without freezing its file systems" %}">{% trans "Take snapshots" %}</button>
-                </div>
-                {% endif %}
-                {% if request.user.is_superuser %}
-                {# tags are a superuser's, as on the VM's Settings tab #}
-                <div class="input-group input-group-sm w-auto">
-                    <input class="form-control" type="text" name="tag" id="bulk-tag" list="bulk-tag-names" placeholder="{% trans "Tag" %}" aria-label="{% trans "Tag" %}" style="width: 9rem">
-                    <datalist id="bulk-tag-names">{% for tag in tag_names %}<option value="{{ tag }}">{% endfor %}</datalist>
-                    <button type="submit" class="btn btn-outline-primary" name="action" value="tag_add" formaction="{% url 'instances:bulk_tag' %}" disabled>{% trans "Add tag" %}</button>
-                    <button type="submit" class="btn btn-outline-secondary" name="action" value="tag_remove" formaction="{% url 'instances:bulk_tag' %}" disabled>{% trans "Remove tag" %}</button>
-                </div>
-                {% endif %}
             </form>
             {% endif %}
             <div id="filter-status" class="visually-hidden" role="status" data-text="{% trans "%(shown)s of %(all)s VMs match" %}"></div>

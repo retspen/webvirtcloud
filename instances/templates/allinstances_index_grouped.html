@@ -4,7 +4,8 @@
     <table class="table table-hover align-middle" data-sortable>
         <thead>
             <tr>
-                <th scope="col" data-sort-method="none">
+                <th scope="col" data-sort-method="none" class="text-nowrap">
+                    {% if powerable %}<input class="form-check-input" type="checkbox" id="bulk-power-shown" aria-label="{% trans "Choose the VMs shown" %}">{% endif %}
                     <button type="button" class="btn btn-sm btn-link p-0" id="hide-all-instances" aria-expanded="true"
                             aria-label="{% trans "Collapse or expand every host" %}">{% bs_icon 'arrows-collapse' %}</button>
                 </th>
