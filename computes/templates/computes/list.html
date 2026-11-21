@@ -4,6 +4,7 @@
 {% load bootstrap_icons %}
 {% load operations %}
 {% block title %}{% trans "Computes" %}{% endblock %}
+{% block page_header %}{% endblock page_header %}{# the page has its own heading #}
 {% block content %}
 <div id="job-panel" aria-live="polite"></div>
 <div class="row">
@@ -11,7 +12,7 @@
         {% include 'create_comp_block.html' %}
         {% if computes|length > 1 %}<a href="{% url 'balance' %}" class="btn btn-outline-primary mt-1 ms-1 float-end">{% trans "Balance" %}</a>{% endif %}
         {% include 'search_block.html' %}
-        <h3 class="mb-3">{% trans "Computes" %}</h3>
+        <h1 class="h3 mb-3">{% trans "Computes" %}</h1>
     </div>
 </div>
 {% include "computes/attention.html" %}

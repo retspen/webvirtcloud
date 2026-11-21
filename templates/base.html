@@ -30,10 +30,12 @@
   <body class="pb-5"{% block body_attrs %}{% endblock %}>
 
     {% if request.user.is_authenticated %}
+    {# for the keyboard: past the menu, shown when it has the focus #}
+    <a class="visually-hidden-focusable d-block text-center p-2" href="#main">{% trans "Skip to content" %}</a>
     {% include 'navbar.html' %}
     {% endif %}
 
-    <div role="main" class="container">
+    <div role="main" id="main" class="container">
       {% block page_header %}{# a page with a heading of its own leaves it out #}
       <div>
         <div>
@@ -41,10 +43,10 @@
             {% block page_heading_extra %}
             {% endblock page_heading_extra %}
           </div>
-          <h3 class="mb-3">
+          <h1 class="h3 mb-3">
             {% block page_heading %}
             {% endblock page_heading %}
-          </h3>
+          </h1>
         </div>
       </div>
       {% endblock page_header %}

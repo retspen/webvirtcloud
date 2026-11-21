@@ -14,11 +14,11 @@
 </form>
 {% elif given.active %}
 {# its VMs are migrated with it: the Bulk Migrate page puts it in maintenance, with or without moving them #}
-<a class="btn btn-sm btn-outline-warning" href="{% url 'bulk_migrate' compute.id %}?maintenance=on">{% bs_icon 'wrench-adjustable' %} {% trans "Put in maintenance" %}</a>
+<a class="btn btn-sm btn-outline-secondary" href="{% url 'bulk_migrate' compute.id %}?maintenance=on">{% bs_icon 'wrench-adjustable' %} {% trans "Put in maintenance" %}</a>
 {% else %}
 <form method="post" action="{% url 'compute_maintenance' compute.id %}" class="d-inline">{% csrf_token %}
     <input type="hidden" name="maintenance" value="on">
-    <button type="submit" class="btn btn-sm btn-outline-warning" data-confirm="{% trans "Put the host in maintenance? No new VM or migration comes to it, its VMs cannot be started there, and Balance leaves it out." %}">{% bs_icon 'wrench-adjustable' %} {% trans "Put in maintenance" %}</button>
+    <button type="submit" class="btn btn-sm btn-outline-secondary" data-confirm="{% trans "Put the host in maintenance? No new VM or migration comes to it, its VMs cannot be started there, and Balance leaves it out." %}">{% bs_icon 'wrench-adjustable' %} {% trans "Put in maintenance" %}</button>
 </form>
 {% endif %}
 <a class="btn btn-sm btn-outline-primary" href="{% url 'compute_update' compute.id %}">{% bs_icon 'pencil' %} {% trans "Edit connection" %}</a>

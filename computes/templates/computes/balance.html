@@ -4,6 +4,7 @@
 {% load operations %}
 {% load bootstrap_icons %}
 {% block title %}{% trans "Balance" %}{% endblock %}
+{% block page_header %}{% endblock page_header %}{# the page has its own heading #}
 
 {% block content %}
 <nav aria-label="breadcrumb">
@@ -12,6 +13,7 @@
         <li class="breadcrumb-item active fw-bold" aria-current="page">{% trans "Balance" %}</li>
     </ol>
 </nav>
+<h1 class="visually-hidden">{% trans "Balance" %}</h1>
 <p class="text-body-secondary">{% trans "Migrations that give each host about the same share of its memory, then of its CPUs, for its running VMs: a host twice as large takes twice as much." %}</p>
 {% if unreachable %}
 <div class="alert alert-warning shadow-sm">{% trans "These hosts cannot be read and are left out:" %} {{ unreachable|join:", " }}</div>

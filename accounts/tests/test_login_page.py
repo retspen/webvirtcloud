@@ -49,6 +49,7 @@ class LoginPageTests(TestCase):
         response = self.login("right-pass-1")
         self.assertEqual(response.status_code, 429)
         self.assertTemplateUsed(response, "accounts/lockout.html")
+        self.assertEqual(response.content.decode().count("<h1"), 1)
         self.assertContains(response, "The lock ends within 20 minutes.", status_code=429)
 
     def test_the_notice_is_shown_only_when_set(self):

@@ -12251,3 +12251,7 @@ msgstr[0] "由于 %(failure_count)d 次验证失败，验证已暂时停用，�
 
 msgid "Verification of the token is currently disabled"
 msgstr "当前已停用验证码验证"
+
+#: templates/base.html:35
+msgid "Skip to content"
+msgstr "跳到内容"

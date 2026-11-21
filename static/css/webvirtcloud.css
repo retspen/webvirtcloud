@@ -334,3 +334,8 @@ td .tag-more {
     width: 0.85em;
     height: 0.85em;
 }
+
+/* "Skip to content" brings #main up below the sticky navbar, not behind it */
+#main {
+    scroll-margin-top: 5rem;
+}

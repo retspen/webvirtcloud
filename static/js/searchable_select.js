@@ -1,6 +1,16 @@
+// Tom Select moves the field's label to its own box: the hidden <select> it
+// keeps is named by that label too, for screen readers that still meet it.
+function labelOriginal() {
+    var label = document.getElementById(this.input.id + "-ts-label");
+    if (label) {
+        this.input.setAttribute("aria-labelledby", label.id);
+    }
+}
+
 // A <select data-searchable> of many users or VMs gets a search box (Tom Select).
 document.querySelectorAll("select[data-searchable]").forEach(function (select) {
     new TomSelect(select, {
+        onInitialize: labelOriginal,
         // the box leaves its focused, taller look at once: else the next tap's
         // button moves away under the finger on a phone
         onItemAdd: function () { this.blur(); },
@@ -19,6 +29,7 @@ function isTagName(input) {
 }
 document.querySelectorAll("select[data-tags]").forEach(function (select) {
     new TomSelect(select, {
+        onInitialize: labelOriginal,
         create: function (input) {
             return {value: tagName(input), text: tagName(input)};
         },

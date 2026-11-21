@@ -13080,3 +13080,7 @@ msgstr[1] "%(failure_count)d başarısız deneme nedeniyle doğrulama geçici ol
 
 msgid "Verification of the token is currently disabled"
 msgstr "Kod doğrulaması şu anda kapalı"
+
+#: templates/base.html:35
+msgid "Skip to content"
+msgstr "İçeriğe atla"
