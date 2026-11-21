@@ -14,7 +14,6 @@
 {% block page_header %}{% endblock page_header %}{# the card below has the heading #}
 
 {% block content %}
-    {% include 'pleasewaitdialog.html' %}
     {# the VM at a glance in one card: who and where it is, what it has, and its sections as the card's footer #}
     <section class="card mb-3" aria-labelledby="vm-name" id="vm-summary" data-status="{{ instance.status }}"
              data-status-url="{% url 'instances:status' instance.id %}" data-osinfo-url="{% url 'instances:osinfo' instance.id %}"

@@ -149,7 +149,7 @@ advance(3000);
 answer("/r", { ...empty, jobs: [{ ...running, state: "uncertain", error: "check the disks" }] });
 assert.strictEqual(writes, 1, "an unchanged answer leaves the panel alone");
 
-// the panel showing nothing leaves a flag the please-wait dialog set alone
+// the panel showing nothing leaves a flag another script set alone
 open = []; timers = [];
 jobPanel({ innerHTML: "", addEventListener() {} }, urls, "tok");
 window.backgroundJobRunning = true;

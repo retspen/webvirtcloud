@@ -57,5 +57,6 @@ function pageInUse() {
     return !!document.querySelector(".modal.show")
         || !!(active && active.matches && active.matches("input, select, textarea"))
         || !!(window.xmlEditUnsaved && window.xmlEditUnsaved())
-        || (typeof bulkPowerChosen === "function" && bulkPowerChosen());  // the VM list's bulk form in use (bulk_power.js)
+        || (typeof bulkPowerChosen === "function" && bulkPowerChosen())  // the VM list's bulk form in use (bulk_power.js)
+        || !!document.querySelector("button[data-busy]");  // a form being sent (submit_busy.js)
 }

@@ -406,10 +406,6 @@ msgstr "无法获取验证码？"
 msgid "Leave empty if you have not set up two-factor authentication."
 msgstr "如果未设置双因素认证，请留空。"
 
-#: accounts/templates/accounts/otp_login.html:59
-msgid "Verifying..."
-msgstr "正在验证…"
-
 #: accounts/templates/accounts/otp_login.html:61
 msgid "Verify & Sign In"
 msgstr "验证并登录"
@@ -504,10 +500,6 @@ msgstr "虚拟化管理控制台"
 #: accounts/templates/login.html:21
 msgid "Incorrect username or password."
 msgstr "用户名或密码错误。"
-
-#: accounts/templates/login.html:48
-msgid "Signing in..."
-msgstr "正在登录…"
 
 #: accounts/templates/profile.html:6 accounts/templates/profile.html:8
 #: templates/navbar.html:54
@@ -9707,10 +9699,6 @@ msgstr "虚拟机报告 (.xlsx)"
 #: templates/navbar.html:58
 msgid "Log Out"
 msgstr "退出登录"
-
-#: templates/pleasewaitdialog.html:7 templates/pleasewaitdialog.html:11
-msgid "Processing"
-msgstr "处理中"
 
 #: virtsecrets/forms.py:19
 msgid "The usage cannot have control characters or line breaks"

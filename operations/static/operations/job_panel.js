@@ -24,7 +24,7 @@ function jobPanel(element, urls, csrfToken, initialIds, states, text) {
     (initialIds || []).forEach(function (id) { pending[id] = true; });
     var last = { jobs: [], others: [], short_operation: false, worker_last_seen: null, worker_gone: false };
     var rendered = null; // the panel's last html: an unchanged one is not rebuilt (focus stays)
-    var holding = false; // the panel set backgroundJobRunning (the please-wait dialog sets it too)
+    var holding = false; // the panel set backgroundJobRunning (no other script holds it)
     if (initialIds && initialIds.length) {
         // a remembered job must not be lost to a status reload before the first poll answers
         window.backgroundJobRunning = true;

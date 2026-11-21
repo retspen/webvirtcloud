@@ -225,8 +225,8 @@ class PageControlsTestCase(PageControls, TestCase):
                 self.assertTrue(all(b.get("data-confirm") for b in danger))
                 if user == owner:
                     self.assertIn("An administrator can resume it.", tab.text_content())
-                if status == 5:
-                    self.assertEqual(tab.xpath(".//form/@data-please-wait"), [""])
+                if status == 5:  # Start is sent to poweron
+                    self.assertTrue(tab.xpath(".//form/@action")[0].endswith("/poweron/"))
 
     def test_a_vm_with_a_saved_state_says_so_and_can_start_without_it(self):
         owner = self.user("power_saved_owner", owner={})

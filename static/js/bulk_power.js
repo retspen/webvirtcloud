@@ -14,7 +14,7 @@
         var boxes = onScreen();
         var chosen = boxes.filter(function (box) { return box.checked; }).length;
         var tooMany = chosen > Number(count.dataset.max);  // the server takes at most that many
-        form.querySelectorAll("button[name='action']").forEach(function (button) { button.disabled = tooMany; });
+        form.querySelectorAll("button[name='action']").forEach(function (button) { button.disabled = tooMany || !!button.dataset.busy; });  // not one being sent (submit_busy.js)
         count.textContent = (tooMany ? count.dataset.tooMany : count.dataset.text).replace("%(count)s", chosen);
         count.classList.toggle("text-danger", tooMany);
         // the bar at the window's foot, while any VM is chosen; the page ends above it

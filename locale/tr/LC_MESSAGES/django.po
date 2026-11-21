@@ -411,10 +411,6 @@ msgstr "OTP'yi mi kaybettiniz?"
 msgid "Leave empty if you have not set up two-factor authentication."
 msgstr "İki aşamalı doğrulamayı kurmadıysanız boş bırakın."
 
-#: accounts/templates/accounts/otp_login.html:59
-msgid "Verifying..."
-msgstr "Doğrulanıyor..."
-
 #: accounts/templates/accounts/otp_login.html:61
 msgid "Verify & Sign In"
 msgstr "Doğrula ve oturum aç"
@@ -511,10 +507,6 @@ msgstr "Sanallaştırma Yönetim Konsolu"
 #: accounts/templates/login.html:21
 msgid "Incorrect username or password."
 msgstr "Kullanıcı adı veya parola hatalı."
-
-#: accounts/templates/login.html:48
-msgid "Signing in..."
-msgstr "Oturum açılıyor..."
 
 #: accounts/templates/profile.html:6 accounts/templates/profile.html:8
 #: templates/navbar.html:54
@@ -10318,10 +10310,6 @@ msgstr "Sanal makine raporu (.xlsx)"
 #: templates/navbar.html:58
 msgid "Log Out"
 msgstr "Oturumu Kapat"
-
-#: templates/pleasewaitdialog.html:7 templates/pleasewaitdialog.html:11
-msgid "Processing"
-msgstr "İşleniyor"
 
 #: virtsecrets/forms.py:19
 msgid "The usage cannot have control characters or line breaks"
