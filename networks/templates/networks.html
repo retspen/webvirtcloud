@@ -12,9 +12,7 @@
     {% include "computes/host_nav.html" with section="networks" %}
 
     {% if networks is None %}{# not read: the error above says why #}{% elif not networks %}
-        <div class="alert alert-warning shadow-sm">
-            {% bs_icon 'exclamation-triangle' %} {% trans "This host has no networks." %}
-        </div>
+        <p class="text-center text-body-secondary py-4">{% trans "This host has no networks." %}</p>
     {% else %}
         {# a card per network, as the host Overview's Hardware and Software cards #}
         <div class="row row-cols-1 row-cols-md-2 g-3 mb-4">

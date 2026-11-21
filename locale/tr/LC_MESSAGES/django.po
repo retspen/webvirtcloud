@@ -2893,11 +2893,6 @@ msgstr "Aygıtlar"
 msgid "Problem occurred with host %(name)s: %(error)s"
 msgstr "%(name)s sunucusuyla ilgili bir sorun oluştu: %(error)s"
 
-#: computes/templates/computes/instances.html:44
-#: computes/templates/computes/list.html:20
-msgid "Warning"
-msgstr "Uyarı"
-
 #: computes/templates/computes/list.html:20
 msgid "You don't have any computes"
 msgstr "Hiç sunucunuz yok"
@@ -9291,10 +9286,6 @@ msgstr "Tüm türler"
 #: vmbackups/templates/vmbackups/index.html:31
 msgid "All states"
 msgstr "Tüm durumlar"
-
-#: operations/templates/operations/jobs.html:47
-msgid "Reset"
-msgstr "Sıfırla"
 
 #: operations/templates/operations/jobs.html:53
 msgid "No jobs"

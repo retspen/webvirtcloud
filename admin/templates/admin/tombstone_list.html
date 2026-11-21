@@ -10,9 +10,7 @@
 {% block content %}
 <p class="text-body-secondary">{% trans "VMs that vanished from their compute. Their owners, tags, protection and schedules come back if the same UUID shows up again before the record expires; their backups come back with them." %}</p>
 {% if not tombstones %}
-    <div class="alert alert-info shadow-sm">
-        {% bs_icon 'info-circle' %} {% trans "No removed VMs" %}
-    </div>
+    <p class="text-center text-body-secondary py-4">{% trans "No removed VMs" %}</p>
 {% else %}
     <div class="card mb-3">
         <div class="card-header d-flex flex-wrap align-items-center gap-2">

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load django_bootstrap5 %}
+{% load static %}
 {% load bootstrap_icons %}
 {% load operations %}
 
@@ -18,8 +19,8 @@
 <div class="card mb-3">
     <div class="card-header d-flex flex-wrap align-items-center gap-2">
         <span class="me-auto">{% trans "Jobs" %} <span class="badge text-bg-light border">{{ page.paginator.count }}</span></span>
-        {% if request.user.is_superuser %}
-            <form method="get" class="row g-2 col-12 col-xl-10" role="search" aria-label="{% trans 'Filter jobs' %}">
+        {% if request.user.is_superuser %}{% if rows or filtered %}{# while there is a job to filter #}
+            <form method="get" class="row g-2 col-12 col-xl-10" role="search" aria-label="{% trans 'Filter jobs' %}" data-filter-form>
                 <div class="col-6 col-lg">
                     <input class="form-control form-control-sm" name="compute" placeholder="{% trans 'Host' %}" aria-label="{% trans 'Host' %}" value="{{ filters.compute }}">
                 </div>
@@ -43,11 +44,10 @@
                     </select>
                 </div>
                 <div class="col-12 col-lg-auto d-flex gap-2 justify-content-end">
-                    <button class="btn btn-sm btn-primary" type="submit">{% trans "Filter" %}</button>
-                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'operations:jobs' %}">{% trans "Reset" %}</a>
+                    {% if filtered %}<a class="btn btn-sm btn-link" href="{% url 'operations:jobs' %}">{% trans "Clear the filters" %}</a>{% endif %}
                 </div>
             </form>
-        {% endif %}
+        {% endif %}{% endif %}
     </div>
     {% if not rows %}
         <div class="card-body text-center text-body-secondary">{% trans "No jobs" %}</div>
@@ -105,5 +105,6 @@
 {% endif %}
 {% endblock %}
 {% block script %}
+    <script src="{% static 'js/filter_form.js' %}"></script>
     {% if follow %}{% include "operations/follow_active.html" %}{% endif %}
 {% endblock script %}

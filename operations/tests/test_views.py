@@ -81,6 +81,18 @@ class JobsPageTestCase(TransactionTestCase):
         self.assertContains(self.client.get(reverse("operations:jobs"), {"compute": "c"}), link)
         self.assertNotContains(self.client.get(reverse("operations:jobs"), {"state": "failed"}), link)
 
+    def test_the_filters_show_while_there_is_a_job_to_filter(self):
+        from lxml import html as lxml_html
+
+        self.client.force_login(self.admin)
+        page = lambda **query: lxml_html.fromstring(self.client.get(reverse("operations:jobs"), query).content)
+        self.assertTrue(page().xpath("//form[@data-filter-form]"))
+        self.assertFalse(page().xpath("//form[@data-filter-form]//a"))  # nothing to clear
+        # none matches: the filters stay, with the way back
+        self.assertTrue(page(state="failed").xpath("//form[@data-filter-form]//a[@href=$u]", u=reverse("operations:jobs")))
+        Operation.objects.all().delete()
+        self.assertFalse(page().xpath("//form[@data-filter-form]"))
+
     def test_a_finished_job_opens_what_it_made(self):
         from lxml import html as lxml_html
 

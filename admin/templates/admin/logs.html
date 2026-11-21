@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load static %}
 {% load django_bootstrap5 %}
 {% load bootstrap_icons %}
 
@@ -15,7 +16,7 @@
 {% block content %}
 <div class="card mb-3">
     {# the search runs on the server over every row; the download takes the same rows #}
-    <form method="get" class="card-header d-flex flex-wrap align-items-center gap-2" role="search">
+    <form method="get" class="card-header d-flex flex-wrap align-items-center gap-2" role="search" data-filter-form>
         <span class="me-auto">{% trans "Logs" %} <span class="badge text-bg-light border">{{ logs.paginator.count }}</span></span>
         <input name="q" value="{{ q }}" class="form-control form-control-sm w-auto" type="search" placeholder="{% trans 'Search' %}"
                aria-label="{% trans 'Search the logs' %}">
@@ -23,7 +24,7 @@
             <input id="logs-failed" class="form-check-input" type="checkbox" name="failed" value="1"{% if failed %} checked{% endif %}>
             <label class="form-check-label small" for="logs-failed">{% trans "Failed only" %}</label>
         </div>
-        <button type="submit" class="btn btn-sm btn-primary">{% trans "Search" %}</button>
+        {% if q or failed %}<a class="btn btn-sm btn-link" href="{% url 'admin:logs' %}">{% trans "Clear the filters" %}</a>{% endif %}
     </form>
     {% if not logs %}
         <div class="card-body text-center text-body-secondary">
@@ -32,29 +33,30 @@
     {% else %}
         <div class="table-responsive position-relative">
             <table class="table table-hover align-middle mb-0">
+                {# on a phone: the date, who, which VM, and what, with how it ended under it #}
                 <thead>
                     <tr>
-                        <th scope="col">#</th>
+                        <th scope="col" class="d-none d-md-table-cell">#</th>
                         <th scope="col">{% blocktrans %}Date ({{ time_zone }}){% endblocktrans %}</th>
                         <th scope="col">{% trans "User" %}</th>
-                        <th scope="col">{% trans "Host" %}</th>
+                        <th scope="col" class="d-none d-md-table-cell">{% trans "Host" %}</th>
                         <th scope="col">{% trans "Instance" %}</th>
                         <th scope="col">{% trans "Message" %}</th>
-                        <th scope="col">{% trans "Result" %}</th>
-                        <th scope="col">{% trans "IP" %}</th>
+                        <th scope="col" class="d-none d-md-table-cell">{% trans "Result" %}</th>
+                        <th scope="col" class="d-none d-md-table-cell">{% trans "IP" %}</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for log in logs %}
                         <tr>
-                            <td class="small text-body-secondary">{{ log.id }}</td>
-                            <td class="small text-nowrap">{{ log.date|date:"Y-m-d H:i:s" }}</td>
+                            <td class="small text-body-secondary d-none d-md-table-cell">{{ log.id }}</td>
+                            <td class="small"><span class="text-nowrap">{{ log.date|date:"Y-m-d" }}</span> <span class="text-nowrap">{{ log.date|date:"H:i:s" }}</span></td>
                             <td>{{ log.user }}</td>
-                            <td>{{ log.host }}</td>
+                            <td class="d-none d-md-table-cell">{{ log.host }}</td>
                             <td>{% if log.vm_pk %}<a href="{% url 'instances:instance' log.vm_pk %}">{{ log.instance }}</a>{% else %}{{ log.instance }}{% endif %}</td>
-                            <td class="log-message">{{ log.message }}</td>
-                            <td>{% if log.success is None %}<span class="small text-body-secondary">{% trans "Unknown" %}</span>{% elif log.success %}<span class="badge text-bg-light border">{% trans "Done" %}</span>{% else %}<span class="badge text-bg-danger">{% trans "Failed" %}</span>{% endif %}</td>
-                            <td class="small font-monospace">{{ log.ip|default:"" }}</td>
+                            <td class="log-message">{{ log.message }}<div class="d-md-none">{% include "admin/log_result.html" %}</div></td>
+                            <td class="d-none d-md-table-cell">{% include "admin/log_result.html" %}</td>
+                            <td class="small font-monospace d-none d-md-table-cell">{{ log.ip|default:"" }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -64,3 +66,4 @@
 </div>
 {% if logs %}{% bootstrap_pagination logs extra=query pages_to_show=5 extra_classes="flex-wrap" %}{% endif %}
 {% endblock %}
+{% block script %}<script src="{% static 'js/filter_form.js' %}"></script>{% endblock %}

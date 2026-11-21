@@ -2751,11 +2751,6 @@ msgstr "设备"
 msgid "Problem occurred with host %(name)s: %(error)s"
 msgstr "主机 %(name)s 出现问题：%(error)s"
 
-#: computes/templates/computes/instances.html:44
-#: computes/templates/computes/list.html:20
-msgid "Warning"
-msgstr "警告"
-
 #: computes/templates/computes/list.html:20
 msgid "You don't have any computes"
 msgstr "您还没有任何计算节点"
@@ -8736,10 +8731,6 @@ msgstr "所有类型"
 #: vmbackups/templates/vmbackups/index.html:31
 msgid "All states"
 msgstr "所有状态"
-
-#: operations/templates/operations/jobs.html:47
-msgid "Reset"
-msgstr "重置"
 
 #: operations/templates/operations/jobs.html:53
 msgid "No jobs"

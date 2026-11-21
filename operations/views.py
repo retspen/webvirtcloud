@@ -52,6 +52,7 @@ def jobs(request):
     return render(request, "operations/jobs.html",
                   {"page": page, "rows": rows, "worker_last_seen": seen, "worker_unavailable": unavailable,
                    "filters": request.GET, "active_states": Operation.ACTIVE,
+                   "filtered": any(request.GET.get(field) for field in ("compute", "username", "state", "kind")),
                    "follow": any(op.state in Operation.ACTIVE for op in page.object_list),
                    "states": Operation.ACTIVE + Operation.TERMINAL,
                    "kinds": sorted((name, _(kind.label)) for name, kind in jobs_module.KINDS.items()),

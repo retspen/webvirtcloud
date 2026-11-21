@@ -10,7 +10,7 @@
 {% block content %}
 <p class="text-body-secondary">{% trans "The tags of VMs and hosts. A tag is made when it is first given, on a VM's Options tab or a host's form." %}</p>
 {% if not tags %}
-    <div class="alert alert-info shadow-sm">{% bs_icon 'info-circle' %} {% trans "No tags yet" %}</div>
+    <p class="text-center text-body-secondary py-4">{% trans "No tags yet" %}</p>
 {% else %}
     <div class="card mb-3">
         <div class="card-header d-flex flex-wrap align-items-center gap-2">

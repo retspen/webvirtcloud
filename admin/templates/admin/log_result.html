@@ -1,0 +1,2 @@
+{% load i18n %}{# how a log row's action ended (logs.html) #}
+{% if log.success is None %}<span class="small text-body-secondary">{% trans "Unknown" %}</span>{% elif log.success %}<span class="badge text-bg-light border">{% trans "Done" %}</span>{% else %}<span class="badge text-bg-danger">{% trans "Failed" %}</span>{% endif %}

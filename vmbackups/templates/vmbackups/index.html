@@ -13,7 +13,8 @@
 <a class="btn btn-outline-primary btn-sm" href="{% url 'vmbackups:targets' %}">{% bs_icon 'hdd-network' %} {% trans "Backup targets" %}</a>{% endblock page_heading_extra %}
 
 {% block content %}
-    <form method="get" class="row g-2 mb-3" aria-label="{% trans "Filter" %}">
+    {% if rows or vm or target or state %}{# while there is a backup to filter #}
+    <form method="get" class="row g-2 mb-3" aria-label="{% trans "Filter" %}" data-filter-form>
         <div class="col-12 col-md">
             <label class="visually-hidden" for="filter-vm">{% trans "VM" %}</label>
             <input type="search" class="form-control" id="filter-vm" name="vm" value="{{ vm }}" placeholder="{% trans "VM name" %}">
@@ -37,10 +38,13 @@
                 <option value="damaged"{% if state == "damaged" %} selected{% endif %}>{% trans "Damaged" %}</option>
             </select>
         </div>
-        <div class="col-12 col-md-auto d-grid">
-            <button type="submit" class="btn btn-outline-secondary">{% bs_icon 'filter' %} {% trans "Filter" %}</button>
+        {% if vm or target or state %}
+        <div class="col-12 col-md-auto">
+            <a class="btn btn-link" href="{% url 'vmbackups:index' %}">{% trans "Clear the filters" %}</a>
         </div>
+        {% endif %}
     </form>
+    {% endif %}
 
     {% if rows %}
     <div class="table-responsive">
@@ -75,10 +79,10 @@
         {% bootstrap_pagination page extra=page_query pages_to_show=5 extra_classes="flex-wrap" %}
     {% endif %}
     {% elif vm or target or state %}
-        <div class="alert alert-info">{% trans "No backup matches the filter." %}</div>
+        <p class="text-center text-body-secondary py-4">{% trans "No backup matches the filter." %}</p>
     {% else %}
-        <div class="alert alert-info">{% trans "No backup yet. Back a VM up from its Backups tab." %}</div>
+        <p class="text-center text-body-secondary py-4">{% trans "No backup yet. Back a VM up from its Backups tab." %}</p>
     {% endif %}
 {% endblock %}
 
-{% block script %}<script src="{% static 'vmbackups/pending.js' %}"></script>{% endblock %}
+{% block script %}<script src="{% static 'vmbackups/pending.js' %}"></script><script src="{% static 'js/filter_form.js' %}"></script>{% endblock %}

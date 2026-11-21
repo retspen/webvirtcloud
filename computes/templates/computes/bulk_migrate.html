@@ -37,7 +37,7 @@
 {% if not parallel %}
 <div class="alert alert-warning shadow-sm">{% trans "The worker runs one job at a time: set Worker Concurrency to 2 or more on the Settings page." %}</div>
 {% elif not instances %}
-<div class="alert alert-info shadow-sm">{% trans "The host has no VMs." %}</div>
+<p class="text-center text-body-secondary py-4">{% trans "The host has no VMs." %}</p>
 {% else %}
 <form method="post" class="card shadow-sm">{% csrf_token %}{% submission_key %}
     {% if entering %}<input type="hidden" name="maintenance" value="on">{% endif %}

@@ -13,9 +13,7 @@
     {% include "computes/host_nav.html" with section="nwfilters" %}
 
     {% if nwfilters is None %}{# not read: the error above says why #}{% elif not nwfilters %}
-        <div class="alert alert-warning shadow-sm">
-            {% bs_icon 'exclamation-triangle' %} {% trans "This host has no network filters." %}
-        </div>
+        <p class="text-center text-body-secondary py-4">{% trans "This host has no network filters." %}</p>
     {% else %}
         <div class="card mb-3">
             <div class="card-header d-flex flex-wrap align-items-center gap-2">

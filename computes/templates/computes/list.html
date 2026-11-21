@@ -14,9 +14,7 @@
 <div id="job-panel" aria-live="polite"></div>
 {% include "computes/attention.html" %}
 {% if not computes %}
-    <div class="alert alert-warning shadow-sm">
-        {% bs_icon 'exclamation-triangle'%} <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any computes" %}
-    </div>
+    <p class="text-center text-body-secondary py-4">{% trans "You don't have any computes" %}</p>
 {% else %}
     {# the totals of the hosts the panel reaches #}
     <div class="row row-cols-2 row-cols-lg-4 g-3 mb-4">
@@ -57,8 +55,8 @@
             <thead>
                 <tr>
                     <th scope="col">{% trans "Host" %}</th>
-                    <th scope="col" data-sort-method="number">{% trans "VMs" %}</th>
-                    <th scope="col" data-sort-method="number">{% trans "vCPUs" %}</th>
+                    <th scope="col" class="d-none d-md-table-cell" data-sort-method="number">{% trans "VMs" %}</th>
+                    <th scope="col" class="d-none d-md-table-cell" data-sort-method="number">{% trans "vCPUs" %}</th>
                     <th scope="col" data-sort-method="number">{% trans "Memory" %}</th>
                     <th scope="col" data-sort-method="none"><span class="visually-hidden">{% trans "Actions" %}</span></th>
                 </tr>
@@ -87,18 +85,20 @@
                         {% endif %}
                     </td>
                     {% if given %}
-                    <td class="py-3" data-sort="{{ given.vm_count }}">
+                    <td class="py-3 d-none d-md-table-cell" data-sort="{{ given.vm_count }}">
                         <a class="fs-4 lh-sm text-decoration-none" href="{% url 'instances' compute.id %}">{{ given.vm_count }}</a>
                         <div class="small text-body-secondary">{% blocktrans with running=given.vms.running %}{{ running }} running{% endblocktrans %}</div>
                     </td>
-                    <td class="py-3" data-sort="{{ given.ratio|stringformat:".2f" }}">
+                    <td class="py-3 d-none d-md-table-cell" data-sort="{{ given.ratio|stringformat:".2f" }}">
                         {% include "computes/capacity_vcpus.html" %}
                     </td>
                     <td class="py-3" data-sort="{{ given.memory_percent }}">
                         {% include "computes/capacity_memory.html" %}
                     </td>
                     {% else %}
-                    <td colspan="3" class="py-3 small text-body-secondary">{% if compute.status is True %}{% trans "The capacity could not be read." %}{% else %}{% trans "No capacity while the host cannot be reached." %}{% endif %}</td>
+                    {# on a phone the VM and vCPU columns are hidden: the totals above have them #}
+                    <td class="d-none d-md-table-cell"></td><td class="d-none d-md-table-cell"></td>
+                    <td class="py-3 small text-body-secondary">{% if compute.status is True %}{% trans "The capacity could not be read." %}{% else %}{% trans "No capacity while the host cannot be reached." %}{% endif %}</td>
                     {% endif %}
                     <td class="py-3 text-end">
                         {# fixed: the menu would be cut off by the table's scrolling box #}

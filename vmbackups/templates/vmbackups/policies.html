@@ -33,7 +33,7 @@
         </table>
     </div>
     {% else %}
-        <div class="alert alert-info">{% trans "No backup schedule yet." %} {% trans "A schedule backs chosen VMs, or every VM of a compute, up every day and keeps the newest." %}</div>
+        <p class="text-center text-body-secondary py-4">{% trans "No backup schedule yet." %} {% trans "A schedule backs chosen VMs, or every VM of a compute, up every day and keeps the newest." %}</p>
     {% endif %}
 
 {% endblock %}

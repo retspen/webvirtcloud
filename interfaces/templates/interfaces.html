@@ -16,9 +16,7 @@
 
     {% if changeable is False %}{% include 'interfaces_unchangeable.html' %}{% endif %}
     {% if ifaces_all is None %}{# not read: the error above says why #}{% elif not ifaces_all %}
-        <div class="alert alert-warning shadow-sm">
-            {% bs_icon 'exclamation-triangle' %} {% trans "libvirt lists no interfaces of this host." %}
-        </div>
+        <p class="text-center text-body-secondary py-4">{% trans "libvirt lists no interfaces of this host." %}</p>
     {% else %}
         <input id="filter" class="form-control w-auto mb-3" type="search" placeholder="{% trans "Search interfaces" %}" aria-label="{% trans "Search interfaces" %}">
         {# a card per interface, as the networks', under its type; a type's heading shows while any of its cards does #}
