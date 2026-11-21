@@ -112,4 +112,9 @@ class AccountsConfig(AppConfig):
         from django.db.models.signals import post_save
 
         post_save.connect(grant_change_password, sender=settings.AUTH_USER_MODEL)
+        from django.contrib.auth.signals import user_logged_in
+
+        from .lockout import start_session
+
+        user_logged_in.connect(start_session, dispatch_uid="accounts.session_length")
         from . import checks  # noqa: F401

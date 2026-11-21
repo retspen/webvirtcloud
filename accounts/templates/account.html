@@ -19,6 +19,7 @@
                         <span class="badge text-bg-secondary">{% trans "Template editor" %}</span>
                     {% endif %}
                     {% if not user.is_active %}<span class="badge text-bg-danger">{% trans "Blocked" %}</span>{% endif %}
+                    {% if locked %}<span class="badge bg-warning text-dark">{% trans "Sign-in locked" %}</span>{% endif %}
                 </div>
                 <div class="d-flex flex-wrap align-items-center gap-2 small mt-2">
                     <span class="text-body-secondary text-break">{{ user.username }}</span>
@@ -32,6 +33,11 @@
             </div>
             <div class="col-lg-4 d-flex flex-wrap justify-content-lg-end gap-2">
                 <a href="{% url 'admin:user_update' user.id %}?next={% url 'accounts:account' user.id %}" class="btn btn-primary">{% bs_icon 'pencil' %} {% trans "Edit user" %}</a>
+                {% if locked %}
+                    <form method="post" action="{% url 'accounts:admin_unlock' user.id %}">{% csrf_token %}
+                        <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-unlock" aria-hidden="true"></i> {% trans "Unlock sign-in" %}</button>
+                    </form>
+                {% endif %}
                 {% if otp_enabled %}
                     <form method="post" action="{% url 'accounts:admin_email_otp' user.id %}">{% csrf_token %}
                         <button type="submit" class="btn btn-outline-secondary">{% bs_icon 'qr-code' %} {% trans "Email OTP QR code" %}</button>

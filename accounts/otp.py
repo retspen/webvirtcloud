@@ -12,6 +12,8 @@ ignored.
 
 from django.contrib.auth.signals import user_login_failed
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import ngettext_lazy
 from django_otp.forms import OTPAuthenticationForm
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
@@ -19,6 +21,19 @@ from accounts.forms import BoundedUsernameMixin
 
 
 class SingleDeviceOTPForm(BoundedUsernameMixin, OTPAuthenticationForm):
+    # the errors this form can give, here so that the panel's catalogs translate them
+    otp_error_messages = dict(
+        OTPAuthenticationForm.otp_error_messages,
+        token_required=_("Please enter your OTP token."),
+        invalid_token=_("Invalid token. Please make sure you have entered it correctly."),
+        n_failed_attempts=ngettext_lazy(
+            "Verification temporarily disabled because of %(failure_count)d failed attempt, please try again soon.",
+            "Verification temporarily disabled because of %(failure_count)d failed attempts, please try again soon.",
+            "failure_count",
+        ),
+        verification_not_allowed=_("Verification of the token is currently disabled"),
+    )
+
     def _confirmed_totp(self, user, for_verify=False):
         """The user's oldest confirmed TOTP device, or None. With for_verify
         the row is locked (select_for_update) so the token's replay and

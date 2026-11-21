@@ -13047,3 +13047,36 @@ msgid ""
 "Shown above the sign-in form, e.g. planned maintenance or a terms-of-use "
 "line; empty: none"
 msgstr "Oturum açma formunun üstünde gösterilir; örneğin planlı bakım ya da kullanım koşulları satırı; boş: yok"
+
+#: accounts/templates/account.html:38
+msgid "Unlock sign-in"
+msgstr "Oturum açma kilidini kaldır"
+
+#: accounts/views.py:427
+#, python-format
+msgid "The sign-in lock of %(user)s is ended."
+msgstr "%(user)s kullanıcısının oturum açma kilidi kaldırıldı."
+
+#: appsettings/migrations/0030_login_session_hours.py:5
+msgid "Session length (hours)"
+msgstr "Oturum süresi (saat)"
+
+#: appsettings/migrations/0030_login_session_hours.py:6
+msgid "How long a sign-in lasts; a change applies from the next sign-in"
+msgstr "Bir oturum ne kadar açık kalır; değişiklik bir sonraki oturum açmadan itibaren geçerlidir"
+
+#. django-otp's sign-in errors, shown on the OTP sign-in page
+msgid "Please enter your OTP token."
+msgstr "Lütfen doğrulama kodunuzu girin."
+
+msgid "Invalid token. Please make sure you have entered it correctly."
+msgstr "Geçersiz kod. Lütfen doğru girdiğinizden emin olun."
+
+#, python-format
+msgid "Verification temporarily disabled because of %(failure_count)d failed attempt, please try again soon."
+msgid_plural "Verification temporarily disabled because of %(failure_count)d failed attempts, please try again soon."
+msgstr[0] "%(failure_count)d başarısız deneme nedeniyle doğrulama geçici olarak kapatıldı; lütfen biraz sonra tekrar deneyin."
+msgstr[1] "%(failure_count)d başarısız deneme nedeniyle doğrulama geçici olarak kapatıldı; lütfen biraz sonra tekrar deneyin."
+
+msgid "Verification of the token is currently disabled"
+msgstr "Kod doğrulaması şu anda kapalı"

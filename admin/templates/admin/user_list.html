@@ -21,7 +21,7 @@
     </div>
     <div class="list-group list-group-flush searchable">
     {% for user in users %}
-        <div class="list-group-item py-3" data-search="{{ user.username }} {{ user.email }}{% for group in user.groups.all %} {{ group.name }}{% endfor %} {% if user.is_superuser %}{% trans "Superuser" %}{% elif user.is_staff %}{% trans "Template editor" %}{% else %}{% trans "User" %}{% endif %} {% if user.is_active %}{% trans "Active" %}{% else %}{% trans "Blocked" %}{% endif %}">
+        <div class="list-group-item py-3" data-search="{{ user.username }} {{ user.email }}{% for group in user.groups.all %} {{ group.name }}{% endfor %} {% if user.is_superuser %}{% trans "Superuser" %}{% elif user.is_staff %}{% trans "Template editor" %}{% else %}{% trans "User" %}{% endif %} {% if user.is_active %}{% trans "Active" %}{% else %}{% trans "Blocked" %}{% endif %}{% if user.username|lower in locked %} {% trans "Sign-in locked" %}{% endif %}">
             <div class="row g-2 align-items-center">
                 <div class="col-12 col-md-4">
                     <a href="{% url 'accounts:account' user.id %}" class="fw-semibold text-break">{{ user.username }}</a>
@@ -37,6 +37,9 @@
                             <span>{% trans "Active" %}</span>
                         {% else %}
                             <span class="badge text-bg-danger"><span aria-hidden="true">{% bs_icon 'slash-circle' %}</span> {% trans "Blocked" %}</span>
+                        {% endif %}
+                        {% if user.username|lower in locked %}
+                            <a href="{% url 'accounts:account' user.id %}" class="badge bg-warning text-dark text-decoration-none"><span aria-hidden="true">{% bs_icon 'lock' %}</span> {% trans "Sign-in locked" %}</a>
                         {% endif %}
                     </div>
                 </div>

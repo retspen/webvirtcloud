@@ -12219,3 +12219,35 @@ msgid ""
 "Shown above the sign-in form, e.g. planned maintenance or a terms-of-use "
 "line; empty: none"
 msgstr "显示在登录表单上方，例如计划维护或使用条款；留空：不显示"
+
+#: accounts/templates/account.html:38
+msgid "Unlock sign-in"
+msgstr "解除登录锁定"
+
+#: accounts/views.py:427
+#, python-format
+msgid "The sign-in lock of %(user)s is ended."
+msgstr "%(user)s 的登录锁定已解除。"
+
+#: appsettings/migrations/0030_login_session_hours.py:5
+msgid "Session length (hours)"
+msgstr "会话时长（小时）"
+
+#: appsettings/migrations/0030_login_session_hours.py:6
+msgid "How long a sign-in lasts; a change applies from the next sign-in"
+msgstr "一次登录保持多久；修改从下次登录起生效"
+
+#. django-otp's sign-in errors, shown on the OTP sign-in page
+msgid "Please enter your OTP token."
+msgstr "请输入您的验证码。"
+
+msgid "Invalid token. Please make sure you have entered it correctly."
+msgstr "验证码无效。请确认输入正确。"
+
+#, python-format
+msgid "Verification temporarily disabled because of %(failure_count)d failed attempt, please try again soon."
+msgid_plural "Verification temporarily disabled because of %(failure_count)d failed attempts, please try again soon."
+msgstr[0] "由于 %(failure_count)d 次验证失败，验证已暂时停用，请稍后再试。"
+
+msgid "Verification of the token is currently disabled"
+msgstr "当前已停用验证码验证"

@@ -1,13 +1,15 @@
 from contextlib import contextmanager
 from datetime import timedelta
 
+from accounts.lockout import locked_usernames
 from accounts.models import ApiToken, Instance, UserAttributes, UserInstance
 from appsettings.settings import app_settings
 from computes.utils import lock_ownership, users_lock
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth import SESSION_KEY, update_session_auth_hash
 from django.contrib.auth.models import Group, Permission, User
+from django.contrib.sessions.models import Session
 from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.db import IntegrityError, transaction
@@ -179,6 +181,7 @@ def user_list(request):
         "admin/user_list.html",
         {
             "users": users,
+            "locked": locked_usernames(),
             "title": _("Users"),
         },
     )
@@ -259,6 +262,7 @@ def user_update(request, pk):
                     attributes = attributes_form.save()
                     if not user.is_active:  # as user_block
                         ApiToken.objects.filter(user=user).delete()
+                        end_sessions(user)
                     fields = set(changed_fields(before, snapshot(user))) | set(changed_fields(before_attributes, snapshot(attributes)))
                     fields = sorted(fields - {"password", "last_login"})
                     entry.action = "change " + ", ".join(fields)
@@ -342,6 +346,14 @@ def user_delete(request, pk):
     )
 
 
+def end_sessions(user):
+    """Sign a blocked user out: django-auth-ldap does not check is_active for
+    an open session, so a blocked LDAP user would keep theirs."""
+    for session in Session.objects.filter(expire_date__gt=timezone.now()):
+        if session.get_decoded().get(SESSION_KEY) == str(user.pk):
+            session.delete()
+
+
 @require_POST
 @superuser_only
 def user_block(request, pk):
@@ -356,6 +368,7 @@ def user_block(request, pk):
             user.save(update_fields=["is_active"])  # not the rest as read before the lock
             # an unblock must not bring back the tokens of someone who took the account over
             ApiToken.objects.filter(user=user).delete()
+            end_sessions(user)
     except (NoSuperuser, claims.Busy) as err:
         refused(request, err)
     return redirect("admin:user_list")

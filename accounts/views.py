@@ -33,6 +33,7 @@ from accounts.forms import ApiTokenForm, EmailOTPForm, ProfileForm, UserSSHKeyFo
 from accounts.models import ApiToken, User, UserAttributes, UserInstance, UserSSHKey
 
 from . import forms
+from .lockout import locked_usernames, unlock
 from .utils import OTP_LINK, OTP_LINK_MAX_AGE, get_existing_totp_device, get_user_totp_device, otp_qr_svg, send_email_with_otp
 
 
@@ -206,6 +207,7 @@ def account(request, user_id):
             "api_tokens": ApiToken.objects.filter(user_id=user_id),
             "otp_enabled": settings.OTP_ENABLED,
             "has_otp": TOTPDevice.objects.filter(user=user).exists(),
+            "locked": user.username.lower() in locked_usernames(),
         },
     )
 
@@ -406,6 +408,17 @@ def admin_email_otp(request, user_id):
     else:
         failed(request, None, subject, "mail OTP QR code", "no email address")
         messages.error(request, _("User email not set, failed to send QR code"))
+    return redirect("accounts:account", user.id)
+
+
+@require_POST
+@superuser_only
+def admin_unlock(request, user_id):
+    """End the user's lock after failed sign-ins, from every address."""
+    user = get_object_or_404(get_user_model(), pk=user_id)
+    with audit(request, None, f"User {user.username}", "unlock sign-in") as entry:
+        entry.skip = not unlock(user.username)  # another administrator was first, or the lock ran out
+    messages.success(request, _("The sign-in lock of %(user)s is ended.") % {"user": user})
     return redirect("accounts:account", user.id)
 
 
