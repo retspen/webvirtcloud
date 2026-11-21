@@ -105,7 +105,7 @@ class TcpComputeForm(ComputeTagsMixin, KeepSecretsMixin, forms.ModelForm):
     conn_type = CONN_TCP
     kind = "TCP"
     about = _("libvirt over TCP, with a SASL login")
-    hostname = forms.CharField(validators=[validate_hostname])
+    hostname = forms.CharField(validators=[validate_hostname], label=_("FQDN/IP"))
 
     class Meta:
         model = Compute
@@ -133,7 +133,7 @@ class TlsComputeForm(ComputeTagsMixin, KeepSecretsMixin, forms.ModelForm):
     conn_type = CONN_TLS
     kind = "TLS"
     about = _("libvirt over TLS, with certificates")
-    hostname = forms.CharField(validators=[validate_hostname])
+    hostname = forms.CharField(validators=[validate_hostname], label=_("FQDN/IP"))
 
     class Meta:
         model = Compute

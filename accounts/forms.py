@@ -32,7 +32,7 @@ class UserInstanceForm(ModelForm):
         model = UserInstance
         fields = "__all__"
         # the rights beyond power and console, as the VM's Users tab names them
-        labels = {"is_change": _("Change settings"), "is_delete": _("Delete the VM"),
+        labels = {"user": _("User"), "instance": _("Instance"), "is_change": _("Change settings"), "is_delete": _("Delete the VM"),
                   "is_vnc": _("Change console settings")}
         help_texts = {"is_vnc": _("Only together with Change settings")}
         # a list of every user and every VM

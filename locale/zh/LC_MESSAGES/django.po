@@ -12255,3 +12255,27 @@ msgstr "当前已停用验证码验证"
 #: templates/base.html:35
 msgid "Skip to content"
 msgstr "跳到内容"
+
+#: templates/navbar.html:8
+msgid "Menu"
+msgstr "菜单"
+
+#: storages/forms.py:123
+msgid "qcow2 (recommended)"
+msgstr "qcow2（推荐）"
+
+#: interfaces/forms.py
+msgid "IPv4 address"
+msgstr "IPv4 地址"
+
+#: interfaces/forms.py
+msgid "IPv4 gateway"
+msgstr "IPv4 网关"
+
+#: interfaces/forms.py
+msgid "IPv6 address"
+msgstr "IPv6 地址"
+
+#: interfaces/forms.py
+msgid "IPv6 gateway"
+msgstr "IPv6 网关"

@@ -99,6 +99,7 @@ class UserForm(UniqueEmailMixin, forms.ModelForm):
     # one choice for is_staff and is_superuser: a superuser keeps the
     # is_staff it had (it adds nothing to every permission)
     role = forms.ChoiceField(
+        label=_("Role"),
         widget=forms.RadioSelect,
         choices=[("user", _("User")), ("template_editor", _("Template editor")), ("superuser", _("Superuser"))],
         initial="user",
@@ -150,7 +151,7 @@ class UserForm(UniqueEmailMixin, forms.ModelForm):
         return permission_rows(self["user_permissions"])
 
 class UserCreateForm(UserForm):
-    password = forms.CharField(widget=forms.PasswordInput)
+    password = forms.CharField(label=_("Password"), widget=forms.PasswordInput)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

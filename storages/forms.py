@@ -44,9 +44,9 @@ class AddStgPool(forms.Form):
     }
 
     name = forms.CharField(
-        error_messages={"required": _("No pool name has been entered")}, max_length=20
+        label=_("Pool name"), error_messages={"required": _("No pool name has been entered")}, max_length=20
     )
-    stg_type = forms.ChoiceField(choices=[(t, t) for t in NEEDS])
+    stg_type = forms.ChoiceField(label=_("Type"), choices=[(t, t) for t in NEEDS])
     target = forms.CharField(label=_("Path"), max_length=100, required=False)
     source = forms.CharField(label=_("Device or remote path"), max_length=100, required=False)
     erase_device = forms.BooleanField(label=_("Erase the device"), required=False)
@@ -56,7 +56,7 @@ class AddStgPool(forms.Form):
     secret = forms.CharField(label=_("Ceph secret"), required=False)
     netfs_host = forms.CharField(label=_("Server"), required=False)
     source_format = forms.ChoiceField(
-        choices=[("auto", "auto"), ("nfs", "nfs"), ("glusterfs", "glusterfs"), ("cifs", "cifs")], required=False
+        label=_("Protocol"), choices=[("auto", "auto"), ("nfs", "nfs"), ("glusterfs", "glusterfs"), ("cifs", "cifs")], required=False
     )
 
     def __init__(self, *args, pools=(), ceph_secrets=(), **kwargs):
@@ -116,10 +116,11 @@ class AddStgPool(forms.Form):
 
 
 class CreateVolumeForm(forms.Form):
-    name = forms.CharField(max_length=120, help_text=_("Letters, digits, dot, dash and underscore."))
+    name = forms.CharField(label=_("Name"), max_length=120, help_text=_("Letters, digits, dot, dash and underscore."))
     format = forms.ChoiceField(
+        label=_("Format"),
         required=True,
-        choices=(("qcow2", "qcow2 (recommended)"), ("qcow", "qcow"), ("raw", "raw")),
+        choices=(("qcow2", _("qcow2 (recommended)")), ("qcow", "qcow"), ("raw", "raw")),
     )
     size = forms.IntegerField(label=_("Size (GiB)"), min_value=1)
     meta_prealloc = forms.BooleanField(label=_("Preallocate metadata (qcow2)"), required=False)
@@ -140,7 +141,7 @@ class CloneImage(forms.Form):
     convert = forms.BooleanField(required=False)
     format = forms.ChoiceField(
         required=False,
-        choices=(("qcow2", "qcow2 (recommended)"), ("qcow", "qcow"), ("raw", "raw")),
+        choices=(("qcow2", _("qcow2 (recommended)")), ("qcow", "qcow"), ("raw", "raw")),
     )
     meta_prealloc = forms.BooleanField(label=_("Preallocate metadata (qcow2)"), required=False)
 

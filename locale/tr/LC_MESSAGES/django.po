@@ -13084,3 +13084,27 @@ msgstr "Kod doğrulaması şu anda kapalı"
 #: templates/base.html:35
 msgid "Skip to content"
 msgstr "İçeriğe atla"
+
+#: templates/navbar.html:8
+msgid "Menu"
+msgstr "Menü"
+
+#: storages/forms.py:123
+msgid "qcow2 (recommended)"
+msgstr "qcow2 (önerilen)"
+
+#: interfaces/forms.py
+msgid "IPv4 address"
+msgstr "IPv4 adresi"
+
+#: interfaces/forms.py
+msgid "IPv4 gateway"
+msgstr "IPv4 ağ geçidi"
+
+#: interfaces/forms.py
+msgid "IPv6 address"
+msgstr "IPv6 adresi"
+
+#: interfaces/forms.py
+msgid "IPv6 gateway"
+msgstr "IPv6 ağ geçidi"

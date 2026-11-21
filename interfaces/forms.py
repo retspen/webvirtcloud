@@ -6,31 +6,31 @@ from django.utils.translation import gettext_lazy as _
 
 
 class AddInterface(forms.Form):
-    name = forms.CharField(max_length=15, required=True)
+    name = forms.CharField(label=_("Name"), max_length=15, required=True)
     itype = forms.ChoiceField(
-        required=True, choices=(("bridge", "bridge"), ("ethernet", "ethernet"))
+        label=_("Type"), required=True, choices=(("bridge", "bridge"), ("ethernet", "ethernet"))
     )
     start_mode = forms.ChoiceField(
-        required=True,
+        label=_("Starts"), required=True,
         choices=(("none", "none"), ("onboot", "onboot"), ("hotplug", "hotplug")),
     )
     # a bridge's member; an ethernet interface configures the device in name
-    netdev = forms.CharField(max_length=15, required=False)
+    netdev = forms.CharField(label=_("Member device"), max_length=15, required=False)
     ipv4_type = forms.ChoiceField(
-        required=True,
+        label=_("IPv4"), required=True,
         choices=(("dhcp", "dhcp"), ("static", "static"), ("none", "none")),
     )
     # room for a dotted netmask: 192.0.2.10/255.255.255.0
-    ipv4_addr = forms.CharField(max_length=31, required=False)
-    ipv4_gw = forms.CharField(max_length=15, required=False)
+    ipv4_addr = forms.CharField(label=_("IPv4 address"), max_length=31, required=False)
+    ipv4_gw = forms.CharField(label=_("IPv4 gateway"), max_length=15, required=False)
     ipv6_type = forms.ChoiceField(
-        required=True,
+        label=_("IPv6"), required=True,
         choices=(("dhcp", "dhcp"), ("static", "static"), ("none", "none")),
     )
-    ipv6_addr = forms.CharField(max_length=100, required=False)
-    ipv6_gw = forms.CharField(max_length=100, required=False)
-    stp = forms.ChoiceField(required=False, choices=(("on", "on"), ("off", "off")))
-    delay = forms.IntegerField(required=False, min_value=0)
+    ipv6_addr = forms.CharField(label=_("IPv6 address"), max_length=100, required=False)
+    ipv6_gw = forms.CharField(label=_("IPv6 gateway"), max_length=100, required=False)
+    stp = forms.ChoiceField(label=_("Spanning tree (STP)"), required=False, choices=(("on", "on"), ("off", "off")))
+    delay = forms.IntegerField(label=_("Forward delay (s)"), required=False, min_value=0)
 
     def __init__(self, *args, netdevs=(), members=(), defined=(), **kwargs):
         # The host's network devices. members: those a bridge can take
