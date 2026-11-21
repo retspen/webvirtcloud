@@ -7,6 +7,9 @@
         var pane = document.getElementById("backups");
         var hidden = pane && pane.classList.contains("tab-pane") && !pane.classList.contains("active");
         var busy = document.querySelector(".dropdown-menu.show, .modal.show, input:focus, select:focus, textarea:focus");
+        if (window.sessionEnded) {
+            return;  // signed out: the page keeps its notice (session_end.js)
+        }
         if (hidden || busy || document.hidden) {
             setTimeout(check, 4000);
         } else {

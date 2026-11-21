@@ -114,7 +114,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django_otp.middleware.OTPMiddleware",
-    "django.contrib.auth.middleware.LoginRequiredMiddleware",
+    "webvirtcloud.middleware.LoginRequiredMiddleware",
     "accounts.middleware.ForcePasswordChangeMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -201,6 +201,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LOGIN_URL = "/accounts/login/"
+# a form sent after the session ended goes to sign in, not to a 403
+CSRF_FAILURE_VIEW = "webvirtcloud.middleware.csrf_failure"
 
 # Tests create users by the thousand: a fast hash for them (manage.py test only)
 if sys.argv[1:2] == ["test"]:

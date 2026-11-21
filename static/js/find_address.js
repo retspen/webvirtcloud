@@ -105,10 +105,8 @@
         button.disabled = true;
         var url = text.url + "?" + new URLSearchParams({q: form.elements.q.value});
         fetch(url, {headers: {"X-Requested-With": "XMLHttpRequest"}}).then(function (response) {
-            if (response.redirected) {
-                // signed out meanwhile: reloading goes to the login form, then back here
-                location.reload();
-                return new Promise(function () {});
+            if (response.status === 401) {
+                return {error: sessionEnd()};  // signed out meanwhile (session_end.js)
             }
             return response.json();
         }).catch(function () {

@@ -44,6 +44,9 @@
         return fetch(form.action, {
             method: "POST", body: data, redirect: "manual", headers: {"X-Requested-With": "XMLHttpRequest"},
         }).then(function (response) {
+            if (response.status === 401) {
+                return {error: sessionEnd()};  // signed out meanwhile (session_end.js): the edit stays
+            }
             return response.json();
         }).then(function (answer) {
             return {diff: answer.diff, saved: answer.saved, error: answer.error || answer.detail};

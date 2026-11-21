@@ -24,12 +24,23 @@ def password_change_middleware_check(app_configs, **kwargs):
 @register(Tags.security)
 def login_required_middleware_check(app_configs, **kwargs):
     middleware = list(settings.MIDDLEWARE)
-    required = "django.contrib.auth.middleware.LoginRequiredMiddleware"
+    required = "webvirtcloud.middleware.LoginRequiredMiddleware"
+    django_s = "django.contrib.auth.middleware.LoginRequiredMiddleware"
     old = "login_required.middleware.LoginRequiredMiddleware"
+    if django_s in middleware and old not in middleware:
+        # it signs in as well; a page whose session ended does not say so, and a form sent then is lost
+        return [
+            Warning(
+                "MIDDLEWARE uses Django's LoginRequiredMiddleware, not the panel's.",
+                hint=f"data/local_settings.py sets MIDDLEWARE: replace '{django_s}' with '{required}', "
+                "as webvirtcloud/settings.py has it.",
+                id="accounts.W002",
+            )
+        ]
     if old in middleware or required not in middleware:
         return [
             Error(
-                "MIDDLEWARE must use Django's LoginRequiredMiddleware.",
+                "MIDDLEWARE must use the panel's LoginRequiredMiddleware.",
                 hint=f"data/local_settings.py sets MIDDLEWARE: replace '{old}' with '{required}' "
                 "and delete LOGIN_REQUIRED_IGNORE_VIEW_NAMES, as webvirtcloud/settings.py has it.",
                 id="accounts.E002",

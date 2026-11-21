@@ -13150,3 +13150,15 @@ msgstr "%(job)s iptal edilsin mi? Olduğu yerde durur."
 #, python-format
 msgid "Block %(name)s? They are signed out and their API tokens are deleted; unblocking does not bring the tokens back."
 msgstr "%(name)s engellensin mi? Oturumları kapatılır ve API anahtarları silinir; engeli kaldırmak anahtarları geri getirmez."
+
+#: webvirtcloud/middleware.py
+msgid "You were signed out, so it was not done: sign in and do it again."
+msgstr "Oturumunuz kapanmıştı, bu yüzden işlem yapılmadı: giriş yapıp yeniden deneyin."
+
+#: templates/base.html
+msgid "You were signed out: this page is no longer updated."
+msgstr "Oturumunuz kapandı: bu sayfa artık güncellenmiyor."
+
+#: templates/base.html
+msgid "Sign in again"
+msgstr "Yeniden giriş yapın"

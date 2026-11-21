@@ -12321,3 +12321,15 @@ msgstr "取消 %(job)s？它将停在当前进度。"
 #, python-format
 msgid "Block %(name)s? They are signed out and their API tokens are deleted; unblocking does not bring the tokens back."
 msgstr "禁用 %(name)s？其登录将被注销，API 令牌将被删除；解除禁用不会恢复这些令牌。"
+
+#: webvirtcloud/middleware.py
+msgid "You were signed out, so it was not done: sign in and do it again."
+msgstr "您已退出登录，因此操作未执行：请登录后重试。"
+
+#: templates/base.html
+msgid "You were signed out: this page is no longer updated."
+msgstr "您已退出登录：此页面不再更新。"
+
+#: templates/base.html
+msgid "Sign in again"
+msgstr "重新登录"

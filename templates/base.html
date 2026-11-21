@@ -49,6 +49,11 @@
         </div>
       </div>
       {% endblock page_header %}
+      {% if request.user.is_authenticated %}
+      {# the words session_end.js shows when the session ends while the page is open #}
+      <div id="session-ended" hidden data-text="{% trans "You were signed out: this page is no longer updated." %}"
+           data-link="{% trans "Sign in again" %}" data-href="{% url 'accounts:login' %}?next={{ request.get_full_path|urlencode }}"></div>
+      {% endif %}
       <div id="messages">{% bootstrap_messages %}</div>
       {% block content %}{% endblock %}
     </div>
@@ -79,6 +84,7 @@
     <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'js/confirm_dialog.js' %}"></script>
     <script src="{% static 'js/submit_busy.js' %}"></script>
+    <script src="{% static 'js/session_end.js' %}"></script>
     <!-- Table sorting -->
     <script src="{% static 'js/tablesort.min.js' %}"></script>
     <script src="{% static 'js/tablesort.number.min.js' %}"></script>

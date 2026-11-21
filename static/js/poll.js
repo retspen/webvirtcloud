@@ -14,8 +14,8 @@ function pollWhileVisible(interval, request, onData, firstDelay) {
 
     function run() {
         timer = null;
-        if (stopped || document.hidden) {
-            return;
+        if (stopped || document.hidden || window.sessionEnded) {
+            return;  // a page whose session ended asks nothing more (session_end.js)
         }
         running = true;
         request()
@@ -58,5 +58,6 @@ function pageInUse() {
         || !!(active && active.matches && active.matches("input, select, textarea"))
         || !!(window.xmlEditUnsaved && window.xmlEditUnsaved())
         || (typeof bulkPowerChosen === "function" && bulkPowerChosen())  // the VM list's bulk form in use (bulk_power.js)
-        || !!document.querySelector("button[data-busy]");  // a form being sent (submit_busy.js)
+        || !!document.querySelector("button[data-busy]")  // a form being sent (submit_busy.js)
+        || !!window.sessionEnded;  // signed out: the page keeps its notice (session_end.js)
 }
