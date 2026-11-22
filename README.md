@@ -39,6 +39,7 @@ WebVirtCloud and `virt-manager`/`virsh` can manage the same libvirt host **concu
 * External snapshots (memory optional; without memory, guest file systems can be frozen through the agent)
 * **External change detection:** VMs created, deleted or renamed via `virt-manager` or `virsh` are reconciled into the database automatically
 * Real-time host statistics (CPU, RAM) and VM statistics (CPU, RAM, disk, network)
+* A VM a fault stopped or paused says why (a disk error such as a full storage, a guest crash or kernel panic, its watchdog); its Settings tab chooses whether a guest that crashes, or hangs once it arms its watchdog, is restarted or stopped (new VMs get the panic device and watchdog this needs, older ones with the choice)
 * Storage pool and volume management; a superuser downloads a volume from its pool page (not one a running VM uses), or makes one from a file at a URL
 * Network (with DHCP leases), interface, network filter and secret management
 * PCI and USB devices of the host given to VMs
