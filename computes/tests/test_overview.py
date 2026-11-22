@@ -59,7 +59,7 @@ class OverviewTestCase(TestCase):
         self.assertIn("rack 4", text(page, "//div[@id='host_status']"))
         cards = [" ".join(" ".join(card.itertext()).split()) for card in page.xpath("//div[@class='card h-100']")]
         self.assertIn("VMs 6 3 running, 2 shut off, 1 paused Instances →", cards)
-        self.assertTrue(any(card.startswith("vCPUs 1.5:1 12 vCPUs on 8 CPUs 6 running") for card in cards), cards)
+        self.assertTrue(any(card.startswith("vCPUs 1.5:1 12 vCPUs on 8 CPUs 6 in running VMs") for card in cards), cards)
         self.assertTrue(any(card.startswith("Memory 75 % 24.0 GB / 32.0 GB") for card in cards), cards)
         self.assertTrue(any("120.0 GB free of 500.0 GB" in card for card in cards), cards)
         hardware = text(page, "//div[@class='card-header'][normalize-space()='Hardware']/..")

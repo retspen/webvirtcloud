@@ -181,7 +181,7 @@ class StatsScriptTestCase(TestDriverVM, TestCase):
         }
         const page = {
             $,
-            document: {body: {}, getElementById,
+            document: {body: {}, documentElement: {lang: "en"}, getElementById,
                        querySelector: () => ({addEventListener: (name, handler) => { handlers[name] = handler; }})},
             // Chart.js adds the lists a config leaves out
             getComputedStyle: () => ({getPropertyValue: () => ""}),

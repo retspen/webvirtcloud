@@ -6,7 +6,7 @@ var cpuChart = lineChart(document.getElementById("cpuChart"), "%", [state.datase
     max: 100,
     tooltip: function (context, text) {
         var span = cpuWindows[context.dataIndex];
-        return span ? text + ' (' + state.dataset.averageOver + ' ' + span + ' s)' : text;
+        return span ? text + ' (' + state.dataset.averageOver + ' ' + formatNumber(span) + ' s)' : text;
     },
 });
 var memChart = lineChart(document.getElementById("memChart"), "GiB", [state.dataset.usage]);
@@ -42,7 +42,7 @@ pollWhileVisible(5000, function () {
     if (data.memdata.total) {
         memChart.options.scales.y.max = gb(data.memdata.total);
         addPoint(memChart, data.timeline, [gb(data.memdata.usage)]);
-        memNow.textContent = gb(data.memdata.usage) + " / " + gb(data.memdata.total) + " GiB";
+        memNow.textContent = formatNumber(gb(data.memdata.usage)) + " / " + formatNumber(gb(data.memdata.total)) + " GiB";
     } else {
         addPoint(memChart, data.timeline, [null]);
     }
@@ -50,7 +50,7 @@ pollWhileVisible(5000, function () {
         stale();
         return;
     }
-    cpuNow.textContent = data.cpudata + " %";
+    cpuNow.textContent = formatNumber(data.cpudata) + " %";
     lastUpdate = data.timeline;
     state.textContent = state.dataset.updated.replace("%(time)s", data.timeline);
     state.classList.remove("text-danger");

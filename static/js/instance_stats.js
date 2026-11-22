@@ -11,7 +11,7 @@
     var statsSample = null;
     // a reading for the line above a chart: one decimal, a dash where it is missing
     function reading(value) {
-        return value == null ? "–" : String(Math.round(value * 10) / 10);
+        return value == null ? "–" : formatNumber(value);
     }
     stats_tab.addEventListener('hidden.bs.tab', function () {
         stats_poll.stop();
@@ -25,7 +25,7 @@
             max: 100,
             tooltip: function (context, text) {
                 var span = cpuWindows[context.dataIndex];
-                return span ? text + ' (' + pane.dataset.averageOver + ' ' + span + ' s)' : text;
+                return span ? text + ' (' + pane.dataset.averageOver + ' ' + formatNumber(span) + ' s)' : text;
             },
         });
         var memChart = lineChart(document.getElementById("memChart"), "MiB", [pane.dataset.usageRss]);

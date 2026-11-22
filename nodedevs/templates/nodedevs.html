@@ -18,10 +18,9 @@
     </div>
     {% endif %}
 
-    <div class="d-flex justify-content-end mb-3">
-        <input id="filter" class="form-control form-control-sm w-auto" type="search" placeholder="{% trans "Search" %}" aria-label="{% trans "Search devices" %}">
-    </div>
+    <input id="filter" class="form-control w-auto mb-3" type="search" placeholder="{% trans "Search devices" %}" aria-label="{% trans "Search devices" %}">
 
+    {# on a phone each table keeps the device, what the host has on it and who uses it #}
     <div class="card mb-3">
         <div class="card-header">{% trans "PCI devices" %} <span class="badge text-bg-light border">{{ pci_count }}</span></div>
         {% if pci_count %}
@@ -31,9 +30,9 @@
                     <tr>
                         <th scope="col">{% trans "Address" %}</th>
                         <th scope="col">{% trans "Device" %}</th>
-                        <th scope="col">{% trans "Type" %}</th>
-                        <th scope="col">{% trans "Driver" %}</th>
-                        <th scope="col">{% trans "Host resources" %}</th>
+                        <th scope="col" class="d-none d-md-table-cell">{% trans "Type" %}</th>
+                        <th scope="col" class="d-none d-md-table-cell">{% trans "Driver" %}</th>
+                        <th scope="col" class="d-none d-md-table-cell">{% trans "Host resources" %}</th>
                         <th scope="col">{% trans "Used by" %}</th>
                     </tr>
                 </thead>
@@ -52,10 +51,11 @@
                             <div class="small text-body-secondary">{{ device.vendor }} <span class="font-monospace">{{ device.ids }}</span></div>
                             {% if device.physfn %}<div class="small text-body-secondary">{% blocktrans with address=device.physfn %}Virtual function of {{ address }}{% endblocktrans %}</div>{% endif %}
                             {% if device.vfs %}<div class="small text-body-secondary">{% blocktrans count counter=device.vfs %}{{ counter }} virtual function{% plural %}{{ counter }} virtual functions{% endblocktrans %}</div>{% endif %}
+                            {% if device.resources %}<div class="d-md-none mt-1">{% include "nodedev_resources.html" %}</div>{% endif %}
                         </td>
-                        <td class="text-nowrap">{{ device.kind }}</td>
-                        <td class="font-monospace">{{ device.driver|default:"–" }}</td>
-                        <td>{% include "nodedev_resources.html" %}</td>
+                        <td class="text-nowrap d-none d-md-table-cell">{{ device.kind }}</td>
+                        <td class="font-monospace d-none d-md-table-cell">{{ device.driver|default:"–" }}</td>
+                        <td class="d-none d-md-table-cell">{% include "nodedev_resources.html" %}</td>
                         <td class="text-nowrap">{% include "nodedev_users.html" %}</td>
                     </tr>
                     {% endfor %}
@@ -77,8 +77,8 @@
                     <tr>
                         <th scope="col">{% trans "Bus / device" %}</th>
                         <th scope="col">{% trans "Device" %}</th>
-                        <th scope="col">{% trans "Type" %}</th>
-                        <th scope="col">{% trans "Host resources" %}</th>
+                        <th scope="col" class="d-none d-md-table-cell">{% trans "Type" %}</th>
+                        <th scope="col" class="d-none d-md-table-cell">{% trans "Host resources" %}</th>
                         <th scope="col">{% trans "Used by" %}</th>
                     </tr>
                 </thead>
@@ -91,8 +91,8 @@
                             <div class="small text-body-secondary">{{ device.vendor }} <span class="font-monospace">{{ device.ids }}</span></div>
                             {% if device.same_model %}<div class="small text-body-secondary">{% trans "One of several of this model: a VM that names the model alone may take any of them." %}</div>{% endif %}
                         </td>
-                        <td>{{ device.kinds|join:", "|default:"–" }}</td>
-                        <td>{% include "nodedev_resources.html" %}</td>
+                        <td class="d-none d-md-table-cell">{{ device.kinds|join:", "|default:"–" }}</td>
+                        <td class="d-none d-md-table-cell">{% include "nodedev_resources.html" %}</td>
                         <td>
                             {% if device.vms or not device.by_model %}{% include "nodedev_users.html" %}{% endif %}
                             {% if device.by_model %}<div class="small">{% blocktrans with vms=device.by_model|join:", " %}By model: {{ vms }}{% endblocktrans %}</div>{% endif %}

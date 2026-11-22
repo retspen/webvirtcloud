@@ -15,4 +15,4 @@
         <div class="progress-bar {% if given.ratio > 4 %}bg-danger{% elif given.ratio > 2 %}bg-warning{% else %}bg-primary{% endif %} bg-opacity-50"></div>
     </div>
 </div>
-<div class="small text-body-secondary mt-1">{% blocktrans with running=given.vcpus.running %}{{ running }} running{% endblocktrans %}</div>
+<div class="small text-body-secondary mt-1">{% blocktrans with running=given.vcpus.running %}{{ running }} in running VMs{% endblocktrans %}</div>

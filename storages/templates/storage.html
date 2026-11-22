@@ -96,7 +96,7 @@
                         </span>
                     </li>
                     <li class="list-group-item py-1 d-flex justify-content-between gap-3">
-                        <span class="text-body-secondary">{% trans "Type" %}</span><span>{{ type|default:"—" }}</span>
+                        <span class="text-body-secondary">{% trans "Type" %}</span>{% if type %}<span class="badge text-bg-light border">{{ type }}</span>{% else %}<span>—</span>{% endif %}
                     </li>
                     <li class="list-group-item py-1 d-flex justify-content-between gap-3">
                         <span class="text-body-secondary">{% trans "Path" %}</span>

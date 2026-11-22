@@ -21,15 +21,16 @@
                 <input id="filter" class="form-control form-control-sm w-auto" type="search" placeholder="{% trans "Search" %}" aria-label="{% trans "Search filters" %}">
             </div>
             <div class="table-responsive position-relative">
+                {# on a phone: the name, the chain and the actions; the filter's page has the rest #}
                 <table class="table table-hover align-middle mb-0" data-sortable>
                     <thead>
                         <tr>
                             <th scope="col">{% trans "Name" %}</th>
                             <th scope="col">{% trans "Chain" %}</th>
-                            <th scope="col" data-sort-method="number">{% trans "Priority" %}</th>
-                            <th scope="col" data-sort-method="number">{% trans "Rules" %}</th>
-                            <th scope="col">{% trans "References" %}</th>
-                            <th scope="col">{% trans "Directly used by" %}</th>
+                            <th scope="col" class="d-none d-md-table-cell" data-sort-method="number">{% trans "Priority" %}</th>
+                            <th scope="col" class="d-none d-md-table-cell" data-sort-method="number">{% trans "Rules" %}</th>
+                            <th scope="col" class="d-none d-md-table-cell">{% trans "References" %}</th>
+                            <th scope="col" class="d-none d-md-table-cell">{% trans "Directly used by" %}</th>
                             <th scope="col" data-sort-method="none"><span class="visually-hidden">{% trans "Actions" %}</span></th>
                         </tr>
                     </thead>
@@ -38,10 +39,10 @@
                         <tr data-search="{{ nwf.name }} {{ nwf.chain|default:"" }}{% for ref in nwf.refs %} {{ ref }}{% endfor %}{% for vm in nwf.vms %} {{ vm }}{% endfor %}">
                             <td class="text-nowrap"><a href="{% url 'nwfilter' compute.id nwf.name %}">{{ nwf.name }}</a></td>
                             <td class="font-monospace text-nowrap">{{ nwf.chain|default:"–" }}</td>
-                            <td>{% if nwf.priority is not None %}{{ nwf.priority }}{% else %}–{% endif %}</td>
-                            <td>{{ nwf.rules }}</td>
-                            <td class="small">{{ nwf.refs|join:", "|default:"–" }}</td>
-                            <td class="small text-nowrap">
+                            <td class="d-none d-md-table-cell">{% if nwf.priority is not None %}{{ nwf.priority }}{% else %}–{% endif %}</td>
+                            <td class="d-none d-md-table-cell">{{ nwf.rules }}</td>
+                            <td class="small d-none d-md-table-cell">{{ nwf.refs|join:", "|default:"–" }}</td>
+                            <td class="small text-nowrap d-none d-md-table-cell">
                                 {% if nwf.vms or nwf.referenced_by %}
                                     {% if nwf.vms %}{% blocktrans count counter=nwf.vms|length %}{{ counter }} VM{% plural %}{{ counter }} VMs{% endblocktrans %}{% endif %}{% if nwf.vms and nwf.referenced_by %}, {% endif %}
                                     {% if nwf.referenced_by %}{% blocktrans count counter=nwf.referenced_by|length %}{{ counter }} filter{% plural %}{{ counter }} filters{% endblocktrans %}{% endif %}

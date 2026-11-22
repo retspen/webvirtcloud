@@ -63,9 +63,9 @@ class ComputesPageTests(TestCase):
         self.assertEqual(cells[1], "6 3 running")
         self.assertIn("2.5:1", cells[2])
         self.assertIn("40 vCPUs on 16 CPUs", cells[2])
-        self.assertIn("24 running", cells[2])
+        self.assertIn("24 in running VMs", cells[2])
         self.assertIn("75 % 48.0 GB / 64.0 GB", cells[3])
-        self.assertIn("32.0 GB running", cells[3])
+        self.assertIn("32.0 GB in running VMs", cells[3])
         # the totals of the hosts read: host-two's capacity could not be
         totals = [" ".join(card.text_content().split()) for card in page.xpath("//div[@class='card-body']")]
         self.assertEqual(totals, ["Hosts 2 / 2 connected", "VMs 3 / 6 running", "vCPUs given 40 on 16 CPUs",

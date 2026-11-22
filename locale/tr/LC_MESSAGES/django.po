@@ -2703,6 +2703,10 @@ msgstr "Sunucunun %(memory)s belleğinden %(stopped)s"
 
 #: computes/templates/computes/capacity_memory.html:18
 #: computes/templates/computes/capacity_vcpus.html:18
+#, python-format
+msgid "%(running)s in running VMs"
+msgstr "Çalışan sanal makinelerde %(running)s"
+
 #: computes/templates/computes/list.html:94
 #, python-format
 msgid "%(running)s running"

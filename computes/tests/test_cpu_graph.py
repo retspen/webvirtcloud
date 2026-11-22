@@ -119,7 +119,7 @@ class GraphScriptTestCase(TestCase):
                           cpu_now: element({}), mem_now: element({})};
         let poll;
         const page = {
-            document: {body: {}, getElementById: (id) => elements[id] || {}},
+            document: {body: {}, documentElement: {lang: "en"}, getElementById: (id) => elements[id] || {}},
             // Chart.js adds the lists a config leaves out
             getComputedStyle: () => ({getPropertyValue: () => ""}),
             Chart: Object.assign(function (canvas, config) {
@@ -174,7 +174,7 @@ class ChartAxisTestCase(unittest.TestCase):
         const vm = require("vm");
         let chart;
         const page = {
-            document: {body: {}},
+            document: {body: {}, documentElement: {lang: "en"}},
             getComputedStyle: () => ({getPropertyValue: () => ""}),
             Chart: Object.assign(function (canvas, config) {
                 this.data = config.data; this.options = config.options; this.update = () => {}; chart = this;

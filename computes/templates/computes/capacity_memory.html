@@ -15,4 +15,4 @@
         <div class="progress-bar {% if given.bar.over %}bg-danger{% else %}bg-primary{% endif %} bg-opacity-50"></div>
     </div>
 </div>
-<div class="small text-body-secondary mt-1">{% blocktrans with running=given.assigned.running|filesizeformat %}{{ running }} running{% endblocktrans %}</div>
+<div class="small text-body-secondary mt-1">{% blocktrans with running=given.assigned.running|filesizeformat %}{{ running }} in running VMs{% endblocktrans %}</div>

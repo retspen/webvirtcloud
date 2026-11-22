@@ -6,11 +6,16 @@
 var CHART_POINTS = 10;
 // the pixels a tick's label needs from the next one
 var TICK_ROOM = 60;
+// a reading as the page's language writes it (a decimal comma in Turkish), one decimal at most;
+// no thousands separator, as the panel's own pages
+var PAGE_LANGUAGE = document.documentElement.lang || undefined;
+var formatNumber = new Intl.NumberFormat(PAGE_LANGUAGE, {maximumFractionDigits: 1, useGrouping: false}).format;
 
 (function () {
     var style = getComputedStyle(document.body);
     Chart.defaults.color = style.getPropertyValue("--bs-body-color").trim();
     Chart.defaults.borderColor = style.getPropertyValue("--bs-border-color").trim();
+    Chart.defaults.locale = PAGE_LANGUAGE;  // the tooltips' numbers
 })();
 
 // labels: one per line. options: max (the y axis top), tooltip(context, text)
@@ -58,7 +63,8 @@ function lineChart(canvas, unit, labels, options) {
                         },
                     },
                 },
-                y: {min: 0, max: options.max, ticks: {callback: function (value) { return value + " " + unit; }}},
+                // the axis as Chart.js writes it (its precision, the page language), with the unit
+                y: {min: 0, max: options.max, ticks: {callback: function () { return Chart.Ticks.formatters.numeric.apply(this, arguments) + " " + unit; }}},
             },
             plugins: {
                 legend: {display: labels.length > 1},

@@ -2,7 +2,7 @@
 {% load bootstrap_icons %}
 {# The host's sections. section: the one this page belongs to; detail: the page is an item of it (a pool, a network), not the section's own page #}
 <nav class="host-nav" aria-label="{% trans "Host sections" %}">
-    <ol class="breadcrumb shadow-sm">
+    <ol class="breadcrumb flex-nowrap overflow-x-auto text-nowrap shadow-sm">
         <li class="breadcrumb-item">
             {% if section == "overview" and not detail %}<span class="fw-bold" aria-current="page">{% bs_icon 'laptop' %} {% trans "Overview" %}</span>
             {% else %}<a href="{% url 'overview' compute.id %}"{% if section == "overview" %} class="fw-bold" aria-current="true"{% endif %}>{% bs_icon 'laptop' %} {% trans "Overview" %}</a>{% endif %}
