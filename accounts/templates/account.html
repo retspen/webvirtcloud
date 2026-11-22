@@ -3,8 +3,8 @@
 {% load i18n %}
 {% load bootstrap_icons %}
 
-{% block title %}{% trans "User Profile" %} - {{ user }}{% endblock %}
-{% block page_heading %}{% trans "User Profile" %}{% endblock page_heading %}
+{% block title %}{% trans "User profile" %} - {{ user }}{% endblock %}
+{% block page_heading %}{% trans "User profile" %}{% endblock page_heading %}
 
 {% block content %}
 <section class="card mb-4" aria-labelledby="identity-title">
@@ -54,8 +54,8 @@
     </div>
     <nav class="card-footer d-flex flex-wrap gap-3 small" aria-label="{% trans 'User sections' %}">
         <a href="#instances">{% trans "VMs" %} <span class="badge text-bg-light border">{{ user_insts|length }}</span></a>
-        <a href="#public-keys">{% trans "SSH Keys" %} <span class="badge text-bg-light border">{{ publickeys|length }}</span></a>
-        <a href="#apitokens">{% trans "API Tokens" %} <span class="badge text-bg-light border">{{ api_tokens|length }}</span></a>
+        <a href="#public-keys">{% trans "SSH keys" %} <span class="badge text-bg-light border">{{ publickeys|length }}</span></a>
+        <a href="#apitokens">{% trans "API tokens" %} <span class="badge text-bg-light border">{{ api_tokens|length }}</span></a>
     </nav>
 </section>
 
@@ -99,12 +99,12 @@
 </section>
 
 <section class="card mb-4" id="public-keys" aria-labelledby="public-keys-title">
-    <div class="card-header"><h2 class="h5 mb-0" id="public-keys-title">{% trans "SSH Keys" %} <span class="badge text-bg-light border">{{ publickeys|length }}</span></h2></div>
+    <div class="card-header"><h2 class="h5 mb-0" id="public-keys-title">{% trans "SSH keys" %} <span class="badge text-bg-light border">{{ publickeys|length }}</span></h2></div>
     <div class="list-group list-group-flush">{% include "ssh_key_list.html" with owner=user %}</div>
 </section>
 
 <section class="card" id="apitokens" aria-labelledby="apitokens-title">
-    <div class="card-header"><h2 class="h5 mb-0" id="apitokens-title">{% trans "API Tokens" %} <span class="badge text-bg-light border">{{ api_tokens|length }}</span></h2></div>
+    <div class="card-header"><h2 class="h5 mb-0" id="apitokens-title">{% trans "API tokens" %} <span class="badge text-bg-light border">{{ api_tokens|length }}</span></h2></div>
     <div class="list-group list-group-flush">{% include "api_token_list.html" with owner=user %}</div>
 </section>
 {% endblock content %}

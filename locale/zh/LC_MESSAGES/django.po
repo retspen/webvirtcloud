@@ -164,7 +164,7 @@ msgid "last used"
 msgstr "上次使用"
 
 #: accounts/templates/account.html:6 accounts/templates/account.html:7
-msgid "User Profile"
+msgid "User profile"
 msgstr "用户资料"
 
 #: accounts/templates/account.html:17 accounts/templates/profile.html:18
@@ -227,12 +227,12 @@ msgstr "虚拟机"
 
 #: accounts/templates/account.html:51 accounts/templates/account.html:96
 #: accounts/templates/profile.html:44
-msgid "SSH Keys"
+msgid "SSH keys"
 msgstr "SSH 密钥"
 
 #: accounts/templates/account.html:52 accounts/templates/account.html:101
 #: accounts/templates/profile.html:62
-msgid "API Tokens"
+msgid "API tokens"
 msgstr "API 令牌"
 
 #: accounts/templates/account.html:59
@@ -273,14 +273,6 @@ msgstr "从用户移除"
 #: accounts/templates/account.html:90
 msgid "No VMs."
 msgstr "没有虚拟机。"
-
-#: accounts/templates/accounts/change_password_form.html:5
-#: accounts/templates/accounts/change_password_form.html:7
-#: accounts/templates/profile.html:35
-#: admin/templates/admin/user_password_form.html:5
-#: admin/templates/admin/user_password_form.html:7
-msgid "Change Password"
-msgstr "修改密码"
 
 #: accounts/templates/accounts/change_password_form.html:20
 msgid "Choose a new password before you go on."
@@ -356,11 +348,11 @@ msgid "WebVirtCloud"
 msgstr "WebVirtCloud"
 
 #: accounts/templates/accounts/otp_login.html:6
-msgid "Sign In with OTP"
+msgid "Sign in with OTP"
 msgstr "使用 OTP 登录"
 
 #: accounts/templates/accounts/otp_login.html:15
-msgid "Two-Factor Auth"
+msgid "Two-factor authentication"
 msgstr "双因素认证"
 
 #: accounts/templates/accounts/otp_login.html:16
@@ -395,7 +387,7 @@ msgid "Toggle password visibility"
 msgstr "显示/隐藏密码"
 
 #: accounts/templates/accounts/otp_login.html:49
-msgid "Security Code"
+msgid "Security code"
 msgstr "安全码"
 
 #: accounts/templates/accounts/otp_login.html:50
@@ -407,13 +399,12 @@ msgid "Leave empty if you have not set up two-factor authentication."
 msgstr "如果未设置双因素认证，请留空。"
 
 #: accounts/templates/accounts/otp_login.html:61
-msgid "Verify & Sign In"
+msgid "Verify and sign in"
 msgstr "验证并登录"
-
 
 #: accounts/templates/accounts/otp_qr.html:4
 #: accounts/templates/accounts/otp_qr.html:6 accounts/utils.py:66
-msgid "OTP QR Code"
+msgid "OTP QR code"
 msgstr "OTP 二维码"
 
 #: accounts/templates/accounts/otp_qr.html:12
@@ -490,11 +481,11 @@ msgid "No API tokens."
 msgstr "没有 API 令牌。"
 
 #: accounts/templates/login.html:5 accounts/templates/login.html:50
-msgid "Sign In"
+msgid "Sign in"
 msgstr "登录"
 
 #: accounts/templates/login.html:15
-msgid "Virtualization Management Console"
+msgid "Virtualization management console"
 msgstr "虚拟化管理控制台"
 
 #: accounts/templates/login.html:21
@@ -513,10 +504,6 @@ msgstr "编辑用户信息表单"
 #: accounts/templates/profile.html:30
 msgid "Save profile"
 msgstr "保存资料"
-
-#: accounts/templates/profile.html:46
-msgid "Add SSH Key"
-msgstr "添加 SSH 密钥"
 
 #: accounts/templates/profile.html:49
 msgid "Offered when you create a VM and on a VM's Access tab."
@@ -626,15 +613,15 @@ msgid ""
 msgstr "已有此密钥的虚拟机会保留它；此后创建的虚拟机不会再获得它。"
 
 #: accounts/views.py:238
-msgid "Password Changed"
+msgid "Password changed"
 msgstr "密码已修改"
 
 #: accounts/views.py:269
-msgid "Create User Instance"
+msgid "Create user instance"
 msgstr "创建用户虚拟机"
 
 #: accounts/views.py:304
-msgid "Update User Instance"
+msgid "Update user instance"
 msgstr "更新用户虚拟机"
 
 #: accounts/views.py:322
@@ -1256,12 +1243,8 @@ msgid ""
 "again"
 msgstr "%(name)s 在此期间已更改：以下是其当前状态；请重新进行更改"
 
-#: admin/views.py:78
-msgid "Create Group"
-msgstr "创建用户组"
-
 #: admin/views.py:120
-msgid "Update Group"
+msgid "Update group"
 msgstr "更新用户组"
 
 #: admin/views.py:136
@@ -1276,12 +1259,8 @@ msgstr "不能禁用、删除或降级你自己的账户"
 msgid "This would leave no active superuser"
 msgstr "这将导致没有可用的超级用户"
 
-#: admin/views.py:217
-msgid "Create User"
-msgstr "创建用户"
-
 #: admin/views.py:290
-msgid "Update User"
+msgid "Update user"
 msgstr "更新用户"
 
 #: admin/views.py:314
@@ -1875,7 +1854,7 @@ msgstr "描述"
 
 #: appsettings/templates/appsettings.html:4
 #: appsettings/templates/appsettings.html:6
-msgid "Edit Settings"
+msgid "Edit settings"
 msgstr "编辑设置"
 
 #: appsettings/templates/appsettings.html:21
@@ -2438,12 +2417,6 @@ msgstr "原因"
 #: computes/templates/computes/balance.html:119
 msgid "You kept it here: tick it to let it move"
 msgstr "您将其保留在原处：勾选后即可迁移"
-
-#: computes/templates/computes/bulk_migrate.html:6
-#: computes/templates/computes/bulk_migrate.html:7
-#: computes/templates/computes/instances.html:22
-msgid "Bulk Migrate"
-msgstr "批量迁移"
 
 #: computes/templates/computes/bulk_migrate.html:18
 #, python-format
@@ -3114,15 +3087,15 @@ msgid "System"
 msgstr "系统"
 
 #: console/templates/console-menu.html:14
-msgid "Navigation & Desktop"
+msgid "Navigation and desktop"
 msgstr "导航与桌面"
 
 #: console/templates/console-menu.html:21
-msgid "Terminal Control"
+msgid "Terminal control"
 msgstr "终端控制"
 
 #: console/templates/console-menu.html:31
-msgid "Virtual Consoles (Ctrl+Alt+F#)"
+msgid "Virtual consoles (Ctrl+Alt+F#)"
 msgstr "虚拟控制台（Ctrl+Alt+F#）"
 
 #: console/templates/console-menu.html:49
@@ -4535,7 +4508,7 @@ msgid "Choose…"
 msgstr "请选择…"
 
 #: instances/templates/create_instance_w2.html:99
-msgid "Custom CPU Models"
+msgid "Custom CPU models"
 msgstr "自定义 CPU 型号"
 
 #: instances/templates/create_instance_w2.html:146 storages/forms.py:124
@@ -5148,7 +5121,7 @@ msgid "Location"
 msgstr "位置"
 
 #: instances/templates/instances/info_tab.html:3
-msgid "Guest Info"
+msgid "Guest info"
 msgstr "客户机信息"
 
 #: instances/templates/instances/info_tab.html:4
@@ -5156,11 +5129,11 @@ msgid "The guest agent did not answer"
 msgstr "客户机代理没有响应"
 
 #: instances/templates/instances/info_tab.html:8
-msgid "OS Name"
+msgid "OS name"
 msgstr "操作系统名称"
 
 #: instances/templates/instances/info_tab.html:10
-msgid "OS Pretty-Name"
+msgid "OS pretty name"
 msgstr "操作系统完整名称"
 
 #: instances/templates/instances/info_tab.html:12
@@ -5168,15 +5141,15 @@ msgid "Version"
 msgstr "版本"
 
 #: instances/templates/instances/info_tab.html:14
-msgid "Kernel Release"
+msgid "Kernel release"
 msgstr "内核发行版"
 
 #: instances/templates/instances/info_tab.html:16
-msgid "Kernel Version"
+msgid "Kernel version"
 msgstr "内核版本"
 
 #: instances/templates/instances/info_tab.html:18
-msgid "Timezone / Offset"
+msgid "Time zone / offset"
 msgstr "时区 / 偏移"
 
 #: instances/templates/instances/info_tab.html:22
@@ -5380,7 +5353,7 @@ msgid "now"
 msgstr "当前"
 
 #: instances/templates/instances/power_tab.html:25
-msgid "Power On"
+msgid "Power on"
 msgstr "开机"
 
 #: instances/templates/instances/power_tab.html:26
@@ -5400,7 +5373,7 @@ msgid "An administrator can resume it."
 msgstr "管理员可以将其恢复运行。"
 
 #: instances/templates/instances/power_tab.html:56
-msgid "Power Off"
+msgid "Power off"
 msgstr "关机"
 
 #: instances/templates/instances/power_tab.html:57
@@ -5424,20 +5397,12 @@ msgid ""
 msgstr "不使用保存的状态启动 %(name)s？保存的状态将被丢弃，虚拟机重新引导；其内存中的内容会丢失。"
 
 #: instances/templates/instances/power_tab.html:68
-msgid "Start Without Saved State"
+msgid "Start without saved state"
 msgstr "不使用保存的状态启动"
 
 #: instances/templates/instances/power_tab.html:73
 msgid "A power cut: what the guest has not written to disk is lost."
 msgstr "相当于断电：客户机尚未写入磁盘的数据将丢失。"
-
-#: instances/templates/instances/power_tab.html:76
-msgid "Force Off"
-msgstr "强制关闭"
-
-#: instances/templates/instances/power_tab.html:80
-msgid "Power Cycle"
-msgstr "电源重置"
 
 #: instances/templates/instances/resize_tab.html:9
 msgid "You don't have permission for resizing instance"
@@ -7333,15 +7298,15 @@ msgid "The machine type is q35, not %(machine)s: UEFI Secure Boot needs it"
 msgstr "机器类型为 q35，而不是 %(machine)s：UEFI 安全启动需要它"
 
 #: instances/views.py:3017
-msgid "Flavor Created"
+msgid "Flavor created"
 msgstr "规格已创建"
 
 #: instances/views.py:3025
-msgid "Create Flavor"
+msgid "Create flavor"
 msgstr "创建规格"
 
 #: instances/views.py:3037
-msgid "Flavor Deleted"
+msgid "Flavor deleted"
 msgstr "规格已删除"
 
 #: instances/views.py:3043
@@ -9195,10 +9160,6 @@ msgstr "创建存储池"
 msgid "Upload ISO"
 msgstr "上传 ISO"
 
-#: storages/templates/create_stg_vol_block.html:16
-msgid "Upload ISO Image"
-msgstr "上传 ISO 镜像"
-
 #: storages/templates/create_stg_vol_block.html:19
 msgid "Upload iso form"
 msgstr "上传 ISO 表单"
@@ -9701,7 +9662,7 @@ msgid "VM report (.xlsx)"
 msgstr "虚拟机报告 (.xlsx)"
 
 #: templates/navbar.html:58
-msgid "Log Out"
+msgid "Log out"
 msgstr "退出登录"
 
 #: virtsecrets/forms.py:19

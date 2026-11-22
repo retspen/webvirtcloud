@@ -2,7 +2,7 @@
 {% load static %}
 {% load i18n %}
 
-{% block title %}{% trans "WebVirtCloud" %} - {% trans "Sign In" %}{% endblock title %}
+{% block title %}{% trans "WebVirtCloud" %} - {% trans "Sign in" %}{% endblock title %}
 {% block page_header %}{% endblock page_header %}{# the page has its own heading #}
 
 {% block content %}
@@ -13,7 +13,7 @@
                 <div class="text-center mb-4">
                     <div class="d-inline-block rounded-3 bg-primary text-white fs-2 lh-1 p-3 mb-3"><i class="bi bi-hdd-network"></i></div>
                     <h1 class="h3 fw-bold mb-1">WebVirtCloud</h1>
-                    <p class="text-body-secondary small mb-0">{% trans "Virtualization Management Console" %}</p>
+                    <p class="text-body-secondary small mb-0">{% trans "Virtualization management console" %}</p>
                 </div>
 
                 {% if app_settings.LOGIN_NOTICE %}
@@ -56,7 +56,7 @@
 
                     <button id="btn-signin" class="btn btn-primary w-100 py-2" type="submit">
                         <i class="bi bi-box-arrow-in-right me-1"></i>
-                        <span id="btn-text">{% trans "Sign In" %}</span>
+                        <span id="btn-text">{% trans "Sign in" %}</span>
                     </button>
                 </form>
             </div>

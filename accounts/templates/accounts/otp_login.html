@@ -2,7 +2,7 @@
 {% load static %}
 {% load i18n %}
 
-{% block title %}{% trans "WebVirtCloud" %} - {% trans "Sign In with OTP" %}{% endblock title %}
+{% block title %}{% trans "WebVirtCloud" %} - {% trans "Sign in with OTP" %}{% endblock title %}
 {% block page_header %}{% endblock page_header %}{# the page has its own heading #}
 
 {% block content %}
@@ -12,7 +12,7 @@
             <div class="card-body p-4 p-sm-5">
                 <div class="text-center mb-4">
                     <div class="d-inline-block rounded-3 bg-primary text-white fs-2 lh-1 p-3 mb-3"><i class="bi bi-shield-check"></i></div>
-                    <h1 class="h3 fw-bold mb-1">{% trans "Two-Factor Auth" %}</h1>
+                    <h1 class="h3 fw-bold mb-1">{% trans "Two-factor authentication" %}</h1>
                     <p class="text-body-secondary small mb-0">{% trans "Enter your authentication code to continue" %}</p>
                 </div>
 
@@ -54,7 +54,7 @@
 
                     <div class="mb-4">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <label class="form-label small fw-medium mb-0" for="id_otp_token">{% trans "Security Code" %}</label>
+                            <label class="form-label small fw-medium mb-0" for="id_otp_token">{% trans "Security code" %}</label>
                             <a href="{% url 'accounts:email_otp' %}" class="small">{% trans "Lost OTP?" %}</a>
                         </div>
                         <div class="input-group">
@@ -66,7 +66,7 @@
 
                     <button id="btn-signin" class="btn btn-primary w-100 py-2" type="submit">
                         <i class="bi bi-shield-lock-fill me-1"></i>
-                        <span id="btn-text">{% trans "Verify & Sign In" %}</span>
+                        <span id="btn-text">{% trans "Verify and sign in" %}</span>
                     </button>
                 </form>
             </div>

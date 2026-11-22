@@ -95,7 +95,7 @@
                                 {% if not vm_form.vcpu_mode.value %}<option value="" selected disabled>{% trans "Choose…" %}</option>{% endif %}
                                 {% for mode in dom_caps.cpu_modes %}
                                     {% if mode == 'custom' %}
-                                        <optgroup label="{% trans "Custom CPU Models" %}">
+                                        <optgroup label="{% trans "Custom CPU models" %}">
                                             {% for model in dom_caps.cpu_custom_models %}
                                             <option value="{{ model }}"{% if model == vm_form.vcpu_mode.value %} selected{% endif %}>{{ model }}</option>
                                             {% endfor %}

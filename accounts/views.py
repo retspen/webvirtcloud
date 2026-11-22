@@ -237,7 +237,7 @@ def change_password(request):
                 pass
             except OSError:
                 logging.getLogger(__name__).warning("Could not remove the generated admin password file")
-        messages.success(request, _("Password Changed"))
+        messages.success(request, _("Password changed"))
         return redirect("accounts:profile")
     if form.has_error("old_password", "password_incorrect"):  # someone at an open session guessing it
         failed(request, None, f"User {request.user.username}", "change password", "wrong old password")
@@ -268,7 +268,7 @@ def user_instance_create(request, user_id):
         "common/form.html",
         {
             "form": form,
-            "title": _("Create User Instance"),
+            "title": _("Create user instance"),
             "searchable": True,
         },
     )
@@ -303,7 +303,7 @@ def user_instance_update(request, pk):
         "common/form.html",
         {
             "form": form,
-            "title": _("Update User Instance"),
+            "title": _("Update user instance"),
         },
     )
 

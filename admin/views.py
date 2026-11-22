@@ -77,7 +77,7 @@ def group_create(request):
         "admin/group_form.html",
         {
             "form": form,
-            "title": _("Create Group"),
+            "title": _("Create group"),
         },
     )
 
@@ -119,7 +119,7 @@ def group_update(request, pk):
             "form": form,
             "group": group,
             "seen": form_seen(group_snapshot(group)),
-            "title": _("Update Group"),
+            "title": _("Update group"),
         },
     )
 
@@ -219,7 +219,7 @@ def user_create(request):
         {
             "user_form": user_form,
             "attributes_form": attributes_form,
-            "title": _("Create User"),
+            "title": _("Create user"),
         },
     )
 
@@ -293,7 +293,7 @@ def user_update(request, pk):
             "attributes_form": attributes_form,
             "edited_user": user,
             "seen": seen,
-            "title": _("Update User"),
+            "title": _("Update user"),
         },
     )
 

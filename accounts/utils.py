@@ -63,7 +63,7 @@ def send_email_with_otp(request, device):
     user = device.user
     url = request.build_absolute_uri(reverse("accounts:otp_qr")) + "#" + OTP_LINK.sign(str(device.pk))
     send_mail(
-        _("OTP QR Code"),
+        _("OTP QR code"),
         _("Open this link within an hour to see the OTP QR code of account '%(user)s':\n\n%(url)s")
         % {"user": user, "url": url},
         None,

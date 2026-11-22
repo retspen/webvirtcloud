@@ -3035,7 +3035,7 @@ def flavor_create(request):
             form.save()
         if from_script(request):
             return flavors_reply(request, FlavorForm())
-        messages.success(request, _("Flavor Created"))
+        messages.success(request, _("Flavor created"))
         return get_safe_redirect(request, default=reverse("instances:index"))
     if from_script(request):
         return flavors_reply(request, form)
@@ -3043,7 +3043,7 @@ def flavor_create(request):
     return render(
         request,
         "common/form.html",
-        {"form": form, "title": _("Create Flavor")},
+        {"form": form, "title": _("Create flavor")},
     )
 
 
@@ -3055,7 +3055,7 @@ def flavor_delete(request, pk):
             flavor.delete()
         if from_script(request):
             return flavors_reply(request, FlavorForm())
-        messages.success(request, _("Flavor Deleted"))
+        messages.success(request, _("Flavor deleted"))
         return get_safe_redirect(request, default=reverse("instances:index"))
 
     return render(

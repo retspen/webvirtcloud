@@ -9,7 +9,7 @@
 {% block page_heading_extra %}
 <input id="filter" class="form-control w-auto" type="text" placeholder="{% trans 'Search' %}" aria-label="{% trans 'Search' %}">
 {% if instances %}
-<a href="{% url 'bulk_migrate' compute.id %}" class="btn btn-outline-primary">{% trans "Bulk Migrate" %}</a>
+<a href="{% url 'bulk_migrate' compute.id %}" class="btn btn-outline-primary">{% trans "Bulk migrate" %}</a>
 {% endif %}
 {% if compute.maintenance %}
 {# a disabled button shows no title: its wrapper says why #}

@@ -55,7 +55,7 @@ class VmReportTests(TestCase):
         response, _ = self.report(self.admin, [vm(UNKNOWN, "made-with-virsh", self.c2.id, state=5, os="", family="")],
                                   language="tr")
         rows, coverage = self.sheets(response, ("Sanal makineler", "Kapsam"))
-        self.assertEqual(rows[0][:3], ["VM", "Durum", "Sunucu"])
+        self.assertEqual(rows[0][:3], ["Sanal makine", "Durum", "Sunucu"])
         self.assertEqual(rows[1][-1], "hayır")
         self.assertIn("Listelenen sanal makineler: 1", coverage)
 
