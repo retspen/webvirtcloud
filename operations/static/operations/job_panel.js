@@ -25,6 +25,8 @@ function jobPanel(element, urls, csrfToken, initialIds, states, text) {
     var last = { jobs: [], others: [], short_operation: false, worker_last_seen: null, worker_gone: false };
     var rendered = null; // the panel's last html: an unchanged one is not rebuilt (focus stays)
     var holding = false; // the panel set backgroundJobRunning (no other script holds it)
+    // a percentage as the page's language writes it: 38% in English, %38 in Turkish
+    var percentFormat = new Intl.NumberFormat(document.documentElement.lang || undefined, {style: "percent"});
     if (initialIds && initialIds.length) {
         // a remembered job must not be lost to a status reload before the first poll answers
         window.backgroundJobRunning = true;
@@ -44,13 +46,13 @@ function jobPanel(element, urls, csrfToken, initialIds, states, text) {
         return '<div class="progress mt-2" role="progressbar" aria-valuenow="' + (finishing ? 100 : pct)
             + '" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar'
             + (finishing ? " progress-bar-striped progress-bar-animated" : "") + '" style="width:'
-            + (finishing ? 100 : pct) + '%">' + (finishing ? esc(text.finishing) : pct + "%") + "</div></div>";
+            + (finishing ? 100 : pct) + '%">' + (finishing ? esc(text.finishing) : percentFormat.format(pct / 100)) + "</div></div>";
     }
 
     // label, state badge and muted phase on one line, the buttons on its right
     function header(label, state, phase, buttons) {
         return '<div class="d-flex flex-wrap align-items-center gap-2"><strong>' + esc(label) + "</strong>"
-            + '<span class="badge bg-' + JOB_STATE_COLORS[state]
+            + '<span class="badge job-state bg-' + JOB_STATE_COLORS[state]
             // the theme draws white text on a warning badge
             + (JOB_STATE_COLORS[state] === "warning" ? " text-dark" : "") + '">' + esc(states[state] || state) + "</span>"
             + (phase ? '<span class="small text-body-secondary">' + esc(phase) + "</span>" : "")
@@ -104,8 +106,8 @@ function jobPanel(element, urls, csrfToken, initialIds, states, text) {
         // the server tells: the browser's clock may be off
         var seen = last.worker_last_seen ? new Date(last.worker_last_seen) : null;
         if (waiting && last.worker_gone) {
-            html += '<div class="alert alert-warning mb-3" role="status">' + esc(text.worker_unavailable) + " "
-                + esc(seen ? seen.toLocaleString() : text.never) + ".</div>";
+            html += '<div class="alert alert-warning mb-3" role="status">'
+                + esc(seen ? text.worker_gone.replace("%(when)s", seen.toLocaleString(document.documentElement.lang || undefined)) : text.worker_never) + "</div>";
         }
         if (html !== rendered) {
             element.innerHTML = html;

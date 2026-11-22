@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load common_tags %}
 {% load static %}
 {% load bootstrap_icons %}
 {% load django_bootstrap5 %}
@@ -67,7 +68,7 @@
                         <div class="small text-body-secondary text-truncate">{{ backup.compute_name }}{% if backup.policy %}, <a href="{% url 'vmbackups:policy' backup.policy_id %}" title="{% trans "Schedule" %}">{{ backup.policy.name }}</a>{% endif %}</div>
                     </td>
                     <td class="d-none d-md-table-cell">{% include "vmbackups/consistency.html" %}</td>
-                    <td class="text-end text-nowrap d-none d-sm-table-cell">{% if backup.size %}{{ backup.size|filesizeformat }}{% else %}–{% endif %}</td>
+                    <td class="text-end text-nowrap d-none d-sm-table-cell">{% if backup.size %}{{ backup.size|binary_size }}{% else %}–{% endif %}</td>
                     <td>{% include "vmbackups/state.html" %}</td>
                     <td class="text-end">{% include "vmbackups/delete_form.html" %}</td>
                 </tr>

@@ -5,6 +5,9 @@
 const addInstance = document.getElementById("AddInstance");
 let opening = 0, queue = [], reading = 0;
 
+// a percentage as the page's language writes it: 13% in English, %13 in Turkish
+const percentFormat = new Intl.NumberFormat(document.documentElement.lang || undefined, {style: "percent"});
+
 function setCpuUsage(cell, percent, text) {
     const meter = cell.querySelector(".progress");
     cell.querySelector(".progress-bar").style.width = (percent || 0) + "%";
@@ -23,7 +26,7 @@ function show(element, data) {
         return;
     }
     const usage = data !== null && typeof data.cpudata === "number" ? Math.round(data.cpudata) : null;
-    setCpuUsage(element, usage, usage === null ? "—" : usage + "%");
+    setCpuUsage(element, usage, usage === null ? "—" : percentFormat.format(usage / 100));
 }
 
 function readNext() {

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load common_tags %}
 {% load operations %}
 {% load static %}
 {% load bootstrap_icons %}
@@ -66,9 +67,9 @@
                     {% elif not size %}
                         <div class="text-body-secondary">{% trans "The pool has no size." %}</div>
                     {% else %}
-                        <div class="fs-4 lh-sm">{{ percent }} %</div>
+                        <div class="fs-4 lh-sm">{{ percent|percent }}</div>
                         <div class="small text-body-secondary">
-                            {% blocktrans with used=used|filesizeformat size=size|filesizeformat %}{{ used }} used of {{ size }}{% endblocktrans %}
+                            {% blocktrans with used=used|binary_size size=size|binary_size %}{{ used }} used of {{ size }}{% endblocktrans %}
                             {# what the space is the space of: other pools may share it #}
                             {% if type == "dir" or type == "fs" or type == "netfs" %}· {% trans "the filesystem of its path" %}
                             {% elif type == "logical" %}· {% trans "its volume group" %}
@@ -78,7 +79,7 @@
                              aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100">
                             <div class="progress-bar {% if percent > 90 %}bg-danger{% elif percent > 75 %}bg-warning{% endif %}" style="width: {{ percent }}%"></div>
                         </div>
-                        <div class="small text-body-secondary">{% blocktrans with free=free|filesizeformat %}{{ free }} free{% endblocktrans %}</div>
+                        <div class="small text-body-secondary">{% blocktrans with free=free|binary_size %}{{ free }} free{% endblocktrans %}</div>
                     {% endif %}
                 </div>
             </div>
@@ -160,8 +161,8 @@
                     {% endif %}
                     {# capacity: what the guest sees; allocated: what it takes on the storage now #}
                     <td class="d-none d-sm-table-cell" data-sort="{{ volume.size }}">
-                        <div>{{ volume.size|filesizeformat }}</div>
-                        <div class="small text-body-secondary">{% blocktrans with allocated=volume.allocation|filesizeformat %}{{ allocated }} allocated{% endblocktrans %}</div>
+                        <div>{{ volume.size|binary_size }}</div>
+                        <div class="small text-body-secondary">{% blocktrans with allocated=volume.allocation|binary_size %}{{ allocated }} allocated{% endblocktrans %}</div>
                     </td>
                     <td class="text-end text-nowrap">
                         <div class="btn-group" role="group" aria-label="{% blocktrans with name=volume.name %}Actions for {{ name }}{% endblocktrans %}">

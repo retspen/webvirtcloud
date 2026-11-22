@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load common_tags %}
 {% load vm_states %}
 {% load i18n %}
 {% load operations %}
@@ -68,7 +69,7 @@
                 </div>
                 <div class="col-auto col-lg-5">
                     <dt class="fw-normal text-body-secondary d-inline d-lg-block">{% trans "Disks" %}</dt>
-                    <dd class="mb-0 d-inline d-lg-block">{% for disk in instance.disks %}{{ disk.dev }} {{ disk.size|filesizeformat }}{% if not forloop.last %} · {% endif %}{% empty %}{% trans "None" %}{% endfor %}</dd>
+                    <dd class="mb-0 d-inline d-lg-block">{% for disk in instance.disks %}{{ disk.dev }} {{ disk.size|binary_size }}{% if not forloop.last %} · {% endif %}{% empty %}{% trans "None" %}{% endfor %}</dd>
                 </div>
                 {% if not instance.is_template %}
                 <div class="col-auto col-lg-3">

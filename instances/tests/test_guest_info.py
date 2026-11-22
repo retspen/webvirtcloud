@@ -27,7 +27,7 @@ class GuestInfoTestCase(TestCase):
             {"mountpoint": "/", "type": "xfs", "used": 9 * 2**30, "total": 10 * 2**30}]}
         data = self.client.get(reverse("instances:osinfo", args=[self.instance.pk])).json()
         self.assertEqual(data["filesystems"], [{"mountpoint": "/", "type": "xfs", "used": 9 * 2**30, "total": 10 * 2**30,
-                                                "used_text": "9.0\xa0GB", "total_text": "10.0\xa0GB", "percent": 90}])
+                                                "used_text": "9\xa0GiB", "total_text": "10\xa0GiB", "percent": 90}])
 
     def test_a_file_system_used_past_its_total_is_full(self):
         # a BSD guest's total leaves out the space reserved for root, which used counts

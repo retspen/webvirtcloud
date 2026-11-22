@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load common_tags %}
 {% load static %}
 {% load operations %}
 {% load bootstrap_icons %}
@@ -28,14 +29,14 @@
     <div class="col">
         <div class="card h-100 shadow-sm"><div class="card-body">
             <div class="d-flex justify-content-between mb-2"><span class="fw-semibold">{{ host.name }}</span>
-                <span class="small text-body-secondary">{% widthratio host.size.0 1 1024 as bytes %}{{ bytes|filesizeformat }}</span></div>
+                <span class="small text-body-secondary">{% widthratio host.size.0 1 1024 as bytes %}{{ bytes|binary_size }}</span></div>
             {% for bar in host.bars %}{% if forloop.first or moves %}
             {% if forloop.first %}{% with memory=host.before.0 vcpus=host.before.1 %}
             <div class="d-flex justify-content-between small"><span class="text-body-secondary">{% if moves %}{% trans "Now" %}{% else %}{% trans "Running VMs" %}{% endif %}</span>
-                <span>{% widthratio memory 1 1024 as bytes %}{{ bytes|filesizeformat }}, {% blocktrans count counter=vcpus %}{{ counter }} vCPU{% plural %}{{ counter }} vCPUs{% endblocktrans %} {% blocktrans count counter=host.size.1 %}on {{ counter }} CPU{% plural %}on {{ counter }} CPUs{% endblocktrans %}</span></div>
+                <span>{% widthratio memory 1 1024 as bytes %}{{ bytes|binary_size }}, {% blocktrans count counter=vcpus %}{{ counter }} vCPU{% plural %}{{ counter }} vCPUs{% endblocktrans %} {% blocktrans count counter=host.size.1 %}on {{ counter }} CPU{% plural %}on {{ counter }} CPUs{% endblocktrans %}</span></div>
             {% endwith %}{% else %}{% with memory=host.after.0 vcpus=host.after.1 %}
             <div class="d-flex justify-content-between small mt-2"><span class="text-body-secondary">{% trans "After" %}</span>
-                <span class="fw-semibold">{% widthratio memory 1 1024 as bytes %}{{ bytes|filesizeformat }}, {% blocktrans count counter=vcpus %}{{ counter }} vCPU{% plural %}{{ counter }} vCPUs{% endblocktrans %} {% blocktrans count counter=host.size.1 %}on {{ counter }} CPU{% plural %}on {{ counter }} CPUs{% endblocktrans %}</span></div>
+                <span class="fw-semibold">{% widthratio memory 1 1024 as bytes %}{{ bytes|binary_size }}, {% blocktrans count counter=vcpus %}{{ counter }} vCPU{% plural %}{{ counter }} vCPUs{% endblocktrans %} {% blocktrans count counter=host.size.1 %}on {{ counter }} CPU{% plural %}on {{ counter }} CPUs{% endblocktrans %}</span></div>
             {% endwith %}{% endif %}
             <div class="progress" role="progressbar" style="--bs-progress-height: 0.6rem;" aria-label="{% if forloop.first %}{% trans "Memory now" %}{% else %}{% trans "Memory after" %}{% endif %}"
                  aria-valuenow="{{ bar|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100">
@@ -74,7 +75,7 @@
                         <input type="hidden" name="instance" value="{{ instance.pk }}">
                         <input type="hidden" name="source" value="{{ instance.compute_id }}">
                         <input type="hidden" name="target" value="{{ instance.target.pk }}"></td>
-                    <td class="text-end text-nowrap">{% widthratio instance.info.2 1 1024 as bytes %}{{ bytes|filesizeformat }}</td>
+                    <td class="text-end text-nowrap">{% widthratio instance.info.2 1 1024 as bytes %}{{ bytes|binary_size }}</td>
                     <td class="text-end">{{ instance.info.3 }}</td>
                     <td>{{ instance.compute.name }} {% bs_icon 'arrow-right' %} {{ instance.target.name }}</td>
                 </tr>

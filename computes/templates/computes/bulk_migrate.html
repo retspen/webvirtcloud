@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load common_tags %}
 {% load static %}
 {% load operations %}
 {% load bootstrap_icons %}
@@ -91,7 +92,7 @@
                     </td>
                     <td><label for="bulk-migrate-{{ instance.pk }}">{{ instance.name }}</label></td>
                     <td>{% include 'instance_state.html' %}</td>
-                    <td class="text-end text-nowrap">{% if instance.info %}{% widthratio instance.info.2 1 1024 as bytes %}{{ bytes|filesizeformat }}{% endif %}</td>
+                    <td class="text-end text-nowrap">{% if instance.info %}{% widthratio instance.info.2 1 1024 as bytes %}{{ bytes|binary_size }}{% endif %}</td>
                     <td class="text-end">{{ instance.info.3 }}</td>
                     {% if spreading %}<td>{{ instance.target.name|default:"" }}</td>{% endif %}
                     <td class="small text-body-secondary">{{ instance.refusal|default:"" }}{{ instance.note|default:"" }}</td>

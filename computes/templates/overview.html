@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load common_tags %}
 {% load static %}
 {% load bootstrap_icons %}
 {% load operations %}
@@ -192,7 +193,7 @@
                 </li>
                 <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                     <span class="text-body-secondary">{% trans "Memory" %}</span>
-                    <span class="text-end text-break"><span class="fw-semibold">{{ host.memory|filesizeformat }}</span></span>
+                    <span class="text-end text-break"><span class="fw-semibold">{{ host.memory|binary_size }}</span></span>
                 </li>
             </ul>
         </div>

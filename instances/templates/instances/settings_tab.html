@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load common_tags %}
 {% load django_bootstrap5 %}
 {% load bootstrap_icons %}
 {% load vm_states %}
@@ -215,8 +216,8 @@
                                 {# a qcow2 file's metadata can take it past its capacity: the bar stops full #}
                                 {% if used_percent|add:0 > 100 %}{% widthratio 100 1 1 as used_percent %}{% endif %}
                                 <div class="d-flex flex-wrap justify-content-between gap-1">
-                                    <strong>{% trans "Capacity" %} {{ disk.size|filesizeformat }}</strong>
-                                    <span class="text-body-secondary">{% blocktrans with used=disk.used|filesizeformat %}{{ used }} used{% endblocktrans %}</span>
+                                    <strong>{% trans "Capacity" %} {{ disk.size|binary_size }}</strong>
+                                    <span class="text-body-secondary">{% blocktrans with used=disk.used|binary_size %}{{ used }} used{% endblocktrans %}</span>
                                 </div>
                                 <div class="progress my-2" style="height: .25rem;" role="progressbar" aria-label="{% blocktrans with dev=disk.dev %}{{ dev }} used{% endblocktrans %}" aria-valuenow="{{ used_percent }}" aria-valuemin="0" aria-valuemax="100">
                                     <div class="progress-bar" style="width: {{ used_percent }}%"></div>

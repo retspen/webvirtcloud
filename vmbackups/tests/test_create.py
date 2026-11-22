@@ -609,7 +609,7 @@ class BackupTabTests(PageControls, TransactionTestCase):
             page = lxml_html.fromstring(self.last_page)
             self.assertTrue(page.xpath("//div[@id='backups']//form[contains(@action, '/backups/vm/')]"))
             self.assertIn("nfs1", page.xpath("string(//select[@id='backup-target'])"))
-            self.assertIn("3.0", page.xpath("string(//div[@id='backups']//table)"))
+            self.assertIn("3\xa0GiB", page.xpath("string(//div[@id='backups']//table)"))
             backup_proxy.return_value.backup_plan.side_effect = OperationError("%(vm)s has TPM state", vm="ctl-vm")
             self.controls(admin)
             page = lxml_html.fromstring(self.last_page)

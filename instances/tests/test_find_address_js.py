@@ -23,7 +23,7 @@ const ids = {
 };
 const answer = ANSWER;
 vm.runInNewContext(SCRIPT, vm.createContext({
-    document: {getElementById: (id) => ids[id]}, URLSearchParams, Promise, Date, location: {},
+    document: {documentElement: {lang: "en"}, getElementById: (id) => ids[id]}, URLSearchParams, Promise, Date, location: {},
     fetch: () => Promise.resolve({redirected: false, json: () => Promise.resolve(answer)}),
 }));
 handlers.submit({preventDefault() {}});

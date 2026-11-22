@@ -204,8 +204,8 @@ class MigrateJobTestCase(TransactionTestCase):
         self.assertEqual(dest.migration_plan.call_args.args[1:], ("<domain/>", "<domain/>"))
         self.assertEqual(Instance.proxy.instance.XMLDesc.call_args_list[-1].args, (VIR_DOMAIN_XML_INACTIVE,))
         # the pool on the disk's directory is chosen; one that has a file of the name cannot be
-        self.assertIn('<option value="default" selected>Copy to default (8.0\xa0GB free)</option>', page)
-        self.assertIn('<option value="fast">Copy to fast (8.0\xa0GB free)</option>', page)
+        self.assertIn('<option value="default" selected>Copy to default (8\xa0GiB free)</option>', page)
+        self.assertIn('<option value="fast">Copy to fast (8\xa0GiB free)</option>', page)
         self.assertIn('<option value="fast" disabled>fast has a file of this name</option>', page)
         self.assertIn("Cannot be copied: an image is not copied; eject it first", page)
         self.assertEqual(page.count("Another disk of the VM has this file name: copy them to different pools."), 1)

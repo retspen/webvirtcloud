@@ -64,12 +64,12 @@ class ComputesPageTests(TestCase):
         self.assertIn("2.5:1", cells[2])
         self.assertIn("40 vCPUs on 16 CPUs", cells[2])
         self.assertIn("24 in running VMs", cells[2])
-        self.assertIn("75 % 48.0 GB / 64.0 GB", cells[3])
-        self.assertIn("32.0 GB in running VMs", cells[3])
+        self.assertIn("75% 48 GiB / 64 GiB", cells[3])
+        self.assertIn("32 GiB in running VMs", cells[3])
         # the totals of the hosts read: host-two's capacity could not be
         totals = [" ".join(card.text_content().split()) for card in page.xpath("//div[@class='card-body']")]
         self.assertEqual(totals, ["Hosts 2 / 2 connected", "VMs 3 / 6 running", "vCPUs given 40 on 16 CPUs",
-                                  "Memory given 48.0 GB of 64.0 GB"])
+                                  "Memory given 48 GiB of 64 GiB"])
         # host-two could not be read: one cell says so
         self.assertIn("capacity could not be read", " ".join(two.text_content().split()))
 
@@ -86,7 +86,7 @@ class SingularTests(TestCase):
             line = self.client.get(reverse("compute_capacity", args=[c.id])).content.decode()
         (cell,) = page.xpath("//tbody/tr/td[3]")
         self.assertIn("1 vCPU on 1 CPU", " ".join(cell.text_content().split()))
-        self.assertEqual(" ".join(line.split()), "Given to VMs: 1 vCPU (1.0:1), 1.0 GB memory.")
+        self.assertEqual(" ".join(line.split()), "Given to VMs: 1 vCPU (1.0:1), 1 GiB memory.")
 
 
 class NewVmDialogLineTests(TestCase):
@@ -107,10 +107,10 @@ class NewVmDialogLineTests(TestCase):
         given = {"cpus": 16, "memory": 64 * GIB, "vcpus": {"all": 24, "running": 8},
                  "assigned": {"all": 48 * GIB, "running": 32 * GIB}, "ratio": 1.5,
                  }
-        self.assertEqual(self.line(given), "Given to VMs: 24 vCPUs (1.5:1), 48.0 GB memory.")
+        self.assertEqual(self.line(given), "Given to VMs: 24 vCPUs (1.5:1), 48 GiB memory.")
 
     def test_a_host_without_pools_or_capacity_says_so(self):
         given = {"cpus": 2, "memory": 4 * GIB, "vcpus": {"all": 0, "running": 0},
                  "assigned": {"all": 0, "running": 0}, "ratio": 0}
-        self.assertEqual(self.line(given), "Given to VMs: 0 vCPUs (0.0:1), 0 bytes memory.")
+        self.assertEqual(self.line(given), "Given to VMs: 0 vCPUs (0.0:1), 0 B memory.")
         self.assertEqual(self.line(None), "The capacity could not be read.")

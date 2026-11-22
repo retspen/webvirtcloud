@@ -53,7 +53,7 @@
                 cpuWindows.shift();
             }
             addPoint(cpuChart, data.timeline, [data.cpudata]);
-            document.getElementById("cpuNow").textContent = reading(data.cpudata) + " %";
+            document.getElementById("cpuNow").textContent = data.cpudata == null ? "–" : formatPercent(data.cpudata);
             // a VM whose memory could not be read gives total 0: a gap, same axis;
             // the RSS may pass the balloon size: then the axis grows to it
             if (data.memdata.total) {

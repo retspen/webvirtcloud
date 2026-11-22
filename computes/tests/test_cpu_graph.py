@@ -143,7 +143,7 @@ class GraphScriptTestCase(TestCase):
         poll.request();
         poll.onData({cpudata: null, memdata: {total: null, usage: null}, timeline: "t"});
         poll.request();
-        const label = charts[0].options.plugins.tooltip.callbacks.label({dataset: {label: "Usage"}, formattedValue: "3", dataIndex: 0});
+        const label = charts[0].options.plugins.tooltip.callbacks.label({dataset: {label: "Usage"}, formattedValue: "3", parsed: {y: 3}, dataIndex: 0});
         console.log(JSON.stringify({requests, timeouts, label, shown, state: elements.graph_state.textContent,
                                     cpu: charts[0].data.datasets[0].data.map((point) => point.y),
                                     mem: charts[1].data.datasets[0].data.map((point) => point.y), memMax: charts[1].options.scales.y.max}));
@@ -159,9 +159,9 @@ class GraphScriptTestCase(TestCase):
         # a host that could not be read leaves a gap and keeps the memory axis
         self.assertEqual((result["mem"], result["memMax"]), ([1, None], 2))
         # the readings in words, and since when they are not updated
-        self.assertEqual(result["shown"], ["3 %", "1 / 2 GiB", "Updated at t."])
+        self.assertEqual(result["shown"], ["3%", "1 / 2 GiB", "Updated at t."])
         self.assertEqual(result["state"], "Not updated since t.")
-        self.assertTrue(result["label"].endswith(": 3 % (average over 5.1 s)"), result["label"])
+        self.assertTrue(result["label"].endswith(": 3% (average over 5.1 s)"), result["label"])
 
 
 @unittest.skipUnless(shutil.which("node"), "node is not installed")

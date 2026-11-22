@@ -35,7 +35,7 @@ from django.db import transaction
 from django.db.models import Prefetch, prefetch_related_objects
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.template.defaultfilters import filesizeformat
+from webvirtcloud.common_tags import binary_size
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
@@ -574,7 +574,7 @@ def osinfo(request, pk):
     try:
         info = instance.proxy.osinfo()
         for fs in info.get("filesystems", []):  # sizes in the page's words
-            fs.update(used_text=filesizeformat(fs["used"]), total_text=filesizeformat(fs["total"]),
+            fs.update(used_text=binary_size(fs["used"]), total_text=binary_size(fs["total"]),
                       percent=min(100, fs["used"] * 100 // fs["total"]))  # used may pass a BSD guest's total
         return JsonResponse(info)
     except libvirtError as err:
@@ -1475,7 +1475,7 @@ def resize_disk(request, pk):
         # a disk does not shrink: one smaller size refuses them all
         if int(size) << 30 < disk["size"]:
             messages.error(request, _("%(dev)s is %(size)s: a disk cannot shrink") % {
-                "dev": disk["dev"], "size": filesizeformat(disk["size"])})
+                "dev": disk["dev"], "size": binary_size(disk["size"])})
             return redirect(reverse("instances:instance", args=[instance.id]) + "#resizevm_disk")
         if int(size) << 30 > disk["size"]:
             disk["size_new"] = int(size) << 30

@@ -234,8 +234,8 @@ class PoolListTests(TestCase):
             page = html.fromstring(self.client.get(reverse("storages", args=[compute.pk])).content)
         cards = [" ".join(" ".join(card.itertext()).split()) for card in page.xpath("//div[@class='card h-100']")]
         self.assertEqual(cards, [
-            "default Active Autostart Type dir Path /var/lib/libvirt/images Volumes 3 60 bytes free of 100 bytes",
-            "ceph-vms Active Type rbd Path vms Volumes 9 5 bytes free of 100 bytes",
+            "default Active Autostart Type dir Path /var/lib/libvirt/images Volumes 3 60 B free of 100 B",
+            "ceph-vms Active Type rbd Path vms Volumes 9 5 B free of 100 B",
             "backup Stopped Type dir Path /srv/backup Volumes – Space unavailable while stopped",
         ])
         self.assertEqual(page.xpath("//div[contains(@class,'progress-bar')]/@class"),

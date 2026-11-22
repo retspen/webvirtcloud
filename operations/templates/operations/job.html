@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load common_tags %}
 {% load bootstrap_icons %}
 {% load operations %}
 
@@ -38,9 +39,9 @@
                 {% widthratio op.progress_done|default:0 op.progress_total 100 as percent %}
                 <div class="d-flex flex-wrap justify-content-between gap-2 small mb-2">
                     <span class="text-body-secondary">
-                        {% if progress_bytes %}{{ op.progress_done|default:0|filesizeformat }} / {{ op.progress_total|filesizeformat }}{% else %}{{ op.progress_done|default:0 }} / {{ op.progress_total }}{% endif %}
+                        {% if progress_bytes %}{{ op.progress_done|default:0|binary_size }} / {{ op.progress_total|binary_size }}{% else %}{{ op.progress_done|default:0 }} / {{ op.progress_total }}{% endif %}
                     </span>
-                    <strong>{{ percent }}%</strong>
+                    <strong>{{ percent|percent }}</strong>
                 </div>
                 <div class="progress mb-3" style="height: .5rem;" role="progressbar" aria-label="{% trans 'Progress' %}" aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100">
                     <div class="progress-bar" style="width: {{ percent }}%"></div>

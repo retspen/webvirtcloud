@@ -36,7 +36,7 @@ const handlers = {}, requests = [];
 const dialog = {addEventListener: (name, fn) => { handlers[name] = fn; },
                 querySelectorAll: (sel) => sel === ".cpu-usage" ? cells : cells.flatMap((c, i) => [c, lines[i]])};
 const page = {
-    document: {getElementById: () => dialog},
+    document: {documentElement: {lang: "en"}, getElementById: () => dialog},
     $: {get: (url) => {
         const r = {url, done: (f) => { r.ok = f; return r; }, fail: (f) => { r.err = f; return r; },
                    always: (f) => { r.end = f; return r; }};

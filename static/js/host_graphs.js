@@ -50,7 +50,7 @@ pollWhileVisible(5000, function () {
         stale();
         return;
     }
-    cpuNow.textContent = formatNumber(data.cpudata) + " %";
+    cpuNow.textContent = formatPercent(data.cpudata);
     lastUpdate = data.timeline;
     state.textContent = state.dataset.updated.replace("%(time)s", data.timeline);
     state.classList.remove("text-danger");

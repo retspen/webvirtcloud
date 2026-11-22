@@ -588,7 +588,7 @@ msgstr ""
 #: accounts/views.py:93
 #, python-format
 msgid "You have a token named %(name)s: choose another name."
-msgstr "%(name)s adlı bir token'ınız var: başka bir ad seçin."
+msgstr "%(name)s adlı bir API anahtarınız var: başka bir ad seçin."
 
 #: accounts/views.py:130
 msgid "API token deleted"
@@ -1260,7 +1260,7 @@ msgstr "Kullanıcının nasıl oturum açtığı."
 
 #: admin/templates/admin/user_password_form.html:19
 msgid "Changing it deletes the user's API tokens."
-msgstr "Değiştirmek kullanıcının API token'larını siler."
+msgstr "Değiştirmek kullanıcının API anahtarlarını siler."
 
 #: admin/templates/admin/user_password_form.html:22
 msgid "Signs in with the password set here."
@@ -2238,7 +2238,7 @@ msgstr ""
 
 #: computes/models.py:56
 msgid "hostname"
-msgstr "sunucuadı"
+msgstr "ana bilgisayar adı"
 
 #: computes/models.py:57
 msgid "login"
@@ -2346,8 +2346,8 @@ msgstr "%%%(percent)s dolu"
 #, python-format
 msgid "%(counter)s snapshot older than 30 days"
 msgid_plural "%(counter)s snapshots older than 30 days"
-msgstr[0] "30 günden eski %(counter)s snapshot"
-msgstr[1] "30 günden eski %(counter)s snapshot"
+msgstr[0] "30 günden eski %(counter)s anlık görüntü"
+msgstr[1] "30 günden eski %(counter)s anlık görüntü"
 
 #: computes/templates/computes/attention.html:17
 #, python-format
@@ -3130,7 +3130,7 @@ msgstr "Yazılım ve bağlantı"
 #: computes/templates/overview.html:205
 #: instances/templates/instances/info_tab.html:6
 msgid "Hostname"
-msgstr "Sunucuadı"
+msgstr "Ana bilgisayar adı"
 
 #: computes/templates/overview.html:217
 msgid "Guest architectures"
@@ -3721,7 +3721,7 @@ msgstr "%(quota)s: %(name)s anlık görüntüsüne dönülemiyor."
 
 #: instances/jobs.py:525
 msgid "Revert snapshot"
-msgstr "Snapshota dön"
+msgstr "Anlık görüntüye dön"
 
 #: instances/jobs.py:568
 msgid "Reverting the VM"
@@ -4575,8 +4575,8 @@ msgstr "daraltıldı"
 
 #: instances/templates/allinstances_index_grouped.html:48
 #, python-format
-msgid "host memory %(percent)s%% in use"
-msgstr "sunucu belleği kullanımı %%%(percent)s"
+msgid "Host memory %(percent)s%% in use"
+msgstr "Sunucu belleği kullanımı %%%(percent)s"
 
 #: instances/templates/allinstances_index_grouped.html:49
 msgid "Host memory in use"
@@ -9199,11 +9199,6 @@ msgstr "Başarılı"
 msgid "What you checked"
 msgstr "Neyi kontrol ettiniz"
 
-#: operations/templates/operations/jobs.html:14
-#: operations/templatetags/operations.py:97
-msgid "Worker unavailable, last seen"
-msgstr "İşçi kullanılamıyor, son görülme"
-
 #: operations/templates/operations/jobs.html:22
 msgid "Filter jobs"
 msgstr "İşleri filtrele"
@@ -9383,7 +9378,7 @@ msgstr ""
 
 #: operations/worker.py:505
 msgid "The worker stopped before the job changed anything"
-msgstr "Worker, iş herhangi bir şeyi değiştirmeden önce durdu"
+msgstr "İş işleyicisi, iş herhangi bir şeyi değiştirmeden önce durdu"
 
 #: storages/api/viewsets.py:148 storages/api/viewsets.py:164
 #: storages/api/viewsets.py:200 storages/api/viewsets.py:223
@@ -13027,3 +13022,20 @@ msgstr "Hangi sanal makineler"
 #: vmbackups/forms.py
 msgid "Choose the VMs to back up"
 msgstr "Yedeklenecek sanal makineleri seçin"
+
+
+#: webvirtcloud/common_tags.py:29
+#, python-format
+msgid "%(percent)s%%"
+msgstr "%%%(percent)s"
+
+#: operations/templates/operations/jobs.html:16
+#: operations/templatetags/operations.py:98
+#, python-format
+msgid "The job worker is not running; it was last seen %(when)s. Jobs wait until it runs again."
+msgstr "İş işleyicisi çalışmıyor; en son %(when)s görüldü. İşler o yeniden çalışana kadar bekler."
+
+#: operations/templates/operations/jobs.html:16
+#: operations/templatetags/operations.py:99
+msgid "The job worker has not run yet. Jobs wait until it runs."
+msgstr "İş işleyicisi henüz hiç çalışmadı. İşler o çalışana kadar bekler."

@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load common_tags %}
 {% load bootstrap_icons %}
 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#AddInstance">
     <span aria-hidden="true">{% bs_icon 'plus-lg' %}</span> {% trans "New VM" %}
@@ -37,13 +38,13 @@
                                 </div>
                             </div>
                             <div class="col-6 col-md-4">
-                                <div class="small text-body-secondary">{% trans "Memory" %} · {{ compute.ram_size|filesizeformat }}</div>
+                                <div class="small text-body-secondary">{% trans "Memory" %} · {{ compute.ram_size|binary_size }}</div>
                                 <div class="d-flex align-items-center gap-2">
                                     <div class="progress flex-grow-1" role="progressbar" aria-label="{% blocktrans with name=compute.name %}Memory usage of {{ name }}{% endblocktrans %}"
                                          aria-valuenow="{{ compute.ram_usage }}" aria-valuemin="0" aria-valuemax="100">
                                         <div class="progress-bar" style="width: {{ compute.ram_usage }}%"></div>
                                     </div>
-                                    <small>{{ compute.ram_usage }}%</small>
+                                    <small>{{ compute.ram_usage|percent }}</small>
                                 </div>
                             </div>
                             <div class="col-md-1 d-none d-md-block text-end" aria-hidden="true">{% bs_icon 'chevron-right' %}</div>

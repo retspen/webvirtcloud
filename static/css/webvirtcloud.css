@@ -279,6 +279,13 @@ button.vcpu-cell:disabled { opacity: .65; }
 .nic-wire::after { right: -3px; }
 .nic-wire.nic-up { color: var(--bs-success); border-top-style: solid; }
 
+/* a job state badge starts with a capital, as the VM state badges; the label stays
+   lowercase for sentences ("… is running on this resource"), and the page's lang
+   gives Turkish its dotted İ */
+.job-state::first-letter {
+    text-transform: uppercase;
+}
+
 /* a log message keeps a readable width when its table scrolls on a phone */
 .log-message {
     min-width: 16rem;

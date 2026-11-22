@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load common_tags %}
 {% load bootstrap_icons %}
 <div class="table-responsive">
     <table class="table table-hover align-middle" data-sortable>
@@ -44,9 +45,9 @@
                         </td>
                         {% if compute.status is True and compute.ram_usage is not None %}
                         <td class="d-none d-sm-table-cell">{{ compute.cpu_count }}</td>
-                        <td class="d-none d-sm-table-cell">{{ compute.ram_size|filesizeformat }}</td>
+                        <td class="d-none d-sm-table-cell">{{ compute.ram_size|binary_size }}</td>
                         <td>
-                            <div class="small text-body-secondary">{% blocktrans with percent=compute.ram_usage %}host memory {{ percent }}% in use{% endblocktrans %}</div>
+                            <div class="small text-body-secondary">{% blocktrans with percent=compute.ram_usage %}Host memory {{ percent }}% in use{% endblocktrans %}</div>
                             <div class="progress" role="progressbar" style="--bs-progress-height: 0.3rem;" aria-label="{% trans "Host memory in use" %}"
                                  aria-valuenow="{{ compute.ram_usage }}" aria-valuemin="0" aria-valuemax="100">
                                 <div class="progress-bar" style="width: {{ compute.ram_usage }}%"></div>

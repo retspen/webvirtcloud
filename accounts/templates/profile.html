@@ -20,7 +20,7 @@
                         <span class="badge text-bg-secondary">{% trans "Template editor" %}</span>
                     {% endif %}
                 </div>
-                <div class="text-body-secondary text-break">{{ user.username }}</div>
+                {% if user.get_full_name %}<div class="text-body-secondary text-break">{{ user.username }}</div>{% endif %}
                 {% if user.email %}<div class="small text-break mt-2">{{ user.email }}</div>{% endif %}
                 <div class="small text-body-secondary mt-2">{% trans "Last login" %} {{ user.last_login|date:"Y-m-d H:i"|default:_("never") }}</div>
             </div>

@@ -57,7 +57,7 @@ class ResizeInputTests(TestCase):
         disks = [{"dev": "vda", "size": 10 * GIB}, {"dev": "vdb", "size": 20 * GIB}]
         messages, proxy = self.post("instances:resize_disk", {"disk_size_vda": "5", "disk_size_vdb": "30"}, disks=disks)
         proxy.resize_disk.assert_not_called()
-        self.assertEqual(messages, ["vda is 10.0\xa0GB: a disk cannot shrink"])
+        self.assertEqual(messages, ["vda is 10\xa0GiB: a disk cannot shrink"])
 
     def test_vcpus_and_memory_must_be_at_least_one(self):
         for view, data, setter in (("instances:resizevm_cpu", {"vcpu": "2", "cur_vcpu": "0"}, "resize_cpu"),

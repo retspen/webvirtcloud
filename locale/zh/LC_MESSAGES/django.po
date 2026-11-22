@@ -4345,7 +4345,7 @@ msgstr "已折叠"
 
 #: instances/templates/allinstances_index_grouped.html:48
 #, python-format
-msgid "host memory %(percent)s%% in use"
+msgid "Host memory %(percent)s%% in use"
 msgstr "主机内存已用 %(percent)s%%"
 
 #: instances/templates/allinstances_index_grouped.html:49
@@ -8671,11 +8671,6 @@ msgstr "成功"
 msgid "What you checked"
 msgstr "检查内容"
 
-#: operations/templates/operations/jobs.html:14
-#: operations/templatetags/operations.py:97
-msgid "Worker unavailable, last seen"
-msgstr "工作进程不可用，最后在线时间"
-
 #: operations/templates/operations/jobs.html:22
 msgid "Filter jobs"
 msgstr "筛选任务"
@@ -12302,3 +12297,20 @@ msgstr "哪些虚拟机"
 #: vmbackups/forms.py
 msgid "Choose the VMs to back up"
 msgstr "请选择要备份的虚拟机"
+
+
+#: webvirtcloud/common_tags.py:29
+#, python-format
+msgid "%(percent)s%%"
+msgstr "%(percent)s%%"
+
+#: operations/templates/operations/jobs.html:16
+#: operations/templatetags/operations.py:98
+#, python-format
+msgid "The job worker is not running; it was last seen %(when)s. Jobs wait until it runs again."
+msgstr "工作进程未在运行；最后在线时间 %(when)s。任务将等待它重新运行。"
+
+#: operations/templates/operations/jobs.html:16
+#: operations/templatetags/operations.py:99
+msgid "The job worker has not run yet. Jobs wait until it runs."
+msgstr "工作进程尚未运行过。任务将等待它运行。"

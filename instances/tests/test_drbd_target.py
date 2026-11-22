@@ -83,7 +83,7 @@ class DrbdListTestCase(TestCase):
                 patch.object(Compute, "status", new_callable=PropertyMock, return_value=True), \
                 patch.object(Instance, "info", new_callable=PropertyMock, return_value=None), \
                 patch.object(Compute, "proxy", new_callable=PropertyMock,
-                             return_value=MagicMock(**{"get_domain_rows.return_value": {}})), \
+                             return_value=MagicMock(**{"get_domain_rows.return_value": {}, "get_memory_usage.return_value": {"percent": 10}})), \
                 patch("instances.views.subprocess.run", return_value=SimpleNamespace(returncode=0, stdout=STATUS)) as run:
             self.assertEqual(self.client.get(reverse("instances:index")).status_code, 200)
         run.assert_called_once()
@@ -108,7 +108,7 @@ class DrbdListTestCase(TestCase):
                 patch.object(Compute, "status", new_callable=PropertyMock, return_value=True), \
                 patch.object(Instance, "info", new_callable=PropertyMock, return_value=None), \
                 patch.object(Compute, "proxy", new_callable=PropertyMock,
-                             return_value=MagicMock(**{"get_domain_rows.return_value": {}})), \
+                             return_value=MagicMock(**{"get_domain_rows.return_value": {}, "get_memory_usage.return_value": {"percent": 10}})), \
                 patch("instances.views.subprocess.run", side_effect=slow) as run:
             self.client.get(reverse("instances:index"))
         self.assertEqual(run.call_count, 3)

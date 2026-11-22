@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load common_tags %}
 {% load operations %}
 {% load bootstrap_icons %}
 {% load static %}
@@ -47,7 +48,7 @@
                             <td class="text-nowrap">{{ backup.created_at|date:"Y-m-d H:i" }}</td>
                             <td class="d-none d-md-table-cell">{{ backup.target.name }}</td>
                             <td class="d-none d-sm-table-cell">{% include "vmbackups/consistency.html" %}</td>
-                            <td class="text-end text-nowrap d-none d-sm-table-cell">{% if backup.size %}{{ backup.size|filesizeformat }}{% else %}–{% endif %}</td>
+                            <td class="text-end text-nowrap d-none d-sm-table-cell">{% if backup.size %}{{ backup.size|binary_size }}{% else %}–{% endif %}</td>
                             <td>{% include "vmbackups/state.html" with pending_deletes=backups.pending_deletes %}</td>
                             <td class="text-end">{% include "vmbackups/delete_form.html" with pending_deletes=backups.pending_deletes %}</td>
                         </tr>

@@ -142,7 +142,7 @@ class PageControlsTestCase(PageControls, TestCase):
         self.assertEqual([a.text_content().strip() for a in admin_page.xpath(links)], ["ctl-compute", "Instances"])
         self.assertEqual([a.text_content().strip() for a in owner_page.xpath(links)], ["Instances"])
         self.assertIn("Guest agent not connected", self.last_page)
-        self.assertIn("vda 2.0\xa0GB · vdb 1.0\xa0GB", self.last_page)
+        self.assertIn("vda 2\xa0GiB · vdb 1\xa0GiB", self.last_page)
         # filled by its script once the page has loaded ("—" when it has none)
         self.assertEqual(owner_page.xpath("//dt[.='IPv4']/following-sibling::dd/@data-empty"), ["—"])
 

@@ -240,7 +240,7 @@ class JobsPageTestCase(TransactionTestCase):
         self.client.force_login(self.admin)
         for response in (self.client.get(reverse("operations:jobs")),
                          self.client.get(reverse("operations:job", args=[self.op.pk]))):
-            self.assertContains(response, '<span class="badge bg-danger">failed</span>')
+            self.assertContains(response, '<span class="badge job-state bg-danger">failed</span>')
         detail = self.client.get(reverse("operations:job", args=[self.op.pk]))
         self.assertContains(detail, 'class="alert alert-danger"')
 
@@ -272,7 +272,7 @@ class JobsPageTestCase(TransactionTestCase):
                               (Operation.UNCERTAIN, False), (Operation.SUCCEEDED, False)):
             Operation.objects.filter(pk=self.op.pk).update(state=state, worker="" if state == Operation.QUEUED else "h:1:a")
             response = self.client.get(reverse("operations:jobs"))
-            (self.assertContains if warned else self.assertNotContains)(response, "Worker unavailable", msg_prefix=state)
+            (self.assertContains if warned else self.assertNotContains)(response, "The job worker", msg_prefix=state)
         # a job a request runs does not wait for the worker
         for state in (Operation.RUNNING, Operation.CANCELLING):
             Operation.objects.filter(pk=self.op.pk).update(state=state, worker=Operation.REQUEST)
@@ -291,7 +291,7 @@ class JobsPageTestCase(TransactionTestCase):
         self.client.force_login(self.admin)
         # the app's theme draws white text on bg-warning
         self.assertContains(self.client.get(reverse("operations:jobs")),
-                            '<span class="badge bg-warning text-dark">uncertain</span>')
+                            '<span class="badge job-state bg-warning text-dark">uncertain</span>')
 
     def test_a_narrow_list_shows_resource_and_user_under_the_job(self):
         Operation.objects.filter(pk=self.op.pk).update(resource_label="wvc-test-host/wvc-test-vm")
@@ -325,7 +325,7 @@ class JobsPageTestCase(TransactionTestCase):
             listed = self.client.get(reverse("operations:jobs"))
             detail = self.client.get(reverse("operations:job", args=[self.op.pk]))
         for response in (listed, detail):
-            self.assertContains(response, '<span class="badge bg-primary">T[running]</span>')
+            self.assertContains(response, '<span class="badge job-state bg-primary">T[running]</span>')
             self.assertContains(response, "T[Merging the snapshot]")
         self.assertContains(listed, '<option value="failed">T[failed]</option>')
 
@@ -337,4 +337,4 @@ class JobsPageTestCase(TransactionTestCase):
         self.assertContains(response, 'aria-valuenow="50"')
         self.assertContains(response, str(3 * 1024 ** 3))
         with patch.object(fakes.NoopKind, "progress_bytes", True):
-            self.assertContains(self.client.get(url), "3.0\xa0GB / 6.0\xa0GB")
+            self.assertContains(self.client.get(url), "3\xa0GiB / 6\xa0GiB")

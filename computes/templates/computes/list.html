@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load common_tags %}
 {% load static %}
 {% load bootstrap_icons %}
 {% load operations %}
@@ -42,8 +43,8 @@
         <div class="col">
             <div class="card h-100"><div class="card-body">
                 <div class="small text-body-secondary">{% bs_icon 'memory' %} {% trans "Memory given" %}</div>
-                <div class="fs-4 lh-sm">{{ totals.assigned|filesizeformat }}</div>
-                <div class="small text-body-secondary">{% blocktrans with memory=totals.memory|filesizeformat %}of {{ memory }}{% endblocktrans %}</div>
+                <div class="fs-4 lh-sm">{{ totals.assigned|binary_size }}</div>
+                <div class="small text-body-secondary">{% blocktrans with memory=totals.memory|binary_size %}of {{ memory }}{% endblocktrans %}</div>
             </div></div>
         </div>
     </div>

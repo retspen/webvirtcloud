@@ -81,7 +81,7 @@
         });
         table.classList.toggle("d-none", matches.length === 0);
         if (answer.coverage) {
-            var readAt = fill(text.readAt, "%(time)s", new Date(answer.read_at).toLocaleTimeString());
+            var readAt = fill(text.readAt, "%(time)s", new Date(answer.read_at).toLocaleTimeString(document.documentElement.lang || undefined));
             var none = MAC.test(form.elements.q.value.trim()) ? text.noneMac : text.none;
             coverage.textContent = (matches.length ? "" : none + " ") + coverageText(answer.coverage) + " " + readAt;
         } else {
