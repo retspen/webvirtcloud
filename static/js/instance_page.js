@@ -298,6 +298,14 @@
         migrateCompute.addEventListener("change", loadMigratePlan);
     }
 
+    // the tab rows scroll sideways on a phone: the chosen tab is centred in its row, the page stays put
+    document.addEventListener("shown.bs.tab", function (event) {
+        var row = event.target.closest(".overflow-x-auto");
+        if (!row) return;
+        var tab = event.target.getBoundingClientRect(), box = row.getBoundingClientRect();
+        row.scrollLeft += tab.left - box.left - (box.width - tab.width) / 2;
+    });
+
     // the tab a redirect points to; a template opens on its clone form
     restoreInstanceTab(document, location.hash || summary.dataset.opensOn, show_tab, load_osinfo);
     // none open (a template has no Power tab): the first section the page has

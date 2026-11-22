@@ -62,11 +62,14 @@ class MigrateFormTests(TestCase):
                     self.domain.suspend()
                 self.assertEqual(self.migrate_form().xpath(".//input[@type='checkbox']/@name"), switches)
 
-    def test_a_vm_with_no_other_host_gets_the_reason(self):
+    def test_a_vm_with_no_other_host_gets_only_the_reason(self):
         self.other.delete()
-        form = self.migrate_form()
-        self.assertIn("There is no other host to migrate to.", form.text_content())
-        self.assertEqual(form.xpath(".//button[@name='migrate']"), [])
+        self.client.force_login(self.admin)
+        with patch("vrtManager.connection.connection_manager.get_connection", return_value=self.conn):
+            page = self.client.get(reverse("instances:instance", args=[self.vm.id])).content
+        (tab,) = html.fromstring(page).xpath("//div[@id='migrate']")
+        self.assertEqual(tab.text_content().strip(), "There is no other host to migrate to.")
+        self.assertEqual(tab.xpath(".//form"), [])
 
     def test_the_api_uses_auto_converge_unless_told_otherwise(self):
         api = APIClient()

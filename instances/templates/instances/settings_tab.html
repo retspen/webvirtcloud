@@ -7,7 +7,7 @@
     <!-- Nav tabs -->
     <div class="card">
     <div class="card-header bg-transparent pb-0">
-    <ul class="nav nav-underline nav-fill small" role="tablist" aria-label="Instance settings">
+    <ul class="nav nav-underline nav-fill flex-nowrap overflow-x-auto text-nowrap p-1 small" role="tablist" aria-label="Instance settings">
         {% if instance.guest_agent_ready %}
             <li class="nav-item" role="presentation">
                 <button class="px-1 nav-link" data-bs-toggle="tab" id="osinfo-tab" data-bs-target="#osinfo" type="button" role="tab" aria-controls="osinfo" aria-selected="false">
@@ -543,6 +543,10 @@
         </div>
         {% endif %}
         <div role="tabpanel" class="tab-pane" id="migrate">
+            {# a VM that cannot go anywhere gets the reason, not the form #}
+            {% if migrate_refusal %}
+            <p class="text-body-secondary mb-0">{{ migrate_refusal }}</p>
+            {% else %}
             <form action="{% url 'instances:migrate' instance.id %}" method="post" aria-labelledby="migrate-route">{% csrf_token %}{% submission_key %}
                 <header class="border-bottom pb-3 mb-4">
                     <h2 class="h6" id="migrate-route">{% trans "Migration route" %}</h2>
@@ -568,8 +572,6 @@
                         {% trans "Both hosts need the same emulator; the VM's definition leaves the source host." %}
                     </p>
                 </header>
-                {# a VM that cannot go anywhere gets the reason, not the disks and settings #}
-                {% if not migrate_refusal %}
                 <section class="card mb-3" aria-labelledby="migrate-storage">
                     <div class="card-body">
                         <h2 class="h6 mb-3" id="migrate-storage">{% bs_icon 'device-hdd' %} {% trans "Storage" %}</h2>
@@ -632,21 +634,15 @@
                         </div>
                     </div>
                 </section>
-                {% endif %}
                 <footer class="border-top pt-3">
-                    {% if migrate_refusal %}<p class="small text-body-secondary mb-2">{{ migrate_refusal }}</p>{% endif %}
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
                         <p class="small text-body-secondary mb-0">{% trans "Migration runs as a background job." %}</p>
-                        {% if migrate_refusal %}
-                        <button type="button" class="btn btn-primary ms-auto" disabled>{% trans "Migrate" %}</button>
-                        {% else %}
                         {# enabled once the disks of the chosen destination are shown #}
                         <button type="submit" class="btn btn-primary ms-auto" name="migrate" disabled>{% trans "Migrate" %}</button>
-                        {% endif %}
                     </div>
                 </footer>
             </form>
-            <div class="clearfix"></div>
+            {% endif %}
         </div>
         <div role="tabpanel" class="tab-pane" id="xmledit">
             {% if instance.status != 5 %}

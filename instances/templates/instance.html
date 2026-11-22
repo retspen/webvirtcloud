@@ -38,9 +38,9 @@
                     <button type="button" class="btn btn-sm btn-primary" id="clone-button">{% bs_icon 'copy' %} {% trans "Clone" %}</button>
                     {% endif %}
                     {% if instance.guest_agent_ready %}
-                    <button type="button" class="btn btn-sm btn-secondary" id="os-details-button">{% bs_icon 'info-circle' %} {% trans "OS details" %}</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="os-details-button">{% bs_icon 'info-circle' %} {% trans "OS details" %}</button>
                     {% endif %}
-                    <a class="btn btn-sm btn-secondary" href="{% url 'instances:instance' instance.id %}">{% bs_icon 'arrow-clockwise' %} {% trans "Refresh" %}</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'instances:instance' instance.id %}">{% bs_icon 'arrow-clockwise' %} {% trans "Refresh" %}</a>
                 </div>
             </div>
             {# shown by instance_status.js while the VM's state cannot be read #}
@@ -58,28 +58,29 @@
             </div>
             {% endif %}
             <dl class="row g-2 small mb-0 mt-1">
-                <div class="col-6 col-lg-2">
-                    <dt class="fw-normal text-body-secondary">{% trans "CPU" %}</dt>
-                    <dd class="mb-0">{% firstof instance.cur_vcpu instance.vcpu %} {% trans "of" %} {{ instance.vcpu }} {% trans "vCPU" %}</dd>
+                <div class="col-auto col-lg-2">
+                    <dt class="fw-normal text-body-secondary d-inline d-lg-block">{% trans "CPU" %}</dt>
+                    <dd class="mb-0 d-inline d-lg-block">{% firstof instance.cur_vcpu instance.vcpu %} {% trans "of" %} {{ instance.vcpu }} {% trans "vCPU" %}</dd>
                 </div>
-                <div class="col-6 col-lg-2">
-                    <dt class="fw-normal text-body-secondary">{% trans "Memory" %}</dt>
-                    <dd class="mb-0">{{ instance.cur_memory }} MiB</dd>
+                <div class="col-auto col-lg-2">
+                    <dt class="fw-normal text-body-secondary d-inline d-lg-block">{% trans "Memory" %}</dt>
+                    <dd class="mb-0 d-inline d-lg-block">{{ instance.cur_memory }} MiB</dd>
                 </div>
-                <div class="col-6 col-lg-5">
-                    <dt class="fw-normal text-body-secondary">{% trans "Disks" %}</dt>
-                    <dd class="mb-0">{% for disk in instance.disks %}{{ disk.dev }} {{ disk.size|filesizeformat }}{% if not forloop.last %} · {% endif %}{% empty %}{% trans "None" %}{% endfor %}</dd>
+                <div class="col-auto col-lg-5">
+                    <dt class="fw-normal text-body-secondary d-inline d-lg-block">{% trans "Disks" %}</dt>
+                    <dd class="mb-0 d-inline d-lg-block">{% for disk in instance.disks %}{{ disk.dev }} {{ disk.size|filesizeformat }}{% if not forloop.last %} · {% endif %}{% empty %}{% trans "None" %}{% endfor %}</dd>
                 </div>
                 {% if not instance.is_template %}
-                <div class="col-6 col-lg-3">
-                    <dt class="fw-normal text-body-secondary">{% trans "IPv4" %}</dt>
-                    <dd class="mb-0 font-monospace" data-address-mac="{% for nic in instance.networks %}{{ nic.mac }} {% endfor %}" data-address-family="ipv4" data-empty="—">{% trans "Reading…" %}</dd>
+                <div class="col-auto col-lg-3">
+                    <dt class="fw-normal text-body-secondary d-inline d-lg-block">{% trans "IPv4" %}</dt>
+                    <dd class="mb-0 d-inline d-lg-block font-monospace" data-address-mac="{% for nic in instance.networks %}{{ nic.mac }} {% endfor %}" data-address-family="ipv4" data-empty="—">{% trans "Reading…" %}</dd>
                 </div>
                 {% endif %}
             </dl>
         </div>
-        <div class="card-footer p-2">
-            <ul class="nav nav-pills nav-fill flex-wrap gap-1 small" id="navbtn" role="tablist" aria-label="{% trans "Instance actions" %}">
+        <div class="card-footer p-1">
+            {# p-1 inside the scroller keeps the focus ring from being clipped #}
+            <ul class="nav nav-pills nav-fill flex-nowrap overflow-x-auto gap-1 p-1 small" id="navbtn" role="tablist" aria-label="{% trans "Instance actions" %}">
                 {# a template is cloned, not run: no power, access, snapshots or stats #}
                 {% if not instance.is_template %}
                 <li class="nav-item" role="presentation">
