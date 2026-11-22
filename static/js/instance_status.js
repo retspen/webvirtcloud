@@ -4,6 +4,8 @@ backgroundJobRunning = false;
 // not "status": that is window.status, which the browser may not keep
 var vm_summary = document.getElementById("vm-summary");
 var vm_status = Number(vm_summary.dataset.status);
+// why it is in its state (libvirt's reason): a VM paused by hand that pauses again on a disk error stays paused
+var vm_reason = vm_summary.dataset.reason;
 var host_lost = document.getElementById("vm-host-lost");
 
 function reloadWhenFree() {
@@ -24,7 +26,7 @@ var status_poll = pollWhileVisible(5000, function () {
     });
 }, function get_status(data) {
     host_lost.hidden = true;
-    if (data['status'] != vm_status) {
+    if (data['status'] != vm_status || String(data['reason']) !== vm_reason) {
         reloadWhenFree();
     }
 });

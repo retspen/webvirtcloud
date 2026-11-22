@@ -12314,3 +12314,58 @@ msgstr "工作进程未在运行；最后在线时间 %(when)s。任务将等待
 #: operations/templatetags/operations.py:99
 msgid "The job worker has not run yet. Jobs wait until it runs."
 msgstr "工作进程尚未运行过。任务将等待它运行。"
+
+
+#: instances/states.py:27
+msgid "Paused by a disk error"
+msgstr "因磁盘错误而暂停"
+
+#: instances/states.py:28
+msgid "Paused by its watchdog"
+msgstr "已被其看门狗设备暂停"
+
+#: instances/states.py:29
+msgid "Paused: the guest crashed"
+msgstr "已暂停：客户机崩溃"
+
+#: instances/states.py:30
+msgid "Paused: its migration failed midway"
+msgstr "已暂停：迁移中途失败"
+
+#: instances/states.py:31
+msgid "Paused by a libvirt error"
+msgstr "因 libvirt 错误而暂停"
+
+#: instances/states.py:33
+msgid "Stopped: it crashed"
+msgstr "已停止：已崩溃"
+
+#: instances/states.py:35
+msgid "Stopped by libvirt"
+msgstr "已被 libvirt 停止"
+
+#: instances/states.py:36
+msgid "Stopped: it failed to start"
+msgstr "已停止：启动失败"
+
+#: instances/states.py:37
+msgid "The guest's kernel panicked"
+msgstr "客户机内核发生 panic"
+
+#: instances/states.py:42
+#, python-format
+msgid "%(dev)s: its storage has no free space"
+msgstr "%(dev)s：其存储没有可用空间"
+
+#: instances/states.py:43
+#, python-format
+msgid "%(dev)s: an I/O error"
+msgstr "%(dev)s：I/O 错误"
+
+#: instances/templates/instance.html:55
+msgid "Free space on its storage, then resume it."
+msgstr "请在其存储上释放空间，然后恢复它。"
+
+#: instances/templates/instance.html:55
+msgid "An administrator has to free space on its storage and resume it."
+msgstr "需要管理员在其存储上释放空间并恢复它。"

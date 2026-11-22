@@ -467,7 +467,8 @@ def _instance_page(request, pk, instance, compute):
 
 def status(request, pk):
     instance = get_instance(request.user, pk)
-    return JsonResponse({"status": instance.proxy.get_status()})
+    state, reason = instance.proxy.get_state()
+    return JsonResponse({"status": state, "reason": reason})
 
 
 def nic_addresses(request, pk):

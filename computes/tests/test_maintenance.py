@@ -266,6 +266,7 @@ class MaintenanceWithMigrationTests(TestCase):
         def read_list_rows(instances, computes):  # a running VM, without asking a host
             for instance in instances:
                 instance.__dict__["info"] = [1, 131072, 131072, 1, 0]
+                instance.__dict__["state_reason"] = None
 
         with patch("computes.views.utils.refresh_instance_database"), \
                 patch("computes.views.read_list_rows", side_effect=read_list_rows), \

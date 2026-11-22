@@ -1173,14 +1173,15 @@ class wvmConnect(object):
         return instances
 
     def get_domain_states(self):
-        """{uuid: [name, state]} of every domain, in one call."""
-        return {dom.UUIDString(): [dom.name(), stats["state.state"]]
+        """{uuid: [name, state, reason]} of every domain, in one call."""
+        return {dom.UUIDString(): [dom.name(), stats["state.state"], stats["state.reason"]]
                 for dom, stats in self.wvm.getAllDomainStats(libvirt.VIR_DOMAIN_STATS_STATE)}
 
     def get_domain_rows(self, uuids=None):
-        """{uuid: (info, title)} of every domain, or of those in uuids, as the
-        VM lists show them: info in virDomainGetInfo's shape (state, max
-        memory KiB, memory KiB, vCPUs), the states in one call and the rest
+        """{uuid: (info, title, reason)} of every domain, or of those in uuids,
+        as the VM lists show them: info in virDomainGetInfo's shape (state, max
+        memory KiB, memory KiB, vCPUs), reason the state's (virDomainGetState),
+        the states in one call and the rest
         from each domain's live XML, which the title needs anyway. A domain
         gone meanwhile is left out."""
         rows = {}
@@ -1194,7 +1195,7 @@ class wvmConnect(object):
             vcpu = doc.find("vcpu")
             info = [stats["state.state"], int(doc.findtext("memory")), int(doc.findtext("currentMemory")),
                     int(vcpu.get("current", vcpu.text))]
-            rows[dom.UUIDString()] = (info, doc.findtext("title") or "")
+            rows[dom.UUIDString()] = (info, doc.findtext("title") or "", stats["state.reason"])
         return rows
 
     def domain_trees(self, running_only=False):

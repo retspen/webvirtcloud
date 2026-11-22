@@ -25,6 +25,7 @@ from vrtManager.instance import wvmInstance, wvmInstances
 from vrtManager.util import ConnectionFailed, HostBusy, message, vol_dev_type
 
 from .models import Instance
+from .states import state_reason
 
 
 def can_open_console(user, instance):
@@ -441,7 +442,8 @@ def read_list_rows(instances, computes):
         except libvirtError:
             rows[compute.pk] = {}
     for inst in instances:
-        inst.info, inst.title = rows[inst.compute_id].get(inst.uuid, (None, ""))
+        inst.info, inst.title, why = rows[inst.compute_id].get(inst.uuid, (None, "", None))
+        inst.state_reason = state_reason(inst.info[0], why) if inst.info else None
 
 
 # how long a VM list and its poll wait for a host's VMs, all hosts asked at once

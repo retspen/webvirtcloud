@@ -16,7 +16,7 @@
 
 {% block content %}
     {# the VM at a glance in one card: who and where it is, what it has, and its sections as the card's footer #}
-    <section class="card mb-3" aria-labelledby="vm-name" id="vm-summary" data-status="{{ instance.status }}"
+    <section class="card mb-3" aria-labelledby="vm-name" id="vm-summary" data-status="{{ instance.status }}" data-reason="{{ instance.state_and_reason.1 }}"
              data-status-url="{% url 'instances:status' instance.id %}" data-osinfo-url="{% url 'instances:osinfo' instance.id %}"
              data-opens-on="{% if instance.is_template and can_clone %}#clone{% endif %}"
              data-random-mac-url="{% url 'instances:random_mac_address' %}"
@@ -46,6 +46,16 @@
             </div>
             {# shown by instance_status.js while the VM's state cannot be read #}
             <div class="alert alert-warning small py-2 mt-2 mb-0" id="vm-host-lost" role="status" hidden>{% trans "This page could not be refreshed: its state and figures may be out of date." %}</div>
+            {# a VM a fault stopped or paused says why; a full storage pauses it until there is space #}
+            {% if instance.state_reason %}
+            <div class="alert alert-danger small py-2 mt-2 mb-0" role="status">
+                <strong>{{ instance.state_reason }}</strong>
+                {% for error in instance.disk_error_texts %}<div>{{ error }}</div>{% endfor %}
+                {% if instance.disk_full %}
+                <div>{% if request.user.is_superuser %}{% trans "Free space on its storage, then resume it." %}{% else %}{% trans "An administrator has to free space on its storage and resume it." %}{% endif %}</div>
+                {% endif %}
+            </div>
+            {% endif %}
             {% if not instance.is_template %}
             <div class="d-flex flex-wrap column-gap-3 row-gap-1 small mt-2">
                 {% if not instance.guest_agent %}

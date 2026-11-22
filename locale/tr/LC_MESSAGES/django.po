@@ -13039,3 +13039,58 @@ msgstr "İş işleyicisi çalışmıyor; en son %(when)s görüldü. İşler o y
 #: operations/templatetags/operations.py:99
 msgid "The job worker has not run yet. Jobs wait until it runs."
 msgstr "İş işleyicisi henüz hiç çalışmadı. İşler o çalışana kadar bekler."
+
+
+#: instances/states.py:27
+msgid "Paused by a disk error"
+msgstr "Bir disk hatası nedeniyle duraklatıldı"
+
+#: instances/states.py:28
+msgid "Paused by its watchdog"
+msgstr "Watchdog aygıtı tarafından duraklatıldı"
+
+#: instances/states.py:29
+msgid "Paused: the guest crashed"
+msgstr "Duraklatıldı: konuk çöktü"
+
+#: instances/states.py:30
+msgid "Paused: its migration failed midway"
+msgstr "Duraklatıldı: taşıma yarıda başarısız oldu"
+
+#: instances/states.py:31
+msgid "Paused by a libvirt error"
+msgstr "Bir libvirt hatası nedeniyle duraklatıldı"
+
+#: instances/states.py:33
+msgid "Stopped: it crashed"
+msgstr "Durdu: çöktü"
+
+#: instances/states.py:35
+msgid "Stopped by libvirt"
+msgstr "libvirt tarafından durduruldu"
+
+#: instances/states.py:36
+msgid "Stopped: it failed to start"
+msgstr "Durdu: başlatılamadı"
+
+#: instances/states.py:37
+msgid "The guest's kernel panicked"
+msgstr "Konuğun çekirdeği panik verdi"
+
+#: instances/states.py:42
+#, python-format
+msgid "%(dev)s: its storage has no free space"
+msgstr "%(dev)s: depolamasında boş alan yok"
+
+#: instances/states.py:43
+#, python-format
+msgid "%(dev)s: an I/O error"
+msgstr "%(dev)s: G/Ç hatası"
+
+#: instances/templates/instance.html:55
+msgid "Free space on its storage, then resume it."
+msgstr "Depolamasında yer açın, ardından sanal makineyi devam ettirin."
+
+#: instances/templates/instance.html:55
+msgid "An administrator has to free space on its storage and resume it."
+msgstr "Bir yöneticinin depolamasında yer açıp sanal makineyi devam ettirmesi gerekir."

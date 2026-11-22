@@ -3,6 +3,7 @@ libvirt VM states: their labels, and the actions each one allows a user.
 The lists and the VM page use these through templatetags/vm_states.py.
 """
 
+import libvirt
 from django.utils.translation import gettext_lazy as _
 
 # state (virDomainState): label, Bootstrap color
@@ -17,6 +18,23 @@ STATES = {
     7: (_("PM suspended"), "warning"),  # suspended by the guest
 }
 UNKNOWN = (_("Unknown"), "secondary")  # the VM cannot be read
+
+# (state, reason): why a VM stopped or paused that nobody asked for; the
+# ordinary reasons (a user, a migration, a snapshot) are not told
+REASONS = {
+    # a write error, or a read error where the disk's policy is to stop
+    (libvirt.VIR_DOMAIN_PAUSED, libvirt.VIR_DOMAIN_PAUSED_IOERROR): _("Paused by a disk error"),
+    (libvirt.VIR_DOMAIN_PAUSED, libvirt.VIR_DOMAIN_PAUSED_WATCHDOG): _("Paused by its watchdog"),
+    (libvirt.VIR_DOMAIN_PAUSED, libvirt.VIR_DOMAIN_PAUSED_CRASHED): _("Paused: the guest crashed"),
+    (libvirt.VIR_DOMAIN_PAUSED, libvirt.VIR_DOMAIN_PAUSED_POSTCOPY_FAILED): _("Paused: its migration failed midway"),
+    (libvirt.VIR_DOMAIN_PAUSED, libvirt.VIR_DOMAIN_PAUSED_API_ERROR): _("Paused by a libvirt error"),
+    # the guest, or its QEMU process (killed on the host: out of memory)
+    (libvirt.VIR_DOMAIN_SHUTOFF, libvirt.VIR_DOMAIN_SHUTOFF_CRASHED): _("Stopped: it crashed"),
+    # libvirt could not take it back after restarting
+    (libvirt.VIR_DOMAIN_SHUTOFF, libvirt.VIR_DOMAIN_SHUTOFF_DAEMON): _("Stopped by libvirt"),
+    (libvirt.VIR_DOMAIN_SHUTOFF, libvirt.VIR_DOMAIN_SHUTOFF_FAILED): _("Stopped: it failed to start"),
+    (libvirt.VIR_DOMAIN_CRASHED, libvirt.VIR_DOMAIN_CRASHED_PANICKED): _("The guest's kernel panicked"),
+}
 
 RUNNING = {"suspend", "poweroff", "powercycle", "force_off", "console"}
 # the states the power tab shows as its strip: active, blocked, suspended, off, PM suspended
@@ -38,6 +56,17 @@ SUPERUSER_ONLY = {"suspend", "resume"}  # their views are for superusers
 def state_label(state):
     """(label, color) of a state; None for a VM that cannot be read."""
     return UNKNOWN if state is None else STATES.get(state, STATES[0])
+
+# a disk error (virDomainGetDiskErrors) of a VM paused by one
+DISK_ERRORS = {
+    libvirt.VIR_DOMAIN_DISK_ERROR_NO_SPACE: _("%(dev)s: its storage has no free space"),
+    libvirt.VIR_DOMAIN_DISK_ERROR_UNSPEC: _("%(dev)s: an I/O error"),
+}
+
+
+def state_reason(state, reason):
+    """Why the VM is in its state, when that is a fault (REASONS); else None."""
+    return REASONS.get((state, reason))
 
 
 def manages(user, instance):

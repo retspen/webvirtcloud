@@ -920,6 +920,14 @@ class wvmInstance(wvmConnect):
             self._read_cache.clear()
         return self.wvm.defineXML(xml)
 
+    def get_state(self):
+        """[state, reason] of the domain (virDomainGetState), in one read."""
+        return self.instance.state()
+
+    def get_disk_errors(self):
+        """{target: virDomainDiskErrorCode} of the disks QEMU stopped on (virDomainGetDiskErrors)."""
+        return self.instance.diskErrors()
+
     def get_status(self):
         """
         VIR_DOMAIN_NOSTATE = 0

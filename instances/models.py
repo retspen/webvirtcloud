@@ -3,6 +3,9 @@ from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from libvirt import (
+    VIR_DOMAIN_DISK_ERROR_NO_SPACE,
+    VIR_DOMAIN_PAUSED,
+    VIR_DOMAIN_PAUSED_IOERROR,
     VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL,
     VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL,
     libvirtError,
@@ -10,6 +13,8 @@ from libvirt import (
 from operations import claims
 from operations.models import Claim
 from vrtManager.instance import PERSISTENT_XML, wvmInstance
+
+from .states import DISK_ERRORS, REASONS
 
 
 class Flavor(models.Model):
@@ -80,6 +85,41 @@ class Instance(models.Model):
             return self.proxy.instance.info()
         except libvirtError:
             return None
+
+    @cached_property
+    def state_and_reason(self) -> tuple:
+        """virDomainGetState: (state, reason) of one read, as a reason means
+        something only with its own state; () if the VM cannot be read."""
+        try:
+            return tuple(self.proxy.get_state())
+        except libvirtError:
+            return ()
+
+    @cached_property
+    def state_reason(self):
+        """Why the VM stopped or paused, when a fault did it (states.REASONS);
+        else None. The lists set it from their one read of the host."""
+        return REASONS.get(self.state_and_reason)
+
+    @cached_property
+    def disk_errors(self) -> dict:
+        """{target: virDomainDiskErrorCode} of a VM a disk error paused; read
+        only then, as libvirt keeps the last error after a resume."""
+        if self.state_and_reason != (VIR_DOMAIN_PAUSED, VIR_DOMAIN_PAUSED_IOERROR):
+            return {}
+        try:
+            return self.proxy.get_disk_errors()
+        except libvirtError:
+            return {}
+
+    @property
+    def disk_error_texts(self) -> list:
+        return [DISK_ERRORS[code] % {"dev": dev} for dev, code in sorted(self.disk_errors.items()) if code in DISK_ERRORS]
+
+    @property
+    def disk_full(self) -> bool:
+        """A disk error came from a storage with no free space: freeing some is the way out."""
+        return VIR_DOMAIN_DISK_ERROR_NO_SPACE in self.disk_errors.values()
 
     @cached_property
     def status(self) -> int:
