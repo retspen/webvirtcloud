@@ -6349,8 +6349,8 @@ msgid "Not connected: is the agent installed and running in the guest?"
 msgstr "未连接：客户机中是否已安装并运行代理？"
 
 #: instances/templates/instances/settings_tab.html:1019
-msgid "When the guest crashes"
-msgstr "客户机崩溃时"
+msgid "When the guest crashes or hangs"
+msgstr "客户机崩溃或挂起时"
 
 #: instances/templates/instances/settings_tab.html:1024
 msgid "Restart"
@@ -6363,10 +6363,8 @@ msgid "Stop"
 msgstr "停止"
 
 #: instances/templates/instances/settings_tab.html:1028
-msgid ""
-"For a crash the guest reports, not a hang. Stop keeps a VM that crashes again"
-" and again down for a look. From the next start."
-msgstr "适用于客户机报告的崩溃，而非挂起。“停止”会让反复崩溃的虚拟机保持停止状态以便排查。下次启动时生效。"
+msgid "A hang is noticed once the guest arms its watchdog (Linux: RuntimeWatchdogSec in systemd's system.conf). Stop keeps a VM that crashes again and again down for a look. From the next start."
+msgstr "客户机启用其看门狗后才能发现挂起（Linux：systemd 的 system.conf 中的 RuntimeWatchdogSec）。“停止”会让反复崩溃的虚拟机保持停止状态以便排查。下次启动时生效。"
 
 #: instances/templates/instances/settings_tab.html:1030
 #, python-format
@@ -12369,3 +12367,7 @@ msgstr "请在其存储上释放空间，然后恢复它。"
 #: instances/templates/instance.html:55
 msgid "An administrator has to free space on its storage and resume it."
 msgstr "需要管理员在其存储上释放空间并恢复它。"
+
+#: instances/templates/instances/settings_tab.html:1030
+msgid "This VM cannot report a crash or a hang yet: a choice adds the devices it reports them through, from the next start."
+msgstr "此虚拟机尚无法报告崩溃或挂起：做出选择即会添加其报告所用的设备，下次启动时生效。"

@@ -376,6 +376,10 @@ class Instance(models.Model):
         return self.proxy.get_on_crash()
 
     @cached_property
+    def config_crash_devices(self) -> bool:
+        return self.proxy.has_crash_devices()
+
+    @cached_property
     def guest_agent_ready(self) -> bool:
         return self.proxy.is_agent_ready()
 

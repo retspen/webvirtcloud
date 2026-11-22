@@ -1074,6 +1074,7 @@ class CreateInstance(Kind):
                 add_cdrom=data["add_cdrom"],
                 add_input=data["add_input"],
                 tpm_model=conn.get_tpm_model(data["arch"], data["machine"]) if data["tpm"] else None,
+                panic_model=conn.get_panic_model(data["arch"], data["machine"]),
             )
         except Exception as err:
             # a definition whose answer was lost may have gone through: then, or

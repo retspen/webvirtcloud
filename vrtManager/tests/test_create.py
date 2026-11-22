@@ -202,3 +202,41 @@ class NewVmTextTests(SimpleTestCase):
         self.assertEqual(devices.find("disk/source").get("file"), f"/srv/{odd}/vm.qcow2")
         self.assertEqual(devices.find("interface/source").get("network"), odd)
         self.assertEqual(devices.find("interface/filterref").get("filter"), odd)
+
+
+def defined_crash_devices(machine, panic_model):
+    conn = wvmCreate.__new__(wvmCreate)
+    conn.wvm = MagicMock()
+    with patch.object(wvmCreate, "get_capabilities", return_value={"features": []}), \
+            patch.object(wvmCreate, "get_dom_capabilities", return_value=PORTS_DOM_CAPS):
+        conn.create_instance(name="vm-1", memory=512, vcpu=1, vcpu_mode="host-model",
+                             uuid="00000000-0000-4000-8000-0000000000c3", arch="x86_64", machine=machine,
+                             firmware="BIOS", volumes=[], networks="", nwfilter="", virtio=True,
+                             listener_addr="0.0.0.0", add_cdrom="None", add_input="None", panic_model=panic_model)
+    domain = etree.fromstring(conn.wvm.defineXML.call_args.args[0])
+    return domain.findtext("on_crash"), [(d.tag, dict(d.attrib)) for d in domain.xpath("devices/panic | devices/watchdog")]
+
+
+class CrashDevicesTests(SimpleTestCase):
+    """A new VM restarts when its guest crashes or hangs: the guest reports a
+    crash through a panic device, a hang through a watchdog it arms."""
+
+    def test_the_host_offers_its_panic_device(self):
+        caps = "<domainCapabilities><devices><panic supported='yes'><enum name='model'>{}</enum></panic></devices></domainCapabilities>"
+        for models, chosen in (("<value>hyperv</value><value>isa</value>", "isa"), ("<value>pvpanic</value>", "pvpanic"),
+                               ("<value>hyperv</value>", None)):
+            with self.subTest(models):
+                self.assertEqual(host(caps.format(models)).get_panic_model("x86_64", "q35"), chosen)
+        self.assertIsNone(host("<domainCapabilities><devices><panic supported='no'/></devices></domainCapabilities>")
+                          .get_panic_model("x86_64", "q35"))
+        # libvirt that does not tell: x86 has the ISA one, another machine none known
+        self.assertEqual(host("<domainCapabilities><devices/></domainCapabilities>").get_panic_model("x86_64", "q35"), "isa")
+        self.assertIsNone(host("<domainCapabilities><devices/></domainCapabilities>").get_panic_model("aarch64", "virt"))
+
+    def test_a_new_vm_gets_a_panic_device_and_a_pc_one_a_watchdog(self):
+        # q35 has its iTCO watchdog, which libvirt adds with reset
+        self.assertEqual(defined_crash_devices("pc-q35-rhel10.2.0", "isa"), ("restart", [("panic", {"model": "isa"})]))
+        self.assertEqual(defined_crash_devices("pc-i440fx-rhel7.6.0", "isa"),
+                         ("restart", [("panic", {"model": "isa"}), ("watchdog", {"model": "i6300esb", "action": "reset"})]))
+        self.assertEqual(defined_crash_devices("pc-q35-rhel10.2.0", None), ("restart", []))
+        self.assertEqual(defined_crash_devices("microvm", "isa"), ("restart", [("panic", {"model": "isa"})]))

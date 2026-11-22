@@ -4,6 +4,7 @@ import string
 
 import pycdlib
 from vrtManager import util
+from vrtManager.util import WATCHDOG_ACTIONS, needs_watchdog
 from vrtManager.connection import wvmConnect
 from vrtManager.storage import rbd_source_children, wvmStorage
 
@@ -103,10 +104,12 @@ class wvmCreate(wvmConnect):
         add_cdrom="sata",
         add_input="default",
         tpm_model=None,
+        panic_model=None,
     ):
         """
         Create VM function. firmware: BIOS, UEFI or UEFI Secure Boot, of
-        get_firmwares; tpm_model: an emulated TPM 2.0 of get_tpm_model, or none.
+        get_firmwares; tpm_model: an emulated TPM 2.0 of get_tpm_model, or none;
+        panic_model: the guest's panic device (get_panic_model), or none.
         """
         caps = self.get_capabilities(arch)
         dom_caps = self.get_dom_capabilities(arch, machine)
@@ -269,6 +272,11 @@ class wvmCreate(wvmConnect):
                    </video>"""
         if tpm_model:
             xml += f"""<tpm model='{tpm_model}'><backend type='emulator' version='2.0'/></tpm>"""
+        # on_crash restart acts on a crash the guest reports and the watchdog on a hang, once the guest arms it
+        if panic_model:
+            xml += f"""<panic model='{panic_model}'/>"""
+        if needs_watchdog(arch, machine):
+            xml += f"""<watchdog model='i6300esb' action='{WATCHDOG_ACTIONS["restart"]}'/>"""
         # q35 plugs each PCIe device (a virtio disk, a NIC) into a root port of
         # its own and libvirt makes only as many as the VM is defined with: as
         # virt-install, 14 ports, so a running VM can take more devices

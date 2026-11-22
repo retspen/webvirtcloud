@@ -172,3 +172,17 @@ def is_loopback(address):
         return ipaddress.ip_address(address).is_loopback
     except ValueError:
         return address == "localhost"
+
+
+# the watchdog's action for each crash action (on_crash): a guest that hangs is met as one that crashed
+WATCHDOG_ACTIONS = {"restart": "reset", "destroy": "poweroff"}
+
+
+def takes_watchdog(arch, machine):
+    """An x86 machine with a PCI bus takes an i6300esb (microvm has none)."""
+    return arch in ("x86_64", "i686") and not machine.startswith("microvm")
+
+
+def needs_watchdog(arch, machine):
+    """A new VM's machine has no watchdog of its own (q35 has the iTCO): it gets an i6300esb."""
+    return takes_watchdog(arch, machine) and "q35" not in machine

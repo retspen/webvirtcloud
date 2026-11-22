@@ -3383,15 +3383,37 @@ class wvmInstance(wvmConnect):
         """What the next start does when the guest crashes; libvirt's default is destroy."""
         return etree.fromstring(self._XMLDesc(PERSISTENT_XML)).findtext("on_crash") or "destroy"
 
+    def has_crash_devices(self):
+        """The next start has the device the guest reports a crash through
+        (without it on_crash never acts) and a watchdog where its machine
+        takes one: what set_on_crash adds."""
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        arch, machine = tree.find("os/type").get("arch"), tree.find("os/type").get("machine")
+        return tree.find("devices/panic") is not None and (
+            tree.find("devices/watchdog") is not None or not util.takes_watchdog(arch, machine))
+
     def set_on_crash(self, action):
-        """restart or destroy (stop) the VM when the guest crashes, from the next start."""
-        if action not in ("restart", "destroy"):
+        """restart or destroy (stop) the VM when the guest crashes or, once it
+        arms its watchdog, hangs; from the next start. The VM gets the panic
+        device a crash is reported through, and an i6300esb when it has no
+        watchdog and its machine takes one (libvirt before 9.1 does not show
+        q35's iTCO), when it lacks them."""
+        if action not in util.WATCHDOG_ACTIONS:
             raise util.OperationError(gettext_noop("Unknown crash action %(action)s"), action=action)
         tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
         on_crash = tree.find("on_crash")
         if on_crash is None:
             on_crash = etree.SubElement(tree, "on_crash")
         on_crash.text = action
+        arch, machine = tree.find("os/type").get("arch"), tree.find("os/type").get("machine")
+        devices = tree.find("devices")
+        if devices.find("panic") is None and (model := self.get_panic_model(arch, machine)):
+            etree.SubElement(devices, "panic", model=model)
+        watchdogs = devices.findall("watchdog")
+        if not watchdogs and util.takes_watchdog(arch, machine):
+            watchdogs = [etree.SubElement(devices, "watchdog", model="i6300esb")]
+        for watchdog in watchdogs:
+            watchdog.set("action", util.WATCHDOG_ACTIONS[action])
         self._defineXML(etree.tostring(tree).decode())
 
     def set_options(self, options):

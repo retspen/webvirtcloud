@@ -247,6 +247,13 @@ class PendingEditsTestCase(TestCase):
         self.assertEqual(doc.xpath("//input[@name='rng']/@checked"), ["checked"])
         self.assertEqual(doc.xpath("//input[@name='on_crash'][@checked]/@value"), ["restart"])
 
+    def test_a_vm_without_a_panic_device_has_no_crash_action_chosen_yet(self):
+        # on_crash acts on a crash the guest reports: without the device, a choice adds it
+        with patch("instances.models.Instance.config_crash_devices", new_callable=PropertyMock, return_value=False):
+            doc = self.page(get_on_crash=("restart", "restart"))
+        self.assertEqual(doc.xpath("//input[@name='on_crash'][@checked]"), [])
+        self.assertIn("This VM cannot report a crash or a hang yet", doc.xpath("string(//form[.//input[@name='on_crash']])"))
+
     def test_the_tpm_switch_is_off_where_it_cannot_change(self):
         tpm = "//input[@name='tpm']"
         doc = self.page(get_tpm=("emulator", "emulator"))

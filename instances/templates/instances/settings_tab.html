@@ -1013,16 +1013,20 @@
                     </form>
                 </div>
                 <form class="list-group-item p-3 p-md-4" action="{% url 'instances:set_on_crash' instance.id %}" method="post" aria-labelledby="options-crash">{% csrf_token %}
-                    <h2 class="h6 mb-2" id="options-crash">{% trans "When the guest crashes" %}</h2>
+                    <h2 class="h6 mb-2" id="options-crash">{% trans "When the guest crashes or hangs" %}</h2>
                     <div class="d-flex flex-wrap align-items-center column-gap-3 row-gap-2">
                         {% if instance.config_on_crash == "restart" or instance.config_on_crash == "destroy" %}
                         <div class="btn-group btn-group-sm" role="radiogroup" aria-labelledby="options-crash">
-                            <input type="radio" class="btn-check" name="on_crash" value="restart" id="on_crash_restart"{% if instance.config_on_crash == "restart" %} checked{% endif %} data-submit-on-change>
+                            <input type="radio" class="btn-check" name="on_crash" value="restart" id="on_crash_restart"{% if instance.config_crash_devices and instance.config_on_crash == "restart" %} checked{% endif %} data-submit-on-change>
                             <label class="btn btn-outline-primary" for="on_crash_restart">{% trans "Restart" %}</label>
-                            <input type="radio" class="btn-check" name="on_crash" value="destroy" id="on_crash_destroy"{% if instance.config_on_crash == "destroy" %} checked{% endif %} data-submit-on-change>
+                            <input type="radio" class="btn-check" name="on_crash" value="destroy" id="on_crash_destroy"{% if instance.config_crash_devices and instance.config_on_crash == "destroy" %} checked{% endif %} data-submit-on-change>
                             <label class="btn btn-outline-primary" for="on_crash_destroy">{% trans "Stop" %}</label>
                         </div>
-                        <span class="small text-body-secondary">{% trans "For a crash the guest reports, not a hang. Stop keeps a VM that crashes again and again down for a look. From the next start." %}</span>
+                        {% if instance.config_crash_devices %}
+                        <span class="small text-body-secondary">{% trans "A hang is noticed once the guest arms its watchdog (Linux: RuntimeWatchdogSec in systemd's system.conf). Stop keeps a VM that crashes again and again down for a look. From the next start." %}</span>
+                        {% else %}
+                        <span class="small d-inline-flex align-items-center gap-2"><span class="power-dot bg-warning" aria-hidden="true"></span>{% trans "This VM cannot report a crash or a hang yet: a choice adds the devices it reports them through, from the next start." %}</span>
+                        {% endif %}
                         {% else %}
                         <p class="small mb-0" id="on_crash">{% blocktrans with action=instance.config_on_crash %}{{ action }}: change it in the XML editor.{% endblocktrans %}</p>
                         {% endif %}

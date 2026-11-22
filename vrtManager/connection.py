@@ -1386,6 +1386,21 @@ class wvmConnect(object):
 
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=tpm_model)
 
+    def get_panic_model(self, arch, machine):
+        """The panic device a guest reports its crash through (pvpanic: Linux
+        has it built in, Windows with the virtio-win driver), for on_crash to
+        act on; None when the machine has none."""
+
+        def panic_model(ctx):
+            if not ctx.xpath("/domainCapabilities/devices/panic"):
+                # libvirt that does not tell (before 10.x): x86 has the ISA one
+                return "isa" if arch in ("x86_64", "i686") else None
+            models = ctx.xpath("/domainCapabilities/devices/panic[@supported='yes']/enum[@name='model']/value/text()")
+            # x86 ISA pvpanic, the PCI one elsewhere (aarch64), or the machine's own; hyperv needs Hyper-V enlightenments
+            return next((model for model in ("isa", "pvpanic", "pseries", "s390") if model in models), None)
+
+        return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=panic_model)
+
     def is_supports_virtio(self, arch, machine):
         if not self.is_qemu():
             return False

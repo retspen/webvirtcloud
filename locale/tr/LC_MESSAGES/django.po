@@ -6714,8 +6714,8 @@ msgid "Not connected: is the agent installed and running in the guest?"
 msgstr "Bağlı değil: ajan konuk sistemde kurulu ve çalışıyor mu?"
 
 #: instances/templates/instances/settings_tab.html:1019
-msgid "When the guest crashes"
-msgstr "Konuk sistem çöktüğünde"
+msgid "When the guest crashes or hangs"
+msgstr "Konuk sistem çöktüğünde ya da donduğunda"
 
 #: instances/templates/instances/settings_tab.html:1024
 msgid "Restart"
@@ -6728,13 +6728,8 @@ msgid "Stop"
 msgstr "Durdur"
 
 #: instances/templates/instances/settings_tab.html:1028
-msgid ""
-"For a crash the guest reports, not a hang. Stop keeps a VM that crashes again"
-" and again down for a look. From the next start."
-msgstr ""
-"Konuk sistemin bildirdiği bir çökme içindir, donma için değil. Durdur, tekrar"
-" tekrar çöken bir sanal makineyi incelemek için kapalı tutar. Sonraki "
-"başlatmadan itibaren."
+msgid "A hang is noticed once the guest arms its watchdog (Linux: RuntimeWatchdogSec in systemd's system.conf). Stop keeps a VM that crashes again and again down for a look. From the next start."
+msgstr "Donma, konuk sistem watchdog'unu kurduğunda fark edilir (Linux: systemd'nin system.conf dosyasında RuntimeWatchdogSec). Durdur, tekrar tekrar çöken bir sanal makineyi incelemek için kapalı tutar. Sonraki başlatmadan itibaren."
 
 #: instances/templates/instances/settings_tab.html:1030
 #, python-format
@@ -13094,3 +13089,7 @@ msgstr "Depolamasında yer açın, ardından sanal makineyi devam ettirin."
 #: instances/templates/instance.html:55
 msgid "An administrator has to free space on its storage and resume it."
 msgstr "Bir yöneticinin depolamasında yer açıp sanal makineyi devam ettirmesi gerekir."
+
+#: instances/templates/instances/settings_tab.html:1030
+msgid "This VM cannot report a crash or a hang yet: a choice adds the devices it reports them through, from the next start."
+msgstr "Bu sanal makine henüz çöktüğünü ya da donduğunu bildiremiyor: bir seçim, bildirdiği aygıtları sonraki başlatmadan itibaren ekler."
