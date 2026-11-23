@@ -47,11 +47,11 @@ main() {
   [ ! -f "$marker" ] || resume=$(cat "$marker")
   if [ -z "$resume" ]; then
     # an older version's own settings.py, not in the repository: its values go
-    # into data/local_settings.py first, by hand (README, Local settings)
+    # into data/local_settings.py first, by hand (doc/configuration.md, Local settings)
     if [ -f webvirtcloud/settings.py ] && ! git ls-files --error-unmatch webvirtcloud/settings.py >/dev/null 2>&1 &&
         [ ! -f data/local_settings.py ]; then
       echo "update.sh: this installation has its own webvirtcloud/settings.py. Put your own values" >&2
-      echo "into $app/data/local_settings.py (README, Local settings), then run it again. Your" >&2
+      echo "into $app/data/local_settings.py (doc/configuration.md, Local settings), then run it again. Your" >&2
       echo "settings.py differs from its version's template in these lines (> yours):" >&2
       git show HEAD:webvirtcloud/settings.py.template | diff - webvirtcloud/settings.py >&2
       exit 1

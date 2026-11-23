@@ -67,7 +67,7 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 if [ -f /etc/supervisor/conf.d/webvirtcloud.conf ] || [ -f /etc/supervisord.d/webvirtcloud.ini ]; then
-  echo "WebVirtCloud runs under supervisor here: move it to systemd first (README: Updating, Moving from supervisor to systemd)." >&2
+  echo "WebVirtCloud runs under supervisor here: move it to systemd first (doc/upgrading.md, Moving from supervisor to systemd)." >&2
   exit 1
 fi
 
@@ -279,7 +279,7 @@ install_webvirtcloud () {
   # added to the lists: hosts and origins from the environment stay
   wvc_ensure_local_settings "$APP_PATH/data" >/dev/null <<EOF
 # This installation's settings: settings.py runs this file after its own defaults,
-# and updates do not change it. See the README, Local settings.
+# and updates do not change it. See doc/configuration.md, Local settings.
 TIME_ZONE = $tzone
 WS_PORT = $novncd_port
 ALLOWED_HOSTS += $(wvc_allowed_hosts "$fqdn" $host_ips)
