@@ -779,9 +779,7 @@ def _queue_each(request, vms, kind, raw, refused):
     A VM refused (refused: the words, with %(vm)s), gone or held by another job is named, if the
     user may see it; the others are queued. One key per VM: a resent form queues none twice."""
     key = request.POST.get("submission_key", "")
-    names = dict(Instance.objects.filter(pk__in=vms).values_list("pk", "name"))
-    seen = names if request.user.is_superuser else dict(Instance.objects.filter(
-        pk__in=vms, userinstance__user=request.user).values_list("pk", "name"))
+    seen = dict(_visible_vms(request, vms).values_list("pk", "name"))
     queued = 0
     for pk in vms:
         name = seen.get(pk) or _("a chosen VM")  # one the user may not see is not named
@@ -840,7 +838,8 @@ def bulk_snapshot(request):
         messages.error(request, error_text(request, err))
         return _back_to_list(request)
     # a template's page has no snapshot controls: none is taken here either
-    templates = set(Instance.objects.filter(pk__in=vms, is_template=True).values_list("pk", flat=True))
+    # of the VMs the user sees: one they do not see is refused as any other they may not snapshot
+    templates = set(_visible_vms(request, vms).filter(is_template=True).values_list("pk", flat=True))
     for pk in templates:
         messages.error(request, _("%(vm)s: a template's snapshots are not taken here") % {"vm": _visible_name(request, pk)})
     if templates and not set(vms) - templates:
@@ -849,12 +848,17 @@ def bulk_snapshot(request):
                        {"name": name, "external": True}, _("%(vm)s: you may not snapshot it"))
 
 
+def _visible_vms(request, vms):
+    """Those of the VMs (ids) the user may see: superusers and view_instances users every one."""
+    visible = Instance.objects.filter(pk__in=vms)
+    if request.user.is_superuser or request.user.has_perm("instances.view_instances"):
+        return visible
+    return visible.filter(userinstance__user=request.user)
+
+
 def _visible_name(request, pk):
     """The VM's name if the user may see it, else words that do not name it."""
-    visible = Instance.objects.filter(pk=pk)
-    if not request.user.is_superuser:
-        visible = visible.filter(userinstance__user=request.user)
-    return visible.values_list("name", flat=True).first() or _("a chosen VM")
+    return _visible_vms(request, [pk]).values_list("name", flat=True).first() or _("a chosen VM")
 
 
 def from_script(request):

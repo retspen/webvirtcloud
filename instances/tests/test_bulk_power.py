@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.contrib.messages import get_messages
 from django.core.exceptions import PermissionDenied
 from django.test import TransactionTestCase
@@ -181,6 +182,13 @@ class BulkPowerTestCase(TransactionTestCase):
         # another's VM is not named: the owner may not see it
         self.assertEqual(said, ["a chosen VM: you may not power it now", "1 VM is queued; the Jobs page follows it."])
         self.assertEqual(Operation.objects.get().params["instance"], self.vms[0].pk)
+
+    def test_an_auditor_is_refused_by_the_name_of_a_vm_they_see(self):
+        auditor = get_user_model().objects.create_user("bp-auditor", password="pw")
+        auditor.user_permissions.add(Permission.objects.get(codename="view_instances"))
+        _response, said = self.submit("start", self.vms[:1], user=auditor)
+        self.assertEqual(said, ["bp-vm1: you may not power it now"])
+        self.assertFalse(Operation.objects.exists())
 
     def test_a_refusal_goes_back_to_the_list_it_came_from(self):
         host_list = reverse("instances", args=[self.vms[0].compute_id])

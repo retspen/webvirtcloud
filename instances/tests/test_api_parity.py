@@ -69,6 +69,16 @@ class ApiParityTests(TestCase):
         self.assertEqual(admin, read)
         self.assertNotIn("nvram", InstanceDetailsSerializer(self.vm, context={"request": Request(self.user)}).fields)
 
+    def test_the_details_tell_why_a_fault_paused_or_stopped_the_vm(self):
+        # as the VM page: a VM a full storage paused is told from one paused by hand
+        self.client.force_login(self.user)
+        for read, told in (([libvirt.VIR_DOMAIN_PAUSED, libvirt.VIR_DOMAIN_PAUSED_IOERROR],
+                            {"state": 3, "reason": 5, "text": "Paused by a disk error"}),
+                           ([libvirt.VIR_DOMAIN_PAUSED, libvirt.VIR_DOMAIN_PAUSED_USER], None)):
+            with self.subTest(read=read), patch("instances.models.wvmInstance") as wvm:
+                wvm.return_value.get_state.return_value = read
+                self.assertEqual(InstanceDetailsSerializer(self.vm).get_state_reason(Instance.objects.get(pk=self.vm.pk)), told)
+
     def test_a_flavor_is_at_least_one_of_each_and_has_its_id(self):
         self.client.force_login(self.admin)
         response = self.client.post("/api/v1/flavor/", {"label": "zero", "memory": 0, "vcpu": -1, "disk": 0},

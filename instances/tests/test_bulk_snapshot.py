@@ -83,6 +83,15 @@ class BulkSnapshotTestCase(TestCase):
         self.assertEqual(said, ["bs-vm1: The VM has internal snapshots; external snapshots cannot be mixed with them"])
         self.assertFalse(Operation.objects.exists())
 
+    def test_a_vm_one_does_not_see_is_not_told_a_template(self):
+        # a template and a VM of no owner are refused alike: neither tells what it is
+        Instance.objects.filter(pk=self.vms[1].pk).update(is_template=True)
+        stranger = get_user_model().objects.create_user("bs-stranger", password="pw")
+        stranger.user_permissions.add(Permission.objects.get(codename="snapshot_instances"))
+        _response, said = self.post("s1", self.vms, user=stranger)
+        self.assertEqual(said, ["a chosen VM: you may not snapshot it"] * 2)
+        self.assertFalse(Operation.objects.exists())
+
     def test_the_box_is_for_one_who_may_snapshot_a_listed_vm(self):
         owner = get_user_model().objects.create_user("bs-owner2", password="pw")
         owner.user_permissions.add(Permission.objects.get(codename="snapshot_instances"))
