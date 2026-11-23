@@ -144,6 +144,10 @@ Then sign in at `http://<server-ip>` as `admin` ([first login](doc/install.md#fi
 |:---:|:---:|
 | ![New VM](doc/images/create.png) | ![Logs](doc/images/logs.png) |
 
+| Backups |
+|:---:|
+| <img src="doc/images/backups.png" alt="Backups" width="50%"> |
+
 ## License
 
 WebVirtCloud is licensed under the [Apache License, Version 2.0](LICENSE).
