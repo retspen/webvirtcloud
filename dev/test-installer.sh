@@ -64,7 +64,7 @@ docker exec "$name" bash -c '
   { docker exec "$name" tail -n 50 /var/log/webvirtcloud-install.log; exit 1; }
 
 if [ -n "$from" ]; then
-  # the README's update command, from HEAD as the origin's master
+  # the update command of doc/upgrading.md, from HEAD as the origin's master
   docker exec "$name" bash -e -c '
     update() {
       (set -o pipefail &&

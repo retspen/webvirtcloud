@@ -7,7 +7,7 @@ import os
 import sys
 try:
     import ldap
-    # data/local_settings.py sets up LDAP with these (README, LDAP)
+    # data/local_settings.py sets up LDAP with these (doc/ldap.md)
     from django_auth_ldap.config import LDAPSearch, NestedActiveDirectoryGroupType  # noqa: F401
     HAS_LDAP = True
 except ImportError:
@@ -450,7 +450,7 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL") or EMAIL_HOST_USER or "webm
 # seconds an SMTP server may take to answer; without it a server that stops answering holds the request for good
 EMAIL_TIMEOUT = 10
 
-# LDAP, set up in data/local_settings.py (README, LDAP): seconds to connect and for
+# LDAP, set up in data/local_settings.py (doc/ldap.md): seconds to connect and for
 # each answer, as python-ldap waits for a server without end
 if HAS_LDAP:
     AUTH_LDAP_CONNECTION_OPTIONS = {ldap.OPT_NETWORK_TIMEOUT: 5, ldap.OPT_TIMEOUT: 10}
@@ -459,7 +459,7 @@ if HAS_LDAP:
 # change (Docker keeps it in the data volume). It runs here, after the defaults
 # above and with their names, so it sets or changes any of them, for example
 #   ALLOWED_HOSTS += ["panel.example.com"]
-# or the LDAP options (README, LDAP). A value worked out above from another
+# or the LDAP options (doc/ldap.md). A value worked out above from another
 # (DEFAULT_FROM_EMAIL, the log file) is not worked out again.
 LOCAL_SETTINGS = BASE_DIR / "data" / "local_settings.py"
 try:

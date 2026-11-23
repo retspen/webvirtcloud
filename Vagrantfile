@@ -1,4 +1,4 @@
-# Two disposable compute nodes for the live tests (README: Running tests), so
+# Two disposable compute nodes for the live tests (CONTRIBUTING.md: Running tests), so
 # that migration runs between them: AlmaLinux 10 with nested KVM, set up by
 # dev/libvirt-bootstrap.sh, with a SASL user for TCP and the host user's SSH
 # key for root (SASL user wvc, password wvc-test). The empty second disk

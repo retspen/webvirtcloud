@@ -1,5 +1,5 @@
 """Every install type runs the worker as the web server's user (www-data, or
-nginx where the installer and README substitute it), with its own log file
+nginx where the installer and doc/install.md substitute it), with its own log file
 and a stop timeout above the worker's 60 s grace."""
 
 from pathlib import Path
