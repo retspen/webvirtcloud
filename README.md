@@ -3,6 +3,10 @@
 
 WebVirtCloud is a **web visualization and management layer** for **libvirt**-based virtualization infrastructure.
 
+From installation to a VM's first backup, in three and a half minutes:
+
+https://github.com/user-attachments/assets/526fe16c-bfd7-46da-b986-689a37975e08
+
 > **libvirt is the single source of truth.** WebVirtCloud reads, displays and triggers actions on libvirt state, but it is never the primary orchestrator.
 
 - An administrator can connect to libvirt directly with **`virt-manager`** or **`virsh`** and create, delete, rename or reconfigure virtual machines. WebVirtCloud detects these changes and updates its database accordingly.
