@@ -35,32 +35,25 @@ WebVirtCloud and `virt-manager`/`virsh` can manage the same libvirt host **concu
 
 ## Features
 
-* QEMU/KVM hypervisor management (multiple compute nodes), with each host's capacity and what its VMs were given
-* Host maintenance: a host in maintenance takes no new VMs, incoming migrations or VM starts; putting it in maintenance offers to migrate its VMs away with Bulk Migrate
-* Balance: proposes migrations that even out the running VMs' memory, then vCPUs, as a share of each host's size
-* Virtual machine lifecycle: create, delete, power management, clone (also of a running VM, with libvirt 11.10 or later), migrate (with or without shared storage), bulk migrate (a host's chosen VMs to another host, the chosen number at once), disk moves between pools
-* Long operations (create, clone, delete, bulk power, snapshots, migration, disk moves, ISO upload, downloads from a URL, VM backups) run as jobs that the page follows; a queued job can be cancelled, and a running migration, ISO upload, download, backup or verification and the copy of a running VM (clone, disk move) too
-* External snapshots (memory optional; without memory, guest file systems can be frozen through the agent)
-* **External change detection:** VMs created, deleted or renamed via `virt-manager` or `virsh` are reconciled into the database automatically
-* Real-time host statistics (CPU, RAM) and VM statistics (CPU, RAM, disk, network)
-* A VM a fault stopped or paused says why (a disk error such as a full storage, a guest crash or kernel panic, its watchdog); its Settings tab chooses whether a guest that crashes, or hangs once it arms its watchdog, is restarted or stopped (new VMs get the panic device and watchdog this needs, older ones with the choice)
-* Storage pool and volume management; a superuser downloads a volume from its pool page (not one a running VM uses), or makes one from a file at a URL
-* Network (with DHCP leases), interface, network filter and secret management
-* PCI and USB devices of the host given to VMs
-* UEFI Secure Boot and TPM 2.0 for new VMs, as Windows 11 needs
-* Browser-based VNC console (noVNC) and serial console
-* Role-based access control: users see the VMs assigned to them, within their quota; an auditor permission shows every VM read-only
-* 2FA (OTP / TOTP) and failed-login lockout
-* SSH public key and root password management (guest agent for a running VM, gstfsd for a shut-off one)
-* Finding VMs by IP or MAC address, and a VM report as an Excel file
-* Tags on VMs and hosts, set by superusers: the lists filter by them, Bulk Migrate chooses VMs by them and a backup schedule backs up every VM with a chosen tag (templates left out)
-* Protected VMs, set by superusers on the VM's Settings tab: not deleted and not restored over until the protection is turned off
-* An audit log of who changed what, with its result
-* Cloud-init datasource interface (OpenStack metadata compatible) and NoCloud seed media
-* REST API — OpenAPI 3.0 (Swagger & ReDoc), with API tokens
-* LDAP / Active Directory integration (optional)
-* VM backups, of a running or shut-off VM, into a storage pool of your choice; a backup is restored as a new VM, over its own shut-off VM, or one disk as a new volume
-* Daily backups of the panel, with an optional off-site copy (restic over SFTP)
+* Several QEMU/KVM hosts, with their capacity, a maintenance mode and proposed migrations that balance them
+* VMs: create, power, clone (also running), migrate (with or without shared storage, many at once), delete
+* Long operations run as jobs that the page follows and that can be cancelled
+* External snapshots and disk moves between pools
+* VM backups into a storage pool, by hand or on a schedule, verified, restored as a new VM or over the VM
+* Daily backups of the panel itself, with an optional off-site copy
+* VMs created, renamed or deleted with `virsh` or `virt-manager` are picked up on their own
+* Live host and VM statistics, and the reason a VM stopped or paused on a fault
+* Storage pools and volumes, networks, interfaces, network filters and secrets
+* PCI and USB devices given to VMs; UEFI Secure Boot and TPM 2.0 for Windows 11
+* VNC (noVNC) and serial consoles in the browser
+* Users see only their VMs, within quotas; an auditor permission sees every VM read-only; two-factor login and login lockout
+* SSH keys and root passwords set in guests
+* Tags, protected VMs, search by IP or MAC address and a VM report as an Excel file
+* An audit log of who changed what
+* Alerts by e-mail or webhook, and a health check URL
+* Cloud-init metadata (OpenStack compatible) and NoCloud seed disks
+* REST API (OpenAPI 3.0) with API tokens
+* LDAP / Active Directory login (optional)
 * English, Turkish and Simplified Chinese
 
 ## Quick start

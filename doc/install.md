@@ -1,6 +1,10 @@
 # Installation
 
-The installer supports Ubuntu 22.04 / 24.04 / 26.04, Debian 12 / 13, RHEL / Rocky Linux / AlmaLinux / Oracle Linux 10, openEuler 24.03 LTS, openSUSE Leap 15.x / 16.0 / Tumbleweed and SLES 15; the panel runs on a virtual machine, a physical host or a KVM host itself and needs Python 3.10 or newer. CI tests Python 3.10–3.14 on Ubuntu (sqlite, and PostgreSQL on 3.12), the Docker image, and the installer on Ubuntu 22.04 / 24.04 / 26.04, Debian 12 / 13, AlmaLinux 10, openEuler 24.03 and openSUSE Leap 15.6 / 16.0 (`dev/test-installer.sh`). Pick one of the three ways below, then do the [first login](#first-login).
+The panel runs on a virtual machine, a physical host or a KVM host itself, with Python 3.10 or newer. Install it one of three ways, then do the [first login](#first-login):
+
+- [Installer](#installer): Ubuntu 22.04 / 24.04 / 26.04, Debian 12 / 13, RHEL / Rocky Linux / AlmaLinux / Oracle Linux 10, openEuler 24.03 LTS, openSUSE Leap 15.x / 16.0 / Tumbleweed and SLES 15
+- [Docker](#docker): any host with Docker Compose
+- [Manual installation](#manual-installation): the installer's systems except openEuler, step by step
 
 ## Installer
 
@@ -39,7 +43,10 @@ Run the steps from a root shell (`sudo -i`). In step 3, replace the example `ALL
 
 The virtualenv is created with `--system-site-packages`: `libvirt-python` comes from the distro packages when its version satisfies `conf/requirements.txt`; otherwise pip builds it, which needs the `-dev`/`-devel` packages listed below. `lxml` is reused the same way; everything else comes from pip.
 
-### Ubuntu 22.04 / 24.04 / 26.04, Debian 12 / 13
+Open the steps for your system:
+
+<details>
+<summary><b>Ubuntu 22.04 / 24.04 / 26.04, Debian 12 / 13</b></summary>
 
 ```bash
 # 1. System packages
@@ -76,7 +83,10 @@ systemctl daemon-reload && systemctl enable --now webvirt-cloud webvirt-novncd w
 nginx -t && systemctl restart nginx
 ```
 
-### RHEL / Rocky Linux / AlmaLinux / Oracle Linux 10
+</details>
+
+<details>
+<summary><b>RHEL / Rocky Linux / AlmaLinux / Oracle Linux 10</b></summary>
 
 ```bash
 # 1. System packages (libvirt-devel is in the CRB repository)
@@ -122,7 +132,10 @@ systemctl daemon-reload && systemctl enable --now webvirt-cloud webvirt-novncd w
 systemctl enable nginx && nginx -t && systemctl restart nginx
 ```
 
-### openSUSE Leap 15.x / 16.0 / Tumbleweed, SLES 15
+</details>
+
+<details>
+<summary><b>openSUSE Leap 15.x / 16.0 / Tumbleweed, SLES 15</b></summary>
 
 On SLES 15, enable the Python 3 module and SUSE Package Hub first (`SUSEConnect -p sle-module-python3/15.7/x86_64` and `SUSEConnect -p PackageHub/15.7/x86_64`, with your service pack); the installer needs them too.
 
@@ -161,6 +174,8 @@ chmod 700 data && chmod 600 data/local_settings.py data/secret_key && { [ ! -f d
 systemctl daemon-reload && systemctl enable --now webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker webvirt-backup.timer
 systemctl enable nginx && nginx -t && systemctl restart nginx
 ```
+
+</details>
 
 ## First login
 

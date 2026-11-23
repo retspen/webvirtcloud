@@ -37,7 +37,9 @@ mv /etc/supervisord.d/webvirtcloud.ini /root/webvirtcloud-supervisor.conf       
 supervisorctl update
 ```
 
-Move the `environment=` values of that config into `/etc/default/webvirtcloud` (root, mode 600), one `NAME='value'` per line; leave out the worker's `WEBVIRTCLOUD_LOG_FILE`. The update installs and starts the systemd units. Remove supervisor once nothing else uses it; a compute moves gstfsd as in [Adding a Compute Node](compute-nodes.md), step 3.
+Move the `environment=` values of that config into `/etc/default/webvirtcloud` (root, mode 600), one `NAME='value'` per line; leave out the worker's `WEBVIRTCLOUD_LOG_FILE`. The update installs and starts the systemd units. Remove supervisor once nothing else uses it.
+
+On each compute that ran gstfsd under supervisor, remove its program (`/etc/supervisor/conf.d/gstfsd.conf` on Debian / Ubuntu, `/etc/supervisord.d/gstfsd.ini` on RHEL / openSUSE), run `sudo supervisorctl update`, install gstfsd as in [Adding a Compute Node](compute-nodes.md), step 3, and remove supervisor once nothing else uses it.
 
 ## Installer and manual installation
 
