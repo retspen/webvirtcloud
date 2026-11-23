@@ -59,6 +59,43 @@ class FirstLoginPasswordChangeTestCase(TestCase):
         response = self.client.get(reverse("instances:index"))
         self.assertEqual(response.status_code, 200)
 
+    def test_the_forced_form_has_no_menu_and_offers_sign_out(self):
+        # every page but this one sends the user back here: no links that lead nowhere
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("accounts:change_password"))
+        self.assertNotContains(response, f'href="{reverse("instances:index")}"')
+        self.assertContains(response, f'action="{reverse("accounts:logout")}"')
+        self.assertContains(response, "Temporary password")
+
+    def test_a_refused_new_password_shows_the_reasons_in_the_rules(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse("accounts:change_password"), {
+            "old_password": GENERATED, "new_password1": "12345678", "new_password2": "12345678",
+        })
+        rules = response.content.decode().split('id="password-rules"')[1].split("</ul>")[0]
+        self.assertIn("This password is entirely numeric.", rules)
+
+    def test_an_empty_first_new_entry_is_shown_and_focused(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse("accounts:change_password"), {
+            "old_password": GENERATED, "new_password1": "", "new_password2": "A-new-strong-pass-456",
+        })
+        page = response.content.decode()
+        self.assertIn('id="new-password-error"', page)
+        first_entry = page.split('id="id_new_password1"')[1].split(">")[0]
+        self.assertIn('aria-invalid="true"', first_entry)
+        self.assertIn("autofocus", first_entry)
+
+    def test_a_chosen_change_keeps_the_menu_and_a_way_back(self):
+        other = get_user_model().objects.create_superuser(
+            username="otheradmin", email="otheradmin@example.com", password="Other-pass-789"
+        )
+        self.client.force_login(other)
+        response = self.client.get(reverse("accounts:change_password"))
+        self.assertContains(response, f'href="{reverse("instances:index")}"')
+        self.assertContains(response, f'href="{reverse("accounts:profile")}"')
+        self.assertContains(response, "Current password")
+
     def test_user_with_another_password_is_not_forced(self):
         get_user_model().objects.create_superuser(
             username="otheradmin", email="otheradmin@example.com", password="Other-pass-789"
