@@ -12330,10 +12330,6 @@ msgstr "已暂停：客户机崩溃"
 msgid "Paused: its migration failed midway"
 msgstr "已暂停：迁移中途失败"
 
-#: instances/states.py:31
-msgid "Paused by a libvirt error"
-msgstr "因 libvirt 错误而暂停"
-
 #: instances/states.py:33
 msgid "Stopped: it crashed"
 msgstr "已停止：已崩溃"
