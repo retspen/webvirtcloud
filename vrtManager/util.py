@@ -88,12 +88,16 @@ def xml_escape(xml_str):
     return xml_str
 
 
+def xml_tree(xml):
+    """XML parsed with its entities not expanded and nothing fetched."""
+    return etree.fromstring(xml, etree.XMLParser(resolve_entities=False, no_network=True))
+
+
 def parse_xml(xml):
     """XML a user entered, read for the panel's checks: its entities not
     expanded, nothing fetched and no DTD; libvirt gets the text itself."""
-    parser = etree.XMLParser(resolve_entities=False, no_network=True)
     try:
-        tree = etree.fromstring(xml.encode(), parser)  # bytes: the XML may declare its encoding
+        tree = xml_tree(xml.encode())  # bytes: the XML may declare its encoding
     except etree.XMLSyntaxError as err:
         raise OperationError(gettext_noop("The XML is not valid: %(err)s"), err=err) from None
     if tree.getroottree().docinfo.internalDTD is not None:
@@ -109,7 +113,7 @@ def get_xml_path(xml, path=None, func=None):
     doc = None
     result = None
 
-    doc = etree.fromstring(xml)
+    doc = xml_tree(xml)
     if path:
         result = get_xpath(doc, path)
     elif func:

@@ -2158,7 +2158,7 @@ def change_xml(request, pk):
         diff = difflib.unified_diff(current.splitlines(), new_xml.splitlines(), "current", "new", lineterm="")
         return JsonResponse({"diff": list(diff)})
     shut_off = instance.proxy.get_status() == 5
-    new_tree = etree.fromstring(new_xml)
+    new_tree = util.xml_tree(new_xml)
     try:
         with audit_vm(request, instance, "change XML"):
             # host devices given or changed are checked as the Host devices tab checks them
@@ -2860,7 +2860,7 @@ def create_instance_select_type(request, compute_id):
                 with libvirt_compute_lock(compute):
                     with audit(request, compute, f"VM {name}", "define from XML", instance=name) as entry:
                         compute.refuse_new_vms()  # put in maintenance since the page was opened
-                        check_hostdevs(conn, name, [etree.fromstring(xml)])
+                        check_hostdevs(conn, name, [util.xml_tree(xml)])
                         conn._defineXML(xml)
                         refresh_instance_database(compute)
                         instance = compute.instance_set.get(name=name)

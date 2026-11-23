@@ -1,3 +1,4 @@
+import tempfile
 import unittest
 
 
@@ -51,6 +52,14 @@ class TestVrtManagerUtil(unittest.TestCase):
         # Missing both path and func
         with self.assertRaises(ValueError):
             get_xml_path(xml)
+
+    def test_get_xml_path_does_not_read_an_external_entity(self):
+        with tempfile.NamedTemporaryFile("w", suffix=".txt") as secret:
+            secret.write("the panel's secret")
+            secret.flush()
+            xml = (f'<!DOCTYPE domain [<!ENTITY leak SYSTEM "file://{secret.name}">]>'
+                   "<domain><name>&leak;</name></domain>")
+            self.assertNotIn("secret", get_xml_path(xml, "/domain/name") or "")
 
     def test_vol_dev_type(self):
         self.assertEqual(vol_dev_type("ide"), "hd")

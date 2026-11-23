@@ -10,7 +10,7 @@ from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 # a <script> without src that is not json_script data
-INLINE_SCRIPT = re.compile(r"<script(?![^>]*\bsrc=)(?![^>]*application/json)[^>]*>")
+INLINE_SCRIPT = re.compile(r"<script(?![^>]*\bsrc=)(?![^>]*application/json)[^>]*>", re.I)
 INLINE_HANDLER = re.compile(r"\son[a-z]+\s*=", re.I)
 
 
