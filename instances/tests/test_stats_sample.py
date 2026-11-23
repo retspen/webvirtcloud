@@ -181,7 +181,7 @@ class StatsScriptTestCase(TestDriverVM, TestCase):
         }
         const page = {
             $,
-            document: {body: {}, getElementById,
+            document: {body: {}, documentElement: {lang: "en"}, getElementById,
                        querySelector: () => ({addEventListener: (name, handler) => { handlers[name] = handler; }})},
             // Chart.js adds the lists a config leaves out
             getComputedStyle: () => ({getPropertyValue: () => ""}),
@@ -214,7 +214,7 @@ class StatsScriptTestCase(TestDriverVM, TestCase):
         poll.request();
         fail = false;
         poll.request();
-        const label = charts[0].options.plugins.tooltip.callbacks.label({dataset: {label: "Usage"}, formattedValue: "3", dataIndex: 0});
+        const label = charts[0].options.plugins.tooltip.callbacks.label({dataset: {label: "Usage"}, formattedValue: "3", parsed: {y: 3}, dataIndex: 0});
         console.log(JSON.stringify({requests, label, every: [poll.interval, poll.first], cpu: charts[0].data.datasets[0].data.map((point) => point.y),
                                     disk: charts[2].data.datasets[1].data.map((point) => point.y), net: charts[3].data.datasets[0].data.map((point) => point.y),
                                     mem: charts[1].data.datasets[0].data.map((point) => point.y), memMax: charts[1].options.scales.y.max}));
@@ -231,4 +231,4 @@ class StatsScriptTestCase(TestDriverVM, TestCase):
         self.assertEqual((result["cpu"], result["disk"], result["net"]), ([3, 4], [None, None], [2, 2]))
         # memory that could not be read leaves a gap and keeps the axis
         self.assertEqual((result["mem"], result["memMax"]), ([1, None], 1))
-        self.assertTrue(result["label"].endswith(": 3 % (average over 9.9 s)"), result["label"])
+        self.assertTrue(result["label"].endswith(": 3% (average over 9.9 s)"), result["label"])

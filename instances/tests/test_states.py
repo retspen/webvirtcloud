@@ -4,6 +4,7 @@ and the user's permissions allow."""
 from types import SimpleNamespace
 from unittest.mock import PropertyMock, patch
 
+import libvirt
 from accounts.models import UserInstance
 from appsettings.models import AppSettings
 from computes.models import Compute
@@ -14,6 +15,7 @@ from django.urls import reverse
 from instances.models import Instance
 from instances.states import allowed_actions
 from lxml import html
+from vrtManager.connection import wvmConnect
 
 LABELS = {0: "No state", 1: "Active", 2: "Blocked", 3: "Suspended", 4: "Shutting down", 5: "Off", 6: "Crashed", 7: "PM suspended"}
 # actions offered per state, for a superuser
@@ -54,7 +56,7 @@ class StateTests(TestCase):
         AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value="nongrouped")
 
     def get(self, user, url):
-        rows = {vm.uuid: (Domain(state).info(), "") for state, vm in self.vms.items()}
+        rows = {vm.uuid: (Domain(state).info(), "", 0) for state, vm in self.vms.items()}
 
         self.client.force_login(user)
         props = {"status": True, "connection_error": None, "cpu_count": 1, "ram_size": 1, "ram_usage": 0,
@@ -121,7 +123,7 @@ class StateTests(TestCase):
         AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value="grouped")
         page = html.fromstring(self.get(self.admin, reverse("instances:index")))
         # a pill for all and for each state, every state kept (table_filter.js hides the empty ones)
-        pills = page.xpath("//div[@id='state-pills']/button/@data-pill-state")
+        pills = page.xpath("//div[@id='state-pills']/button/@data-pill")
         self.assertEqual(pills, ["", *LABELS.values(), "Unknown"])
         marks = page.xpath("//tbody[@data-host='st']//tr//@data-state")
         self.assertEqual(marks, list(LABELS.values()))
@@ -279,3 +281,106 @@ class EmptyListTests(TestCase):
         response = self.client.get(reverse("instances:index"))
         self.assertContains(response, "There are no VMs here yet.")
         self.assertNotContains(response, "searchable")  # no VM table
+
+
+class FaultReasonTests(TestCase):
+    """A VM a fault stopped or paused says why: the lists in a line under its
+    state, its page with what each disk met and what to do about it."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.admin = User.objects.create_superuser("fr-admin", "fr@example.com", "pw")
+        self.owner = User.objects.create_user("fr-owner", password="pw")
+        self.compute = Compute.objects.create(name="fr", hostname="192.0.2.30", login="u", password="p", type=1)
+        self.vm = Instance.objects.create(compute=self.compute, name="fr-vm", uuid="12121212-0000-0000-0000-000000000000")
+        UserInstance.objects.create(user=self.owner, instance=self.vm, is_change=True)
+
+    def list_page(self, state, reason):
+        rows = {self.vm.uuid: ([state, 4194304, 2097152, 2], "", reason)}
+        self.client.force_login(self.admin)
+        props = {"status": True, "connection_error": None, "cpu_count": 1, "ram_size": 1, "ram_usage": 0,
+                 "proxy": SimpleNamespace(get_domain_rows=lambda uuids=None: rows, get_domain_states=dict)}
+        with patch("instances.views.refresh_instance_database"), \
+                patch.multiple(Compute, **{k: PropertyMock(return_value=v) for k, v in props.items()}):
+            response = self.client.get(reverse("instances:index"))
+        self.assertEqual(response.status_code, 200)
+        return " ".join(html.fromstring(response.content).xpath("string(//tr[@host])").split())
+
+    def vm_page(self, user, status, reason, errors, read=None):
+        self.client.force_login(user)
+        with patch("instances.models.wvmInstance") as wvm, \
+                patch.object(Compute, "status", new_callable=PropertyMock, return_value=True):
+            proxy = wvm.return_value
+            proxy.get_memory.return_value = proxy.get_cur_memory.return_value = 1024
+            proxy.get_max_memory.return_value = 4096
+            for name in ("get_networks", "get_ifaces", "get_storages", "get_disk_devices", "get_media_devices", "get_net_devices"):
+                getattr(proxy, name).return_value = []
+            proxy.get_hostdevs.return_value = ([], [], [])
+            proxy.get_status.return_value = status
+            proxy.get_state.return_value = read or [status, reason]
+            proxy.get_disk_errors.return_value = errors
+            response = self.client.get(reverse("instances:instance", args=[self.vm.id]))
+        self.assertEqual(response.status_code, 200)
+        summary = html.fromstring(response.content).get_element_by_id("vm-summary")
+        return " ".join(" ".join(summary.itertext()).split()), proxy
+
+    def test_the_list_says_why_a_fault_paused_or_stopped_it(self):
+        cases = [
+            (libvirt.VIR_DOMAIN_PAUSED, libvirt.VIR_DOMAIN_PAUSED_IOERROR, "Paused by a disk error"),
+            (libvirt.VIR_DOMAIN_SHUTOFF, libvirt.VIR_DOMAIN_SHUTOFF_CRASHED, "Stopped: it crashed"),
+            (libvirt.VIR_DOMAIN_SHUTOFF, libvirt.VIR_DOMAIN_SHUTOFF_DAEMON, "Stopped by libvirt"),
+            (libvirt.VIR_DOMAIN_CRASHED, libvirt.VIR_DOMAIN_CRASHED_PANICKED, "The guest's kernel panicked"),
+            (libvirt.VIR_DOMAIN_PAUSED, libvirt.VIR_DOMAIN_PAUSED_USER, None),  # an administrator paused it
+            (libvirt.VIR_DOMAIN_SHUTOFF, libvirt.VIR_DOMAIN_SHUTOFF_SHUTDOWN, None),
+        ]
+        for state, reason, told in cases:
+            with self.subTest(state=state, reason=reason):
+                row = self.list_page(state, reason)
+                for text in {text for _state, _reason, text in cases if text}:
+                    self.assertEqual(text in row, text == told, row)
+
+    def test_the_page_names_the_full_disk_and_what_to_do(self):
+        errors = {"vda": libvirt.VIR_DOMAIN_DISK_ERROR_NO_SPACE, "vdb": libvirt.VIR_DOMAIN_DISK_ERROR_UNSPEC}
+        text, _proxy = self.vm_page(self.admin, libvirt.VIR_DOMAIN_PAUSED, libvirt.VIR_DOMAIN_PAUSED_IOERROR, errors)
+        self.assertIn("Paused by a disk error vda: its storage has no free space vdb: an I/O error "
+                      "Free space on its storage, then resume it.", text)
+        text, _proxy = self.vm_page(self.owner, libvirt.VIR_DOMAIN_PAUSED, libvirt.VIR_DOMAIN_PAUSED_IOERROR, errors)
+        self.assertIn("An administrator has to free space on its storage and resume it.", text)
+
+    def test_an_io_error_without_a_full_storage_is_told_without_freeing_space(self):
+        text, _proxy = self.vm_page(self.admin, libvirt.VIR_DOMAIN_PAUSED, libvirt.VIR_DOMAIN_PAUSED_IOERROR,
+                                    {"vda": libvirt.VIR_DOMAIN_DISK_ERROR_UNSPEC})
+        self.assertIn("Paused by a disk error vda: an I/O error", text)
+        self.assertNotIn("Free space", text)
+
+    def test_the_reason_goes_with_the_state_of_its_own_read(self):
+        # read paused, then resumed before the reason was read: RUNNING_UNPAUSED (5) is not PAUSED_IOERROR (5)
+        text, proxy = self.vm_page(self.admin, libvirt.VIR_DOMAIN_PAUSED, libvirt.VIR_DOMAIN_PAUSED_IOERROR, {},
+                                   read=[libvirt.VIR_DOMAIN_RUNNING, libvirt.VIR_DOMAIN_RUNNING_UNPAUSED])
+        self.assertNotIn("disk error", text)
+        proxy.get_disk_errors.assert_not_called()
+
+    def test_a_vm_that_is_not_paused_has_its_disk_errors_left_unread(self):
+        # libvirt keeps the last disk error after a resume: only a paused VM's is told
+        text, proxy = self.vm_page(self.admin, libvirt.VIR_DOMAIN_RUNNING, libvirt.VIR_DOMAIN_RUNNING_UNPAUSED,
+                                   {"vda": libvirt.VIR_DOMAIN_DISK_ERROR_NO_SPACE})
+        self.assertNotIn("vda:", text)
+        proxy.get_disk_errors.assert_not_called()
+
+    def test_the_host_reads_give_the_reason(self):
+        class Dom:
+            def UUIDString(self):
+                return "12121212-0000-0000-0000-000000000000"
+
+            def name(self):
+                return "fr-vm"
+
+            def XMLDesc(self, flags):
+                return "<domain><memory>4194304</memory><currentMemory>2097152</currentMemory><vcpu>2</vcpu></domain>"
+
+        conn = wvmConnect.__new__(wvmConnect)
+        stats = {"state.state": libvirt.VIR_DOMAIN_PAUSED, "state.reason": libvirt.VIR_DOMAIN_PAUSED_IOERROR}
+        conn.wvm = SimpleNamespace(getAllDomainStats=lambda kinds: [(Dom(), stats)])
+        uuid = "12121212-0000-0000-0000-000000000000"
+        self.assertEqual(conn.get_domain_states(), {uuid: ["fr-vm", 3, 5]})
+        self.assertEqual(conn.get_domain_rows(), {uuid: ([3, 4194304, 2097152, 2], "", 5)})

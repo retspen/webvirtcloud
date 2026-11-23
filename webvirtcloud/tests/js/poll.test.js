@@ -18,6 +18,7 @@ function advance(ms) {
 }
 const listeners = {};
 global.document = { hidden: false, addEventListener: (ev, fn) => { listeners[ev] = fn; } };
+global.window = {};
 function setHidden(h) { document.hidden = h; listeners.visibilitychange(); }
 
 // requests: each returns a promise that the test settles. Like jQuery, it runs

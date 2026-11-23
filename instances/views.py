@@ -14,7 +14,8 @@ from ipaddress import ip_address
 from accounts.models import UserInstance, UserSSHKey
 from admin.decorators import superuser_only
 from appsettings.settings import app_settings
-from computes.models import Compute
+from computes.forms import TagsForm
+from computes.models import Compute, Tag
 from computes.validators import validate_hostname, validate_login
 from computes.utils import (
     libvirt_compute_lock,
@@ -29,15 +30,16 @@ from django.contrib.auth.decorators import permission_required
 from django.contrib.auth.models import User
 from django.core import signing
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.http import Http404, HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, HttpResponseRedirect, JsonResponse
 from django.db import transaction
 from django.db.models import Prefetch, prefetch_related_objects
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.template.defaultfilters import filesizeformat
+from webvirtcloud.common_tags import binary_size
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
-from django.utils.translation import gettext_lazy, gettext_noop
+from django.utils.translation import gettext_lazy, gettext_noop, ngettext
 from django.views.decorators.http import require_POST
 from django.views.decorators.debug import sensitive_post_parameters
 from passlib.exc import PasswordValueError
@@ -53,12 +55,15 @@ from libvirt import (VIR_DOMAIN_PAUSED,
 from logs.audit import audit, audit_vm, failed_vm
 from lxml import etree
 from operations import claims, jobs
+from operations.jobs import KEY_RE
+from operations.models import Claim
 from operations.utils import HOST_BUSY, busy_message, summary
 from webvirtcloud.middleware import error_text, same_origin_referer
 from vrtManager import util
 from vrtManager.connection import CONNECT_TIMEOUT
 from vrtManager.create import cpu_choices, wvmCreate
-from vrtManager.instance import USAGE_MAX_WINDOW, VIR_ERR_AGENT_COMMAND_TIMEOUT, wvmInstances
+from vrtManager.instance import (BYTES_MAX, IOPS_MAX, USAGE_MAX_WINDOW, VIR_ERR_AGENT_COMMAND_TIMEOUT, check_snapshot_name,
+                                 wvmInstances)
 from vrtManager.interface import wvmInterface
 from vrtManager.nodedevs import (check_hostdevs, device_names, hostdev_problems, hostdev_users, managed_pci,
                                  node_devices, pci_problems, usb_unmatched)
@@ -67,6 +72,7 @@ from vrtManager.util import randomPasswd
 
 from instances.models import Instance
 from instances.templatetags.vm_states import disk_seen
+from vmbackups.utils import refuse_backup_volume, vm_tab
 
 from . import addresses, report, utils
 from .api.serializers import DestroyOptionsSerializer, PowerOnSerializer
@@ -95,18 +101,34 @@ def index(request):
     if request.user.is_superuser and app_settings.VIEW_INSTANCES_LIST_STYLE == "grouped":
         # each host's VMs by name: the database keeps no order of its own
         prefetch_related_objects(computes, Prefetch("instance_set", queryset=Instance.objects.order_by("name")),
-                                 "instance_set__userinstance_set__user")
+                                 "instance_set__userinstance_set__user", "instance_set__tags")
         instances = [inst for compute in computes for inst in compute.instance_set.all()]
     elif show_hosts:
-        instances = list(Instance.objects.order_by("name").prefetch_related("userinstance_set__user"))
+        instances = list(Instance.objects.order_by("name").prefetch_related("userinstance_set__user", "tags"))
     else:
         instances = list(Instance.objects.filter(
             userinstance__user=request.user
-        ).order_by("name").prefetch_related("userinstance_set__user"))
+        ).order_by("name").prefetch_related("userinstance_set__user", "tags"))
         # other users get no host names or connection errors, only whether
         # a host of their own VMs is down
         own_hosts_down = any(c.status is not True for c in computes)
     utils.read_list_rows(instances, computes)
+
+    return render(
+        request,
+        "allinstances.html",
+        {"computes": computes, "show_hosts": show_hosts, "own_hosts_down": own_hosts_down,
+         # the hosts a new VM can go to: one that stopped answering since status has no numbers
+         "reachable_computes": [c for c in computes if c.status is True and c.ram_usage is not None],
+         "unreachable_computes": [c for c in computes if c.status is not True],
+         **vm_list_context(request, instances, reverse("instances:states"), vm_states)},
+    )
+
+
+def vm_list_context(request, instances, states_url, vm_states):
+    """What the VM list (instances/vm_list.html) shows of instances, read with their info, on the
+    VM list and on a host's Instances page: its filters, its states' poll and its bulk bar; their DRBD
+    states read afresh while the list shows them."""
     if app_settings.VM_DRBD_STATUS == "True":
         # read here, once per host and all hosts at once (a list waits DRBD_STATUS_TIMEOUT at most):
         # the VM page alone left the list showing an old state
@@ -118,17 +140,21 @@ def index(request):
             if state != instance.drbd:
                 instance.drbd = state
                 Instance.objects.filter(pk=instance.pk).update(drbd=state)
-
-    return render(
-        request,
-        "allinstances.html",
-        {"computes": computes, "instances": instances, "show_hosts": show_hosts, "own_hosts_down": own_hosts_down,
-         # the hosts a new VM can go to: one that stopped answering since status has no numbers
-         "reachable_computes": [c for c in computes if c.status is True and c.ram_usage is not None],
-         "unreachable_computes": [c for c in computes if c.status is not True],
-         "states": [label for label, _color in STATES.values()] + [UNKNOWN[0]],
-         "states_url": reverse("instances:states"), "vm_states": vm_states},
-    )
+    return {
+        "instances": instances,
+        "states": [label for label, _color in STATES.values()] + [UNKNOWN[0]],
+        "tags": Tag.counts(instances),
+        "states_url": states_url, "vm_states": vm_states,
+        # a superuser's bulk tag box offers every tag, as the Settings tab's picker
+        "tag_names": list(Tag.objects.order_by("name").values_list("name", flat=True)) if request.user.is_superuser else [],
+        "bulk_max": BULK_MAX,
+        # the bulk snapshot box: for one who may snapshot a listed VM (change rights and the permission)
+        "snapshotable": request.user.is_superuser or (request.user.has_perm("instances.snapshot_instances") and
+                                                     UserInstance.objects.filter(user=request.user, is_change=True).exists()),
+        # the VMs this user may power (_power_instance): theirs, or every one for a superuser
+        "powerable": {i.pk for i in instances} if request.user.is_superuser else
+        set(UserInstance.objects.filter(user=request.user).values_list("instance_id", flat=True)),
+    }
 
 
 def _listed_computes(user, computes):
@@ -235,9 +261,10 @@ def vm_report(request):
     owners = {}
     for owner in UserInstance.objects.select_related("user", "instance"):
         owners.setdefault((owner.instance.compute_id, owner.instance.uuid), []).append(owner.user.username)
+    tags = {(vm.compute_id, vm.uuid): [tag.name for tag in vm.tags.all()] for vm in Instance.objects.prefetch_related("tags")}
     # in the reader's language
     header = [_("VM"), _("State"), _("Host"), _("OS"), _("OS family"), _("vCPUs"), _("Memory (MiB)"), _("IP addresses"),
-              _("Address sources"), _("MAC addresses"), _("Owners"), _("In the panel")]
+              _("Address sources"), _("MAC addresses"), _("Owners"), _("Tags"), _("In the panel")]
     rows = []
     for vm in result["vms"]:
         key = (vm["compute_id"], vm["uuid"])
@@ -248,7 +275,8 @@ def vm_report(request):
         rows.append([vm["name"], str(state_label(vm["state"])[0]), hosts[vm["compute_id"]], vm["os"], vm["os_family"],
                      vm["vcpus"], vm["memory"], ", ".join(address for address, _sources in reported),
                      ", ".join(s for s in addresses.SOURCES.values() if s in found), ", ".join(vm["macs"]),
-                     ", ".join(sorted(owners.get(key, []))), _("yes") if key in known else _("no")])
+                     ", ".join(sorted(owners.get(key, []))), ", ".join(tags.get(key, [])),
+                     _("yes") if key in known else _("no")])
 
     notes = [_("Created: %(time)s") % {"time": f"{timezone.localtime():%Y-%m-%d %H:%M}"},
              _("VMs listed: %(n)s") % {"n": len(rows)},
@@ -302,7 +330,7 @@ def _instance_page(request, pk, instance, compute):
     computes_count = computes.count()
     # the add-owner choices: users who are not owners yet; a superuser can use every VM
     users = User.objects.filter(is_superuser=False).exclude(userinstance__instance=instance).order_by("username")
-    publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
+    publickeys = UserSSHKey.objects.filter(user_id=request.user.id).order_by("keyname")
     # The console form renders the VNC password, so only users who may manage
     # console settings get the form (and the password) at all.
     can_manage_console = utils.can_manage_console(request.user, instance)
@@ -386,13 +414,61 @@ def _instance_page(request, pk, instance, compute):
     else:
         migrate_refusal = None
 
-    job_resource = claims.instance_key(instance.uuid)
-    return render(request, "instance.html", locals(),)
+    # superusers back VMs up; not a template, which is cloned
+    # superusers, and owners with the backup permission who may change the VM
+    may_back_up = request.user.is_superuser or (can_change and request.user.has_perm("instances.backup_instances"))
+    backups = vm_tab(instance, request.user) if may_back_up and not instance.is_template else None
+
+    return render(request, "instance.html", {
+        "instance": instance,
+        "backups": backups,
+        "compute": compute,
+        "computes": computes,
+        "users": users,
+        "tags_form": TagsForm(initial={"tags": [t.name for t in instance.tags.all()]}) if request.user.is_superuser else None,
+        "publickeys": publickeys,
+        "userinstance": userinstance,
+        "userinstances": userinstances,
+        "can_manage_console": can_manage_console,
+        "console_form": console_form,
+        "can_open_console": can_open_console,
+        "can_power": can_power,
+        "can_delete": can_delete,
+        "can_change": can_change,
+        "can_clone": can_clone,
+        "can_snapshot": can_snapshot,
+        "power_actions": power_actions,
+        "power_states": power_states,
+        "vdi_reachable": vdi_reachable,
+        "guest_access_ready": guest_access_ready,
+        "show_settings": show_settings,
+        "show_hostdevs": show_hostdevs,
+        "clone_free_names": clone_free_names,
+        "default_bus": default_bus,
+        "default_cache": default_cache,
+        "default_format": default_format,
+        "vcpu_host": vcpu_host,
+        "memory_host": memory_host,
+        "bus_host": bus_host,
+        "cdrom_buses": cdrom_buses,
+        "tpm_support": tpm_support,
+        "networks_host": networks_host,
+        "interfaces_host": interfaces_host,
+        "nwfilters_host": nwfilters_host,
+        "storages_host": storages_host,
+        "net_models_host": net_models_host,
+        "usb_hostdevs": usb_hostdevs,
+        "pci_hostdevs": pci_hostdevs,
+        "other_hostdevs": other_hostdevs,
+        "migrate_refusal": migrate_refusal,
+        "job_resource": claims.instance_key(instance.uuid),
+    })
 
 
 def status(request, pk):
     instance = get_instance(request.user, pk)
-    return JsonResponse({"status": instance.proxy.get_status()})
+    state, reason = instance.proxy.get_state()
+    return JsonResponse({"status": state, "reason": reason})
 
 
 def nic_addresses(request, pk):
@@ -497,7 +573,11 @@ def stats(request, pk):
 def osinfo(request, pk):
     instance = get_instance(request.user, pk)
     try:
-        return JsonResponse(instance.proxy.osinfo())
+        info = instance.proxy.osinfo()
+        for fs in info.get("filesystems", []):  # sizes in the page's words
+            fs.update(used_text=binary_size(fs["used"]), total_text=binary_size(fs["total"]),
+                      percent=min(100, fs["used"] * 100 // fs["total"]))  # used may pass a BSD guest's total
+        return JsonResponse(info)
     except libvirtError as err:
         return JsonResponse({"error": error_text(request, err)}, status=400)
 
@@ -637,6 +717,148 @@ def _power_instance(user, pk):
     if not user.is_superuser and instance.proxy.get_status() == VIR_DOMAIN_PAUSED:
         raise PermissionDenied
     return instance
+
+
+# the most VMs the VM list's bulk form takes at once (a form of more fields Django refuses: 1000)
+BULK_MAX = 500
+
+
+def _back_to_list(request):
+    """The VM list the bulk form was sent from (its next field): the VM list or a host's Instances page."""
+    url = request.POST.get("next", "")
+    # a path of this site; not "?page=2", which is the bulk view's own address, nor redirect()'s view names
+    if url.startswith("/") and url_has_allowed_host_and_scheme(url, allowed_hosts={request.get_host()}):
+        return HttpResponseRedirect(url)
+    return redirect("instances:index")
+
+
+def _chosen_vms(request):
+    """The VMs chosen on the VM list (its bulk form's boxes), as ids, each once."""
+    return list(dict.fromkeys(int(pk) for pk in request.POST.getlist("vm") if pk.isascii() and pk.isdigit() and len(pk) <= 10))
+
+
+@require_POST
+@superuser_only
+def bulk_tag(request):
+    """Adds a tag to, or removes it from, the VMs chosen on the VM list, as each VM's Settings tab
+    does: a log row for each VM changed, not while the VM's tags are kept or given back (forget)
+    nor while a tag is renamed or deleted (the tag checked under the same lock)."""
+    action, vms = request.POST.get("action"), _chosen_vms(request)
+    if action not in ("tag_add", "tag_remove") or not vms:
+        messages.error(request, _("Choose the VMs and write the tag"))
+        return _back_to_list(request)
+    if len(vms) > BULK_MAX:
+        messages.error(request, _("Choose at most %(count)s VMs at once") % {"count": BULK_MAX})
+        return _back_to_list(request)
+    remove, changed = action == "tag_remove", 0
+    with transaction.atomic():
+        lock_ownership()
+        form = TagsForm({"tags": [request.POST.get("tag", "")]})
+        instances = Instance.objects.filter(pk__in=vms).select_related("compute")
+        if not form.is_valid() or not form.cleaned_data["tags"] or not instances.exists():
+            messages.error(request, " ".join(form.errors.get("tags", [])) or _("Choose the VMs and write the tag"))
+            return _back_to_list(request)
+        (name,) = form.cleaned_data["tags"]
+        tag = Tag.objects.filter(name=name).first() if remove else Tag.named([name])[0]
+        if tag is None:
+            messages.error(request, _("There is no tag %(tag)s") % {"tag": name})
+            return _back_to_list(request)
+        # those it changes: with the tag to remove it from, without it to add it
+        for instance in instances.filter(tags=tag) if remove else instances.exclude(tags=tag):
+            with audit_vm(request, instance, f"{'untag' if remove else 'tag'} {name}"):
+                (instance.tags.remove if remove else instance.tags.add)(tag)
+            changed += 1
+    text = (ngettext("Tag %(tag)s removed from %(count)s VM", "Tag %(tag)s removed from %(count)s VMs", changed) if remove
+            else ngettext("Tag %(tag)s added to %(count)s VM", "Tag %(tag)s added to %(count)s VMs", changed))
+    messages.success(request, text % {"tag": name, "count": changed})
+    return _back_to_list(request)
+
+
+def _queue_each(request, vms, kind, raw, refused):
+    """A job of kind for each of vms (raw: its parameters, the VM given), followed on the Jobs page.
+    A VM refused (refused: the words, with %(vm)s), gone or held by another job is named, if the
+    user may see it; the others are queued. One key per VM: a resent form queues none twice."""
+    key = request.POST.get("submission_key", "")
+    seen = dict(_visible_vms(request, vms).values_list("pk", "name"))
+    queued = 0
+    for pk in vms:
+        name = seen.get(pk) or _("a chosen VM")  # one the user may not see is not named
+        try:
+            jobs.submit(kind, request.user, {**raw, "instance": pk}, f"{key}-{pk}")
+            queued += 1
+        except claims.Busy as busy:
+            messages.error(request, f"{name}: {busy_message(busy, request.user)}")
+        except (Http404, PermissionDenied, Instance.DoesNotExist):
+            messages.error(request, refused % {"vm": name})
+        except (jobs.SubmissionConflict, libvirtError) as err:
+            messages.error(request, f"{name}: {error_text(request, err)}")
+    if not queued:
+        return _back_to_list(request)
+    messages.success(request, ngettext("%(count)s VM is queued; the Jobs page follows it.",
+                                       "%(count)s VMs are queued; the Jobs page follows them.", queued) % {"count": queued})
+    return redirect(reverse("operations:jobs") + f"?kind={kind}")
+
+
+def _bulk_refused(request, vms, text):
+    """Why the VM list's bulk form cannot be taken (text when nothing fits), or None."""
+    key = request.POST.get("submission_key", "")
+    if not vms or not KEY_RE.fullmatch(key) or len(key) > 50:
+        return text
+    if len(vms) > BULK_MAX:
+        return _("Choose at most %(count)s VMs at once") % {"count": BULK_MAX}
+    return None
+
+
+@require_POST
+def bulk_power(request):
+    """Starts, shuts down or forces off the VMs chosen on the VM list: a job each
+    (instances.jobs.POWER), as their pages' buttons do."""
+    from instances.jobs import POWER  # instances.jobs imports this module
+
+    action, vms = request.POST.get("action", ""), _chosen_vms(request)
+    refusal = _bulk_refused(request, vms, _("Choose the VMs you may power, and Start, Shut down or Force off"))
+    if action not in POWER or refusal:
+        messages.error(request, refusal or _("Choose the VMs you may power, and Start, Shut down or Force off"))
+        return _back_to_list(request)
+    return _queue_each(request, vms, POWER[action], {}, _("%(vm)s: you may not power it now"))
+
+
+@require_POST
+def bulk_snapshot(request):
+    """An external snapshot, of one name and without memory, of each VM chosen on the VM list: a
+    snapshot.create job each, as on its Snapshots tab, which has the other choices."""
+    name, vms = request.POST.get("snapshot_name", "").strip(), _chosen_vms(request)
+    refusal = _bulk_refused(request, vms, _("Choose the VMs and write the snapshot's name"))
+    if not name or refusal:
+        messages.error(request, refusal or _("Choose the VMs and write the snapshot's name"))
+        return _back_to_list(request)
+    try:
+        check_snapshot_name(name)
+    except util.OperationError as err:
+        messages.error(request, error_text(request, err))
+        return _back_to_list(request)
+    # a template's page has no snapshot controls: none is taken here either
+    # of the VMs the user sees: one they do not see is refused as any other they may not snapshot
+    templates = set(_visible_vms(request, vms).filter(is_template=True).values_list("pk", flat=True))
+    for pk in templates:
+        messages.error(request, _("%(vm)s: a template's snapshots are not taken here") % {"vm": _visible_name(request, pk)})
+    if templates and not set(vms) - templates:
+        return _back_to_list(request)
+    return _queue_each(request, [pk for pk in vms if pk not in templates], "snapshot.create",
+                       {"name": name, "external": True}, _("%(vm)s: you may not snapshot it"))
+
+
+def _visible_vms(request, vms):
+    """Those of the VMs (ids) the user may see: superusers and view_instances users every one."""
+    visible = Instance.objects.filter(pk__in=vms)
+    if request.user.is_superuser or request.user.has_perm("instances.view_instances"):
+        return visible
+    return visible.filter(userinstance__user=request.user)
+
+
+def _visible_name(request, pk):
+    """The VM's name if the user may see it, else words that do not name it."""
+    return _visible_vms(request, [pk]).values_list("name", flat=True).first() or _("a chosen VM")
 
 
 def from_script(request):
@@ -814,10 +1036,12 @@ def poweron(request, pk):
     elif options.validated_data["fresh"]:  # the saved state is discarded: the VM boots anew
         with audit_vm(request, instance, "power on without the saved state"):
             instance.proxy.check_start_hostdevs(restore=False)
+            instance.compute.refuse_start()  # right before the start: maintenance may begin while devices are checked
             instance.proxy.start(VIR_DOMAIN_START_FORCE_BOOT)
     else:
         with audit_vm(request, instance, "power on"):
             instance.proxy.check_start_hostdevs()
+            instance.compute.refuse_start()
             instance.proxy.start()
 
     return get_safe_redirect(
@@ -833,6 +1057,7 @@ def powercycle(request, pk):
         messages.warning(request, _("Templates cannot be started."))
     else:
         with audit_vm(request, instance, "power cycle") as entry:
+            instance.compute.refuse_start()  # before it stops: it would not start again
             instance.proxy.check_start_hostdevs(restore=False)  # before it stops
             instance.proxy.force_shutdown()
             try:
@@ -876,6 +1101,7 @@ def suspend(request, pk):
 def resume(request, pk):
     instance = get_instance(request.user, pk)
     with audit_vm(request, instance, "resume"):
+        instance.compute.refuse_start()
         instance.proxy.resume()
     return get_safe_redirect(
         request, default=reverse("instances:instance", args=[instance.id])
@@ -1254,7 +1480,7 @@ def resize_disk(request, pk):
         # a disk does not shrink: one smaller size refuses them all
         if int(size) << 30 < disk["size"]:
             messages.error(request, _("%(dev)s is %(size)s: a disk cannot shrink") % {
-                "dev": disk["dev"], "size": filesizeformat(disk["size"])})
+                "dev": disk["dev"], "size": binary_size(disk["size"])})
             return redirect(reverse("instances:instance", args=[instance.id]) + "#resizevm_disk")
         if int(size) << 30 > disk["size"]:
             disk["size_new"] = int(size) << 30
@@ -1397,6 +1623,14 @@ def add_existing_vol(request, pk):
     instance = get_instance(request.user, pk, perm_type="change")
     storage = request.POST.get("selected_storage", "")
     name = request.POST.get("vols", "")
+    # the volume exclusive from its first read to the attach: not while a download writes it
+    # or a copy reads it (Busy names the job)
+    with claims.hold({claims.volume_key(instance.compute_id, storage, name): Claim.EXCLUSIVE}):
+        return _attach_volume(request, instance, storage, name)
+
+
+def _attach_volume(request, instance, storage, name):
+    pk = instance.pk
     bus = request.POST.get("bus", app_settings.INSTANCE_VOLUME_DEFAULT_BUS)
     cache = request.POST.get("cache", app_settings.INSTANCE_VOLUME_DEFAULT_CACHE)
 
@@ -1416,6 +1650,11 @@ def add_existing_vol(request, pk):
     # out path traversal through the volume name.
     if name not in conn_create.get_volumes():
         return reject_disk_options(request, pk, ["vols"])
+    try:  # the VM would write into the backup, and the backup's deletion would remove its disk
+        refuse_backup_volume(instance.compute, storage, name)
+    except util.OperationError as err:
+        messages.error(request, str(err))
+        return _back(request, pk, "disks")
 
     pool_type = conn_create.get_type()
     format_type = util.vol_driver_type(conn_create.get_volume_format_type(name), pool_type)
@@ -1634,7 +1873,7 @@ def add_cdrom(request, pk):
     if bus == "usb" and not image:
         messages.error(request, _("A USB CD-ROM needs an ISO image: libvirt has no empty USB drive"))
         return _back(request, pk, "disks")
-    path = instance.proxy.get_iso_path(image) if image else ""
+    pool, path = instance.proxy.iso_location(image) if image else ("", "")
     # a form sent twice (a double click) adds the drive once
     if path and path in {media["path"] for media in instance.media + instance.config_media}:
         messages.error(request, _("%(image)s is already in a CD-ROM of this VM") % {"image": image})
@@ -1644,7 +1883,10 @@ def add_cdrom(request, pk):
         instance.media + instance.config_media, instance.disks + instance.config_disks, bus
     )
     try:
-        with audit_vm(request, instance, f"add CD-ROM {target}" + (f" with {image}" if image else "")):
+        # the image shared: not inserted while a download writes it (Busy names the job)
+        with claims.hold({claims.volume_key(instance.compute_id, pool, image): Claim.SHARED} if image else {}), \
+                audit_vm(request, instance, f"add CD-ROM {target}" + (f" with {image}" if image else "")):
+            path = instance.proxy.iso_path_in(image, pool) if image else ""  # read again under the claim
             instance.proxy.attach_disk(
                 target,
                 path,
@@ -1706,8 +1948,11 @@ def mount_iso(request, pk):
     image = request.POST.get("media", "")
     dev = request.POST.get("mount_iso", "")
     try:
-        with audit_vm(request, instance, f"insert media {image} into {dev}"):
-            instance.proxy.mount_iso(dev, image)
+        pool, _path = instance.proxy.iso_location(image)
+        # the image shared: not inserted while a download writes it (Busy names the job)
+        with claims.hold({claims.volume_key(instance.compute_id, pool, image): Claim.SHARED}), \
+                audit_vm(request, instance, f"insert media {image} into {dev}"):
+            instance.proxy.mount_iso(dev, image, pool)
     except libvirtError as err:
         messages.error(request, err)
     return redirect(same_origin_referer(request, reverse("instances:instance", args=[pk])) + "#disks")
@@ -1816,6 +2061,7 @@ def set_autostart(request, pk):
         messages.error(request, _("Templates cannot be started."))
         return _back(request, pk, "boot_opt")
     with audit_vm(request, instance, "enable autostart"):
+        instance.compute.refuse_start()  # it would start there when the host boots
         instance.proxy.set_autostart(1)
     return _back(request, pk, "boot_opt")
 
@@ -2334,6 +2580,26 @@ def add_owner(request, pk):
     return _back(request, pk, "users")
 
 
+@require_POST
+@superuser_only
+@serialize_instance_mutation
+def set_tags(request, pk):
+    """The VM's tags, those not there yet made; the VM held, so a move does not lose them."""
+    instance = get_instance(request.user, pk)
+    form = TagsForm(request.POST)
+    if not form.is_valid():
+        messages.error(request, " ".join(form.errors["tags"]))
+        return _back(request, pk, "options")
+    names = form.cleaned_data["tags"]
+    with audit_vm(request, instance, f"tags {', '.join(sorted(names)) or 'none'}") as entry, transaction.atomic():
+        lock_ownership()  # not while the VM's tags are kept or given back (computes.utils.forget)
+        moved = _moved_meanwhile(pk, instance)  # its host's list may have dropped it meanwhile
+        entry.skip = moved or not form.has_changed() or set(names) == set(instance.tags.values_list("name", flat=True))
+        if not entry.skip:
+            instance.tags.set(Tag.named(names))
+    return _moved(request, pk) if moved else _back(request, pk, "options")
+
+
 # Buses for the empty CD-ROM of a new VM: fdc and virtio have no ejectable
 # media, and libvirt refuses an empty usb disk.
 CDROM_BUSES = ("ide", "sata", "scsi")
@@ -2427,6 +2693,7 @@ def change_options(request, pk):
     options = {key: request.POST.get(key, "") for key in ("title", "description") if key in request.POST}
     with audit_vm(request, instance, "edit options"):
         instance.proxy.set_options(options)
+    messages.success(request, _("Title and description saved"))
     return get_safe_redirect(
         request, default=reverse("instances:instance", args=[instance.id]) + "#options"
     )
@@ -2459,6 +2726,44 @@ def set_template(request, pk):
         instance.is_template = is_template
         instance.save(update_fields=["is_template"])
     return _back(request, pk, "options")
+
+
+@require_POST
+@superuser_only
+@serialize_instance_mutation
+def set_disk_limit(request, pk):
+    """A disk's I/O limit, IOPS and MiB/s (0: none), at once on a running VM and from its next start."""
+    instance = get_instance(request.user, pk)
+    dev = request.POST.get("dev", "")
+    iops, mibps = (request.POST.get(field, "").strip() for field in ("iops", "mibps"))
+    # both given, as plain digits: a missing one would clear its limit
+    if not all(value.isascii() and value.isdigit() and len(value) <= 8 for value in (iops, mibps)) \
+            or int(iops) > IOPS_MAX or int(mibps) * 2**20 > BYTES_MAX:
+        messages.error(request, _("An I/O limit is whole numbers of IOPS and MiB/s, 0 for none"))
+        return _back(request, pk, "disks")
+    if _disk_changed(request, instance.config_disks):  # the form's disk was replaced since
+        return _back(request, pk, "disks")
+    try:
+        with audit_vm(request, instance, f"disk {dev} I/O limit {int(iops)} IOPS, {int(mibps)} MiB/s"):
+            instance.proxy.set_disk_limit(dev, int(iops), int(mibps) * 2**20)
+    except libvirtError as err:  # the panel's refusals (OperationError) and libvirt's
+        messages.error(request, error_text(request, err))
+    return _back(request, pk, "disks")
+
+
+@require_POST
+@superuser_only
+@serialize_instance_mutation  # not while a deletion or a restore over it runs: it would not stop them
+def set_protected(request, pk):
+    """Turns a VM's protection against deletion and a restore over it on or off."""
+    instance = get_instance(request.user, pk)
+    protected = bool(request.POST.get("protected"))
+    with audit_vm(request, instance, "protect" if protected else "unprotect") as entry, transaction.atomic():
+        lock_ownership()  # not while the VM's protection is kept or given back (computes.utils.forget)
+        entry.skip = moved = _moved_meanwhile(pk, instance)  # its host's list may have dropped it meanwhile
+        if not moved:
+            Instance.objects.filter(pk=instance.pk).update(protected=protected)
+    return _moved(request, pk) if moved else _back(request, pk, "options")
 
 
 def keyfile_value(value):
@@ -2502,6 +2807,17 @@ def getvvfile(request, pk):
     return response
 
 
+def in_maintenance(request, compute):
+    """Back to the page it was asked from (else the host's VM list), saying
+    why, when the host a VM is made on is in maintenance."""
+    try:
+        compute.refuse_new_vms()
+    except util.OperationError as err:
+        messages.error(request, str(err))
+        return redirect(same_origin_referer(request, reverse("instances", args=[compute.pk])))
+    return None
+
+
 @superuser_only
 def create_instance_select_type(request, compute_id):
     """
@@ -2510,12 +2826,9 @@ def create_instance_select_type(request, compute_id):
     :return:
     """
 
-    conn = None
-    storages = list()
-    networks = list()
-    hypervisors = list()
-    meta_prealloc = False
     compute = get_object_or_404(Compute, pk=compute_id)
+    if refused := in_maintenance(request, compute):
+        return refused
 
     conn = wvmCreate(compute.hostname, compute.login, compute.password, compute.type)
     instances = conn.get_instances()
@@ -2532,11 +2845,9 @@ def create_instance_select_type(request, compute_id):
         "s390x",
     ]
     hypervisors = [hpv for hpv in all_hypervisors.keys() if hpv in supported_arch]
-    default_machine = app_settings.INSTANCE_MACHINE_DEFAULT_TYPE
-    default_arch = app_settings.INSTANCE_ARCH_DEFAULT_TYPE
 
     # a refused definition comes back in the editor, its reason beside it
-    xml_error = None
+    xml, xml_error = "", None
     if request.method == "POST" and "create_xml" in request.POST:
         xml = request.POST.get("dom_xml", "")
         try:
@@ -2548,6 +2859,7 @@ def create_instance_select_type(request, compute_id):
             else:
                 with libvirt_compute_lock(compute):
                     with audit(request, compute, f"VM {name}", "define from XML", instance=name) as entry:
+                        compute.refuse_new_vms()  # put in maintenance since the page was opened
                         check_hostdevs(conn, name, [etree.fromstring(xml)])
                         conn._defineXML(xml)
                         refresh_instance_database(compute)
@@ -2556,10 +2868,19 @@ def create_instance_select_type(request, compute_id):
                 return redirect(reverse("instances:instance", args=[instance.id]))
         except util.etree.Error as err:
             xml_error = _("The XML is not well-formed: %(error)s") % {"error": err}
+        except util.OperationError as err:
+            xml_error = error_text(request, err)
         except libvirtError as err:
             xml_error = _("libvirt Error - %(exception)s") % {"exception": error_text(request, err)}
 
-    return render(request, "create_instance_w1.html", locals())
+    return render(request, "create_instance_w1.html", {
+        "compute": compute,
+        "hypervisors": hypervisors,
+        "default_arch": app_settings.INSTANCE_ARCH_DEFAULT_TYPE,
+        "default_machine": app_settings.INSTANCE_MACHINE_DEFAULT_TYPE,
+        "xml": xml,
+        "xml_error": xml_error,
+    })
 
 
 # the create form's disk sources: (value, title, help)
@@ -2595,19 +2916,26 @@ def create_instance(request, compute_id, arch, machine):
     :return:
     """
 
-    conn = None
-    storages = list()
-    networks = list()
-    meta_prealloc = False
     compute = get_object_or_404(Compute, pk=compute_id)
-    flavors = Flavor.objects.filter().order_by("id")
+    if refused := in_maintenance(request, compute):
+        return refused
     vm_form = None
-    flavor_form = FlavorForm()
     refused = False
-    disk_sources = DISK_SOURCES
     disk_source = request.POST.get("disk_source", "new")
     if disk_source not in [value for value, _title, _help in DISK_SOURCES]:
         disk_source = "new"
+    context = {
+        "compute": compute,
+        "compute_id": compute_id,
+        "arch": arch,
+        "machine": machine,
+        "flavors": Flavor.objects.order_by("id"),
+        "flavor_form": FlavorForm(),
+        "disk_sources": DISK_SOURCES,
+        "disk_source": disk_source,
+        "storages": [],  # not read: the page has no pool or network to offer
+        "networks": [],
+    }
 
     try:
         conn = wvmCreate(
@@ -2619,29 +2947,34 @@ def create_instance(request, compute_id, arch, machine):
 
         default_firmware = app_settings.INSTANCE_FIRMWARE_DEFAULT_TYPE
         default_cpu_mode = app_settings.INSTANCE_CPU_DEFAULT_MODE
-        videos = conn.get_video_models(arch, machine)
         default_video = app_settings.INSTANCE_VIDEO_DEFAULT_TYPE
-        cache_modes = sorted(conn.get_cache_modes().items())
         default_cache = app_settings.INSTANCE_VOLUME_DEFAULT_CACHE
-        listener_addr = settings.QEMU_CONSOLE_LISTENER_ADDRESSES
-        disk_devices = conn.get_disk_device_types(arch, machine)
         disk_buses = conn.get_disk_bus_types(arch, machine)
-        cdrom_buses = [bus for bus in disk_buses if bus in CDROM_BUSES]
-        default_bus = app_settings.INSTANCE_VOLUME_DEFAULT_BUS
         networks = sorted(conn.get_networks())
-        nwfilters = conn.get_nwfilters()
-        net_models_host = conn.get_network_models(arch)
         default_nic_type = app_settings.INSTANCE_NIC_DEFAULT_TYPE
         storages = sorted(conn.get_storages(only_actives=True))
         default_cdrom = app_settings.INSTANCE_CDROM_ADD
-        input_device_buses = ["default", "virtio", "usb"]
         default_input_device_bus = app_settings.INSTANCE_INPUT_DEFAULT_DEVICE
-
         dom_caps = conn.get_dom_capabilities(arch, machine)
-
         virtio_support = conn.is_supports_virtio(arch, machine)
-        firmwares = conn.get_firmwares(arch, machine)
-        tpm_support = bool(conn.get_tpm_model(arch, machine))
+        context.update({
+            "videos": conn.get_video_models(arch, machine),
+            "cache_modes": sorted(conn.get_cache_modes().items()),
+            "listener_addr": settings.QEMU_CONSOLE_LISTENER_ADDRESSES,
+            "disk_devices": conn.get_disk_device_types(arch, machine),
+            "disk_buses": disk_buses,
+            "default_bus": app_settings.INSTANCE_VOLUME_DEFAULT_BUS,
+            "cdrom_buses": [bus for bus in disk_buses if bus in CDROM_BUSES],
+            "networks": networks,
+            "nwfilters": conn.get_nwfilters(),
+            "net_models_host": conn.get_network_models(arch),
+            "storages": storages,
+            "input_device_buses": ["default", "virtio", "usb"],
+            "dom_caps": dom_caps,
+            "virtio_support": virtio_support,
+            "firmwares": conn.get_firmwares(arch, machine),
+            "tpm_support": bool(conn.get_tpm_model(arch, machine)),
+        })
 
         if not storages:
             raise util.OperationError(_("This host has no running storage pool for the VM's disks: add or start one on its Storage page."))
@@ -2685,11 +3018,13 @@ def create_instance(request, compute_id, arch, machine):
     except libvirtError as lib_err:
         messages.error(request, lib_err)
 
+    context.update({"vm_form": vm_form, "refused": refused})
     if refused:
-        submitted_lists = refused_lists(request.POST)
+        context["submitted_lists"] = refused_lists(request.POST)
         if disk_source == "template":
-            template_restore = {"pool": request.POST.get("template_pool", ""), "template": request.POST.get("template", "")}
-    return render(request, "create_instance_w2.html", locals())
+            context["template_restore"] = {"pool": request.POST.get("template_pool", ""),
+                                           "template": request.POST.get("template", "")}
+    return render(request, "create_instance_w2.html", context)
 
 
 def flavors_reply(request, flavor_form):
@@ -2705,7 +3040,7 @@ def flavor_create(request):
             form.save()
         if from_script(request):
             return flavors_reply(request, FlavorForm())
-        messages.success(request, _("Flavor Created"))
+        messages.success(request, _("Flavor created"))
         return get_safe_redirect(request, default=reverse("instances:index"))
     if from_script(request):
         return flavors_reply(request, form)
@@ -2713,7 +3048,7 @@ def flavor_create(request):
     return render(
         request,
         "common/form.html",
-        {"form": form, "title": _("Create Flavor")},
+        {"form": form, "title": _("Create flavor")},
     )
 
 
@@ -2725,7 +3060,7 @@ def flavor_delete(request, pk):
             flavor.delete()
         if from_script(request):
             return flavors_reply(request, FlavorForm())
-        messages.success(request, _("Flavor Deleted"))
+        messages.success(request, _("Flavor deleted"))
         return get_safe_redirect(request, default=reverse("instances:index"))
 
     return render(

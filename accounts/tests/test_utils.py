@@ -108,7 +108,7 @@ class AccountsUtilsTestCase(TestCase):
         send_email_with_otp(RequestFactory().get("/"), device)
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
-        self.assertEqual((message.subject, message.to, message.alternatives), ("OTP QR Code", ["user@example.com"], []))
+        self.assertEqual((message.subject, message.to, message.alternatives), ("OTP QR code", ["user@example.com"], []))
         self.assertNotIn(device.bin_key.hex(), message.body)
         self.assertNotIn("otpauth", message.body)
         # the token is the fragment, which no request (no access log) carries

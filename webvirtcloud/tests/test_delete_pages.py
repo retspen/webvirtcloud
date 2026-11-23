@@ -23,7 +23,7 @@ class DeletePageTests(TestCase):
             reverse("admin:user_delete", args=[user.id]): "the VMs themselves stay",
             reverse("admin:group_delete", args=[Group.objects.create(name="del-group").id]): "lose the permissions",
             reverse("admin:tombstone_delete", args=[InstanceTombstone.objects.create(uuid=vm.uuid, name="gone").id]):
-                "no longer get the VM back",
+                "no longer come back",
             reverse("accounts:user_instance_delete", args=[UserInstance.objects.create(user=user, instance=vm).id]):
                 "the VM itself is not changed",
             reverse("instances:flavor_delete", args=[Flavor.objects.create(label="del-flavor", memory=512, vcpu=1, disk=1).id]):

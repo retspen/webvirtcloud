@@ -9,6 +9,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
+from computes import views
 from computes.models import Compute
 
 
@@ -18,6 +19,10 @@ class ListHostsTests(TestCase):
         for number, name in enumerate(("fast", "slow-1", "slow-2")):
             Compute.objects.create(name=name, hostname="192.0.2.1", login="wvc", password="", type=1,
                                    host_uuid=f"{number}" * 8 + "-0000-0000-0000-000000000000")
+        patcher = patch("computes.views._read_attention", return_value=None)  # the box's reads: test_attention
+        patcher.start()
+        self.addCleanup(patcher.stop)  # last: the reads still running end with it
+        self.addCleanup(lambda: [read.join(5) for read in views._reading.values()])
         self.release = threading.Event()
         self.addCleanup(self.release.set)
 

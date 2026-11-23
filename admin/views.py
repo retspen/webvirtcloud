@@ -1,23 +1,27 @@
 from contextlib import contextmanager
 from datetime import timedelta
 
+from accounts.lockout import locked_usernames
 from accounts.models import ApiToken, Instance, UserAttributes, UserInstance
 from appsettings.settings import app_settings
 from computes.utils import lock_ownership, users_lock
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth import SESSION_KEY, update_session_auth_hash
 from django.contrib.auth.models import Group, Permission, User
+from django.contrib.sessions.models import Session
 from django.core.paginator import Paginator
 from django.http import HttpResponse
-from django.db import transaction
-from django.db.models import Count, Exists, OuterRef, Q
+from django.db import IntegrityError, transaction
+from django.db.models import Count, Exists, OuterRef, ProtectedError, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import ngettext
 from django.views.decorators.http import require_POST
 from django.views.decorators.debug import sensitive_post_parameters
+from computes.models import Tag
 from instances.models import InstanceTombstone
 from instances.report import workbook
 from logs.audit import audit, changed_fields, snapshot
@@ -25,6 +29,7 @@ from logs.models import Logs
 from operations import claims
 from operations.utils import busy_message
 from vrtManager import util
+from vmbackups.models import Backup, BackupPolicy
 
 from . import forms
 from .decorators import superuser_only
@@ -72,7 +77,7 @@ def group_create(request):
         "admin/group_form.html",
         {
             "form": form,
-            "title": _("Create Group"),
+            "title": _("Create group"),
         },
     )
 
@@ -114,7 +119,7 @@ def group_update(request, pk):
             "form": form,
             "group": group,
             "seen": form_seen(group_snapshot(group)),
-            "title": _("Update Group"),
+            "title": _("Update group"),
         },
     )
 
@@ -124,7 +129,9 @@ def group_delete(request, pk):
     group = get_object_or_404(Group, pk=pk)
     if request.method == "POST":
         with audit(request, None, f"Group {group.name}", "delete"):
-            group.delete()
+            deleted, _rows = group.delete()
+        if deleted:  # not by another request just before
+            messages.success(request, _("Group %(group)s deleted") % {"group": group.name})
         return redirect("admin:group_list")
 
     return render(
@@ -170,12 +177,13 @@ def user_list(request):
     users = User.objects.annotate(
         api_tokens=Count("auth_token_set", filter=live),
         can_clone=Exists(clone.filter(Q(user=OuterRef("pk")) | Q(group__user=OuterRef("pk")))),
-    ).prefetch_related("groups")
+    ).order_by("username").prefetch_related("groups")
     return render(
         request,
         "admin/user_list.html",
         {
             "users": users,
+            "locked": locked_usernames(),
             "title": _("Users"),
         },
     )
@@ -211,7 +219,7 @@ def user_create(request):
         {
             "user_form": user_form,
             "attributes_form": attributes_form,
-            "title": _("Create User"),
+            "title": _("Create user"),
         },
     )
 
@@ -256,6 +264,7 @@ def user_update(request, pk):
                     attributes = attributes_form.save()
                     if not user.is_active:  # as user_block
                         ApiToken.objects.filter(user=user).delete()
+                        end_sessions(user)
                     fields = set(changed_fields(before, snapshot(user))) | set(changed_fields(before_attributes, snapshot(attributes)))
                     fields = sorted(fields - {"password", "last_login"})
                     entry.action = "change " + ", ".join(fields)
@@ -284,7 +293,7 @@ def user_update(request, pk):
             "attributes_form": attributes_form,
             "edited_user": user,
             "seen": seen,
-            "title": _("Update User"),
+            "title": _("Update user"),
         },
     )
 
@@ -326,7 +335,9 @@ def user_delete(request, pk):
     if request.method == "POST":
         try:
             with audit(request, None, f"User {user.username}", "delete"), users_change():
-                user.delete()
+                deleted, _rows = user.delete()
+            if deleted:  # not by another request just before
+                messages.success(request, _("User %(user)s deleted") % {"user": user.username})
         except (NoSuperuser, claims.Busy) as err:
             refused(request, err)
         return redirect("admin:user_list")
@@ -337,6 +348,14 @@ def user_delete(request, pk):
         {"object": user,
          "consequence": _("Their access to VMs, SSH keys and settings go; the VMs themselves stay.")},
     )
+
+
+def end_sessions(user):
+    """Sign a blocked user out: django-auth-ldap does not check is_active for
+    an open session, so a blocked LDAP user would keep theirs."""
+    for session in Session.objects.filter(expire_date__gt=timezone.now()):
+        if session.get_decoded().get(SESSION_KEY) == str(user.pk):
+            session.delete()
 
 
 @require_POST
@@ -353,6 +372,8 @@ def user_block(request, pk):
             user.save(update_fields=["is_active"])  # not the rest as read before the lock
             # an unblock must not bring back the tokens of someone who took the account over
             ApiToken.objects.filter(user=user).delete()
+            end_sessions(user)
+        messages.success(request, _("%(user)s is blocked: signed out, API tokens deleted") % {"user": user.username})
     except (NoSuperuser, claims.Busy) as err:
         refused(request, err)
     return redirect("admin:user_list")
@@ -367,6 +388,7 @@ def user_unblock(request, pk):
             entry.skip = user.is_active  # not blocked
             user.is_active = True
             user.save(update_fields=["is_active"])
+        messages.success(request, _("%(user)s may sign in again") % {"user": user.username})
     except claims.Busy as busy:
         messages.error(request, busy_message(busy, request.user))
     return redirect("admin:user_list")
@@ -440,8 +462,15 @@ def tombstone_list(request):
     ids = {owner["user"] for tombstone in tombstones for owner in tombstone.owners}
     names = dict(User.objects.filter(id__in=ids).values_list("id", "username"))
     retention = timedelta(days=getattr(settings, "INSTANCE_OWNERSHIP_RETENTION_DAYS", 30))
+    # what would come back (computes.utils._restore): schedules that choose their VMs one by one, backups unlinked
+    policies = dict(BackupPolicy.objects.filter(pk__in={pk for t in tombstones for pk in t.policies}, compute=None,
+                                                tag=None).values_list("pk", "name"))
+    backups = set(Backup.objects.filter(pk__in={pk for t in tombstones for pk in t.backups}, instance=None)
+                  .values_list("pk", flat=True))
     for tombstone in tombstones:
         tombstone.owner_names = [names.get(owner["user"], _("deleted user")) for owner in tombstone.owners]
+        tombstone.policy_names = sorted(policies[pk] for pk in tombstone.policies if pk in policies)
+        tombstone.backup_count = len(backups.intersection(tombstone.backups))
         tombstone.expires = tombstone.removed + retention
     return render(request, "admin/tombstone_list.html", {"tombstones": tombstones})
 
@@ -460,6 +489,86 @@ def tombstone_delete(request, pk):
         request,
         "common/confirm_delete.html",
         {"object": tombstone,
-         "consequence": _("Its owners no longer get the VM back if its UUID shows up again.")},
+         "consequence": _("Its owners, tags, protection and schedules no longer come back if its UUID shows up again, nor are its backups linked to it again.")},
     )
 
+
+
+@superuser_only
+def tag_list(request):
+    """The tags of VMs and hosts, with how many of each have them."""
+    # in name order: a query that counts leaves the model's ordering out
+    tags = Tag.objects.annotate(vm_count=Count("instances", distinct=True),
+                                host_count=Count("computes", distinct=True)).order_by("name")
+    return render(request, "admin/tag_list.html", {"tags": list(tags)})
+
+
+def _retag_removed_vms(old, new):
+    """The removed VMs' kept tag old named new, or dropped with None: a name
+    made again later must not go to them. Under the ownership lock (computes.utils.forget)."""
+    for tombstone in InstanceTombstone.objects.all():
+        if old in tombstone.tags:
+            if new:
+                tombstone.tags = [new if name == old else name for name in tombstone.tags]
+            else:
+                tombstone.tags = [name for name in tombstone.tags if name != old]
+            if tombstone.keeps_anything():
+                tombstone.save(update_fields=["tags"])
+            else:  # kept only for the tag (computes.utils._bury)
+                tombstone.delete()
+
+
+@superuser_only
+def tag_update(request, pk):
+    tag = get_object_or_404(Tag, pk=pk)
+    old = tag.name
+    form = forms.TagForm(request.POST or None, instance=tag)
+    if request.method == "POST" and form.is_valid():
+        if form.cleaned_data["name"] == old:
+            return redirect("admin:tag_list")
+        try:
+            with audit(request, None, f"Tag {old}", f"rename to {form.cleaned_data['name']}"), transaction.atomic():
+                lock_ownership()
+                current = get_object_or_404(Tag, pk=pk).name  # another rename or a delete may have come first
+                form.save()
+                _retag_removed_vms(current, tag.name)
+        except IntegrityError:  # the name was given to another tag meanwhile
+            form.add_error("name", form.fields["name"].error_messages["unique"])
+        else:
+            messages.success(request, _("Tag %(old)s renamed to %(tag)s") % {"old": current, "tag": tag.name})
+            return redirect("admin:tag_list")
+    return render(request, "common/form.html", {"form": form, "title": _("Rename tag %(tag)s") % {"tag": old}})
+
+
+def _refuse_used(request, schedules):
+    """Tells that the tag cannot go while the backup schedules back up its VMs (models.PROTECT)."""
+    messages.error(request, ngettext("The backup schedule %(schedules)s backs up its VMs: change it first",
+                                     "The backup schedules %(schedules)s back up its VMs: change them first",
+                                     len(schedules)) % {"schedules": ", ".join(schedules)})
+    return redirect("admin:tag_list")
+
+
+@superuser_only
+def tag_delete(request, pk):
+    tag = get_object_or_404(Tag, pk=pk)
+    if request.method == "POST":
+        try:
+            with audit(request, None, f"Tag {tag.name}", "delete"), transaction.atomic():
+                lock_ownership()
+                tag = get_object_or_404(Tag, pk=pk)  # its name now: another rename may have come first
+                tag.delete()
+                _retag_removed_vms(tag.name, None)
+        except ProtectedError as err:  # a schedule backs up its VMs, also one saved since the page was shown
+            return _refuse_used(request, sorted(policy.name for policy in err.protected_objects))
+        messages.success(request, _("Tag %(tag)s deleted") % {"tag": tag.name})
+        return redirect("admin:tag_list")
+    schedules = list(tag.backup_policies.values_list("name", flat=True))
+    if schedules:
+        return _refuse_used(request, schedules)
+    vms, hosts = tag.instances.count(), tag.computes.count()
+    return render(request, "common/confirm_delete.html", {
+        "object": tag,
+        "consequence": _("It is taken off %(vms)s and %(hosts)s.") % {
+            "vms": ngettext("%(count)s VM", "%(count)s VMs", vms) % {"count": vms},
+            "hosts": ngettext("%(count)s host", "%(count)s hosts", hosts) % {"count": hosts}},
+    })

@@ -72,6 +72,11 @@ class AppSettingsTestCase(TestCase):
         self.assertEqual(AppSettings.objects.get(key="WORKER_CONCURRENCY").value, "4")
         self.assertTrue(any("between 1 and 16" in str(m) for m in get_messages(response.wsgi_request)))
 
+    def test_a_refused_setting_is_named_in_the_pages_language(self):
+        response = self.client.post(reverse("appsettings"), {"MIGRATION_BANDWIDTH": "-1"}, HTTP_ACCEPT_LANGUAGE="tr")
+        self.assertEqual(AppSettings.objects.get(key="MIGRATION_BANDWIDTH").value, "0")
+        self.assertTrue(any(str(m).startswith("Taşıma bant genişliği") for m in get_messages(response.wsgi_request)))
+
     def post(self, key, value):
         response = self.client.post(reverse("appsettings"), {key: value})
         # not followed: the messages would stay in the cookie for the next post
@@ -213,7 +218,7 @@ class AppSettingsTestCase(TestCase):
         AppSettings.objects.filter(key="LOGIN_FAILURE_LIMIT").update(value="10")
         self.client.post(reverse("appsettings"), {"LOGIN_FAILURE_LIMIT": "5", "was-LOGIN_FAILURE_LIMIT": "5",
                                                   "LOGIN_LOCKOUT_MINUTES": "30", "was-LOGIN_LOCKOUT_MINUTES": "15"})
-        values = dict(AppSettings.objects.filter(key__startswith="LOGIN_").values_list("key", "value"))
+        values = dict(AppSettings.objects.filter(key__in=["LOGIN_FAILURE_LIMIT", "LOGIN_LOCKOUT_MINUTES"]).values_list("key", "value"))
         self.assertEqual(values, {"LOGIN_FAILURE_LIMIT": "10", "LOGIN_LOCKOUT_MINUTES": "30"})
 
     def test_a_failed_save_changes_none_of_its_group(self):

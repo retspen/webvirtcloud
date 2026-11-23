@@ -13,6 +13,7 @@ from libvirt import libvirtError
 from lxml import html
 
 from storages.forms import CreateVolumeForm
+from vmbackups.models import Backup, BackupTarget, BackupTargetPool
 
 
 class PoolPageTests(TestCase):
@@ -25,7 +26,9 @@ class PoolPageTests(TestCase):
         self.conn.is_active.return_value = True
         self.conn.refresh.side_effect = libvirtError("pool 'default' has asynchronous jobs running.")
         self.conn.get_volumes.return_value = ["base.qcow2"]
-        self.conn.update_volumes.return_value = [{"name": "base.qcow2", "size": 1, "allocation": 1, "type": "qcow2"}]
+        self.conn.update_volumes.return_value = [{"name": "base.qcow2", "path": "/p/base.qcow2", "size": 1, "allocation": 1,
+                                                  "type": "qcow2"}]
+        self.conn.volume_users.return_value = {}
 
     def test_the_page_answers_while_a_volume_is_cloned(self):
         self.conn.get_size.return_value = (0, 0)  # an iSCSI pool without LUNs
@@ -113,7 +116,8 @@ class PoolPageTests(TestCase):
     def test_volumes_are_searched_by_name_and_share_one_clone_dialog(self):
         self.conn.get_size.return_value = (10, 4)
         self.conn.update_volumes.return_value = [
-            {"name": name, "size": 1, "allocation": 1, "type": "raw"} for name in ("data.img", "install.iso", "Boot.ISO")]
+            {"name": name, "path": f"/p/{name}", "size": 1, "allocation": 1, "type": "raw"}
+            for name in ("data.img", "install.iso", "Boot.ISO")]
         page = html.fromstring(self.client.get(reverse("storage", args=[self.compute.pk, "default"])).content)
         self.assertEqual(page.xpath("//tbody/tr/@data-search"), ["data.img", "install.iso", "Boot.ISO"])
         self.assertEqual(len(page.xpath("//div[contains(concat(' ', @class, ' '), ' modal ')][.//button[@name='cln_volume']]")), 1)
@@ -121,6 +125,50 @@ class PoolPageTests(TestCase):
         clone = {b.get("data-volume"): b.get("disabled") is None for b in page.xpath("//button[@data-volume]")}
         self.assertEqual(clone, {"data.img": True, "install.iso": False, "Boot.ISO": False})
         self.assertTrue(page.xpath("//div[@id='no-match'][@hidden]"))
+
+    def test_each_volume_says_which_vms_use_it(self):
+        self.conn.get_size.return_value = (10, 4)
+        self.conn.update_volumes.return_value = [
+            {"name": name, "path": f"/p/{name}", "size": 1, "allocation": 1, "type": "raw"}
+            for name in ("a.img", "b.img", "c.img")]
+        self.conn.volume_users.return_value = {"/p/a.img": ["vm1", "vm2"], "/p/b.img": []}
+        page = html.fromstring(self.client.get(reverse("storage", args=[self.compute.pk, "default"])).content)
+        self.assertEqual([" ".join(t.split()) for t in page.xpath("//tbody/tr/td[3]//text()[normalize-space()]")],
+                         ["vm1, vm2", "In use", "Not used on this host"])
+        self.assertEqual(page.xpath("//tbody/tr//@data-state"), ["used", "used", "unused"])
+        self.assertEqual(page.xpath("//tbody/tr/@data-search"), ["a.img vm1 vm2", "b.img", "c.img"])
+        self.assertEqual(page.xpath("//div[@id='state-pills']/button/@data-pill"), ["", "used", "unused"])
+
+    def test_a_backups_files_say_whose_backup_they_are(self):
+        # in a backup target's pool: deleted with their backup, not as unused volumes
+        target = BackupTarget.objects.create(name="t")
+        BackupTargetPool.objects.create(target=target, compute=self.compute, pool="default", pool_uuid="u")
+        backup = Backup.objects.create(target=target, vm_uuid="00000000-0000-4000-8000-000000000001", vm_name="web",
+                                       compute_name="pp", state=Backup.READY)
+        self.conn.get_size.return_value = (10, 4)
+        self.conn.update_volumes.return_value = [
+            {"name": name, "path": f"/p/{name}", "size": 1, "allocation": 1, "type": "qcow2"}
+            for name in (f"{backup.prefix}-vda.qcow2", "left.qcow2")]
+        page = html.fromstring(self.client.get(reverse("storage", args=[self.compute.pk, "default"])).content)
+        self.assertEqual([" ".join(t.split()) for t in page.xpath("//tbody/tr/td[3]//text()[normalize-space()]")],
+                         ["Backup of web", "Not used on this host"])
+        self.assertEqual(page.xpath("//tbody/tr//@data-state"), ["used", "unused"])
+        # the VMs' use not read: the backup is still told, the other volume is not called unused
+        self.conn.volume_users.side_effect = libvirtError("cannot read the domains")
+        page = html.fromstring(self.client.get(reverse("storage", args=[self.compute.pk, "default"])).content)
+        self.assertEqual([" ".join(t.split()) for t in page.xpath("//tbody/tr/td[3]//text()[normalize-space()]")],
+                         ["Backup of web"])
+        self.assertFalse(page.xpath("//div[@id='state-pills']"))
+
+    def test_volumes_whose_use_cannot_be_read_are_listed(self):
+        self.conn.get_size.return_value = (10, 4)
+        self.conn.update_volumes.return_value = [{"name": "a.img", "path": "/p/a.img", "size": 1, "allocation": 1,
+                                                  "type": "raw"}]
+        self.conn.volume_users.side_effect = libvirtError("cannot read the domains")
+        page = html.fromstring(self.client.get(reverse("storage", args=[self.compute.pk, "default"])).content)
+        self.assertEqual(page.xpath("//tbody/tr/td[1]/text()"), ["a.img"])
+        self.assertFalse(page.xpath("//tbody/tr//@data-state"))
+        self.assertFalse(page.xpath("//div[@id='state-pills']"))
 
     def test_the_heading_offers_what_the_pool_state_allows(self):
         # an active pool is stopped, a stopped one started or deleted; autostart either way
@@ -186,9 +234,9 @@ class PoolListTests(TestCase):
             page = html.fromstring(self.client.get(reverse("storages", args=[compute.pk])).content)
         cards = [" ".join(" ".join(card.itertext()).split()) for card in page.xpath("//div[@class='card h-100']")]
         self.assertEqual(cards, [
-            "default Active Autostart Type DIR Path /var/lib/libvirt/images Volumes 3 60 bytes free of 100 bytes",
-            "ceph-vms Active Type RBD Path vms Volumes 9 5 bytes free of 100 bytes",
-            "backup Stopped Type DIR Path /srv/backup Volumes – Space unavailable while stopped",
+            "default Active Autostart Type dir Path /var/lib/libvirt/images Volumes 3 60 B free of 100 B",
+            "ceph-vms Active Type rbd Path vms Volumes 9 5 B free of 100 B",
+            "backup Stopped Type dir Path /srv/backup Volumes – Space unavailable while stopped",
         ])
         self.assertEqual(page.xpath("//div[contains(@class,'progress-bar')]/@class"),
                          ["progress-bar ", "progress-bar bg-danger"])

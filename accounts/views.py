@@ -33,11 +33,12 @@ from accounts.forms import ApiTokenForm, EmailOTPForm, ProfileForm, UserSSHKeyFo
 from accounts.models import ApiToken, User, UserAttributes, UserInstance, UserSSHKey
 
 from . import forms
+from .lockout import locked_usernames, unlock
 from .utils import OTP_LINK, OTP_LINK_MAX_AGE, get_existing_totp_device, get_user_totp_device, otp_qr_svg, send_email_with_otp
 
 
 def profile(request):
-    publickeys = UserSSHKey.objects.filter(user_id=request.user.id)
+    publickeys = UserSSHKey.objects.filter(user_id=request.user.id).order_by("keyname")
     profile_form = ProfileForm(request.POST or None, instance=request.user)
     ssh_key_form = UserSSHKeyForm()
 
@@ -192,8 +193,9 @@ def ssh_key_delete(request, pk, user_id=None):
 @superuser_only
 def account(request, user_id):
     user = get_object_or_404(User, id=user_id)
-    user_insts = UserInstance.objects.filter(user_id=user_id).select_related("instance__compute")
-    publickeys = UserSSHKey.objects.filter(user_id=user_id)
+    user_insts = UserInstance.objects.filter(user_id=user_id).select_related("instance__compute").prefetch_related(
+        "instance__tags").order_by("instance__name")
+    publickeys = UserSSHKey.objects.filter(user_id=user_id).order_by("keyname")
 
     return render(
         request,
@@ -205,6 +207,7 @@ def account(request, user_id):
             "api_tokens": ApiToken.objects.filter(user_id=user_id),
             "otp_enabled": settings.OTP_ENABLED,
             "has_otp": TOTPDevice.objects.filter(user=user).exists(),
+            "locked": user.username.lower() in locked_usernames(),
         },
     )
 
@@ -234,7 +237,7 @@ def change_password(request):
                 pass
             except OSError:
                 logging.getLogger(__name__).warning("Could not remove the generated admin password file")
-        messages.success(request, _("Password Changed"))
+        messages.success(request, _("Password changed"))
         return redirect("accounts:profile")
     if form.has_error("old_password", "password_incorrect"):  # someone at an open session guessing it
         failed(request, None, f"User {request.user.username}", "change password", "wrong old password")
@@ -265,7 +268,7 @@ def user_instance_create(request, user_id):
         "common/form.html",
         {
             "form": form,
-            "title": _("Create User Instance"),
+            "title": _("Create user instance"),
             "searchable": True,
         },
     )
@@ -300,7 +303,7 @@ def user_instance_update(request, pk):
         "common/form.html",
         {
             "form": form,
-            "title": _("Update User Instance"),
+            "title": _("Update user instance"),
         },
     )
 
@@ -311,7 +314,9 @@ def user_instance_delete(request, pk):
     if request.method == "POST":
         user, instance = user_instance.user, user_instance.instance
         with audit_vm(request, instance, f"remove owner {user.username}"):
-            user_instance.delete()
+            deleted, _rows = user_instance.delete()
+        if deleted:  # not by another request just before
+            messages.success(request, _("%(user)s is no longer an owner of %(vm)s") % {"user": user.username, "vm": instance.name})
         return _next_or(request, reverse("accounts:account", args=[user.id]))
 
     return render(
@@ -405,6 +410,17 @@ def admin_email_otp(request, user_id):
     else:
         failed(request, None, subject, "mail OTP QR code", "no email address")
         messages.error(request, _("User email not set, failed to send QR code"))
+    return redirect("accounts:account", user.id)
+
+
+@require_POST
+@superuser_only
+def admin_unlock(request, user_id):
+    """End the user's lock after failed sign-ins, from every address."""
+    user = get_object_or_404(get_user_model(), pk=user_id)
+    with audit(request, None, f"User {user.username}", "unlock sign-in") as entry:
+        entry.skip = not unlock(user.username)  # another administrator was first, or the lock ran out
+    messages.success(request, _("The sign-in lock of %(user)s is ended.") % {"user": user})
     return redirect("accounts:account", user.id)
 
 

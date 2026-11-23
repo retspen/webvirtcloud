@@ -81,7 +81,7 @@
         });
         table.classList.toggle("d-none", matches.length === 0);
         if (answer.coverage) {
-            var readAt = fill(text.readAt, "%(time)s", new Date(answer.read_at).toLocaleTimeString());
+            var readAt = fill(text.readAt, "%(time)s", new Date(answer.read_at).toLocaleTimeString(document.documentElement.lang || undefined));
             var none = MAC.test(form.elements.q.value.trim()) ? text.noneMac : text.none;
             coverage.textContent = (matches.length ? "" : none + " ") + coverageText(answer.coverage) + " " + readAt;
         } else {
@@ -105,10 +105,8 @@
         button.disabled = true;
         var url = text.url + "?" + new URLSearchParams({q: form.elements.q.value});
         fetch(url, {headers: {"X-Requested-With": "XMLHttpRequest"}}).then(function (response) {
-            if (response.redirected) {
-                // signed out meanwhile: reloading goes to the login form, then back here
-                location.reload();
-                return new Promise(function () {});
+            if (response.status === 401) {
+                return {error: sessionEnd()};  // signed out meanwhile (session_end.js)
             }
             return response.json();
         }).catch(function () {

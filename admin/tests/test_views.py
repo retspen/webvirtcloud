@@ -106,12 +106,52 @@ class AdminTestCase(TestCase):
         for block in (lambda: self.client.post(reverse("admin:user_block", args=[user.id])),
                       lambda: self.client.post(reverse("admin:user_update", args=[user.id]),
                                                {"username": "taken", "role": "user", "max_instances": 1, "max_cpus": 1,
-                                                "max_memory": 1, "max_disk_size": 1, "seen": user_seen(user)})):
+                                                "max_memory": 1, "max_disk_size": 1, "max_backup_size": 0, "seen": user_seen(user)})):
             _, token = ApiToken.objects.create(user)
             self.assertEqual(block().status_code, 302)
             self.client.post(reverse("admin:user_unblock", args=[user.id]))
             self.assertEqual(Client().get("/api/v1/instances/", HTTP_AUTHORIZATION=f"Token {token}").status_code, 401)
         self.assertFalse(ApiToken.objects.filter(user=user).exists())
+
+    def test_a_block_is_asked_first_and_each_change_is_said(self):
+        from django.contrib.messages import get_messages
+
+        from computes.models import Tag
+
+        def said(response):  # this response's messages; the next one starts afresh
+            self.client.cookies.pop("messages", None)
+            return [str(m) for m in get_messages(response.wsgi_request)]
+
+        user = User.objects.create_user("asked", password="Wvc-asked-9")
+        page = html.fromstring(self.client.get(reverse("admin:user_list")).content)
+        (block,) = page.xpath("//form[@action=$u]/button", u=reverse("admin:user_block", args=[user.id]))
+        self.assertIn("API tokens are deleted", block.get("data-confirm"))
+        self.assertEqual(said(self.client.post(reverse("admin:user_block", args=[user.id]))),
+                         ["asked is blocked: signed out, API tokens deleted"])
+        page = html.fromstring(self.client.get(reverse("admin:user_list")).content)
+        (unblock,) = page.xpath("//form[@action=$u]/button", u=reverse("admin:user_unblock", args=[user.id]))
+        self.assertIsNone(unblock.get("data-confirm"))
+        self.assertEqual(said(self.client.post(reverse("admin:user_unblock", args=[user.id]))), ["asked may sign in again"])
+        self.assertEqual(said(self.client.post(reverse("admin:user_delete", args=[user.id]))), ["User asked deleted"])
+        group = Group.objects.create(name="said")
+        self.assertEqual(said(self.client.post(reverse("admin:group_delete", args=[group.id]))), ["Group said deleted"])
+        tag = Tag.objects.create(name="old-name")
+        self.assertEqual(said(self.client.post(reverse("admin:tag_update", args=[tag.id]), {"name": "new-name"})),
+                         ["Tag old-name renamed to new-name"])
+
+    def test_a_tag_s_counts_link_its_vms_and_hosts(self):
+        from computes.models import Compute, Tag
+        from instances.models import Instance
+
+        host = Compute.objects.create(name="tg-host", hostname="192.0.2.8", login="", password="", type=4)
+        tag = Tag.objects.create(name="web")
+        Instance.objects.create(compute=host, name="tg-vm", uuid="00000000-0000-4000-8000-0000000000cc").tags.add(tag)
+        page = html.fromstring(self.client.get(reverse("admin:tag_list")).content)
+        self.assertEqual(page.xpath("//tbody//td/a[not(contains(@class, 'btn'))]/@href"), [reverse("instances:index") + "?tag=web"])
+        host.tags.add(tag)
+        page = html.fromstring(self.client.get(reverse("admin:tag_list")).content)
+        self.assertEqual(page.xpath("//tbody//td/a[not(contains(@class, 'btn'))]/@href"),
+                         [reverse("instances:index") + "?tag=web", reverse("computes") + "?tag=web"])
 
     def test_users(self):
         response = self.client.get(reverse("admin:user_create"))
@@ -126,7 +166,7 @@ class AdminTestCase(TestCase):
                 "max_instances": 1,
                 "max_cpus": 1,
                 "max_memory": 1,  # GiB
-                "max_disk_size": 4,
+                "max_disk_size": 4, "max_backup_size": 0,
             },
         )
         self.assertRedirects(response, reverse("admin:user_list"))
@@ -153,7 +193,7 @@ class AdminTestCase(TestCase):
                 "max_instances": 2,
                 "max_cpus": 2,
                 "max_memory": 2,  # GiB
-                "max_disk_size": 8,
+                "max_disk_size": 8, "max_backup_size": 0,
             },
         )
         self.assertRedirects(response, reverse("admin:user_list"))

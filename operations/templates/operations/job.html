@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load common_tags %}
 {% load bootstrap_icons %}
 {% load operations %}
 
@@ -15,12 +16,12 @@
 <div class="card mb-3">
     <div class="card-header">
         <div class="d-flex flex-wrap align-items-center gap-2">
-            <span class="fw-semibold text-break me-auto">{{ job.resource_label }}</span>
+            <span class="fw-semibold text-break me-auto">{% include "operations/resource_link.html" with url=op.resource_url label=job.resource_label %}</span>
             {% include "operations/state_badge.html" with state=op.state %}
         </div>
         <div class="small text-body-secondary mt-1">{% trans "User" %}: {{ job.username }}</div>
     </div>
-    {% if job.phase or op.progress_total or job.cancellable or job.error or job.result.links or job.result.warning or job.result.left_behind or job.resolution %}
+    {% if job.phase or op.progress_total or job.cancellable or job.error or job.result.open or job.result.links or job.result.warning or job.result.left_behind or job.resolution %}
         <div class="card-body pb-0">
             {% if job.phase or job.cancellable %}
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
@@ -28,7 +29,8 @@
                     {% if job.cancellable %}
                         <form method="post" action="{% url 'operations:cancel' job.id %}" aria-label="{% trans 'Cancel job form' %}">
                             {% csrf_token %}
-                            <button class="btn btn-sm btn-outline-warning" type="submit">{% trans "Cancel" %}</button>
+                            <button class="btn btn-sm btn-outline-warning" type="submit"
+                                    data-confirm="{% blocktrans with job=job.label %}Cancel {{ job }}? It stops where it is.{% endblocktrans %}">{% trans "Cancel the job" %}</button>
                         </form>
                     {% endif %}
                 </div>
@@ -37,9 +39,9 @@
                 {% widthratio op.progress_done|default:0 op.progress_total 100 as percent %}
                 <div class="d-flex flex-wrap justify-content-between gap-2 small mb-2">
                     <span class="text-body-secondary">
-                        {% if progress_bytes %}{{ op.progress_done|default:0|filesizeformat }} / {{ op.progress_total|filesizeformat }}{% else %}{{ op.progress_done|default:0 }} / {{ op.progress_total }}{% endif %}
+                        {% if progress_bytes %}{{ op.progress_done|default:0|binary_size }} / {{ op.progress_total|binary_size }}{% else %}{{ op.progress_done|default:0 }} / {{ op.progress_total }}{% endif %}
                     </span>
-                    <strong>{{ percent }}%</strong>
+                    <strong>{{ percent|percent }}</strong>
                 </div>
                 <div class="progress mb-3" style="height: .5rem;" role="progressbar" aria-label="{% trans 'Progress' %}" aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100">
                     <div class="progress-bar" style="width: {{ percent }}%"></div>
@@ -49,6 +51,9 @@
                 <div class="alert alert-{{ op.state|state_color }}" role="alert">
                     {% bs_icon 'exclamation-triangle' %} {{ job.error }}
                 </div>
+            {% endif %}
+            {% if job.result.open and op.state == "succeeded" %}
+                <a class="btn btn-primary mb-3" href="{{ job.result.open }}">{% trans "Open" context "verb" %} {% bs_icon 'arrow-right' %}</a>
             {% endif %}
             {% if job.result.links %}
                 <h2 class="h6">{% trans "Results" %}</h2>

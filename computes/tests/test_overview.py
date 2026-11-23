@@ -59,12 +59,12 @@ class OverviewTestCase(TestCase):
         self.assertIn("rack 4", text(page, "//div[@id='host_status']"))
         cards = [" ".join(" ".join(card.itertext()).split()) for card in page.xpath("//div[@class='card h-100']")]
         self.assertIn("VMs 6 3 running, 2 shut off, 1 paused Instances →", cards)
-        self.assertTrue(any(card.startswith("vCPUs 1.5:1 12 vCPUs on 8 CPUs 6 running") for card in cards), cards)
-        self.assertTrue(any(card.startswith("Memory 75 % 24.0 GB / 32.0 GB") for card in cards), cards)
-        self.assertTrue(any("120.0 GB free of 500.0 GB" in card for card in cards), cards)
+        self.assertTrue(any(card.startswith("vCPUs 1.5:1 12 vCPUs on 8 CPUs 6 in running VMs") for card in cards), cards)
+        self.assertTrue(any(card.startswith("Memory 75% 24 GiB / 32 GiB") for card in cards), cards)
+        self.assertTrue(any("120 GiB free of 500 GiB" in card for card in cards), cards)
         hardware = text(page, "//div[@class='card-header'][normalize-space()='Hardware']/..")
         self.assertIn("Processor Xeon Architecture x86_64 Logical CPUs 8 Physical cores 4 Sockets 2 NUMA nodes 2 "
-                      "Clock 2.4 GHz Memory 32.0 GB", hardware)
+                      "Clock 2.4 GHz Memory 32 GiB", hardware)
         software = text(page, "//div[@class='card-header'][normalize-space()='Software and connection']/..")
         self.assertIn("QEMU 10.1.0 libvirt 11.10.0", software)
         self.assertIn("x86_64 kvm · qemu", software)
@@ -78,7 +78,7 @@ class OverviewTestCase(TestCase):
                  pool("backup", 900, 800), pool("iso", 100, 90)]
         page = self.page(pools=pools)
         storage = page.xpath("//div[@class='card-header'][normalize-space()='Storage']/..")[0]
-        self.assertIn("default 120.0 GB free of 500.0 GB", " ".join(" ".join(storage.xpath("./div/div//text()")).split()))
+        self.assertIn("default 120 GiB free of 500 GiB", " ".join(" ".join(storage.xpath("./div/div//text()")).split()))
         (more,) = storage.xpath(".//details")
         self.assertEqual(" ".join(more.xpath("summary")[0].text_content().split()), "3 more pools")
         # active pools only, by name after the default one

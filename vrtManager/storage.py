@@ -27,7 +27,7 @@ def rbd_source_children(pool):
 
 
 def volume_details(vol):
-    """A volume's name, capacity (size), allocation and format, from its XML:
+    """A volume's name, capacity (size), allocation, format and path, from its XML:
     one libvirt call, which refreshes the volume as info() does. Logical and
     iSCSI volumes have no format (None)."""
     def read(doc):
@@ -36,6 +36,7 @@ def volume_details(vol):
             "size": int(util.get_xpath(doc, "/volume/capacity")),
             "allocation": int(util.get_xpath(doc, "/volume/allocation")),
             "type": util.get_xpath(doc, "/volume/target/format/@type"),
+            "path": util.get_xpath(doc, "/volume/target/path"),
         }
     return util.get_xml_path(vol.XMLDesc(0), func=read)
 
@@ -113,7 +114,17 @@ class wvmStorages(wvmConnect):
                   </target>
                 </pool>"""
         # builds the dir pool's directory or the logical pool's volume group
-        return self.define_storage(xml, libvirt.VIR_STORAGE_POOL_CREATE_WITH_BUILD)
+        try:
+            return self.define_storage(xml, libvirt.VIR_STORAGE_POOL_CREATE_WITH_BUILD)
+        except libvirt.libvirtError as err:
+            # libvirt refuses a device that holds data; erasing it is left to the host's admin:
+            # with an overwrite, libvirt clears the partition table even of a disk in use
+            if stg_type != "logical" or err.get_error_code() != libvirt.VIR_ERR_STORAGE_POOL_BUILT:
+                raise
+            raise util.OperationError(gettext_noop(
+                "Device %(device)s already holds data: a partition table, a file system or a volume group. "
+                "If it is the right device, erase it on the host with \"wipefs -a %(device)s\" and try again."),
+                device=source) from err
 
     def create_storage_ceph(
         self, stg_type, name, ceph_pool, ceph_host, ceph_user, secret
@@ -184,9 +195,6 @@ class wvmStorage(wvmConnect):
 
     def _createXML(self, xml, flags):
         self.pool.createXML(xml, flags)
-
-    def _createXMLFrom(self, xml, vol, flags):
-        self.pool.createXMLFrom(xml, vol, flags)
 
     def _define(self, xml):
         return self.wvm.storagePoolDefineXML(xml, 0)
@@ -268,6 +276,11 @@ class wvmStorage(wvmConnect):
         if path in elsewhere([path]):
             raise util.InUse(gettext_noop("Volume %(name)s is in use on another compute that shares this storage"), name=name)
 
+    def volume_users(self):
+        """{path: VM names, sorted} of the paths this host uses (path_users): none for
+        a backing file only another volume is built on."""
+        return {path: sorted(names) for path, names in self.path_users().items()}
+
     def del_volume(self, name):
         """libvirt deletes any volume; one a VM of this host still needs is refused."""
         vol = self.pool.storageVolLookupByName(name)
@@ -291,6 +304,38 @@ class wvmStorage(wvmConnect):
         with contextlib.suppress(libvirt.libvirtError):  # refused while a volume is cloned in the pool
             self.refresh()
         return volume_details(self.get_volume(volname))
+
+    def new_raw_volume(self, name, size):
+        """A new volume of name and size bytes to write (write_volume); libvirt refuses a name taken."""
+        self.pool.createXML(f"<volume><name>{util.xml_escape(name)}</name><capacity unit='bytes'>{int(size)}</capacity>"
+                            "<target><format type='raw'/></target></volume>", 0)
+
+    def write_volume(self, name, size, chunks):
+        """chunks (bytes, size of them in all) into the volume of name, from its start, through one
+        libvirt stream as an upload is written, whatever the connection; the bytes written. A
+        failure, or chunks raising, aborts the stream."""
+        stream = self.wvm.newStream(0)
+        written = 0
+        try:
+            self.pool.storageVolLookupByName(name).upload(stream, 0, size, 0)
+            for data in chunks:
+                while data:
+                    sent = stream.send(data)
+                    if sent <= 0:
+                        raise OSError("the libvirt stream stopped")
+                    written += sent
+                    data = data[sent:]
+            stream.finish()
+        except BaseException:
+            stream.abort()
+            raise
+        return written
+
+    def delete_volume_if_present(self, name):
+        with contextlib.suppress(libvirt.libvirtError):  # gone, or never made
+            self.pool.refresh(0)
+        if name in self.pool.listVolumes():
+            self.pool.storageVolLookupByName(name).delete(0)
 
     def update_volumes(self):
         """Every volume's details (volume_details) by name, the pool refreshed
@@ -368,28 +413,45 @@ class wvmStorage(wvmConnect):
             raise util.OperationError(gettext_noop("The running VMs %(vms)s use volume %(name)s; shut them down to copy it"),
                                       vms=", ".join(vms), name=name)
 
-    def clone_volume(
-        self,
-        name,
-        target_file,
-        vol_fmt=None,
-        metadata=False,
-        mode="0644",
-        file_suffix="img",
-        disk_owner_uid=0,
-        disk_owner_gid=0,
-    ):
+    def read_volume(self, name):
+        """The size of volume name and its bytes, read in chunks: a running
+        guest's volume is refused, as for a copy."""
+        self.refuse_running_copy(name)
         vol = self.get_volume(name)
-        if not vol_fmt:
-            vol_fmt = self.get_volume_format_type(name)
+        size = vol.infoFlags(libvirt.VIR_STORAGE_VOL_GET_PHYSICAL)[2]  # a file's length, not its capacity
+        stream = self.wvm.newStream(0)
+        vol.download(stream, 0, 0, 0)
 
-        target_file = self.clone_name(target_file, vol_fmt, file_suffix)
+        def chunks():
+            try:
+                while data := stream.recv(1 << 20):
+                    yield data
+                stream.finish()
+            except BaseException:  # also a download the browser left (GeneratorExit)
+                with contextlib.suppress(libvirt.libvirtError):
+                    stream.abort()
+                raise
+
+        return size, chunks()
+
+    def clone_volume(self, vol, target_file, vol_fmt=None, metadata=False, mode="0644", disk_owner_uid=0, disk_owner_gid=0):
+        """A copy named target_file in this pool of vol, a volume of this pool
+        or another; its path. clone_name gives a dir pool's name its suffix."""
+        if not vol_fmt:
+            vol_fmt = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
+        size = 0  # a file copy takes the source's size and grows as written
+        if self.get_type() not in FILE_POOL_TYPES:
+            # a block device, an LVM volume or an RBD image is raw and allocated whole:
+            # a sparse LVM volume is a snapshot that fails once the copy fills it
+            vol_fmt = "raw"
+            size = vol.info()[1]
+        metadata = metadata and vol_fmt == "qcow2"  # libvirt preallocates qcow2 metadata only
 
         xml = f"""
             <volume>
-                <name>{target_file}</name>
-                <capacity>0</capacity>
-                <allocation>0</allocation>
+                <name>{util.xml_escape(target_file)}</name>
+                <capacity>{size}</capacity>
+                <allocation>{size}</allocation>
                 <target>
                     <format type='{vol_fmt}'/>
                     <permissions>
@@ -406,5 +468,4 @@ class wvmStorage(wvmConnect):
                     </features>"""
         xml += """ </target>
             </volume>"""
-        self._createXMLFrom(xml, vol, metadata)
-        return target_file
+        return self.pool.createXMLFrom(xml, vol, metadata).path()

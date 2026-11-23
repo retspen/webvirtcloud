@@ -1,15 +1,20 @@
+from computes.api.serializers import TAGS
 from computes.models import Compute
 from django.conf import settings
 from instances.models import Flavor, Instance
+from instances.states import REASONS
 from instances.utils import nic_macs
 from libvirt import libvirtError
 from rest_framework import serializers
 
 
 class InstanceSerializer(serializers.ModelSerializer):
+    tags = serializers.SlugRelatedField(**TAGS)
+
     class Meta:
         model = Instance
-        fields = ["id", "compute", "name", "uuid", "is_template", "created", "drbd"]
+        fields = ["id", "compute", "name", "uuid", "is_template", "protected", "created", "drbd", "tags"]
+        read_only_fields = ["protected"]  # a superuser changes it on the VM's page
 
 
 # what a VM's device dicts tell of the host: its files and pools
@@ -18,6 +23,17 @@ HOST_KEYS = {"image", "storage", "path", "backing_file", "loader"}
 
 class InstanceDetailsSerializer(serializers.ModelSerializer):
     networks = serializers.SerializerMethodField()
+    state_reason = serializers.SerializerMethodField()
+    tags = serializers.SlugRelatedField(**TAGS)
+
+    def get_state_reason(self, instance) -> dict | None:
+        """When a fault put the VM in its state (a disk error, a guest crash, its
+        watchdog; instances.states.REASONS): libvirt's state and reason codes of
+        one read (virDomainGetState) and the reason in the request's language;
+        else null."""
+        read = instance.state_and_reason
+        text = REASONS.get(read)
+        return None if text is None else {"state": read[0], "reason": read[1], "text": str(text)}
 
     def get_networks(self, instance) -> list[dict]:
         """Each NIC with its addresses (None: none known), which the VM page
@@ -56,11 +72,14 @@ class InstanceDetailsSerializer(serializers.ModelSerializer):
             "id",
             "compute",
             "status",
+            "state_reason",
             "uuid",
             "name",
+            "tags",
             "title",
             "description",
             "is_template",
+            "protected",
             "created",
             "drbd",
             "arch",

@@ -25,6 +25,8 @@ from libvirt import (
     VIR_DOMAIN_XML_SECURE,
     VIR_DOMAIN_XML_INACTIVE,
     VIR_DOMAIN_XML_MIGRATABLE,
+    VIR_DOMAIN_CHECKPOINT_DELETE_METADATA_ONLY,
+    VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA,
     VIR_DOMAIN_UNDEFINE_KEEP_NVRAM,
     VIR_ERR_NO_DOMAIN,
     VIR_ERR_NO_STORAGE_POOL,
@@ -36,6 +38,7 @@ from libvirt import (
     VIR_STORAGE_VOL_FILE,
     VIR_MIGRATE_AUTO_CONVERGE,
     VIR_MIGRATE_COMPRESSED,
+    VIR_MIGRATE_TLS,
     VIR_MIGRATE_LIVE,
     VIR_MIGRATE_NON_SHARED_DISK,
     VIR_MIGRATE_OFFLINE,
@@ -43,6 +46,7 @@ from libvirt import (
     VIR_MIGRATE_PARAM_MIGRATE_DISKS,
     VIR_MIGRATE_PARAM_PERSIST_XML,
     VIR_MIGRATE_PARAM_URI,
+    VIR_MIGRATE_PARAM_BANDWIDTH,
     VIR_MIGRATE_PERSIST_DEST,
     VIR_MIGRATE_UNDEFINE_SOURCE,
     VIR_MIGRATE_UNSAFE,
@@ -74,7 +78,7 @@ from lxml import etree
 from vrtManager import util
 from vrtManager.connection import NVRAM_DIR, wvmConnect
 from vrtManager.nodedevs import check_hostdevs, pci_address, pci_label, usb_selector, usb_selector_label
-from vrtManager.nwfilters import same_text
+from vrtManager.nwfilters import filter_rules
 from vrtManager.storage import wvmStorage, wvmStorages
 from vrtManager.virtsecrets import REF_USAGE_TYPES
 
@@ -119,6 +123,14 @@ def _rate(before, after, seconds, scale=1):
     return scale * (after - before) / seconds
 
 
+def file_disks(xml):
+    """The disks of the definition xml that are files: (disk element, path)."""
+    for disk in ElementTree.fromstring(xml).iter("disk"):
+        source = disk.find("source")
+        if disk.get("type") == "file" and source is not None and source.get("file"):
+            yield disk, source.get("file")
+
+
 class wvmInstances(wvmConnect):
     def nwfilters_unlike(self, source, names):
         """Of the network filters named and those they reference: the ones
@@ -126,10 +138,7 @@ class wvmInstances(wvmConnect):
         source (another connection), each sorted. A VM runs with its host's
         filters of those names, whatever their rules."""
         def rules(wvm, name):
-            tree = etree.fromstring(wvm.nwfilterLookupByName(name).XMLDesc(0))
-            for uuid in tree.findall("uuid"):  # each host's own
-                tree.remove(uuid)
-            return same_text(etree.tostring(tree, encoding="unicode")), tree.xpath("filterref/@filter")
+            return filter_rules(wvm.nwfilterLookupByName(name))
 
         if not names:  # the hosts are asked only about what the cards name
             return [], []
@@ -149,23 +158,28 @@ class wvmInstances(wvmConnect):
         return sorted(missing), sorted(unlike)
 
     def moveto(self, conn, name, live, unsafe, offline, autoconverge=False, compress=False, uri=None,
-               pools=None, on_copy=None):
+               pools=None, on_copy=None, running_only=False, tls=False, bandwidth=0):
         """Migrates the VM of conn (a wvmInstance on the source) here.
 
         The mode follows the VM's state, read once: a running VM migrates
         live or, without live, paused for the transfer (non-live); a paused
         VM stays paused; a shut-off VM moves offline, also when the request
         was made while it ran (live). An offline request for a running or
-        paused VM is refused. unsafe, autoconverge (live only) and
-        compress apply to a running VM. uri: the native migration URI
+        paused VM is refused, and with running_only a VM not running.
+        unsafe, autoconverge (live only) and compress apply to a running VM. uri: the native migration URI
         (tcp://address) on the destination; None lets libvirt use the
         destination's own hostname. pools: {target: pool here} of the disks
         libvirt copies into those pools during the migration (disk_copies);
         the other disks must be on storage both hosts share. on_copy is
         called with the copies ({pool, dest}: a pool here and its path) before
-        libvirt makes them. Returns the mode and options used, for the log,
+        libvirt makes them. tls: QEMU sends the memory and disks over TLS (the
+        hosts' certificates in /etc/pki/qemu); a shut-off VM's definition alone
+        sends none. bandwidth: MiB/s of libvirt's limit, for the memory before the final switchover and for each
+        copied disk; 0 leaves libvirt's own (none unless set on the host). Returns the mode and options used, for the log,
         and each copied disk's path and the path of its copy here."""
         state = conn.get_status()
+        if running_only and state != 1:
+            raise util.OperationError(gettext_noop("The VM is not running"))
         if state == 5:
             mode = ["offline"]
         elif state in (1, 3):
@@ -241,10 +255,15 @@ class wvmInstances(wvmConnect):
 
         # the TPM state is a file of the source host: a live migration carries it
         tpm_state = etree.fromstring(definitions[0]).xpath("devices/tpm/backend[@type='emulator']")
+        if tls and (state != 5 or copies or tpm_state):
+            flags |= VIR_MIGRATE_TLS
+            mode.append("TLS")
+        if bandwidth and (state != 5 or copies or tpm_state):  # an offline move sends only its definition (and NVRAM)
+            mode.append(f"{bandwidth} MiB/s")
         if copies or (state == 5 and tpm_state):
             if copies and on_copy is not None:
                 on_copy([{"pool": copy["pool"].name(), "dest": copy["dest"]} for copy in copies])
-            note = self.migrate_running(conn, state, flags, uri, copies)
+            note = self.migrate_running(conn, state, flags, uri, copies, bandwidth)
             if note:
                 mode.append(note)
         elif state == 5:
@@ -254,10 +273,10 @@ class wvmInstances(wvmConnect):
             # dom.migrate.
             self.move_definition(dom, conn)
         else:
-            dom.migrate(self.wvm, flags, None, uri, 0)
+            dom.migrate(self.wvm, flags, None, uri, bandwidth)
         return ", ".join(mode), [(copy["path"], copy["dest"]) for copy in copies]
 
-    def migrate_running(self, conn, state, flags, uri, copies):
+    def migrate_running(self, conn, state, flags, uri, copies, bandwidth=0):
         """Migrates the VM of conn as a running VM, which carries its TPM
         state, while libvirt copies the disks of copies into their pools here
         (NON_SHARED_DISK), the definitions naming the new paths. A shut-off
@@ -277,6 +296,8 @@ class wvmInstances(wvmConnect):
             flags |= VIR_MIGRATE_NON_SHARED_DISK
         if uri:
             params[VIR_MIGRATE_PARAM_URI] = uri
+        if bandwidth:
+            params[VIR_MIGRATE_PARAM_BANDWIDTH] = bandwidth
         try:
             if state == 5:
                 flags &= ~VIR_MIGRATE_OFFLINE
@@ -308,26 +329,27 @@ class wvmInstances(wvmConnect):
             source.set("file", dest)
         return etree.tostring(tree, encoding="unicode")
 
+    def shares(self, conn, directory):
+        """Whether this host and that of conn see directory as one, as the
+        storage pools both have there are one (same_directory); False when
+        not, or when it cannot be told."""
+        here, there = self.pool_at(directory), conn.pool_at(directory)
+        try:
+            return here is not None and there is not None and self.same_directory(there, here)
+        except libvirtError:
+            return False  # not known to be shared: copied, never assumed
+
     def disk_plan(self, conn, xml):
         """How the file disks of the VM of conn (on the source) in xml, the
         definition the migration carries, can reach this host: a list of
         {target, path, capacity, shared, refusal}. shared: both hosts see the
-        file at its path, as the directory both have as a storage pool is
-        one (same_directory); False when not, or when it cannot be told.
+        file at its path (shares); False when not, or when it cannot be told.
         refusal: why the disk cannot be copied, or None."""
         rows, shared = [], {}
-        for disk in ElementTree.fromstring(xml).iter("disk"):
-            source = disk.find("source")
-            if disk.get("type") != "file" or source is None or not source.get("file"):
-                continue
-            path = source.get("file")
+        for disk, path in file_disks(xml):
             directory = os.path.dirname(path)
             if directory not in shared:
-                here, there = self.pool_at(directory), conn.pool_at(directory)
-                try:
-                    shared[directory] = here is not None and there is not None and self.same_directory(there, here)
-                except libvirtError:
-                    shared[directory] = False  # not known to be shared: copied, never assumed
+                shared[directory] = self.shares(conn, directory)
             try:
                 volume = conn.wvm.storageVolLookupByPath(path)
             except libvirtError:
@@ -491,17 +513,7 @@ class wvmInstances(wvmConnect):
                 if self._find_volume(target, name) is None:
                     raise util.OperationError(gettext_noop("The destination host cannot see the NVRAM file %(path)s"), path=path)
                 return None
-            chunks = []
-            stream = conn.wvm.newStream(0)
-            try:
-                vol.download(stream, 0, 0, 0)
-                stream.recvAll(lambda _stream, data, out: out.append(data), chunks)
-                stream.finish()
-            except Exception:
-                with contextlib.suppress(libvirtError):
-                    stream.abort()
-                raise
-            self.upload_volume(target, name, b"".join(chunks))
+            self.upload_volume(target, name, conn.download_volume(vol))
         return name
 
     def delete_nvram(self, name):
@@ -631,8 +643,9 @@ class wvmInstances(wvmConnect):
             self.delete_nvram(nvram)
             raise
         try:
-            # libvirt refuses to undefine a VM with NVRAM without this; the file stays for the cleanup
-            dom.undefineFlags(VIR_DOMAIN_UNDEFINE_KEEP_NVRAM)
+            # libvirt refuses to undefine a VM with NVRAM or backup checkpoints without these; the file stays for
+            # the cleanup, the checkpoints are this host's (the next backup is full)
+            dom.undefineFlags(VIR_DOMAIN_UNDEFINE_KEEP_NVRAM | VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA)
             try:
                 started = dom.isActive()
             except libvirtError as error:
@@ -673,6 +686,39 @@ def check_snapshot_name(name):
         raise util.OperationError(gettext_noop("Snapshot names are 1-64 letters, digits, '.', '_' or '-' and do not start with '.'"))
 
 
+# the most the Disks tab's form takes (instances.views.set_disk_limit): IOPS, and bytes/s (MiB/s whole)
+IOPS_MAX, BYTES_MAX = 10**7, 10**6 * 2**20
+
+
+def custom_iotune(disk):
+    """Whether a disk element's I/O tuning is more than set_disk_limit sets: a
+    throttle group or filter, a burst or size, separate read and write limits,
+    or totals the form cannot show (bytes not whole MiB/s, past its range).
+    Such tuning is changed in the VM's XML."""
+    if disk.xpath("throttlefilters/*"):
+        return True
+    for element in disk.xpath("iotune/*"):
+        value = (element.text or "0").strip()
+        if element.tag == "total_iops_sec" and value.isdigit() and int(value) <= IOPS_MAX:
+            continue
+        if element.tag == "total_bytes_sec" and value.isdigit() and int(value) <= BYTES_MAX and int(value) % 2**20 == 0:
+            continue
+        if element.tag == "group_name" or value != "0":
+            return True
+    return False
+
+
+def disk_source(disk):
+    """A disk element's storage, to tell two definitions' disks apart: its type
+    and its source's attributes and hosts, not those a running VM adds (index,
+    and an NBD disk's tls, which libvirt fills in from the host's settings)."""
+    source = disk.find("source")
+    if source is None:
+        return disk.get("type"), ()
+    return (disk.get("type"), tuple(sorted((k, v) for k, v in source.attrib.items() if k not in ("index", "tls"))),
+            tuple(tuple(sorted(host.attrib.items())) for host in source.findall("host")))
+
+
 def agent_command(dom, command, arguments=None):
     """The answer of one guest agent command that waits AGENT_TIMEOUT seconds
     at most: libvirt's own calls for it wait for a hung agent indefinitely,
@@ -696,6 +742,68 @@ def agent_interfaces(dom):
     return interfaces
 
 
+
+def rewrite_for_new_vm(tree, clone_data, uuid):
+    """A VM's persistent definition (tree) made another VM's, in place: its
+    name, UUID, title and description, each NIC's MAC (clone-net-mac-<n>)
+    and its filter parameters, a new VNC password, no host device, an
+    empty TPM and no cloud-init seed of the VM's. The clone and the restore
+    of a backup share it."""
+    # the cloud-init seed holds the VM's own instance-id and hostname: the clone's drive stays empty
+    seed = f"cidata-{tree.findtext('uuid')}.iso"
+    for source in tree.xpath("devices/disk[@device='cdrom']/source"):
+        if os.path.basename(source.get("file") or "") == seed:
+            source.getparent().remove(source)
+    tree.find("name").text = clone_data["name"]
+    uuid_el = tree.find("uuid")
+    if uuid_el is None:
+        uuid_el = etree.SubElement(tree, "uuid")
+    uuid_el.text = uuid
+    # libvirt refuses an SMBIOS UUID other than the domain's
+    for entry in tree.xpath("sysinfo/system/entry[@name='uuid']"):
+        entry.text = uuid
+    wvmInstance._set_options(
+        tree,
+        {
+            "title": clone_data.get("clone-title", ""),
+            "description": clone_data.get("clone-description", ""),
+        },
+    )
+
+    # the clone gets a new, empty TPM (the clone form says so): an emulated
+    # one without the VM's state path; a host's or another process's would be shared
+    for backend in tree.xpath("devices/tpm/backend"):
+        if backend.get("type") != "emulator":
+            raise util.OperationError(gettext_noop("A VM with a host's or an external TPM is not cloned; remove it first"))
+        for source in backend.findall("source"):
+            backend.remove(source)
+
+    # a host device is one VM's: the clone gets none (the clone form says so)
+    for hostdev in tree.findall("devices/hostdev"):
+        hostdev.getparent().remove(hostdev)
+    for num, net in enumerate(tree.findall("devices/interface")):
+        if net.get("type") == "hostdev":  # numbered as the form numbers the VM's NICs
+            net.getparent().remove(net)
+            continue
+        mac = clone_data.get(f"clone-net-mac-{num}")
+        if not mac:
+            raise ValueError(f"No MAC address for network interface {num}")
+        net.find("mac").set("address", wvmInstance.fix_mac(mac))
+        # a filter's parameters of the source's own addresses would block the clone's traffic:
+        # its MAC is the clone's, its IP the one it learns (clean-traffic's default), unless
+        # learning is off; libvirt learns no IPv6 address, so IPV6 stays for the admin to change
+        for parameter in net.xpath("filterref/parameter[@name='MAC']"):
+            parameter.set("value", wvmInstance.fix_mac(mac))
+        if not net.xpath("filterref/parameter[@name='CTRL_IP_LEARNING'][@value='none']"):
+            for parameter in net.xpath("filterref/parameter[@name='IP']"):
+                parameter.getparent().remove(parameter)
+
+    # the clone's console gets a password of its own: one copied from the source would open both
+    for graphics in tree.findall("devices/graphics[@type='vnc']"):
+        graphics.set("passwd", util.randomPasswd(8))  # the length VNC allows
+        graphics.attrib.pop("passwdValidTo", None)  # an expired source's would leave it unusable
+
+
 class wvmInstance(wvmConnect):
     # set by cached_reads(): libvirt answers reused within the block
     _read_cache = None
@@ -712,7 +820,30 @@ class wvmInstance(wvmConnect):
         for command in ("guest-get-timezone", "guest-get-host-name"):
             with contextlib.suppress(libvirtError):
                 info.update(agent_command(self.instance, command))
+        info.pop("filesystems", None)  # only guest_filesystems' own
+        with contextlib.suppress(libvirtError):
+            info["filesystems"] = self.guest_filesystems()
         return info
+
+    def guest_filesystems(self):
+        """The guest's mounted file systems the agent gives both sizes of (not
+        pseudo ones), by mount point: [{"mountpoint", "type", "used", "total"}], bytes.
+        The total is the whole file system's when the agent tells it (total-bytes-privileged),
+        root's reserved space included; an entry the agent garbles is left out."""
+        def size(value):  # a uint64 of the agent's, not a bool
+            return value if type(value) is int and 0 <= value < 2**64 else None
+
+        answer = agent_command(self.instance, "guest-get-fsinfo")
+        filesystems = []
+        for fs in answer if isinstance(answer, list) else []:
+            if not isinstance(fs, dict):
+                continue
+            used, total = size(fs.get("used-bytes")), size(fs.get("total-bytes-privileged")) or size(fs.get("total-bytes"))
+            mountpoint = fs.get("mountpoint")
+            if used is not None and total and isinstance(mountpoint, str) and mountpoint:
+                filesystems.append({"mountpoint": mountpoint, "type": str(fs.get("type") or ""), "used": used,
+                                    "total": total})
+        return sorted(filesystems, key=lambda fs: fs["mountpoint"])
 
     def start(self, flags=0):
         self.instance.createWithFlags(flags)
@@ -788,6 +919,14 @@ class wvmInstance(wvmConnect):
         if self._read_cache is not None:
             self._read_cache.clear()
         return self.wvm.defineXML(xml)
+
+    def get_state(self):
+        """[state, reason] of the domain (virDomainGetState), in one read."""
+        return self.instance.state()
+
+    def get_disk_errors(self):
+        """{target: virDomainDiskErrorCode} of the disks QEMU stopped on (virDomainGetDiskErrors)."""
+        return self.instance.diskErrors()
 
     def get_status(self):
         """
@@ -983,6 +1122,8 @@ class wvmInstance(wvmConnect):
                 disk_cache = disk_io = disk_discard = disk_zeroes = "default"
                 readonly = shareable = serial = None
                 backing_file = None
+                iops = mibps = 0
+                iotune_custom = False
 
                 device = disk.xpath("@device")[0]
                 if device == "disk":
@@ -1016,6 +1157,11 @@ class wvmInstance(wvmConnect):
 
                         with contextlib.suppress(Exception):
                             backing_file = disk.xpath("backingStore/source/@file")[0]
+
+                        with contextlib.suppress(ValueError):  # set_disk_limit's; 0: none
+                            iops = int(disk.findtext("iotune/total_iops_sec") or 0)
+                            mibps = int(disk.findtext("iotune/total_bytes_sec") or 0) // 2**20
+                            iotune_custom = custom_iotune(disk)
 
                         readonly = bool(disk.xpath("readonly"))
                         shareable = bool(disk.xpath("shareable"))
@@ -1056,12 +1202,41 @@ class wvmInstance(wvmConnect):
                                 "readonly": readonly,
                                 "shareable": shareable,
                                 "serial": serial,
+                                "iops": iops,
+                                "mibps": mibps,
+                                "iotune_custom": iotune_custom,
                             }
                         )
             return result
 
         flags = VIR_DOMAIN_XML_INACTIVE | VIR_DOMAIN_XML_SECURE if config else 0
         return util.get_xml_path(self._XMLDesc(flags), func=disks)
+
+    def set_disk_limit(self, dev, iops, bytes_sec):
+        """Limits disk dev to iops and bytes_sec, reads and writes together (0: no limit), in each
+        definition that has it: the running VM's, at once, and the one for its next start. Refused
+        for tuning set in the XML (custom_iotune), and for a disk the next start changes."""
+        if not self.instance.isActive() and self.instance.hasManagedSaveImage(0):
+            # it would resume with the saved definition, and its limit then
+            raise util.OperationError(gettext_noop("The VM has a saved state: start it, then set the limit"))
+        flags, sources = 0, set()
+        for affect, has, xml_flags in ((VIR_DOMAIN_AFFECT_LIVE, self.instance.isActive(), 0),
+                                       (VIR_DOMAIN_AFFECT_CONFIG, self.instance.isPersistent(), VIR_DOMAIN_XML_INACTIVE)):
+            disk = etree.fromstring(self.instance.XMLDesc(xml_flags)).xpath(
+                "devices/disk[@device='disk'][target/@dev=$dev]", dev=dev) if has else []
+            if not disk:
+                continue
+            if custom_iotune(disk[0]):
+                raise util.OperationError(gettext_noop("The I/O tuning of %(dev)s is set in the VM's XML: change it there"),
+                                          dev=dev)
+            sources.add(disk_source(disk[0]))
+            flags |= affect
+        if not flags:
+            raise util.OperationError(gettext_noop("The VM has no disk %(dev)s"), dev=dev)
+        if len(sources) > 1:
+            raise util.OperationError(gettext_noop("%(dev)s is another disk from the next start: set its limit then"),
+                                      dev=dev)
+        self.instance.setBlockIoTune(dev, {"total_iops_sec": iops, "total_bytes_sec": bytes_sec}, flags)
 
     def _volume_details(self, path):
         """(name, capacity, allocation, pool name) of the volume at path, or
@@ -1234,21 +1409,33 @@ class wvmInstance(wvmConnect):
                     raise util.OperationError(gettext_noop("Media of %(dev)s changed in the running VM only: %(err)s"), dev=dev, err=err) from err
                 raise
 
-    def get_iso_path(self, image):
-        """The path of the ISO image of that name, in one of the active pools."""
-        paths = []
+    def iso_location(self, image):
+        """(pool, path) of the ISO image of that name, in one of the active pools."""
+        found = []
         for storage in self.get_storages(only_actives=True):
             stg = self.get_storage(storage)
             if image in stg.listVolumes():
-                paths.append(stg.storageVolLookupByName(image).path())
-        if not paths:
+                found.append((storage, stg.storageVolLookupByName(image).path()))
+        if not found:
             raise util.OperationError(gettext_noop("ISO image %(image)s was not found"), image=image)
-        if len(paths) > 1:
+        if len(found) > 1:
             raise util.OperationError(gettext_noop("ISO image %(image)s is in more than one storage pool"), image=image)
-        return paths[0]
+        return found[0]
 
-    def mount_iso(self, dev, image):
-        self._set_cdrom_media(dev, self.get_iso_path(image))
+    def get_iso_path(self, image):
+        return self.iso_location(image)[1]
+
+    def iso_path_in(self, image, pool):
+        """The path of the ISO image, which must still be the one of that pool (the one a caller claimed)."""
+        found, path = self.iso_location(image)
+        if found != pool:
+            raise util.OperationError(gettext_noop("ISO image %(image)s is no longer in pool %(pool)s; choose it again"),
+                                      image=image, pool=pool)
+        return path
+
+    def mount_iso(self, dev, image, pool=None):
+        """Insert the ISO image; pool: the pool it must be in, when the caller claimed its volume there."""
+        self._set_cdrom_media(dev, self.iso_path_in(image, pool) if pool else self.get_iso_path(image))
 
     def umount_iso(self, dev, image=None):
         self._set_cdrom_media(dev, None)
@@ -1983,22 +2170,11 @@ class wvmInstance(wvmConnect):
                   </domainsnapshot>"""
         self.instance.snapshotCreateXML(xml, 0)
 
-    def create_external_snapshot(self, name, desc="", memory=False, quiesce=False, free_percent=10, free_min_gib=1):
-        """A disk-only snapshot, or with memory too (running VMs only). Every
-        disk gets a libvirt-named overlay next to it; the memory file goes
-        next to the first disk. quiesce: the guest agent freezes the guest's
-        file systems for a disk-only snapshot of a running VM (libvirt
-        accepts it only without memory, which keeps the whole state anyway).
-        free_percent, free_min_gib: the free space each pool keeps (see
-        _check_snapshot_space)."""
+    def check_external_snapshot(self, name):
+        """Refuses (OperationError) an external snapshot of name the VM cannot take, reading only:
+        its state, internal snapshots, the name taken, snapshots newer than the current one, a disk
+        that is no file or media still inserted. The VM's live definition, parsed."""
         check_snapshot_name(name)
-        if quiesce:
-            if memory:
-                raise util.OperationError(gettext_noop("A snapshot with memory is not quiesced; it keeps the whole guest state"))
-            if self.get_status() != 1:
-                raise util.OperationError(gettext_noop("Only a running VM's file systems can be frozen"))
-            if not self.is_agent_ready():
-                raise util.OperationError(gettext_noop("The QEMU guest agent is not connected; it freezes the file systems"))
         self._check_snapshot_state()
         if self.instance.snapshotListNames(VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL):
             raise util.OperationError(gettext_noop("The VM has internal snapshots; external snapshots cannot be mixed with them"))
@@ -2018,6 +2194,24 @@ class wvmInstance(wvmConnect):
                     raise util.OperationError(gettext_noop("Eject the media from %(dev)s first"), dev=dev)
             elif disk.get("type") != "file":
                 raise util.OperationError(gettext_noop("Disk %(dev)s is not a file; external snapshots need file disks"), dev=dev)
+        return tree
+
+    def create_external_snapshot(self, name, desc="", memory=False, quiesce=False, free_percent=10, free_min_gib=1):
+        """A disk-only snapshot, or with memory too (running VMs only). Every
+        disk gets a libvirt-named overlay next to it; the memory file goes
+        next to the first disk. quiesce: the guest agent freezes the guest's
+        file systems for a disk-only snapshot of a running VM (libvirt
+        accepts it only without memory, which keeps the whole state anyway).
+        free_percent, free_min_gib: the free space each pool keeps (see
+        _check_snapshot_space)."""
+        if quiesce:
+            if memory:
+                raise util.OperationError(gettext_noop("A snapshot with memory is not quiesced; it keeps the whole guest state"))
+            if self.get_status() != 1:
+                raise util.OperationError(gettext_noop("Only a running VM's file systems can be frozen"))
+            if not self.is_agent_ready():
+                raise util.OperationError(gettext_noop("The QEMU guest agent is not connected; it freezes the file systems"))
+        tree = self.check_external_snapshot(name)
         disks = list(self._disk_sources(tree).values())
         # free space, and the top overlays, are known to the pools only after
         # a refresh; nothing has changed yet when it fails
@@ -2039,6 +2233,8 @@ class wvmInstance(wvmConnect):
         if quiesce:
             self.ping_agent()
             flags |= VIR_DOMAIN_SNAPSHOT_CREATE_QUIESCE
+        if not self.instance.isActive():  # libvirt 11.10 makes no offline external snapshot while a checkpoint exists
+            self.drop_checkpoint_metadata()
         self.instance.snapshotCreateXML(xml, flags)
         self._refresh_pools_after_snapshot()
 
@@ -2462,7 +2658,8 @@ class wvmInstance(wvmConnect):
             if pool is not None:
                 pool.refresh(0)
 
-    def fix_mac(self, mac):
+    @staticmethod
+    def fix_mac(mac):
         if ":" in mac:
             return mac
         # if mac does not contain ":", try to split into tuples and join with ":"
@@ -2479,26 +2676,7 @@ class wvmInstance(wvmConnect):
             raise ValueError("An instance with the clone name already exists")
 
         tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
-        # the cloud-init seed holds the VM's own instance-id and hostname: the clone's drive stays empty
-        seed = f"cidata-{tree.findtext('uuid')}.iso"
-        for source in tree.xpath("devices/disk[@device='cdrom']/source"):
-            if os.path.basename(source.get("file") or "") == seed:
-                source.getparent().remove(source)
-        tree.find("name").text = clone_data["name"]
-        uuid_el = tree.find("uuid")
-        if uuid_el is None:
-            uuid_el = etree.SubElement(tree, "uuid")
-        uuid_el.text = uuid
-        # libvirt refuses an SMBIOS UUID other than the domain's
-        for entry in tree.xpath("sysinfo/system/entry[@name='uuid']"):
-            entry.text = uuid
-        self._set_options(
-            tree,
-            {
-                "title": clone_data.get("clone-title", ""),
-                "description": clone_data.get("clone-description", ""),
-            },
-        )
+        rewrite_for_new_vm(tree, clone_data, uuid)
 
         disks = []
         for disk in list(tree.findall("devices/disk")):
@@ -2517,45 +2695,14 @@ class wvmInstance(wvmConnect):
                 raise ValueError("Cannot clone a disk without a supported source and destination")
             disks.append((source, dev))
 
-        # the clone gets a new, empty TPM (the clone form says so): an emulated
-        # one without the VM's state path; a host's or another process's would be shared
-        for backend in tree.xpath("devices/tpm/backend"):
-            if backend.get("type") != "emulator":
-                raise util.OperationError(gettext_noop("A VM with a host's or an external TPM is not cloned; remove it first"))
-            for source in backend.findall("source"):
-                backend.remove(source)
-
-        # a host device is one VM's: the clone gets none (the clone form says so)
-        for hostdev in tree.findall("devices/hostdev"):
-            hostdev.getparent().remove(hostdev)
-        for num, net in enumerate(tree.findall("devices/interface")):
-            if net.get("type") == "hostdev":  # numbered as the form numbers the VM's NICs
-                net.getparent().remove(net)
-                continue
-            mac = clone_data.get(f"clone-net-mac-{num}")
-            if not mac:
-                raise ValueError(f"No MAC address for network interface {num}")
-            net.find("mac").set("address", self.fix_mac(mac))
-            # a filter's parameters of the source's own addresses would block the clone's traffic:
-            # its MAC is the clone's, its IP the one it learns (clean-traffic's default), unless
-            # learning is off; libvirt learns no IPv6 address, so IPV6 stays for the admin to change
-            for parameter in net.xpath("filterref/parameter[@name='MAC']"):
-                parameter.set("value", self.fix_mac(mac))
-            if not net.xpath("filterref/parameter[@name='CTRL_IP_LEARNING'][@value='none']"):
-                for parameter in net.xpath("filterref/parameter[@name='IP']"):
-                    parameter.getparent().remove(parameter)
-
-        # the clone's console gets a password of its own: one copied from the source would open both
-        for graphics in tree.findall("devices/graphics[@type='vnc']"):
-            graphics.set("passwd", util.randomPasswd(8))  # the length VNC allows
-            graphics.attrib.pop("passwdValidTo", None)  # an expired source's would leave it unusable
-
         nvram = tree.find("os/nvram")
         if nvram is not None and nvram.get("type", "file") != "file":
             raise util.OperationError(gettext_noop("Cannot clone a VM whose NVRAM is not a file"))
         return tree, disks
 
     def _clone_volume_xml(self, name, capacity, vol_format, owner_uid, owner_gid):
+        # compat and features are qcow2's: libvirt refuses them for another format
+        qcow2 = "<compat>1.1</compat><features><lazy_refcounts/></features>" if vol_format == "qcow2" else ""
         return f"""<volume>
                       <name>{util.xml_escape(name)}</name>
                       <capacity>{capacity}</capacity>
@@ -2568,8 +2715,7 @@ class wvmInstance(wvmConnect):
                           <mode>0644</mode>
                           <label>virt_image_t</label>
                         </permissions>
-                        <compat>1.1</compat>
-                        <features><lazy_refcounts/></features>
+                        {qcow2}
                       </target>
                     </volume>"""
 
@@ -2640,43 +2786,16 @@ class wvmInstance(wvmConnect):
         created = []  # paths of volumes this call created
         try:
             for source, dev in disks:
-                target_file = clone_data["disk-" + dev]
-                meta_prealloc = bool(clone_data.get("meta-" + dev))
-                if source.get("file"):
-                    vol = self.get_volume_by_path(source.get("file"))
-                    vol_format = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
-                    new_vol = vol.storagePoolLookupByVolume().createXMLFrom(
-                        self._clone_volume_xml(
-                            target_file, 0, vol_format, clone_data["disk_owner_uid"], clone_data["disk_owner_gid"]
-                        ),
-                        vol,
-                        meta_prealloc and vol_format == "qcow2",
-                    )
-                    created.append(new_vol.path())
-                    paths[dev] = new_vol.path()
-                elif source.get("protocol") == "rbd":
-                    vol = self.get_volume_by_path(source.get("name"))
-                    vol_format = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
-                    new_vol = vol.storagePoolLookupByVolume().createXMLFrom(
-                        f"""<volume type='network'>
-                              <name>{target_file}</name>
-                              <capacity>0</capacity>
-                              <allocation>0</allocation>
-                              <target><format type='{vol_format}'/></target>
-                            </volume>""",
-                        vol,
-                        meta_prealloc,
-                    )
-                    created.append(new_vol.path())
-                    paths[dev] = f"{os.path.dirname(source.get('name'))}/{target_file}"
-                else:
-                    vol = self.get_volume_by_path(source.get("dev"))
-                    pool_name = util.get_xml_path(vol.storagePoolLookupByVolume().XMLDesc(0), "/pool/name")
-                    storage = self.get_wvmStorage(pool_name)
-                    name = storage.clone_volume(vol.name(), target_file)
-                    new_path = storage.get_volume(name).path()
-                    created.append(new_path)
-                    paths[dev] = new_path
+                vol = self.get_volume_by_path(source.get("file") or source.get("dev") or source.get("name"))
+                storage = self.get_wvmStorage(vol.storagePoolLookupByVolume().name())
+                paths[dev] = storage.clone_volume(
+                    vol,
+                    clone_data["disk-" + dev],
+                    metadata=bool(clone_data.get("meta-" + dev)),
+                    disk_owner_uid=clone_data["disk_owner_uid"],
+                    disk_owner_gid=clone_data["disk_owner_gid"],
+                )
+                created.append(paths[dev])
 
             return self.define_clone(clone_data, uuid, paths, on_nvram)
         except Exception as err:
@@ -2768,32 +2887,59 @@ class wvmInstance(wvmConnect):
             self._refuse_taken(vol.storagePoolLookupByVolume(), clone_data["disk-" + dev])
 
     def create_clone_target(self, target, owner_uid, owner_gid):
-        """An empty volume for a copied disk; libvirt refuses one that exists.
-        Returns its path."""
+        """An empty volume for a copied disk, with target["backing"] (a file
+        name in the same pool) as its backing file when given; libvirt
+        refuses one that exists. Returns its path."""
         pool = self.wvm.storagePoolLookupByName(target["pool"])
         xml = self._clone_volume_xml(target["name"], target["capacity"], target["format"], owner_uid, owner_gid)
+        if target.get("backing"):  # an incremental backup's: the file of the backup it builds on, in its directory
+            tree = etree.fromstring(xml)
+            store = etree.SubElement(tree, "backingStore")
+            etree.SubElement(store, "path").text = target["backing"]
+            etree.SubElement(store, "format", type="qcow2")
+            xml = etree.tostring(tree).decode()
         return pool.createXML(xml, 0).path()
 
-    def begin_clone_backup(self, targets):
+    def drop_checkpoint_metadata(self):
+        """The backups' checkpoints (wvc-) of a shut-off VM forgotten, as
+        libvirt deletes bitmaps only of a running one: the next scheduled
+        backup is full, and removes the bitmaps left (prune_checkpoints)."""
+        for checkpoint in self.instance.listAllCheckpoints(0):
+            if checkpoint.getName().startswith("wvc-"):
+                checkpoint.delete(VIR_DOMAIN_CHECKPOINT_DELETE_METADATA_ONLY)
+
+    def begin_clone_backup(self, targets, incremental=None, checkpoint=None):
         """Starts libvirt's push backup of the targets' disks into their
-        volumes. The VM keeps running when the guest shuts down meanwhile."""
+        volumes: of the blocks changed since the checkpoint incremental only,
+        when given, and making the checkpoint checkpoint of the disks, when
+        given. The VM keeps running when the guest shuts down meanwhile."""
         disks = "".join(
             f"<disk name='{util.xml_escape(t['dev'])}' backup='yes' type='file'>"
             f"<target file='{util.xml_escape(t['path'])}'/><driver type='{util.xml_escape(t['format'])}'/></disk>"
             for t in targets
         )
+        since = f"<incremental>{util.xml_escape(incremental)}</incremental>" if incremental else ""
+        checkpoint_xml = None
+        if checkpoint:
+            checkpoint_xml = (f"<domaincheckpoint><name>{util.xml_escape(checkpoint)}</name><disks>"
+                              + "".join(f"<disk name='{util.xml_escape(t['dev'])}'/>" for t in targets)
+                              + "</disks></domaincheckpoint>")
         self.instance.backupBegin(
-            f"<domainbackup mode='push'><disks>{disks}</disks></domainbackup>",
-            None,
+            f"<domainbackup mode='push'>{since}<disks>{disks}</disks></domainbackup>",
+            checkpoint_xml,
             VIR_DOMAIN_BACKUP_BEGIN_REUSE_EXTERNAL | VIR_DOMAIN_BACKUP_BEGIN_PRESERVE_SHUTDOWN_DOMAIN,
         )
 
     def backup_targets(self):
-        """The target paths of the running backup; None when none runs."""
+        """The target paths of the running backup; None when none runs, also
+        when the domain stopped (a guest that shut down during its backup
+        stops when the backup ends: PRESERVE_SHUTDOWN_DOMAIN)."""
+        if not self.instance.isActive():
+            return None
         try:
             xml = self.instance.backupGetXMLDesc(0)
         except libvirtError as err:
-            if err.get_error_code() == VIR_ERR_NO_DOMAIN_BACKUP:
+            if err.get_error_code() in (VIR_ERR_NO_DOMAIN_BACKUP, VIR_ERR_OPERATION_INVALID):
                 return None
             raise
         return set(etree.fromstring(xml).xpath("disks/disk/target/@file"))
@@ -2801,7 +2947,14 @@ class wvmInstance(wvmConnect):
     def backup_progress(self):
         """(bytes copied, bytes to copy) of the running backup; None when
         none runs."""
-        stats = self.instance.jobStats(0)
+        if not self.instance.isActive():
+            return None
+        try:
+            stats = self.instance.jobStats(0)
+        except libvirtError as err:
+            if err.get_error_code() == VIR_ERR_OPERATION_INVALID:  # stopped since: its backup ended
+                return None
+            raise
         if (
             stats.get("type", VIR_DOMAIN_JOB_NONE) == VIR_DOMAIN_JOB_NONE
             or stats.get("operation") != VIR_DOMAIN_JOB_OPERATION_BACKUP
@@ -3157,7 +3310,8 @@ class wvmInstance(wvmConnect):
         if not found:
             raise util.OperationError(gettext_noop("The VM has no network interface %(mac)s"), mac=mac_address)
 
-    def _set_options(self, tree, options):
+    @staticmethod
+    def _set_options(tree, options):
         for o in ["title", "description"]:
             option = tree.find(o)
             option_value = options.get(o, "").strip()
@@ -3229,15 +3383,37 @@ class wvmInstance(wvmConnect):
         """What the next start does when the guest crashes; libvirt's default is destroy."""
         return etree.fromstring(self._XMLDesc(PERSISTENT_XML)).findtext("on_crash") or "destroy"
 
+    def has_crash_devices(self):
+        """The next start has the device the guest reports a crash through
+        (without it on_crash never acts) and a watchdog where its machine
+        takes one: what set_on_crash adds."""
+        tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
+        arch, machine = tree.find("os/type").get("arch"), tree.find("os/type").get("machine")
+        return tree.find("devices/panic") is not None and (
+            tree.find("devices/watchdog") is not None or not util.takes_watchdog(arch, machine))
+
     def set_on_crash(self, action):
-        """restart or destroy (stop) the VM when the guest crashes, from the next start."""
-        if action not in ("restart", "destroy"):
+        """restart or destroy (stop) the VM when the guest crashes or, once it
+        arms its watchdog, hangs; from the next start. The VM gets the panic
+        device a crash is reported through, and an i6300esb when it has no
+        watchdog and its machine takes one (libvirt before 9.1 does not show
+        q35's iTCO), when it lacks them."""
+        if action not in util.WATCHDOG_ACTIONS:
             raise util.OperationError(gettext_noop("Unknown crash action %(action)s"), action=action)
         tree = etree.fromstring(self._XMLDesc(PERSISTENT_XML))
         on_crash = tree.find("on_crash")
         if on_crash is None:
             on_crash = etree.SubElement(tree, "on_crash")
         on_crash.text = action
+        arch, machine = tree.find("os/type").get("arch"), tree.find("os/type").get("machine")
+        devices = tree.find("devices")
+        if devices.find("panic") is None and (model := self.get_panic_model(arch, machine)):
+            etree.SubElement(devices, "panic", model=model)
+        watchdogs = devices.findall("watchdog")
+        if not watchdogs and util.takes_watchdog(arch, machine):
+            watchdogs = [etree.SubElement(devices, "watchdog", model="i6300esb")]
+        for watchdog in watchdogs:
+            watchdog.set("action", util.WATCHDOG_ACTIONS[action])
         self._defineXML(etree.tostring(tree).decode())
 
     def set_options(self, options):

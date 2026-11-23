@@ -1,8 +1,13 @@
 import time
+from contextlib import suppress
+from datetime import datetime, timezone
 
 from libvirt import (
     libvirtError,
     VIR_CONNECT_GET_ALL_DOMAINS_STATS_NOWAIT,
+    VIR_CONNECT_LIST_DOMAINS_HAS_SNAPSHOT,
+    VIR_CONNECT_LIST_NETWORKS_ACTIVE,
+    VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE,
     VIR_ERR_NO_DOMAIN,
     VIR_DOMAIN_BLOCKED,
     VIR_DOMAIN_PAUSED,
@@ -16,6 +21,8 @@ from libvirt import (
 from lxml import etree
 
 from vrtManager.connection import wvmConnect
+from vrtManager.nwfilters import filter_rules
+from vrtManager.virtsecrets import REF_USAGE_TYPES
 from vrtManager.util import get_xml_path
 
 
@@ -51,6 +58,85 @@ def cpu_version(doc):
 
 
 class wvmHostDetails(wvmConnect):
+    def get_attention(self, pool_percent, snapshot_before):
+        """What wants a look on the host: its active pools filled to
+        pool_percent or more, as last measured (a refresh scans each pool),
+        and per VM the count of its snapshots taken before snapshot_before
+        (aware). A VM gone meanwhile is passed over."""
+        pools = []
+        for pool in self.wvm.listAllStoragePools(VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE):
+            try:
+                _state, capacity, allocation, _available = pool.info()
+            except libvirtError:  # undefined meanwhile
+                continue
+            if capacity and allocation * 100 / capacity >= pool_percent:
+                pools.append({"name": pool.name(), "percent": round(allocation * 100 / capacity)})
+        snapshots = []
+        for domain in self.wvm.listAllDomains(VIR_CONNECT_LIST_DOMAINS_HAS_SNAPSHOT):
+            count = 0
+            with suppress(libvirtError):  # the VM gone meanwhile
+                for snap in domain.listAllSnapshots(0):
+                    with suppress(libvirtError):  # the snapshot deleted meanwhile
+                        taken = int(etree.fromstring(snap.getXMLDesc(0)).findtext("creationTime"))
+                        count += datetime.fromtimestamp(taken, timezone.utc) < snapshot_before
+            if count:
+                snapshots.append({"vm": domain.name(), "count": count})
+        return {"pools": pools, "snapshots": snapshots}
+
+    def migration_needs(self):
+        """What the host's VMs need of a host they migrate to, as the migration check reads
+        it, and what this host has: {"uses": {"networks", "filters", "secrets", "usages"},
+        "has": {"networks" (active), "filters" {name: rules}, "secrets", "usages"}}. A VM's
+        running definition and the one for its next start count; its filters include those
+        these reference here; a secret is named by UUID ("secrets") or by usage type and
+        usage ("usages", [type, usage]). A VM or filter gone meanwhile is passed over; a
+        listing that cannot be read is None (its VMs': "uses"), and the others still count."""
+        def read(listing):
+            try:
+                return listing()
+            except libvirtError:
+                return None
+
+        networks, filters_used, secrets, usages = set(), set(), set(), set()
+        def uses():  # one VM's definitions at a time
+            for _name, trees in self.domain_trees():
+                for tree in trees:  # plain strings: none keeps its definition's tree alive
+                    networks.update(tree.xpath("devices/interface[@type='network']/source/@network", smart_strings=False))
+                    filters_used.update(tree.xpath("devices/interface/filterref/@filter", smart_strings=False))
+                    for ref in tree.xpath("devices//secret"):
+                        if ref.get("uuid"):
+                            secrets.add(ref.get("uuid").lower())
+                        elif ref.get("usage"):
+                            usages.add((REF_USAGE_TYPES.get(ref.get("type")), ref.get("usage")))
+                    secrets.update(uuid.lower() for uuid in tree.xpath("devices/tpm/backend/encryption/@secret",
+                                                                       smart_strings=False))
+            return True
+
+        vms_read = read(uses)
+
+        def own_filters():
+            filters = {}
+            for nwfilter in self.wvm.listAllNWFilters(0):
+                with suppress(libvirtError):  # undefined meanwhile
+                    filters[nwfilter.name()] = filter_rules(nwfilter)
+            return filters
+
+        filters = read(own_filters)
+        todo = list(filters_used)
+        while todo:  # and those they reference
+            for ref in (filters or {}).get(todo.pop(), ("", []))[1]:
+                if ref not in filters_used:
+                    filters_used.add(ref)
+                    todo.append(ref)
+        have = read(self.get_secrets_info)
+        active = read(lambda: self.wvm.listAllNetworks(VIR_CONNECT_LIST_NETWORKS_ACTIVE))
+        return {"uses": None if vms_read is None else {"networks": sorted(networks), "filters": sorted(filters_used),
+                                                    "secrets": sorted(secrets), "usages": sorted(usages, key=str)},
+                "has": {"networks": None if active is None else sorted(n.name() for n in active),
+                        "filters": None if filters is None else {name: rules for name, (rules, _refs) in filters.items()},
+                        "secrets": None if have is None else sorted(secret["uuid"].lower() for secret in have),
+                        "usages": None if have is None else sorted(((s["usage_type"], s["usage"]) for s in have), key=str)}}
+
     def get_memory_usage(self):
         """
         Function return memory usage on node.

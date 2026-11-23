@@ -22,6 +22,19 @@ class AccountPageTests(TestCase):
     def page(self):
         return self.client.get(reverse("accounts:account", args=[self.alice.pk]))
 
+    def test_the_vms_and_keys_are_in_name_order(self):
+        compute = Compute.objects.create(name="ap-host", hostname="localhost", login="", password="", details="", type=4)
+        for i, name in enumerate(("web", "db")):
+            vm = Instance.objects.create(compute=compute, name=name, uuid=f"00000000-0000-0000-0000-00000000010{i}")
+            UserInstance.objects.create(user=self.alice, instance=vm)
+        UserSSHKey.objects.create(user=self.alice, keyname="desktop", keypublic=KEY)
+        response = self.page()
+        self.assertEqual([ui.instance.name for ui in response.context["user_insts"]], ["db", "web"])
+        self.assertEqual([key.keyname for key in response.context["publickeys"]], ["desktop", "laptop"])
+        self.client.force_login(self.alice)
+        response = self.client.get(reverse("accounts:profile"))
+        self.assertEqual([key.keyname for key in response.context["publickeys"]], ["desktop", "laptop"])
+
     def test_the_permissions_are_marks_not_true_or_false(self):
         compute = Compute.objects.create(name="ap-host", hostname="localhost", login="", password="", details="", type=4)
         vm = Instance.objects.create(compute=compute, name="ap-vm", uuid="00000000-0000-0000-0000-000000000001")

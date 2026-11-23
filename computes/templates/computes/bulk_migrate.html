@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load common_tags %}
+{% load static %}
+{% load operations %}
+{% load bootstrap_icons %}
+{% block title %}{% trans "Bulk migrate" %} - {{ compute.name }}{% endblock %}
+{% block page_heading %}{{ compute.name }} - {% trans "Bulk migrate" %}{% endblock page_heading %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        {% include "computes/host_nav.html" with section="instances" detail=True %}
+    </div>
+</div>
+{% if entering %}
+{# asked from "Put in maintenance": the host goes in maintenance with its VMs' migration, or without one #}
+<div class="alert alert-warning shadow-sm d-flex flex-wrap align-items-center gap-2">
+    <div class="me-auto">{% blocktrans with host=compute.name %}Put {{ host }} in maintenance: from then on no new VM or migration comes to it, its VMs cannot be started there, and Balance leaves it out. Migrate its VMs below, or put it in maintenance without migrating them.{% endblocktrans %}</div>
+    <form method="post" action="{% url 'compute_maintenance' compute.id %}">{% csrf_token %}
+        <input type="hidden" name="maintenance" value="on">
+        <button type="submit" class="btn btn-sm btn-warning" data-confirm="{% trans "Put the host in maintenance without migrating its VMs?" %}">{% trans "Put in maintenance without migrating" %}</button>
+    </form>
+</div>
+{% endif %}
+{% if not targets %}
+<div class="alert alert-warning shadow-sm">{% trans "There is no other host to migrate to." %}</div>
+{% else %}
+<p class="text-body-secondary">{% trans "Each chosen VM migrates in a job of its own: a running VM live, a shut-off one offline. A VM that fails stays on this host." %}</p>
+{% if unreachable %}
+<div class="alert alert-warning shadow-sm">{% trans "These hosts cannot be read and are left out:" %} {{ unreachable|join:", " }}</div>
+{% endif %}
+{# another destination reloads the list: which VMs can go depends on it; spread over the hosts, so does a VM ticked #}
+<form method="get" id="bulk-migrate-choose"{% if spreading %} data-spread{% endif %}>
+    {% if entering %}<input type="hidden" name="maintenance" value="on">{% endif %}
+    {% if spreading %}{% for instance in instances %}{% if not instance.refusal %}<input type="hidden" name="shown" value="{{ instance.pk }}">{% endif %}{% endfor %}{% endif %}
+</form>
+{% if not parallel %}
+<div class="alert alert-warning shadow-sm">{% trans "The worker runs one job at a time: set Worker Concurrency to 2 or more on the Settings page." %}</div>
+{% elif not instances %}
+<p class="text-center text-body-secondary py-4">{% trans "The host has no VMs." %}</p>
+{% else %}
+<form method="post" class="card shadow-sm">{% csrf_token %}{% submission_key %}
+    {% if entering %}<input type="hidden" name="maintenance" value="on">{% endif %}
+    {% if spreading %}<input type="hidden" name="spread" value="1">{% else %}<input type="hidden" name="target" value="{{ target.pk }}">{% endif %}
+    <div class="card-header d-flex flex-wrap align-items-center gap-2">
+        <span class="fw-semibold">{{ compute.name }}</span> {% bs_icon 'arrow-right' %}
+        {% if targets|length > 1 %}
+        <select name="target" id="bulk-migrate-target" form="bulk-migrate-choose" class="form-select form-select-sm w-auto" aria-label="{% trans "Destination" %}">
+            <option value="spread"{% if spreading %} selected{% endif %}>{% trans "Spread over the other hosts" %}</option>
+            {% for host in targets %}<option value="{{ host.pk }}"{% if host == target %} selected{% endif %}>{{ host.name }}</option>{% endfor %}
+        </select>
+        {% else %}
+        <span class="fw-semibold">{{ target.name }}</span>
+        {% endif %}
+        {% if tags %}{# bulk_migrate.js ticks the VMs with the tag chosen #}
+        <select id="bulk-migrate-tag" class="form-select form-select-sm w-auto ms-auto" aria-label="{% trans "Choose by tag" %}">
+            <option value="">{% trans "Choose by tag" %}</option>
+            {% for tag in tags %}<option value="{{ tag }}">{{ tag }}</option>{% endfor %}
+        </select>
+        {% endif %}
+        <div class="form-check form-switch {% if not tags %}ms-auto {% endif %}mb-0">
+            <input class="form-check-input" type="checkbox" role="switch" id="bulk-migrate-shut-off"{% if shut_off_ticked %} checked{% endif %}>
+            <label class="form-check-label small" for="bulk-migrate-shut-off">{% trans "Also migrate the shut-off VMs" %}</label>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col" class="ps-3"><input class="form-check-input" type="checkbox" id="bulk-migrate-all"{% if all_ticked %} checked{% endif %} aria-label="{% trans "Select all" %}" title="{% trans "Select all" %}"></th>
+                    <th scope="col">{% trans "Name" %}</th>
+                    <th scope="col">{% trans "Status" %}</th>
+                    <th scope="col" class="text-end">{% trans "Memory" %}</th>
+                    <th scope="col" class="text-end">vCPU</th>
+                    {% if spreading %}<th scope="col">{% trans "Destination" %}</th>{% endif %}
+                    <th scope="col"><span class="visually-hidden">{% trans "Why" %}</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for instance in instances %}
+                <tr>
+                    <td class="ps-3">
+                        {% if spreading %}
+                        <input class="form-check-input bulk-migrate-vm" type="checkbox" name="vm" value="{{ instance.pk }}" id="bulk-migrate-{{ instance.pk }}" data-tags="{% for tag in instance.tags.all %}{{ tag }}{% if not forloop.last %} {% endif %}{% endfor %}" form="bulk-migrate-choose"
+                            {% if instance.info.0 == 5 %} data-shut-off{% endif %}{% if instance.target %} checked{% endif %}{% if instance.refusal %} disabled{% endif %}>
+                        {% if instance.target %}<input type="hidden" name="instance" value="{{ instance.pk }}"><input type="hidden" name="target" value="{{ instance.target.pk }}">{% endif %}
+                        {% else %}
+                        <input class="form-check-input bulk-migrate-vm" type="checkbox" name="instance" value="{{ instance.pk }}" id="bulk-migrate-{{ instance.pk }}" data-tags="{% for tag in instance.tags.all %}{{ tag }}{% if not forloop.last %} {% endif %}{% endfor %}"
+                            {% if instance.info.0 == 5 %} data-shut-off{% elif not instance.refusal %} checked{% endif %}{% if instance.refusal %} disabled{% endif %}>
+                        {% endif %}
+                    </td>
+                    <td><label for="bulk-migrate-{{ instance.pk }}">{{ instance.name }}</label></td>
+                    <td>{% include 'instance_state.html' %}</td>
+                    <td class="text-end text-nowrap">{% if instance.info %}{% widthratio instance.info.2 1 1024 as bytes %}{{ bytes|binary_size }}{% endif %}</td>
+                    <td class="text-end">{{ instance.info.3 }}</td>
+                    {% if spreading %}<td>{{ instance.target.name|default:"" }}</td>{% endif %}
+                    <td class="small text-body-secondary">{{ instance.refusal|default:"" }}{{ instance.note|default:"" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {# kept in sight below a long list #}
+    <div class="card-footer sticky-bottom bg-body-tertiary d-flex flex-wrap align-items-center gap-2">
+        <label class="small text-body-secondary" for="bulk-migrate-parallel">{% trans "Migrations at once" %}</label>
+        <select name="parallel" id="bulk-migrate-parallel" class="form-select form-select-sm w-auto">
+            {% for n in parallel %}<option value="{{ n }}"{% if forloop.last %} selected{% endif %}>{{ n }}</option>{% endfor %}
+        </select>
+        {% if entering %}
+        {% blocktrans with source=compute.name asvar question %}Put {{ source }} in maintenance and migrate the chosen VMs?{% endblocktrans %}
+        {% elif spreading %}
+        {% blocktrans with source=compute.name asvar question %}Migrate the chosen VMs from {{ source }} to the hosts shown?{% endblocktrans %}
+        {% else %}
+        {% blocktrans with source=compute.name dest=target.name asvar question %}Migrate the chosen VMs from {{ source }} to {{ dest }}?{% endblocktrans %}
+        {% endif %}
+        <button type="submit" class="btn btn-primary ms-auto" id="bulk-migrate-submit" data-confirm="{{ question }}">
+            {% if entering %}{% trans "Migrate and put in maintenance" %}{% else %}{% trans "Migrate the chosen VMs" %}{% endif %} <span class="badge text-bg-light" id="bulk-migrate-count"></span>
+        </button>
+    </div>
+</form>
+{% endif %}
+{% endif %}
+{% endblock %}
+{% block script %}
+<script src="{% static 'js/bulk_migrate.js' %}"></script>
+{% endblock %}

@@ -28,6 +28,20 @@ class BusyMessageTestCase(SimpleTestCase):
         self.assertIn(" çalışıyor ", text)
         self.assertNotIn("running", text)
 
+    def test_the_job_in_the_way_is_named_with_what_it_works_on_to_who_may_see_it(self):
+        from types import SimpleNamespace
+
+        from operations.utils import busy_message
+        op = Operation(kind="backup.verify", state=Operation.RUNNING, created_at=django_timezone.now(), user_id=2,
+                       username="admin", resource_label="vm1 2026-11-19 16:00")
+        text = busy_message(SimpleNamespace(blocker=op), SimpleNamespace(is_superuser=True, pk=1))
+        self.assertTrue(text.startswith("Verify backup (vm1 2026-11-19 16:00) is running on this resource"), text)
+        text = busy_message(SimpleNamespace(blocker=op), SimpleNamespace(is_superuser=False, pk=1))
+        self.assertTrue(text.startswith("Verify backup is running on this resource"), text)
+        # kept in an audit row, which a VM's owner may read
+        text = busy_message(SimpleNamespace(blocker=op), SimpleNamespace(is_superuser=True, pk=1), named=False)
+        self.assertTrue(text.startswith("Verify backup is running on this resource"), text)
+
 
 class StateColorsTestCase(SimpleTestCase):
     def test_every_state_has_its_colour(self):
@@ -66,6 +80,58 @@ class JobsPageTestCase(TransactionTestCase):
         link = reverse("operations:job", args=[self.op.pk])
         self.assertContains(self.client.get(reverse("operations:jobs"), {"compute": "c"}), link)
         self.assertNotContains(self.client.get(reverse("operations:jobs"), {"state": "failed"}), link)
+
+    def test_the_filters_show_while_there_is_a_job_to_filter(self):
+        from lxml import html as lxml_html
+
+        self.client.force_login(self.admin)
+        page = lambda **query: lxml_html.fromstring(self.client.get(reverse("operations:jobs"), query).content)
+        self.assertTrue(page().xpath("//form[@data-filter-form]"))
+        self.assertFalse(page().xpath("//form[@data-filter-form]//a"))  # nothing to clear
+        # none matches: the filters stay, with the way back
+        self.assertTrue(page(state="failed").xpath("//form[@data-filter-form]//a[@href=$u]", u=reverse("operations:jobs")))
+        Operation.objects.all().delete()
+        self.assertFalse(page().xpath("//form[@data-filter-form]"))
+
+    def test_a_job_links_what_it_works_on_to_who_may_see_it(self):
+        from types import SimpleNamespace
+
+        from accounts.models import UserInstance
+        from computes.models import Compute
+        from instances.models import Instance
+        from operations.views import link_resources
+        from vmbackups.models import BackupTarget
+
+        host = Compute.objects.create(name="lk-host", hostname="192.0.2.9", login="", password="", type=4)
+        vm = Instance.objects.create(compute=host, name="lk-vm", uuid="00000000-0000-4000-8000-0000000000aa")
+        target = BackupTarget.objects.create(name="lk-target")
+        resources = [f"instance:{vm.uuid}", f"compute:{host.pk}", f"pool:{host.pk}:default", f"backup_target:{target.pk}",
+                     "bulk_migrate", "instance:00000000-0000-4000-8000-0000000000bb", "compute:999"]
+        ops = [SimpleNamespace(resource=r) for r in resources]
+        link_resources(self.admin, ops)
+        self.assertEqual([op.resource_url for op in ops], [
+            reverse("instances:instance", args=[vm.pk]), reverse("overview", args=[host.pk]),
+            None, reverse("vmbackups:target", args=[target.pk]), reverse("computes"), None, None])
+        # a copy of the VM on another host has its UUID: neither is linked
+        Instance.objects.create(compute=Compute.objects.create(name="lk-host2", hostname="192.0.2.10", login="", password="",
+                                                               type=4), name="lk-vm", uuid=vm.uuid)
+        link_resources(self.admin, ops)
+        self.assertIsNone(ops[0].resource_url)
+        Instance.objects.filter(compute__name="lk-host2").delete()
+        # an owner: their VM's page only
+        UserInstance.objects.create(user=self.user, instance=vm)
+        ops = [SimpleNamespace(resource=r) for r in resources]
+        link_resources(self.user, ops)
+        self.assertEqual([op.resource_url for op in ops], [reverse("instances:instance", args=[vm.pk])] + [None] * 6)
+
+    def test_a_finished_job_opens_what_it_made(self):
+        from lxml import html as lxml_html
+
+        self.client.force_login(self.user)
+        page = lambda: lxml_html.fromstring(self.client.get(reverse("operations:job", args=[self.op.pk])).content)
+        self.assertFalse(page().xpath("//a[@href='/instances/7/']"))
+        jobs.finish(self.op, Outcome(Operation.SUCCEEDED, result={"open": "/instances/7/"}))
+        self.assertEqual(page().xpath("normalize-space(//a[@href='/instances/7/'])"), "Open")
 
     def test_host_and_user_filters_match_part_of_the_name(self):
         self.client.force_login(self.admin)
@@ -174,7 +240,7 @@ class JobsPageTestCase(TransactionTestCase):
         self.client.force_login(self.admin)
         for response in (self.client.get(reverse("operations:jobs")),
                          self.client.get(reverse("operations:job", args=[self.op.pk]))):
-            self.assertContains(response, '<span class="badge bg-danger">failed</span>')
+            self.assertContains(response, '<span class="badge job-state bg-danger">failed</span>')
         detail = self.client.get(reverse("operations:job", args=[self.op.pk]))
         self.assertContains(detail, 'class="alert alert-danger"')
 
@@ -206,7 +272,7 @@ class JobsPageTestCase(TransactionTestCase):
                               (Operation.UNCERTAIN, False), (Operation.SUCCEEDED, False)):
             Operation.objects.filter(pk=self.op.pk).update(state=state, worker="" if state == Operation.QUEUED else "h:1:a")
             response = self.client.get(reverse("operations:jobs"))
-            (self.assertContains if warned else self.assertNotContains)(response, "Worker unavailable", msg_prefix=state)
+            (self.assertContains if warned else self.assertNotContains)(response, "The job worker", msg_prefix=state)
         # a job a request runs does not wait for the worker
         for state in (Operation.RUNNING, Operation.CANCELLING):
             Operation.objects.filter(pk=self.op.pk).update(state=state, worker=Operation.REQUEST)
@@ -225,7 +291,7 @@ class JobsPageTestCase(TransactionTestCase):
         self.client.force_login(self.admin)
         # the app's theme draws white text on bg-warning
         self.assertContains(self.client.get(reverse("operations:jobs")),
-                            '<span class="badge bg-warning text-dark">uncertain</span>')
+                            '<span class="badge job-state bg-warning text-dark">uncertain</span>')
 
     def test_a_narrow_list_shows_resource_and_user_under_the_job(self):
         Operation.objects.filter(pk=self.op.pk).update(resource_label="wvc-test-host/wvc-test-vm")
@@ -259,7 +325,7 @@ class JobsPageTestCase(TransactionTestCase):
             listed = self.client.get(reverse("operations:jobs"))
             detail = self.client.get(reverse("operations:job", args=[self.op.pk]))
         for response in (listed, detail):
-            self.assertContains(response, '<span class="badge bg-primary">T[running]</span>')
+            self.assertContains(response, '<span class="badge job-state bg-primary">T[running]</span>')
             self.assertContains(response, "T[Merging the snapshot]")
         self.assertContains(listed, '<option value="failed">T[failed]</option>')
 
@@ -271,4 +337,4 @@ class JobsPageTestCase(TransactionTestCase):
         self.assertContains(response, 'aria-valuenow="50"')
         self.assertContains(response, str(3 * 1024 ** 3))
         with patch.object(fakes.NoopKind, "progress_bytes", True):
-            self.assertContains(self.client.get(url), "3.0\xa0GB / 6.0\xa0GB")
+            self.assertContains(self.client.get(url), "3\xa0GiB / 6\xa0GiB")

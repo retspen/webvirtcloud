@@ -1,10 +1,12 @@
 """The host, pool, user and format values of a new Ceph or NFS pool go into
 its XML as text, whatever characters they hold; a new pool that does not
-start is not left defined."""
+start is not left defined; a device that holds data is refused with how to
+erase it."""
 
 from unittest.mock import patch
 
 from django.test import SimpleTestCase
+import libvirt
 from libvirt import libvirtError
 from lxml import etree
 from vrtManager.storage import wvmStorages
@@ -40,3 +42,12 @@ class PoolXmlTests(SimpleTestCase):
                     "netfs", "pool1", "nfs.example.com", "/srv/nfs", "auto", "/mnt/pool1")
         pool.undefine.assert_called_once_with()
         pool.setAutostart.assert_not_called()
+
+    def test_a_device_that_holds_data_is_refused_with_how_to_erase_it(self):
+        built = libvirtError("Storage pool already built: forced overwrite is necessary")
+        built.err = (libvirt.VIR_ERR_STORAGE_POOL_BUILT,)
+        for stg_type, refused in (("logical", "wipefs -a /dev/vdb"), ("dir", "forced overwrite")):
+            with self.subTest(stg_type), patch("vrtManager.connection.connection_manager.get_connection") as get:
+                get.return_value.storagePoolDefineXML.return_value.create.side_effect = built
+                with self.assertRaisesRegex(libvirtError, refused):
+                    wvmStorages("host", "login", "pw", 1).create_storage(stg_type, "pool1", "/dev/vdb", "/srv/pool1")

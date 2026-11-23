@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 import libvirt
 from lxml import etree
 
+from vrtManager.connection import wvmConnect
 from vrtManager.instance import wvmInstances
 
 
@@ -195,6 +196,8 @@ class FakeSource:
 
     def get_nvram(self):
         return self.nvram
+
+    download_volume = wvmConnect.download_volume  # through self.wvm's streams
 
     reads = 0
 

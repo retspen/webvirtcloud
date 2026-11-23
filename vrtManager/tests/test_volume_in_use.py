@@ -12,9 +12,10 @@ from vrtManager import util
 from vrtManager.storage import wvmStorage
 
 
-def domain(uuid, disks=(), snapshots=()):
+def domain(uuid, disks=(), snapshots=(), name=None):
     dom = MagicMock()
     dom.UUIDString.return_value = uuid
+    dom.name.return_value = name or uuid
     dom.hasManagedSaveImage.return_value = 0
     devices = "".join(f"<disk type='file' device='disk'><source file='{d}'/></disk>" for d in disks)
     dom.XMLDesc.return_value = f"<domain><devices>{devices}</devices></domain>"
@@ -170,6 +171,40 @@ class PathsInUseTestCase(unittest.TestCase):
         conn, _ = storage(volumes=[unreadable])
         with self.assertRaises(libvirtError):
             conn.paths_in_use()
+
+
+class VolumeUsersTestCase(unittest.TestCase):
+    def test_the_vms_that_use_each_path(self):
+        conn, _ = storage(
+            domains=[domain("u1", ["/pool/vm.now", "/pool/shared.iso"], [SNAPSHOT], name="vm1"),
+                     domain("u2", ["/pool/shared.iso"], name="vm2")],
+            volumes=[volume("/pool/clone.qcow2", backing="/pool/template.qcow2"), volume("/pool/spare.qcow2")],
+        )
+        # a snapshot's files are its VM's; another volume's backing file is no VM's
+        self.assertEqual(conn.volume_users(), {
+            "/pool/vm.now": ["vm1"], "/pool/shared.iso": ["vm1", "vm2"],
+            "/pool/vm.s": ["vm1"], "/pool/vm.s.mem": ["vm1"], "/pool/vm.qcow2": ["vm1"], "/pool/template.qcow2": [],
+        })
+
+    def test_uefi_variables_and_a_snapshots_block_device_are_in_use(self):
+        dom = domain("u1", ["/pool/vm.qcow2"], ["<domainsnapshot><disks><disk name='vda' snapshot='external'>"
+                                                "<source dev='/dev/vg/vm-snap'/></disk></disks></domainsnapshot>"])
+        dom.XMLDesc.return_value = ("<domain><os><nvram>/pool/vm_VARS.fd</nvram></os><devices><disk type='file' "
+                                    "device='disk'><source file='/pool/vm.qcow2'/></disk></devices></domain>")
+        conn, _ = storage(domains=[dom])
+        self.assertEqual(conn.paths_in_use(), {"/pool/vm.qcow2", "/pool/vm_VARS.fd", "/dev/vg/vm-snap"})
+        dom.XMLDesc.return_value = "<domain><os><nvram type='block'><source dev='/dev/vg/vars'/></nvram></os></domain>"
+        dom.listAllSnapshots.return_value = []
+        self.assertEqual(conn.paths_in_use(), {"/dev/vg/vars"})
+
+    def test_a_shut_off_vms_base_images_are_its(self):
+        # its definition names the top volume only; the volumes tell what each is built on
+        conn, _ = storage(domains=[domain("u1", ["/pool/top.qcow2"], name="vm1")],
+                          volumes=[volume("/pool/top.qcow2", backing="/pool/mid.qcow2"),
+                                   volume("/pool/mid.qcow2", backing="/pool/base.qcow2"),
+                                   volume("/pool/other.qcow2", backing="/pool/base.qcow2")])
+        self.assertEqual(conn.volume_users(), {"/pool/top.qcow2": ["vm1"], "/pool/mid.qcow2": ["vm1"],
+                                               "/pool/base.qcow2": ["vm1"]})
 
 
 class DeleteVolumeTestCase(unittest.TestCase):

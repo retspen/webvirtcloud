@@ -13,7 +13,8 @@ from instances.api.serializers import CreateInstanceSerializer
 from instances.models import Instance
 from instances.utils import nic_macs
 from operations.jobs import Context, Outcome, finish, get_kind
-from operations.models import Operation, acquire
+from operations.claims import admit
+from operations.models import Claim, Operation, acquire
 
 
 wvm_create = MagicMock()  # the page and the job reach the same host
@@ -46,6 +47,25 @@ class CreateInstanceViewTests(TestCase):
         conn.create_instance.assert_called_once()
         self.assertEqual(conn.create_instance.call_args.kwargs["volumes"][0]["bus"], "virtio")
         self.assertTrue(Instance.objects.filter(name="new-vm").exists())
+
+    @patch("instances.views.wvmCreate", new=wvm_create)
+    @patch("instances.views.NewVMForm")
+    def test_the_volumes_it_is_made_from_are_claimed(self, form_class):
+        # not while a download writes them: an existing disk exclusive, a template shared
+        self.create(form_class)
+        compute = Compute.objects.get()
+        self.assertIn((f"volume:{compute.pk}:pool-b/base.qcow2", Claim.EXCLUSIVE),
+                      set(Claim.objects.values_list("resource", "mode")))
+        Operation.objects.all().delete()
+        self.create(form_class, images="", template="base.qcow2", template_pool="pool-b", storage="default")
+        self.assertIn((f"volume:{compute.pk}:pool-b/base.qcow2", Claim.SHARED),
+                      set(Claim.objects.values_list("resource", "mode")))
+        Operation.objects.all().delete()
+        admit({f"volume:{compute.pk}:pool-b/base.qcow2": Claim.EXCLUSIVE}, holder="other-node:1:1")
+        response, _conn = self.create(form_class)
+        self.assertIn("A short operation is in progress on this resource; try again in a moment.",
+                      [str(m) for m in get_messages(response.wsgi_request)])
+        self.assertFalse(Operation.objects.exists())
 
     @patch("instances.views.wvmCreate", new=wvm_create)
     @patch("instances.views.NewVMForm")

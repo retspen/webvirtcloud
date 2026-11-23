@@ -247,6 +247,13 @@ class PendingEditsTestCase(TestCase):
         self.assertEqual(doc.xpath("//input[@name='rng']/@checked"), ["checked"])
         self.assertEqual(doc.xpath("//input[@name='on_crash'][@checked]/@value"), ["restart"])
 
+    def test_a_vm_without_a_panic_device_has_no_crash_action_chosen_yet(self):
+        # on_crash acts on a crash the guest reports: without the device, a choice adds it
+        with patch("instances.models.Instance.config_crash_devices", new_callable=PropertyMock, return_value=False):
+            doc = self.page(get_on_crash=("restart", "restart"))
+        self.assertEqual(doc.xpath("//input[@name='on_crash'][@checked]"), [])
+        self.assertIn("This VM cannot report a crash or a hang yet", doc.xpath("string(//form[.//input[@name='on_crash']])"))
+
     def test_the_tpm_switch_is_off_where_it_cannot_change(self):
         tpm = "//input[@name='tpm']"
         doc = self.page(get_tpm=("emulator", "emulator"))
@@ -285,8 +292,10 @@ class PendingEditsTestCase(TestCase):
         # a search box for a list of every user (searchable_select.js)
         self.assertEqual(doc.xpath("//select[@id='add-owner-user']/@data-searchable"), [""])
         self.assertIn("/static/js/searchable_select.js", doc.xpath("//script/@src"))
-        User.objects.filter(username="pe-new").delete()  # no one left to add: no search box to load
-        self.assertNotIn("/static/js/searchable_select.js", self.page().xpath("//script/@src"))
+        User.objects.filter(username="pe-new").delete()  # no one left to add: the tags field still uses it
+        doc = self.page()
+        self.assertEqual(doc.xpath("//select[@name='tags']/@data-tags"), [""])
+        self.assertIn("/static/js/searchable_select.js", doc.xpath("//script/@src"))
 
     def test_the_page_has_a_hidden_notice_for_a_host_that_stops_answering(self):
         # instance_status.js shows it while the state poll fails

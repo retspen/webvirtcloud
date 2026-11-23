@@ -3,8 +3,9 @@
     <table class="table table-hover align-middle" data-sortable>
         <thead>
             <tr>
+                <th scope="col" data-sort-method="none">{% if powerable %}<input class="form-check-input" type="checkbox" id="bulk-power-shown" aria-label="{% trans "Choose the VMs shown" %}">{% else %}<span class="visually-hidden">{% trans "Chosen" %}</span>{% endif %}</th>
                 <th scope="col">{% trans 'Name' %}</th>
-                {% if show_hosts %}
+                {% if show_hosts and not one_host %}
                     <th scope="col">{% trans 'Host' %}</th>
                 {% endif %}
                 <th scope="col">{% trans 'Status' %}</th>
@@ -19,9 +20,10 @@
         <tbody class="searchable">
             {% for instance in instances  %}
                     {# searched for its name, title, host and owners, not its buttons #}
-                    <tr data-search="{{ instance.name }}{% if instance.info %} {{ instance.title }}{% endif %}{% if show_hosts %} {{ instance.compute.name }}{% for owner in instance.userinstance_set.all %} {{ owner.user }}{% endfor %}{% endif %}">
+                    <tr data-tags="{% for tag in instance.tags.all %}{{ tag }}{% if not forloop.last %} {% endif %}{% endfor %}" data-search="{{ instance.name }}{% if instance.info %} {{ instance.title }}{% endif %}{% if show_hosts %} {{ instance.compute.name }}{% for owner in instance.userinstance_set.all %} {{ owner.user }}{% endfor %}{% endif %}">
+                        <td>{% include 'instances/bulk_power_box.html' %}</td>
                         <td>{% include 'instance_name_cell.html' with owners=show_hosts %}</td>
-                        {% if show_hosts %}
+                        {% if show_hosts and not one_host %}
                             <td>
                                 {# the host pages are a superuser's #}
                                 {% if request.user.is_superuser %}<a href="{% url 'overview' instance.compute.id %}">{{ instance.compute.name }}</a>{% else %}{{ instance.compute.name }}{% endif %}

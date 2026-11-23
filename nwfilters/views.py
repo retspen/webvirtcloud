@@ -1,6 +1,7 @@
 from admin.decorators import superuser_only
 from computes.models import Compute
 from django.contrib import messages
+from django.utils.translation import gettext as _
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
@@ -48,6 +49,7 @@ def nwfilters(request, compute_id):
                 elif "del_nwfilter" in request.POST:
                     with audit(request, compute, f"Network filter {name}", "delete"):
                         conn.delete_nwfilter(name)
+                    messages.success(request, _("Network filter %(name)s deleted") % {"name": name})
             return HttpResponseRedirect(request.get_full_path())
 
         # the VMs first: a list without them would offer to delete filters in use
@@ -71,6 +73,7 @@ def nwfilter(request, compute_id, nwfltr):
     """A network filter of the host: its rules and references changed one at
     a time, or its XML as a whole."""
     compute = get_object_or_404(Compute, pk=compute_id)
+    context = {"compute": compute}  # a filter not read shows only the host
 
     try:
         nwfilter = wvmNWFilter(compute.hostname, compute.login, compute.password, compute.type, nwfltr)
@@ -103,23 +106,27 @@ def nwfilter(request, compute_id, nwfltr):
             return HttpResponseRedirect(request.get_full_path())
 
         name = nwfilter.get_name()
-        uuid = nwfilter.get_uuid()
         xml = nwfilter.get_xml()
-        seen = util.digest(xml)
-        chain = nwfilter.tree.get("chain")
-        priority = nwfilter.tree.get("priority")
-        rules = nwfilter.get_rules()
-        refs = nwfilter.get_refs()
-        ref_choices = nwfilter.get_ref_choices()
         filters = nwfilter.get_nwfilters_info()
-        filter_names = [nwf["name"] for nwf in filters]
-        referenced_by = [nwf["name"] for nwf in filters if name in nwf["refs"]]
         vm_names = nwfilter.get_users().get(name, [])
         vm_ids = dict(Instance.objects.filter(compute=compute, name__in=vm_names).values_list("name", "id"))
-        vms = [{"name": vm_name, "id": vm_ids.get(vm_name)} for vm_name in vm_names]
+        context.update({
+            "name": name,
+            "uuid": nwfilter.get_uuid(),
+            "xml": xml,
+            "seen": util.digest(xml),
+            "chain": nwfilter.tree.get("chain"),
+            "priority": nwfilter.tree.get("priority"),
+            "rules": nwfilter.get_rules(),
+            "refs": nwfilter.get_refs(),
+            "ref_choices": nwfilter.get_ref_choices(),
+            "filter_names": [nwf["name"] for nwf in filters],
+            "referenced_by": [nwf["name"] for nwf in filters if name in nwf["refs"]],
+            "vms": [{"name": vm_name, "id": vm_ids.get(vm_name)} for vm_name in vm_names],
+        })
     except libvirtError as lib_err:
         messages.error(request, lib_err)
         if request.method == "POST":  # a filter gone meanwhile, a host not reached: nothing was changed
             return HttpResponseRedirect(reverse("nwfilters", args=[compute_id]))
 
-    return render(request, "nwfilter.html", locals())
+    return render(request, "nwfilter.html", context)

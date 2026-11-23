@@ -8,11 +8,9 @@
 {% block page_heading %}{% trans "Removed VMs" %}{% endblock page_heading %}
 
 {% block content %}
-<p class="text-body-secondary">{% trans "VMs that vanished from their compute. Their owners come back if the same UUID shows up again before the record expires." %}</p>
+<p class="text-body-secondary">{% trans "VMs that vanished from their compute. Their owners, tags, protection and schedules come back if the same UUID shows up again before the record expires; their backups come back with them." %}</p>
 {% if not tombstones %}
-    <div class="alert alert-info shadow-sm">
-        {% bs_icon 'info-circle' %} {% trans "No removed VMs" %}
-    </div>
+    <p class="text-center text-body-secondary py-4">{% trans "No removed VMs" %}</p>
 {% else %}
     <div class="card mb-3">
         <div class="card-header d-flex flex-wrap align-items-center gap-2">
@@ -21,11 +19,13 @@
         </div>
         <div class="list-group list-group-flush searchable">
         {% for tombstone in tombstones %}
-            <div class="list-group-item py-3" data-search="{{ tombstone.name }} {{ tombstone.uuid }} {{ tombstone.host }} {{ tombstone.owner_names|join:' ' }}">
+            <div class="list-group-item py-3" data-search="{{ tombstone.name }} {{ tombstone.uuid }} {{ tombstone.host }} {{ tombstone.owner_names|join:' ' }} {{ tombstone.tags|join:' ' }}">
                 <div class="row g-2 align-items-center">
                     <div class="col-12 col-md-4">
                         <span class="fw-semibold text-break">{{ tombstone.name }}</span>
                         {% if tombstone.is_template %}<span class="badge text-bg-light border">{% trans "Template" %}</span>{% endif %}
+                        {% if tombstone.protected %}<span class="badge text-bg-light border">{% trans "Protected" %}</span>{% endif %}
+                        {% include 'common/tag_badges.html' with tags=tombstone.tags %}
                         <div class="font-monospace small text-body-secondary text-break mt-1">{{ tombstone.uuid }}</div>
                     </div>
                     <div class="col-12 col-md-5 small">
@@ -33,6 +33,12 @@
                             {% trans "Left" %} <span class="fw-semibold">{{ tombstone.host }}</span>
                             <span class="text-body-secondary">· {% trans "Owners" %}:</span> {{ tombstone.owner_names|join:", "|default:"–" }}
                         </div>
+                        {% if tombstone.policy_names or tombstone.backup_count %}
+                        <div class="mt-1">
+                            {% if tombstone.policy_names %}<span class="text-body-secondary">{% trans "Schedules" %}:</span> {{ tombstone.policy_names|join:", " }}{% endif %}
+                            {% if tombstone.backup_count %}{% if tombstone.policy_names %} · {% endif %}{% blocktrans count counter=tombstone.backup_count %}{{ counter }} backup{% plural %}{{ counter }} backups{% endblocktrans %}{% endif %}
+                        </div>
+                        {% endif %}
                         <div class="text-body-secondary mt-1">
                             {% trans "Removed" %} <span class="text-nowrap">{{ tombstone.removed|date:"Y-m-d H:i" }}</span>
                             · {% trans "expires" %} <span class="text-nowrap">{{ tombstone.expires|date:"Y-m-d H:i" }}</span>

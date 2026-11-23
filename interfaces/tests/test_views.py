@@ -157,3 +157,12 @@ class UnchangeableHostTestCase(TestCase):
                 self.assertEqual(response.status_code, 200)
                 for method in (conn.start_iface, conn.stop_iface, conn.delete_iface):
                     method.assert_not_called()
+
+
+class LinkBadgeTestCase(TestCase):
+    def test_a_link_state_libvirt_calls_unknown_is_said_in_words(self):
+        from django.template.loader import render_to_string
+
+        for link in ("unknown", None):
+            self.assertIn("Link unknown", render_to_string("link_badge.html", {"link": link}))
+        self.assertIn("Link dormant", render_to_string("link_badge.html", {"link": "dormant"}))

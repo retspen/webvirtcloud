@@ -4,7 +4,8 @@ from django.test import SimpleTestCase, override_settings
 from accounts.checks import login_required_middleware_check
 
 OLD = "login_required.middleware.LoginRequiredMiddleware"
-NEW = "django.contrib.auth.middleware.LoginRequiredMiddleware"
+NEW = "webvirtcloud.middleware.LoginRequiredMiddleware"
+DJANGO = "django.contrib.auth.middleware.LoginRequiredMiddleware"
 
 
 class LoginRequiredMiddlewareCheckTestCase(SimpleTestCase):
@@ -18,6 +19,10 @@ class LoginRequiredMiddlewareCheckTestCase(SimpleTestCase):
     def test_settings_from_before_django_5_2_are_rejected(self):
         old = [OLD if m == NEW else m for m in settings.MIDDLEWARE]
         self.assertEqual(self.ids(old), ["accounts.E002"])
+
+    def test_django_s_own_is_warned_of(self):
+        # it signs in too: an update with it in data/local_settings.py still starts the panel
+        self.assertEqual(self.ids([DJANGO if m == NEW else m for m in settings.MIDDLEWARE]), ["accounts.W002"])
 
     def test_missing_login_middleware_is_rejected(self):
         self.assertEqual(self.ids([m for m in settings.MIDDLEWARE if m != NEW]), ["accounts.E002"])

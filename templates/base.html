@@ -30,24 +30,30 @@
   <body class="pb-5"{% block body_attrs %}{% endblock %}>
 
     {% if request.user.is_authenticated %}
+    {# for the keyboard: past the menu, shown when it has the focus #}
+    <a class="visually-hidden-focusable d-block text-center p-2" href="#main">{% trans "Skip to content" %}</a>
     {% include 'navbar.html' %}
     {% endif %}
 
-    <div role="main" class="container">
+    <div role="main" id="main" class="container">
       {% block page_header %}{# a page with a heading of its own leaves it out #}
-      <div>
-        <div>
-          <div class="float-end">
-            {% block page_heading_extra %}
-            {% endblock page_heading_extra %}
-          </div>
-          <h3 class="mb-3">
-            {% block page_heading %}
-            {% endblock page_heading %}
-          </h3>
+      {# the heading first, the page's buttons beside it, or under it on a narrow screen #}
+      <div class="d-flex flex-wrap align-items-start justify-content-between column-gap-3 row-gap-2 mb-3">
+        <h1 class="h3 mb-0">
+          {% block page_heading %}
+          {% endblock page_heading %}
+        </h1>
+        <div class="d-flex flex-wrap align-items-center gap-1">
+          {% block page_heading_extra %}
+          {% endblock page_heading_extra %}
         </div>
       </div>
       {% endblock page_header %}
+      {% if request.user.is_authenticated %}
+      {# the words session_end.js shows when the session ends while the page is open #}
+      <div id="session-ended" hidden data-text="{% trans "You were signed out: this page is no longer updated." %}"
+           data-link="{% trans "Sign in again" %}" data-href="{% url 'accounts:login' %}?next={{ request.get_full_path|urlencode }}"></div>
+      {% endif %}
       <div id="messages">{% bootstrap_messages %}</div>
       {% block content %}{% endblock %}
     </div>
@@ -77,12 +83,16 @@
     <!-- Bootstrap Core JavaScript -->
     <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'js/confirm_dialog.js' %}"></script>
+    <script src="{% static 'js/submit_busy.js' %}"></script>
+    <script src="{% static 'js/session_end.js' %}"></script>
     <!-- Table sorting -->
     <script src="{% static 'js/tablesort.min.js' %}"></script>
     <script src="{% static 'js/tablesort.number.min.js' %}"></script>
     <script src="{% static 'js/sort_tables.js' %}"></script>
     <script src="{% static 'js/error_focus.js' %}"></script>
     <script src="{% static 'js/back_links.js' %}"></script>
+    <script src="{% static 'js/scroll_rows.js' %}"></script>
+    <script src="{% static 'js/navbar_height.js' %}"></script>
     <script src="{% static 'js/console_window.js' %}"></script>
     {% block script %}{% endblock %}
   </body>

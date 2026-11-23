@@ -7,7 +7,8 @@ import os
 import sys
 try:
     import ldap
-    from django_auth_ldap.config import LDAPSearch, NestedActiveDirectoryGroupType
+    # data/local_settings.py sets up LDAP with these (README, LDAP)
+    from django_auth_ldap.config import LDAPSearch, NestedActiveDirectoryGroupType  # noqa: F401
     HAS_LDAP = True
 except ImportError:
     HAS_LDAP = False
@@ -97,6 +98,7 @@ INSTALLED_APPS = [
     "virtsecrets",
     "logs",
     "operations",
+    "vmbackups",
     "rest_framework",
     "knox",
     "axes",
@@ -112,7 +114,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django_otp.middleware.OTPMiddleware",
-    "django.contrib.auth.middleware.LoginRequiredMiddleware",
+    "webvirtcloud.middleware.LoginRequiredMiddleware",
     "accounts.middleware.ForcePasswordChangeMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -189,7 +191,6 @@ AUTHENTICATION_BACKENDS = [
     # first: refuses logins that are locked out
     "axes.backends.AxesStandaloneBackend",
     "django.contrib.auth.backends.ModelBackend",
-    #"django_auth_ldap.backend.LDAPBackend",
 ]
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -200,6 +201,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LOGIN_URL = "/accounts/login/"
+# a form sent after the session ended goes to sign in, not to a 403
+CSRF_FAILURE_VIEW = "webvirtcloud.middleware.csrf_failure"
 
 # Tests create users by the thousand: a fast hash for them (manage.py test only)
 if sys.argv[1:2] == ["test"]:
@@ -219,6 +222,7 @@ AXES_RESET_ON_SUCCESS = True
 # successful logins are on the Logs page; django-axes' own record of them would only grow
 AXES_DISABLE_ACCESS_LOG = True
 AXES_CLIENT_IP_CALLABLE = "accounts.lockout.client_ip"
+AXES_LOCKOUT_CALLABLE = "accounts.lockout.lockout_response"
 # Reverse proxies other than a local one whose X-Real-IP header gives the
 # client address, e.g. ["10.0.0.5", "172.18.0.0/16"]
 LOGIN_TRUSTED_PROXIES = []
@@ -244,6 +248,10 @@ USE_I18N = True
 
 
 USE_TZ = True
+
+# a sent form marks only its fields in error (django-bootstrap5 marks the others green)
+# a field's label is above it, not again in it
+BOOTSTRAP5 = {"field_renderers": {"default": "webvirtcloud.bootstrap.FieldRenderer"}, "set_placeholder": False}
 
 STATIC_URL = "/static/"
 
@@ -442,29 +450,21 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL") or EMAIL_HOST_USER or "webm
 # seconds an SMTP server may take to answer; without it a server that stops answering holds the request for good
 EMAIL_TIMEOUT = 10
 
-# LDAP Config
-#
-
+# LDAP, set up in data/local_settings.py (README, LDAP): seconds to connect and for
+# each answer, as python-ldap waits for a server without end
 if HAS_LDAP:
-    AUTH_LDAP_SERVER_URI = "ldap://example.com"
-    AUTH_LDAP_BIND_DN = "username@example.com"
-    AUTH_LDAP_BIND_PASSWORD = "password"
-    # seconds to connect and for each answer: python-ldap waits for a server without end
     AUTH_LDAP_CONNECTION_OPTIONS = {ldap.OPT_NETWORK_TIMEOUT: 5, ldap.OPT_TIMEOUT: 10}
-    AUTH_LDAP_USER_SEARCH = LDAPSearch(
-        "CN=Users,DC=example,DC=com", ldap.SCOPE_SUBTREE, "(sAMAccountName=%(user)s)"
-    )
-    AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
-        "CN=Users,DC=example,DC=com", ldap.SCOPE_SUBTREE, "(objectClass=group)"
-    )
-    AUTH_LDAP_GROUP_TYPE = NestedActiveDirectoryGroupType()
-    AUTH_LDAP_REQUIRE_GROUP = "CN=WebVirtCloud Access,CN=Users,DC=example,DC=com"
-    AUTH_LDAP_USER_FLAGS_BY_GROUP = {
-        "is_staff": "CN=WebVirtCloud Staff,CN=Users,DC=example,DC=com",
-        "is_superuser": "CN=WebVirtCloud Admins,CN=Users,DC=example,DC=com",
-    }
-    AUTH_LDAP_USER_ATTR_MAP = {
-        "first_name": "givenName",
-        "last_name": "sn",
-        "email": "mail",
-    }
+
+# This installation's own settings: data/local_settings.py, which updates do not
+# change (Docker keeps it in the data volume). It runs here, after the defaults
+# above and with their names, so it sets or changes any of them, for example
+#   ALLOWED_HOSTS += ["panel.example.com"]
+# or the LDAP options (README, LDAP). A value worked out above from another
+# (DEFAULT_FROM_EMAIL, the log file) is not worked out again.
+LOCAL_SETTINGS = BASE_DIR / "data" / "local_settings.py"
+try:
+    local_settings = LOCAL_SETTINGS.read_bytes()  # bytes: Python reads its encoding, a BOM too
+except FileNotFoundError:  # one that cannot be read stops the panel, not silently
+    local_settings = None
+if local_settings is not None:
+    exec(compile(local_settings, str(LOCAL_SETTINGS), "exec"))

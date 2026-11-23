@@ -1,0 +1,2 @@
+{% load i18n %}{% load bootstrap_icons %}{# one of tag_badges.html #}
+{% if filter %}<button type="button" class="badge tag-badge text-bg-light border" data-tag-filter="{{ tag }}" title="{% trans "Show only this tag" %}">{% bs_icon 'tag' %} {{ tag }}</button>{% else %}<span class="badge tag-badge text-bg-light border">{% bs_icon 'tag' %} {{ tag }}</span>{% endif %}

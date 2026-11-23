@@ -1,8 +1,11 @@
 import re
+from urllib.parse import urlsplit
 from pathlib import Path
 
 from admin.decorators import superuser_only
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator, validate_email
 from django.contrib import messages
 from django.db import DatabaseError, transaction
 from django.http import HttpResponseRedirect
@@ -10,6 +13,7 @@ from django.shortcuts import render
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_noop
 from logs.audit import audit
+from operations import alerts
 from operations.utils import BOUNDS
 from vrtManager.util import OperationError
 
@@ -26,12 +30,16 @@ NUMBERS = {
     "LOGS_PER_PAGE": (1, 1000),
     "LOGIN_FAILURE_LIMIT": (1, 1000),
     "LOGIN_LOCKOUT_MINUTES": (1, 10080),
+    "LOGIN_SESSION_HOURS": (1, 8760),
     "SNAPSHOT_FREE_SPACE_PERCENT": (0, 100),
     "SNAPSHOT_FREE_SPACE_MIN_GIB": (0, 100000),
     "INSTANCE_VOLUME_DEFAULT_OWNER_UID": (0, 4294967294),
     "INSTANCE_VOLUME_DEFAULT_OWNER_GID": (0, 4294967294),
 }
 
+
+# settings whose values the audit log does not show
+SECRET_SETTINGS = {"ALERT_WEBHOOK"}
 
 # the Settings page's groups, in order; a setting in none shows under Other. The
 # titles stay English here: the page links them by slug and translates them
@@ -49,7 +57,10 @@ GROUPS = [
                                  "ALLOW_INSTANCE_MULTIPLE_OWNER", "QUOTA_DEBUG"]),
     (gettext_noop("Snapshots and jobs"), ["SNAPSHOT_FREE_SPACE_PERCENT", "SNAPSHOT_FREE_SPACE_MIN_GIB",
                                "WORKER_CONCURRENCY", "JOB_RETENTION_DAYS"]),
-    (gettext_noop("Login"), ["LOGIN_FAILURE_LIMIT", "LOGIN_LOCKOUT_MINUTES"]),
+    (gettext_noop("Migrations"), ["MIGRATION_BANDWIDTH"]),
+    (gettext_noop("Login"), ["LOGIN_FAILURE_LIMIT", "LOGIN_LOCKOUT_MINUTES", "LOGIN_SESSION_HOURS",
+                                  "LOGIN_NOTICE"]),
+    (gettext_noop("Alerts"), ["ALERT_EMAILS", "ALERT_WEBHOOK"]),
     (gettext_noop("Lists and pages"), ["VIEW_INSTANCES_LIST_STYLE", "VM_DRBD_STATUS", "LOGS_PER_PAGE",
                                          "LOG_RETENTION_DAYS"]),
 ]
@@ -59,18 +70,28 @@ def refusal(setting, value):
     """Why the value cannot be saved for the setting, or None."""
     if len(value) > AppSettings._meta.get_field("value").max_length:
         return _("%(setting)s takes at most %(length)s characters") % {
-            "setting": setting.name, "length": AppSettings._meta.get_field("value").max_length}
+            "setting": _(setting.name), "length": AppSettings._meta.get_field("value").max_length}
     if setting.key in NUMBERS:
         low, high = NUMBERS[setting.key]
         if not (value.isascii() and value.isdigit() and len(value) <= 10 and low <= int(value) <= high):
             return _("%(setting)s must be a whole number between %(low)s and %(high)s") % {
-                "setting": setting.name, "low": low, "high": high}
+                "setting": _(setting.name), "low": low, "high": high}
     elif setting.choices and value not in setting.choices_as_list():
         return _("%(setting)s must be one of %(choices)s") % {
-            "setting": setting.name, "choices": ", ".join(setting.choices_as_list())}
+            "setting": _(setting.name), "choices": ", ".join(setting.choices_as_list())}
     elif setting.key == "CLONE_INSTANCE_DEFAULT_PREFIX" and not re.fullmatch(r"[a-zA-Z0-9-]+", value):
         # a clone's name is the prefix and a number, and takes only these
-        return _("%(setting)s takes letters, digits and '-' only") % {"setting": setting.name}
+        return _("%(setting)s takes letters, digits and '-' only") % {"setting": _(setting.name)}
+    try:
+        if setting.key == "ALERT_EMAILS":
+            for address in filter(None, (a.strip() for a in value.split(","))):
+                validate_email(address)
+        elif setting.key == "ALERT_WEBHOOK" and value.strip():
+            URLValidator(schemes=["http", "https"])(value.strip())
+            if "@" in urlsplit(value.strip()).netloc:  # urllib would take user:password@ for the host
+                raise ValidationError("credentials in the URL")
+    except ValidationError:
+        return _("%(setting)s: %(value)s is not an e-mail address or an http(s) URL") % {"setting": _(setting.name), "value": value}
     return None
 
 
@@ -93,6 +114,17 @@ def appsettings(request):
     settings_by_key = {s.key: s for s in AppSettings.objects.exclude(key="BOOTSTRAP_THEME")}
 
     if request.method == "POST":
+        if "test_alert" in request.POST:  # with the settings saved
+            results = alerts.test()
+            if not results:
+                messages.error(request, _("Set an alert e-mail address or webhook and save it first"))
+            for channel, error in results.items():
+                name = _("E-mail") if channel == "mail" else _("Webhook")
+                if error is None:
+                    messages.success(request, _("%(channel)s: the test alert was sent") % {"channel": name})
+                else:
+                    messages.error(request, _("%(channel)s: the test alert failed: %(error)s") % {"channel": name, "error": error})
+            return HttpResponseRedirect(request.get_full_path())  # the results are at the top
         if "BOOTSTRAP_THEME" in request.POST:
             theme = request.POST.get("BOOTSTRAP_THEME", "")
             if theme not in themes_list:
@@ -121,7 +153,9 @@ def appsettings(request):
         for refused in refusals:
             messages.error(request, refused)
         if changed and not refusals:
-            action = "change " + ", ".join(f"{s.name} to {value}" for s, value in changed)
+            # a webhook URL is a secret of its own (Slack's): not in the log
+            action = "change " + ", ".join(f"{s.name} to {'(not shown)' if s.key in SECRET_SETTINGS else value}"
+                                           for s, value in changed)
             try:
                 # one row, and all of the group or none of it
                 with audit(request, None, "Settings", action), transaction.atomic():

@@ -62,7 +62,7 @@ def reason(exc, user):
     from vrtManager.util import OperationError
 
     if isinstance(exc, claims.Busy):
-        return busy_message(exc, user)
+        return busy_message(exc, user, named=False)  # a VM's owner may read its row
     if isinstance(exc, OperationError):
         return exc.args[0]  # English: str() is the reader's language
     if isinstance(exc, libvirt.libvirtError):

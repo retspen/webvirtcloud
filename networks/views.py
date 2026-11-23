@@ -40,9 +40,13 @@ def networks(request, compute_id):
 
     compute = get_object_or_404(Compute, pk=compute_id)
     form = AddNetPool()
-    # the new network dialog's mode: the one sent back after a refusal
-    net_mode = request.POST.get("forward", "nat")
-    networks = None  # not read: the page shows no list
+    context = {
+        "compute": compute,
+        "form": form,
+        "networks": None,  # not read: the page shows no list
+        # the new network dialog's mode: the one sent back after a refusal
+        "net_mode": request.POST.get("forward", "nat"),
+    }
 
     try:
         conn = wvmNetworks(
@@ -82,10 +86,11 @@ def networks(request, compute_id):
                     return HttpResponseRedirect(reverse("network", args=[compute_id, data["name"]]))
             elif form.has_error("name", "taken"):
                 failed(request, compute, f"Network {form.data['name'].strip()}", "add", "name already in use")
+        context.update({"form": form, "networks": networks, "host_ifaces": host_ifaces})
     except libvirtError as lib_err:
         messages.error(request, lib_err)
 
-    return render(request, "networks.html", locals())
+    return render(request, "networks.html", context)
 
 
 @superuser_only
@@ -302,4 +307,26 @@ def network(request, compute_id, pool):
         lease["ip_index"] = next((ip["index"] for ip in dhcp_networks
                                   if ip["subnet"] and lease["ip"] in ip["subnet"]), None)
 
-    return render(request, "network.html", locals())
+    return render(request, "network.html", {
+        "compute": compute,
+        "pool": pool,
+        "state": state,
+        "device": device,
+        "autostart": autostart,
+        "net_mac": net_mac,
+        "qos": qos,
+        "qos_supported": qos_supported,
+        "ip_networks": ip_networks,
+        "mode": mode,
+        "mode_label": mode_label,
+        "mode_help": mode_help,
+        "external": external,
+        "families": families,
+        "fixed_addresses": fixed_addresses,
+        "dhcp_networks": dhcp_networks,
+        "vms": vms,
+        "leases": leases,
+        "leases_error": leases_error,
+        "xml": xml,
+        "seen": seen,
+    })

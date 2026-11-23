@@ -5,7 +5,9 @@
     <div class="card">
         <div class="card-body">
             <p class="small text-body-secondary mb-2">{% trans "Destroy" %} · {{ state.0 }}</p>
-            {% if can_delete %}
+            {% if instance.protected %}
+            <p class="mb-0">{% trans "This VM is protected: an administrator turns its protection off on the Settings tab first." %}</p>
+            {% elif can_delete %}
             <a href="{% url 'instances:destroy' instance.id %}" class="btn btn-danger mb-2">{% trans "Review destruction" %}</a>
             <p class="small text-body-secondary mb-0">{% trans "The next page shows what goes and lets you keep the disk files." %}</p>
             {% else %}

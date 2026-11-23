@@ -7,14 +7,16 @@ from computes.models import Compute
 from computes.utils import libvirt_compute_lock
 from instances.utils import paths_used_on_other_computes
 from django.contrib import messages
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.http import content_disposition_header
 from django.utils.translation import gettext_lazy as _
 from libvirt import libvirtError
 from operations import claims, jobs
 from operations.utils import busy_message
 from logs.audit import audit, failed
+from webvirtcloud.middleware import error_text
 
 from vrtManager.util import OperationError
 from vrtManager.storage import wvmStorage, wvmStorages
@@ -22,6 +24,8 @@ from vrtManager.storage import wvmStorage, wvmStorages
 from storages.forms import AddStgPool, CloneImage, CreateVolumeForm
 from storages.jobs import is_iso
 from storages.upload import write_chunk
+from vmbackups.utils import backups_of, pool_stop_claims, refuse_backup_volume, refuse_target_pool
+from webvirtcloud.gunicorn_worker import request_progressed
 
 
 def _handle_iso_upload(request, conn, compute, pool):
@@ -70,9 +74,13 @@ def storages(request, compute_id):
 
     compute = get_object_or_404(Compute, pk=compute_id)
     form = AddStgPool()
-    # the new pool dialog's type: its radio cards tell the ISO pool from another directory
-    pool_kind = request.POST.get("pool_kind", "dir")
-    storages = None  # not read: the page shows no list
+    context = {
+        "compute": compute,
+        "form": form,
+        "storages": None,  # not read: the page shows no list
+        # the new pool dialog's type: its radio cards tell the ISO pool from another directory
+        "pool_kind": request.POST.get("pool_kind", "dir"),
+    }
 
     try:
         conn = wvmStorages(
@@ -103,10 +111,11 @@ def storages(request, compute_id):
                     return HttpResponseRedirect(reverse("storage", args=[compute_id, data["name"]]))
             elif form.has_error("name", "taken"):
                 failed(request, compute, f"Storage pool {form.data['name'].strip()}", "add", "name already in use")
+        context.update({"form": form, "storages": storages, "iso_pool": iso_pool, "ceph_secrets": ceph_secrets})
     except libvirtError as lib_err:
         messages.error(request, lib_err)
 
-    return render(request, "storages.html", locals())
+    return render(request, "storages.html", context)
 
 
 @superuser_only
@@ -137,16 +146,19 @@ def storage(request, compute_id, pool):
             with audit(request, compute, subject, "start"):
                 conn.start()
             return HttpResponseRedirect(request.get_full_path())
+        # stopped or deleted only while no job (a download, a copy) works in it
+        in_pool = pool_stop_claims(compute, pool)
         if "stop" in request.POST:
             try:
-                with audit(request, compute, subject, "stop"):
+                with claims.hold(in_pool), audit(request, compute, subject, "stop"):
                     conn.stop()
             except OperationError as err:  # a running VM's disk is in it
                 messages.error(request, str(err))
             return HttpResponseRedirect(request.get_full_path())
         if "delete" in request.POST:
             try:
-                with audit(request, compute, subject, "delete"):
+                with claims.hold(in_pool), audit(request, compute, subject, "delete"):
+                    refuse_target_pool(compute, pool)
                     conn.delete()
             except OperationError as err:  # a VM names it for a disk
                 messages.error(request, str(err))
@@ -164,6 +176,7 @@ def storage(request, compute_id, pool):
             volname = request.POST.get("volname", "")
             try:
                 with audit(request, compute, subject, f"delete volume {volname}"):
+                    refuse_backup_volume(compute, pool, volname)
                     conn.check_unused_elsewhere(volname, lambda paths: paths_used_on_other_computes(compute, paths))
                     # no VM operation attaches it between the check and the delete
                     with libvirt_compute_lock(compute):
@@ -198,6 +211,18 @@ def storage(request, compute_id, pool):
             if not state:
                 for msg_err in form.errors.values():
                     messages.error(request, msg_err.as_text())
+        if "fetch_volume" in request.POST:
+            raw = {"compute": compute.id, "pool": pool, "url": request.POST.get("url", ""),
+                   "name": request.POST.get("name", "")}
+            try:  # the job writes its row when it ends
+                op = jobs.submit("volume.fetch", request.user, raw, request.POST.get("submission_key", ""))
+            except claims.Busy as busy:
+                messages.error(request, busy_message(busy, request.user))
+            except (jobs.SubmissionConflict, OperationError, libvirtError) as err:
+                messages.error(request, error_text(request, err))
+            else:
+                jobs.remember_job(request, op)
+            return redirect(reverse("storage", args=[compute.id, pool]))
         if "cln_volume" in request.POST:
             form = CloneImage(request.POST)
             if form.is_valid():
@@ -222,8 +247,16 @@ def storage(request, compute_id, pool):
     # read only for the page: every action above redirects, but a refused new volume
     # first: it refreshes the pool, and libvirt measures a pool's space only then
     volumes = conn.update_volumes() if state else None
+    users = None
+    if volumes:
+        # which VMs of this host use each volume; the page lists them without it when it cannot be read
+        with contextlib.suppress(libvirtError):
+            users = conn.volume_users()
+    backups = backups_of(compute, pool, [volume["name"] for volume in volumes or []])
     for volume in volumes or []:
         volume["iso"] = is_iso(volume["name"])
+        volume["backup"] = backups.get(volume["name"])
+        volume["users"] = users.get(volume["path"]) if users is not None else None
     try:
         size, free = conn.get_size()
         status = conn.get_status()
@@ -235,12 +268,24 @@ def storage(request, compute_id, pool):
     except libvirtError:  # both read the pool's info: the page says it could not be read
         size = free = used = percent = status = None
 
-    path = conn.get_target_path() or conn.get_source_name()  # an RBD pool: its Ceph pool
-    type = conn.get_type()
-    autostart = conn.get_autostart()
-    job_resource = claims.pool_key(compute.id, pool)
-
-    return render(request, "storage.html", locals())
+    return render(request, "storage.html", {
+        "compute": compute,
+        "pool": pool,
+        "form": form,
+        "state": state,
+        "volumes": volumes,
+        "users_read": users is not None,
+        "has_backups": bool(backups),
+        "size": size,
+        "free": free,
+        "used": used,
+        "percent": percent,
+        "status": status,
+        "path": conn.get_target_path() or conn.get_source_name(),  # an RBD pool: its Ceph pool
+        "type": conn.get_type(),
+        "autostart": conn.get_autostart(),
+        "job_resource": claims.pool_key(compute.id, pool),
+    })
 
 
 def get_volumes(request, compute_id, pool):
@@ -264,3 +309,27 @@ def get_volumes(request, compute_id, pool):
         # caller cannot tell "no volumes" from "could not read the pool"
         return JsonResponse({"error": str(err)}, status=400)
     return JsonResponse(data)
+
+
+@superuser_only
+def download_volume(request, compute_id, pool, vol):
+    """Volume vol of the pool as a file, streamed from the host."""
+    compute = get_object_or_404(Compute, pk=compute_id)
+    try:
+        with audit(request, compute, f"Storage pool {pool}", f"download volume {vol}"):
+            conn = wvmStorage(compute.hostname, compute.login, compute.password, compute.type, pool)
+            size, chunks = conn.read_volume(vol)
+    except libvirtError as err:  # a running VM's disk, no such volume, the host does not answer
+        messages.error(request, str(err))
+        return redirect(reverse("storage", args=[compute_id, pool]))
+
+    def sent():
+        for data in chunks:
+            yield data
+            request_progressed()
+
+    response = StreamingHttpResponse(sent(), content_type="application/octet-stream")
+    response["Content-Length"] = size
+    response["Content-Disposition"] = content_disposition_header(True, vol)
+    response["X-Accel-Buffering"] = "no"  # nginx passes it on as it comes, not through a temporary file
+    return response

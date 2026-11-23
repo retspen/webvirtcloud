@@ -432,8 +432,11 @@ class LiveDataLossTestCase(TestCase):
         dom.create()
 
         def change(old, new):
+            # the form posts the NIC's saved definition as the page read it
+            seen = next(net["seen"] for net in Instance.objects.get(pk=inst.pk).config_networks if net["mac"] == old)
             return self.post("change_network", inst, {
-                "net-old-mac-0": old, "net-mac-0": new, "net-source-0": "net:default", "net-model-0": "virtio",
+                "net-old-mac-0": old, "net-seen-0": seen, "net-mac-0": new, "net-source-0": "net:default",
+                "net-model-0": "virtio",
             })
 
         change("52:54:00:aa:05:01", "52:54:00:aa:05:02")

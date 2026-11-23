@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load common_tags %}
 {% load vm_states %}
 {% load i18n %}
 {% load operations %}
@@ -8,15 +9,14 @@
 {% block title %}{% trans "Instance" %} - {{ instance.name }}{% endblock %}
 
 {% block style %}
-{% if request.user.is_superuser and users %}<link href="{% static 'css/tom-select.bootstrap5.min.css' %}" rel="stylesheet">{% endif %}
+{% if request.user.is_superuser %}<link href="{% static 'css/tom-select.bootstrap5.min.css' %}" rel="stylesheet">{% endif %}
 {% endblock style %}
 
 {% block page_header %}{% endblock page_header %}{# the card below has the heading #}
 
 {% block content %}
-    {% include 'pleasewaitdialog.html' %}
     {# the VM at a glance in one card: who and where it is, what it has, and its sections as the card's footer #}
-    <section class="card mb-3" aria-labelledby="vm-name" id="vm-summary" data-status="{{ instance.status }}"
+    <section class="card mb-3" aria-labelledby="vm-name" id="vm-summary" data-status="{{ instance.status }}" data-reason="{{ instance.state_and_reason.1 }}"
              data-status-url="{% url 'instances:status' instance.id %}" data-osinfo-url="{% url 'instances:osinfo' instance.id %}"
              data-opens-on="{% if instance.is_template and can_clone %}#clone{% endif %}"
              data-random-mac-url="{% url 'instances:random_mac_address' %}"
@@ -29,6 +29,7 @@
                         {% vm_state instance.status as state %}
                         <span class="badge text-bg-{{ state.1 }}">{{ state.0 }}</span>
                         {% if instance.is_template %}<span class="badge text-bg-light border">{% trans "Template" %}</span>{% endif %}
+                        {% include 'common/tag_badges.html' with tags=instance.tags.all %}
                     </div>
                     {% if instance.title %}<p class="text-body-secondary mb-1">{{ instance.title }}</p>{% endif %}
                     {% include 'instances/host_link.html' %}
@@ -38,13 +39,23 @@
                     <button type="button" class="btn btn-sm btn-primary" id="clone-button">{% bs_icon 'copy' %} {% trans "Clone" %}</button>
                     {% endif %}
                     {% if instance.guest_agent_ready %}
-                    <button type="button" class="btn btn-sm btn-secondary" id="os-details-button">{% bs_icon 'info-circle' %} {% trans "OS details" %}</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="os-details-button">{% bs_icon 'info-circle' %} {% trans "OS details" %}</button>
                     {% endif %}
-                    <a class="btn btn-sm btn-secondary" href="{% url 'instances:instance' instance.id %}">{% bs_icon 'arrow-clockwise' %} {% trans "Refresh" %}</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'instances:instance' instance.id %}">{% bs_icon 'arrow-clockwise' %} {% trans "Refresh" %}</a>
                 </div>
             </div>
             {# shown by instance_status.js while the VM's state cannot be read #}
             <div class="alert alert-warning small py-2 mt-2 mb-0" id="vm-host-lost" role="status" hidden>{% trans "This page could not be refreshed: its state and figures may be out of date." %}</div>
+            {# a VM a fault stopped or paused says why; a full storage pauses it until there is space #}
+            {% if instance.state_reason %}
+            <div class="alert alert-danger small py-2 mt-2 mb-0" role="status">
+                <strong>{{ instance.state_reason }}</strong>
+                {% for error in instance.disk_error_texts %}<div>{{ error }}</div>{% endfor %}
+                {% if instance.disk_full %}
+                <div>{% if request.user.is_superuser %}{% trans "Free space on its storage, then resume it." %}{% else %}{% trans "An administrator has to free space on its storage and resume it." %}{% endif %}</div>
+                {% endif %}
+            </div>
+            {% endif %}
             {% if not instance.is_template %}
             <div class="d-flex flex-wrap column-gap-3 row-gap-1 small mt-2">
                 {% if not instance.guest_agent %}
@@ -58,57 +69,63 @@
             </div>
             {% endif %}
             <dl class="row g-2 small mb-0 mt-1">
-                <div class="col-6 col-lg-2">
-                    <dt class="fw-normal text-body-secondary">{% trans "CPU" %}</dt>
-                    <dd class="mb-0">{% firstof instance.cur_vcpu instance.vcpu %} {% trans "of" %} {{ instance.vcpu }} {% trans "vCPU" %}</dd>
+                <div class="col-auto col-lg-2">
+                    <dt class="fw-normal text-body-secondary d-inline d-lg-block">{% trans "CPU" %}</dt>
+                    <dd class="mb-0 d-inline d-lg-block">{% firstof instance.cur_vcpu instance.vcpu %} {% trans "of" %} {{ instance.vcpu }} {% trans "vCPU" %}</dd>
                 </div>
-                <div class="col-6 col-lg-2">
-                    <dt class="fw-normal text-body-secondary">{% trans "Memory" %}</dt>
-                    <dd class="mb-0">{{ instance.cur_memory }} MiB</dd>
+                <div class="col-auto col-lg-2">
+                    <dt class="fw-normal text-body-secondary d-inline d-lg-block">{% trans "Memory" %}</dt>
+                    <dd class="mb-0 d-inline d-lg-block">{{ instance.cur_memory }} MiB</dd>
                 </div>
-                <div class="col-6 col-lg-5">
-                    <dt class="fw-normal text-body-secondary">{% trans "Disks" %}</dt>
-                    <dd class="mb-0">{% for disk in instance.disks %}{{ disk.dev }} {{ disk.size|filesizeformat }}{% if not forloop.last %} · {% endif %}{% empty %}{% trans "None" %}{% endfor %}</dd>
+                <div class="col-auto col-lg-5">
+                    <dt class="fw-normal text-body-secondary d-inline d-lg-block">{% trans "Disks" %}</dt>
+                    <dd class="mb-0 d-inline d-lg-block">{% for disk in instance.disks %}{{ disk.dev }} {{ disk.size|binary_size }}{% if not forloop.last %} · {% endif %}{% empty %}{% trans "None" %}{% endfor %}</dd>
                 </div>
                 {% if not instance.is_template %}
-                <div class="col-6 col-lg-3">
-                    <dt class="fw-normal text-body-secondary">{% trans "IPv4" %}</dt>
-                    <dd class="mb-0 font-monospace" data-address-mac="{% for nic in instance.networks %}{{ nic.mac }} {% endfor %}" data-address-family="ipv4" data-empty="—">{% trans "Reading…" %}</dd>
+                <div class="col-auto col-lg-3">
+                    <dt class="fw-normal text-body-secondary d-inline d-lg-block">{% trans "IPv4" %}</dt>
+                    <dd class="mb-0 d-inline d-lg-block font-monospace" data-address-mac="{% for nic in instance.networks %}{{ nic.mac }} {% endfor %}" data-address-family="ipv4" data-empty="—">{% trans "Reading…" %}</dd>
                 </div>
                 {% endif %}
             </dl>
         </div>
-        <div class="card-footer p-2">
-            <ul class="nav nav-pills nav-fill flex-wrap flex-lg-nowrap gap-1 small" id="navbtn" role="tablist" aria-label="{% trans "Instance actions" %}">
+        <div class="card-footer p-1">
+            {# p-1 inside the scroller keeps the focus ring from being clipped #}
+            <ul class="nav nav-pills nav-fill flex-nowrap overflow-x-auto gap-1 p-1 small" id="navbtn" role="tablist" aria-label="{% trans "Instance actions" %}">
                 {# a template is cloned, not run: no power, access, snapshots or stats #}
                 {% if not instance.is_template %}
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link text-nowrap active" id="power-tab" aria-controls="power" data-bs-toggle="pill" data-bs-target="#power" type="button" role="tab" aria-selected="true">{% bs_icon 'power' %} {% trans "Power" %}</button>
+                    <button class="nav-link text-nowrap px-2 active" id="power-tab" aria-controls="power" data-bs-toggle="pill" data-bs-target="#power" type="button" role="tab" aria-selected="true">{% bs_icon 'power' %} {% trans "Power" %}</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link text-nowrap" id="access-tab" aria-controls="access" data-bs-toggle="pill" data-bs-target="#access" type="button" role="tab" aria-selected="false">{% bs_icon 'lock' %} {% trans "Access" %}</button>
+                    <button class="nav-link text-nowrap px-2" id="access-tab" aria-controls="access" data-bs-toggle="pill" data-bs-target="#access" type="button" role="tab" aria-selected="false">{% bs_icon 'lock' %} {% trans "Access" %}</button>
                 </li>
                 {% endif %}
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link text-nowrap" id="resize-tab" aria-controls="resize" data-bs-toggle="pill" data-bs-target="#resize" type="button" role="tab" aria-selected="false">{% bs_icon 'arrows-angle-expand' %} {% trans "Resize" %}</button>
+                    <button class="nav-link text-nowrap px-2" id="resize-tab" aria-controls="resize" data-bs-toggle="pill" data-bs-target="#resize" type="button" role="tab" aria-selected="false">{% bs_icon 'arrows-angle-expand' %} {% trans "Resize" %}</button>
                 </li>
                 {% if can_snapshot and not instance.is_template %}
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link text-nowrap" id="snapshots-tab" aria-controls="snapshots" data-bs-toggle="pill" data-bs-target="#snapshots" type="button" role="tab" aria-selected="false">{% bs_icon 'camera' %} {% trans "Snapshot" %}</button>
+                    <button class="nav-link text-nowrap px-2" id="snapshots-tab" aria-controls="snapshots" data-bs-toggle="pill" data-bs-target="#snapshots" type="button" role="tab" aria-selected="false">{% bs_icon 'camera' %} {% trans "Snapshot" %}</button>
                 </li>
                 {% endif %}
                 {% if show_settings %}
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link text-nowrap" id="settings-tab" aria-controls="settings" data-bs-toggle="pill" data-bs-target="#settings" type="button" role="tab" aria-selected="false">{% bs_icon 'gear-wide-connected' %} {% trans "Settings" %}</button>
+                    <button class="nav-link text-nowrap px-2" id="settings-tab" aria-controls="settings" data-bs-toggle="pill" data-bs-target="#settings" type="button" role="tab" aria-selected="false">{% bs_icon 'gear-wide-connected' %} {% trans "Settings" %}</button>
                 </li>
                 {% endif %}
                 {% if not instance.is_template %}
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link text-nowrap" id="graphics-tab" aria-controls="graphics" data-bs-toggle="pill" data-bs-target="#graphics" type="button" role="tab" aria-selected="false">{% bs_icon 'bar-chart-line' %} {% trans "Stats" %}</button>
+                    <button class="nav-link text-nowrap px-2" id="graphics-tab" aria-controls="graphics" data-bs-toggle="pill" data-bs-target="#graphics" type="button" role="tab" aria-selected="false">{% bs_icon 'bar-chart-line' %} {% trans "Stats" %}</button>
+                </li>
+                {% endif %}
+                {% if backups %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link text-nowrap px-2" id="backups-tab" aria-controls="backups" data-bs-toggle="pill" data-bs-target="#backups" type="button" role="tab" aria-selected="false">{% bs_icon 'archive' %} {% trans "Backups" %}</button>
                 </li>
                 {% endif %}
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link text-nowrap" id="undefine-tab" aria-controls="undefine" data-bs-toggle="pill" data-bs-target="#undefine" type="button" role="tab" aria-selected="false">{% bs_icon 'trash' %} {% trans "Destroy" %}</button>
+                    <button class="nav-link text-nowrap px-2" id="undefine-tab" aria-controls="undefine" data-bs-toggle="pill" data-bs-target="#undefine" type="button" role="tab" aria-selected="false">{% bs_icon 'trash' %} {% trans "Destroy" %}</button>
                 </li>
             </ul>
         </div>
@@ -126,13 +143,14 @@
             {% if can_snapshot and not instance.is_template %}{% include 'instances/snapshots_tab.html' %}{% endif %}
             {% if show_settings %}{% include 'instances/settings_tab.html' %}{% endif %}
             {% if not instance.is_template %}{% include 'instances/stats_tab.html' %}{% endif %}
+            {% if backups %}{% include 'vmbackups/vm_tab.html' %}{% endif %}
             {% include 'instances/destroy_tab.html' %}
         </div>
     </div>
 
 {% endblock %}
 {% block script %}
-{% if request.user.is_superuser and users %}{# Add owner's user list #}
+{% if request.user.is_superuser %}{# the add-owner user list and the tags #}
 <script src="{% static 'js/tom-select.complete.min.js' %}"></script>
 <script src="{% static 'js/searchable_select.js' %}"></script>
 {% endif %}

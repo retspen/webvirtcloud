@@ -4,6 +4,7 @@ from appsettings.models import AppSettings
 from appsettings.settings import app_settings
 from computes.models import Compute
 from django.conf import settings
+from django.contrib.messages import get_messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.shortcuts import reverse
@@ -192,6 +193,8 @@ class AccountsTestCase(TestCase):
         self.assertRedirects(
             response, reverse("accounts:account", args=[self.test_user.id])
         )
+        self.assertIn(f"{self.test_user.username} is no longer an owner of {self.instance.name}",
+                      [str(m) for m in get_messages(response.wsgi_request)])
 
         # test 'next' redirect during deletion
         user_instance = UserInstance.objects.create(

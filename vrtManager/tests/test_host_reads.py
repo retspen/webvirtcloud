@@ -264,7 +264,8 @@ class StoragesInfoTestCase(unittest.TestCase):
 
 
 def volume(name, capacity, allocation, fmt=None, error=None):
-    target = f"<target><format type='{fmt}'/></target>" if fmt else "<target/>"
+    fmt_xml = f"<format type='{fmt}'/>" if fmt else ""
+    target = f"<target><path>/p/{name}</path>{fmt_xml}</target>"
     xml = (f"<volume type='file'><name>{name}</name><capacity unit='bytes'>{capacity}</capacity>"
            f"<allocation unit='bytes'>{allocation}</allocation>{target}</volume>")
     return MagicMock(**{"XMLDesc.side_effect": error} if error else {"XMLDesc.return_value": xml})
@@ -288,8 +289,8 @@ class VolumesTestCase(unittest.TestCase):
         vols = [volume("b.qcow2", 2048, 512, "qcow2"), volume("a-lv", 1024, 1024)]
         stg = self.storage(vols)
         self.assertEqual(stg.update_volumes(), [
-            {"name": "a-lv", "size": 1024, "allocation": 1024, "type": None},  # a logical volume has no format
-            {"name": "b.qcow2", "size": 2048, "allocation": 512, "type": "qcow2"},
+            {"name": "a-lv", "size": 1024, "allocation": 1024, "type": None, "path": "/p/a-lv"},  # a logical volume has no format
+            {"name": "b.qcow2", "size": 2048, "allocation": 512, "type": "qcow2", "path": "/p/b.qcow2"},
         ])
         self.assertEqual([c[0] for c in stg.pool.mock_calls], ["refresh", "listAllVolumes"])
         for vol in vols:
@@ -312,7 +313,8 @@ class VolumesTestCase(unittest.TestCase):
     def test_one_volume(self):
         stg = self.storage([])
         stg.pool.storageVolLookupByName.return_value = volume("a.img", 4096, 0, "raw")
-        self.assertEqual(stg.get_volume_details("a.img"), {"name": "a.img", "size": 4096, "allocation": 0, "type": "raw"})
+        self.assertEqual(stg.get_volume_details("a.img"), {"name": "a.img", "size": 4096, "allocation": 0, "type": "raw",
+                                                             "path": "/p/a.img"})
 
     def test_the_pool_size_is_one_info_call(self):
         stg = self.storage([])

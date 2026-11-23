@@ -30,7 +30,7 @@ class BackupTests(SimpleTestCase):
         self.addCleanup(shutil.rmtree, self.base)
         self.addCleanup(os.umask, os.umask(0o022))  # the command sets its own
         for path, text in (("data/secret_key", "key"), ("data/node_id", "a1b2c3"),
-                           ("webvirtcloud/settings.py", "DEBUG = False"), ("home/.ssh/id_ed25519", "private")):
+                           ("data/local_settings.py", "DEBUG = False"), ("home/.ssh/id_ed25519", "private")):
             (self.base / path).parent.mkdir(parents=True, exist_ok=True)
             (self.base / path).write_text(text)
         (self.base / "home/.ssh/agent").symlink_to(self.base / "data/secret_key")
@@ -66,7 +66,7 @@ class BackupTests(SimpleTestCase):
         backup = self.backup()
         with closing(sqlite3.connect(backup / "db.sqlite3")) as db:
             self.assertEqual(db.execute("SELECT name FROM computes_compute").fetchall(), [("kept",)])
-        self.assertEqual(sorted(p.name for p in backup.iterdir()), ["db.sqlite3", "node_id", "secret_key", "settings.py", "ssh"])
+        self.assertEqual(sorted(p.name for p in backup.iterdir()), ["db.sqlite3", "local_settings.py", "node_id", "secret_key", "ssh"])
         # the key in use, also when it came from the environment and not data/secret_key
         self.assertEqual((backup / "secret_key").read_text(), "key in use\n")
         self.assertEqual(oct((backup / "secret_key").stat().st_mode & 0o777), "0o600")

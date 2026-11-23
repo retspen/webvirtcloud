@@ -14,6 +14,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
+from operations.claims import admit
+from operations.models import Claim
 from rest_framework.test import APIClient
 
 NODE = "<node><pool type='dir'><name>use-pool</name><target><path>/use-pool</path></target></pool></node>"
@@ -63,6 +65,30 @@ class PoolInUseTests(TestCase):
         response = api.post(reverse("compute-storage-stop", kwargs={"compute_pk": self.compute.id, "pk": "use-pool"}))
         self.assertEqual(response.status_code, 400)
         self.assertIn("running VMs api-user", response.json()["detail"])
+        self.assertTrue(self.pool.isActive())
+
+    def test_a_pool_a_job_works_in_is_not_stopped_or_deleted(self):
+        # a download or a copy in it: its file would be left half-written, its cleanup could not see it
+        admit({f"pool:{self.compute.id}:use-pool": Claim.SHARED}, holder="other-node:1:1")
+        for action in ("stop", "delete"):
+            with self.subTest(action=action):
+                self.assertIn("A short operation is in progress on this resource; try again in a moment.", self.post(action))
+                self.assertTrue(self.pool.isActive())
+        api = APIClient()
+        api.force_login(self.admin)
+        response = api.post(reverse("compute-storage-stop", kwargs={"compute_pk": self.compute.id, "pk": "use-pool"}))
+        self.assertEqual(response.status_code, 409)
+        self.assertTrue(self.pool.isActive())
+
+    def test_a_backup_target_pool_is_not_stopped_during_a_backup(self):
+        from vmbackups.models import BackupTarget, BackupTargetPool
+
+        # the pool of two targets: a backup to the second one counts too
+        for name in ("nfs-a", "nfs-b"):
+            target = BackupTarget.objects.create(name=name)
+            BackupTargetPool.objects.create(target=target, compute=self.compute, pool="use-pool", pool_uuid="u1")
+        admit({f"backup_target:{target.pk}": Claim.EXCLUSIVE}, holder="other-node:1:1")  # a backup writes to it
+        self.assertIn("A short operation is in progress on this resource; try again in a moment.", self.post("stop"))
         self.assertTrue(self.pool.isActive())
 
     def test_a_pool_a_vm_definition_names_is_not_deleted(self):

@@ -11,6 +11,7 @@ from django.utils.translation import gettext, ngettext, pgettext, pgettext_lazy
 
 from operations.jobs import take_remembered
 from operations.models import Operation
+from operations.utils import words as _words
 
 register = template.Library()
 
@@ -55,6 +56,12 @@ def state_label(state):
 
 
 @register.filter
+def words(messages):
+    """A job's stored messages (operations.utils.say) in the reader's language."""
+    return _words(messages)
+
+
+@register.filter
 def duration(start, end):
     """The time from start to end, in seconds under a minute: timesince counts minutes.
     Never negative: the worker and the panel may run on hosts whose clocks differ."""
@@ -80,15 +87,16 @@ def job_panel_script(context, resource):
         "remembered": take_remembered(context["request"], resource),
         "states": {state: str(label) for state, label in STATE_LABELS.items()},
         "text": {
-            "cancel": gettext("Cancel"),
+            "cancel": gettext("Cancel the job"),
+            "cancel_confirm": gettext("Cancel %(job)s? It stops where it is."),
             "open": pgettext("verb", "Open"),
             "refresh": gettext("Refresh"),
             "dismiss": gettext("Dismiss"),
             "finishing": gettext("Finishing…"),
             "not_removed": gettext("Files not removed:"),
             "short_operation": gettext("A short operation is in progress."),
-            "worker_unavailable": gettext("Worker unavailable, last seen"),
-            "never": gettext("never"),
+            "worker_gone": gettext("The job worker is not running; it was last seen %(when)s. Jobs wait until it runs again."),
+            "worker_never": gettext("The job worker has not run yet. Jobs wait until it runs."),
             "cancel_failed": gettext("Cancel failed (HTTP %(status)s)."),
             "cancel_unreachable": gettext("Cancel failed: the server could not be reached."),
         },

@@ -71,7 +71,7 @@ def os_userdata(request, version):
         # quoted, so a comment such as "it's: mine" stays one YAML string
         instance_keys = [json.dumps(key) for key in instance_keys]
 
-        return render(request, "user_data", locals())
+        return render(request, "user_data", {"instance_keys": instance_keys})
     else:
         err = "Invalid version: %(version)s" % {"version": version}
         raise Http404(err)

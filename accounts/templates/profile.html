@@ -20,7 +20,7 @@
                         <span class="badge text-bg-secondary">{% trans "Template editor" %}</span>
                     {% endif %}
                 </div>
-                <div class="text-body-secondary text-break">{{ user.username }}</div>
+                {% if user.get_full_name %}<div class="text-body-secondary text-break">{{ user.username }}</div>{% endif %}
                 {% if user.email %}<div class="small text-break mt-2">{{ user.email }}</div>{% endif %}
                 <div class="small text-body-secondary mt-2">{% trans "Last login" %} {{ user.last_login|date:"Y-m-d H:i"|default:_("never") }}</div>
             </div>
@@ -32,7 +32,7 @@
             {# an LDAP user's password is changed in LDAP #}
             {% if perms.accounts.change_password and user.has_usable_password %}
                 <div class="card-footer">
-                    <a href="{% url 'accounts:change_password' %}" class="btn btn-sm btn-outline-secondary">{% bs_icon 'lock' %} {% trans "Change Password" %}</a>
+                    <a href="{% url 'accounts:change_password' %}" class="btn btn-sm btn-outline-secondary">{% bs_icon 'lock' %} {% trans "Change password" %}</a>
                 </div>
             {% endif %}
         </section>
@@ -41,9 +41,9 @@
     <div class="col-lg-8">
         <section class="card mb-4" id="sshkeys" aria-labelledby="sshkeys-title">
             <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
-                <h2 class="h5 mb-0" id="sshkeys-title">{% trans "SSH Keys" %} <span class="badge text-bg-light border">{{ publickeys|length }}</span></h2>
+                <h2 class="h5 mb-0" id="sshkeys-title">{% trans "SSH keys" %} <span class="badge text-bg-light border">{{ publickeys|length }}</span></h2>
                 <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#add-ssh-key" aria-expanded="false" aria-controls="add-ssh-key">
-                    {% bs_icon 'plus-lg' %} {% trans "Add SSH Key" %}
+                    {% bs_icon 'plus-lg' %} {% trans "Add SSH key" %}
                 </button>
             </div>
             <div class="card-body small text-body-secondary">{% trans "Offered when you create a VM and on a VM's Access tab." %}</div>
@@ -59,7 +59,7 @@
 
         <section class="card" id="apitokens" aria-labelledby="apitokens-title">
             <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
-                <h2 class="h5 mb-0" id="apitokens-title">{% trans "API Tokens" %} <span class="badge text-bg-light border">{{ api_tokens|length }}</span></h2>
+                <h2 class="h5 mb-0" id="apitokens-title">{% trans "API tokens" %} <span class="badge text-bg-light border">{{ api_tokens|length }}</span></h2>
                 <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#create-api-token" aria-expanded="false" aria-controls="create-api-token">
                     {% bs_icon 'plus-lg' %} {% trans "Create an API token" %}
                 </button>

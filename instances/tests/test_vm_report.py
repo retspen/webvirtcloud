@@ -5,7 +5,7 @@ from io import BytesIO
 from unittest.mock import patch
 
 from accounts.models import UserInstance
-from computes.models import Compute
+from computes.models import Compute, Tag
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.contrib.messages import get_messages
@@ -35,6 +35,7 @@ class VmReportTests(TestCase):
         self.c1 = Compute.objects.create(name="host-one", hostname="192.0.2.1", login="u", password="p", type=1)
         self.c2 = Compute.objects.create(name="host-two", hostname="192.0.2.2", login="u", password="p", type=1)
         self.a = Instance.objects.create(compute=self.c1, name="vm-a", uuid=UUID_A)
+        self.a.tags.add(Tag.objects.create(name="web"), Tag.objects.create(name="prod"))
         Instance.objects.create(compute=self.c2, name="vm-b", uuid=UUID_B)
         UserInstance.objects.create(user=self.owner, instance=self.a)
 
@@ -54,7 +55,7 @@ class VmReportTests(TestCase):
         response, _ = self.report(self.admin, [vm(UNKNOWN, "made-with-virsh", self.c2.id, state=5, os="", family="")],
                                   language="tr")
         rows, coverage = self.sheets(response, ("Sanal makineler", "Kapsam"))
-        self.assertEqual(rows[0][:3], ["VM", "Durum", "Sunucu"])
+        self.assertEqual(rows[0][:3], ["Sanal makine", "Durum", "Sunucu"])
         self.assertEqual(rows[1][-1], "hayır")
         self.assertIn("Listelenen sanal makineler: 1", coverage)
 
@@ -71,9 +72,9 @@ class VmReportTests(TestCase):
         self.assertRegex(response["Content-Disposition"], r'attachment; filename="vms-\d{8}-\d{4}\.xlsx"')
         rows, coverage = self.sheets(response)
         self.assertEqual(rows[0], ["VM", "State", "Host", "OS", "OS family", "vCPUs", "Memory (MiB)", "IP addresses",
-                                   "Address sources", "MAC addresses", "Owners", "In the panel"])
+                                   "Address sources", "MAC addresses", "Owners", "Tags", "In the panel"])
         self.assertEqual(rows[1], ["vm-a", "Active", "host-one", "AlmaLinux 10.0", "Linux", 2, 2048,
-                                   "192.0.2.10, 2001:db8::10", "ARP, agent", "52:54:00:00:00:01", "vr-owner", "yes"])
+                                   "192.0.2.10, 2001:db8::10", "ARP, agent", "52:54:00:00:00:01", "vr-owner", "prod, web", "yes"])
         self.assertEqual(rows[2][:3] + rows[2][-1:], ["made-with-virsh", "Off", "host-two", "no"])
         self.assertIn("Hosts not reached: host-three", coverage)
 

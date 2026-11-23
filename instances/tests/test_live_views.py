@@ -412,6 +412,7 @@ class InstancesTestCase(TestCase):
             {
                 "storage": livetest.POOL,
                 "dev": "vdb",
+                "path": self.instance.disks[1]["path"],
                 "name": "wvc-test-volume-2.qcow2",
             },
             HTTP_REFERER=reverse("index"),
@@ -427,6 +428,7 @@ class InstancesTestCase(TestCase):
             reverse("instances:detach_vol", args=[self.instance.id]),
             {
                 "dev": "vda",
+                "path": self.instance.disks[0]["path"],
             },
             HTTP_REFERER=reverse("index"),
         )
@@ -884,12 +886,18 @@ class InstancesTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 302)
 
+    def nic_seen(self, mac):
+        """What the NIC's form posts as net-seen: its saved definition as the page read it."""
+        self.instance.__dict__.pop("config_networks", None)
+        return next(net["seen"] for net in self.instance.config_networks if net["mac"] == mac)
+
     def test_change_network(self):
         self.assertEqual(self.instance.networks[0]["mac"], "52:54:00:a2:3c:e7")
         response = self.client.post(
             reverse("instances:change_network", args=[self.instance.id]),
             {
                 "net-old-mac-0": "52:54:00:a2:3c:e7",
+                "net-seen-0": self.nic_seen("52:54:00:a2:3c:e7"),
                 "net-mac-0": "52:54:00:a2:3c:e8",
                 "net-source-0": "net:default",
                 "net-nwfilter-0": "",
@@ -913,6 +921,7 @@ class InstancesTestCase(TestCase):
             reverse("instances:change_network", args=[self.instance.id]),
             {
                 "net-old-mac-1": "52:54:00:a2:3c:e9",
+                "net-seen-1": self.nic_seen("52:54:00:a2:3c:e9"),
                 "net-mac-1": "52:54:00:a2:3c:ea",
                 "net-source-1": "net:default",
                 "net-nwfilter-1": "",
@@ -934,6 +943,7 @@ class InstancesTestCase(TestCase):
             reverse("instances:change_network", args=[self.instance.id]),
             {
                 "net-old-mac-0": "52:54:00:a2:3c:e8",
+                "net-seen-0": self.nic_seen("52:54:00:a2:3c:e8"),
                 "net-mac-0": "52:54:00:a2:3c:e7",
                 "net-source-0": "net:default",
                 "net-model-0": "virtio",

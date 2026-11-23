@@ -11,7 +11,7 @@
             {% if instance.status not in power_states %}
             <p class="mb-3">{% blocktrans with state=state.0 %}The VM's state: {{ state }}{% endblocktrans %}</p>
             {% endif %}
-            <form method="post"{% if "poweron" in power_actions %} action="{% url 'instances:poweron' instance.id %}" data-please-wait{% endif %}>{% csrf_token %}
+            <form method="post"{% if "poweron" in power_actions %} action="{% url 'instances:poweron' instance.id %}"{% endif %}>{% csrf_token %}
             <div class="row g-4">
                 <div class="col-12 col-md-4">
                     <div class="d-flex align-items-center gap-2 mb-2">
@@ -22,7 +22,7 @@
                         {% endif %}
                     </div>
                     {% if "poweron" in power_actions %}
-                    <button type="submit" class="btn btn-primary" name="poweron">{% trans "Power On" %}</button>
+                    <button type="submit" class="btn btn-primary" name="poweron">{% trans "Power on" %}</button>
                     <p class="small text-body-secondary mt-1 mb-0">{% trans "Starts the VM." %}</p>
                     {% elif "resume" in power_actions %}
                     <button type="submit" class="btn btn-primary" name="resume" formaction="{% url 'instances:resume' instance.id %}">{% trans "Resume" %}</button>
@@ -53,7 +53,7 @@
                         {% endif %}
                     </div>
                     {% if "poweroff" in power_actions %}
-                    <button type="submit" class="btn btn-outline-primary" name="poweroff" formaction="{% url 'instances:poweroff' instance.id %}">{% trans "Power Off" %}</button>
+                    <button type="submit" class="btn btn-outline-primary" name="poweroff" formaction="{% url 'instances:poweroff' instance.id %}">{% trans "Power off" %}</button>
                     <p class="small text-body-secondary mt-1 mb-0">{% trans "Asks the guest to shut down." %}</p>
                     {% elif instance.status == 5 and instance.is_template %}
                     <p class="small text-body-secondary mb-0">{% trans "A template is not started: clone it to make a VM." %}</p>
@@ -62,10 +62,10 @@
             </div>
             </form>
             {% if "poweron" in power_actions and instance.has_managed_save_image %}
-            <form method="post" action="{% url 'instances:poweron' instance.id %}" class="d-flex flex-wrap align-items-center gap-2 border-top mt-4 pt-3" data-please-wait>{% csrf_token %}
+            <form method="post" action="{% url 'instances:poweron' instance.id %}" class="d-flex flex-wrap align-items-center gap-2 border-top mt-4 pt-3">{% csrf_token %}
                 <span class="small me-auto">{% trans "The VM has a saved state: Power On resumes it as it was when saved." %}</span>
                 <button type="submit" class="btn btn-sm btn-outline-danger" name="fresh" value="1"
-                        data-confirm="{% blocktrans with name=instance.name %}Start {{ name }} without its saved state? The saved state is discarded and the VM boots anew; what it had in memory is lost.{% endblocktrans %}">{% trans "Start Without Saved State" %}</button>
+                        data-confirm="{% blocktrans with name=instance.name %}Start {{ name }} without its saved state? The saved state is discarded and the VM boots anew; what it had in memory is lost.{% endblocktrans %}">{% trans "Start without saved state" %}</button>
             </form>
             {% endif %}
             {% if "force_off" in power_actions or "powercycle" in power_actions %}
@@ -73,11 +73,11 @@
                 <span class="small text-danger me-auto">{% trans "A power cut: what the guest has not written to disk is lost." %}</span>
                 {% if "force_off" in power_actions %}
                 <button type="submit" class="btn btn-sm btn-outline-danger" name="powerforce" formaction="{% url 'instances:force_off' instance.id %}"
-                        data-confirm="{% blocktrans with name=instance.name %}Force off {{ name }}? It stops at once, as after a power cut; what the guest has not written to disk is lost.{% endblocktrans %}">{% trans "Force Off" %}</button>
+                        data-confirm="{% blocktrans with name=instance.name %}Force off {{ name }}? It stops at once, as after a power cut; what the guest has not written to disk is lost.{% endblocktrans %}">{% trans "Force off" %}</button>
                 {% endif %}
                 {% if "powercycle" in power_actions %}
                 <button type="submit" class="btn btn-sm btn-outline-danger" name="powercycle" formaction="{% url 'instances:powercycle' instance.id %}"
-                        data-confirm="{% blocktrans with name=instance.name %}Power cycle {{ name }}? It stops at once, as after a power cut, and starts again; what the guest has not written to disk is lost.{% endblocktrans %}">{% trans "Power Cycle" %}</button>
+                        data-confirm="{% blocktrans with name=instance.name %}Power cycle {{ name }}? It stops at once, as after a power cut, and starts again; what the guest has not written to disk is lost.{% endblocktrans %}">{% trans "Power cycle" %}</button>
                 {% endif %}
             </form>
             {% endif %}

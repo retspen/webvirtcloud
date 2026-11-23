@@ -43,7 +43,7 @@ class PollTestCase(unittest.TestCase):
                 self.assertIn("pollWhileVisible(", source)
 
     @unittest.skipUnless(shutil.which("node"), "node is not installed")
-    def test_the_vm_page_reloads_only_when_the_state_changes_or_the_vm_is_gone_and_it_is_not_in_use(self):
+    def test_the_vm_page_reloads_only_when_the_state_or_its_reason_changes_or_the_vm_is_gone_and_it_is_not_in_use(self):
         # every failed read shows the page's notice; another one than 404 leaves the page
         # "status" is a property of the browser's window: a page variable of
         # that name holds what the browser makes of it (a string, or nothing)
@@ -51,13 +51,15 @@ class PollTestCase(unittest.TestCase):
         js = """
         const vm = require("vm");
         const results = {};
-        for (const [answer, inUse] of [[1, false], [5, false], [5, true], [404, false], [404, true], [500, false]]) {
+        // answer: the state, or the HTTP error of the read; reason: the state's reason (the page has 1)
+        for (const [answer, inUse, reason] of [[1, false, 1], [1, false, 5], [5, false, 1], [5, true, 1], [404, false],
+                                               [404, true], [500, false]]) {
             let reloads = 0;
             // the summary and the notice a failed read shows
-            const element = {dataset: {status: "1", statusUrl: "/instances/1/status/"}, hidden: true};
+            const element = {dataset: {status: "1", reason: "1", statusUrl: "/instances/1/status/"}, hidden: true};
             const page = {
                 pollWhileVisible: (interval, request, onData) => {
-                    if (answer >= 400) { request(); } else { onData({status: answer}); }
+                    if (answer >= 400) { request(); } else { onData({status: answer, reason: reason}); }
                     return {stop() {}};
                 },
                 pageInUse: () => inUse,
@@ -67,12 +69,12 @@ class PollTestCase(unittest.TestCase):
             page.window = {location: {reload: () => reloads++}};
             Object.defineProperty(page, "status", {get: () => "", set: () => {}});
             vm.runInNewContext(SCRIPT, vm.createContext(page));
-            results[answer + (inUse ? " in use" : "")] = reloads;
+            results[answer + (reason === 5 ? " reason 5" : "") + (inUse ? " in use" : "")] = reloads;
             if (answer >= 400) { results[answer + " notice"] = !element.hidden; }
         }
         console.log(JSON.stringify(results));
         """.replace("SCRIPT", json.dumps(script))
         out = subprocess.run(["node", "-e", js], capture_output=True, text=True, timeout=30)
         self.assertEqual(out.returncode, 0, out.stderr)
-        self.assertEqual(json.loads(out.stdout), {"1": 0, "5": 1, "5 in use": 0, "404": 1, "404 in use": 0,
+        self.assertEqual(json.loads(out.stdout), {"1": 0, "1 reason 5": 1, "5": 1, "5 in use": 0, "404": 1, "404 in use": 0,
                                                     "404 notice": True, "500": 0, "500 notice": True})

@@ -7,6 +7,18 @@ import time
 from gunicorn.workers.gthread import ThreadWorker
 
 
+_worker = None  # this process's worker; None outside gunicorn
+
+
+def request_progressed():
+    """The calling request is still sending, not stuck: its timeout starts
+    again (a download streams for longer than the timeout)."""
+    if _worker is not None:
+        with _worker.started_lock:
+            if threading.get_ident() in _worker.started:
+                _worker.started[threading.get_ident()] = time.monotonic()
+
+
 class Worker(ThreadWorker):
     """gunicorn kills a sync worker whose request runs past its timeout; a
     threaded worker keeps reporting in while one of its threads waits on a
@@ -18,6 +30,8 @@ class Worker(ThreadWorker):
         super().__init__(*args, **kwargs)
         self.started = {}  # thread: when its request started
         self.started_lock = threading.Lock()
+        global _worker
+        _worker = self
 
     def handle(self, conn):
         thread = threading.get_ident()

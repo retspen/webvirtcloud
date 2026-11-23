@@ -4,8 +4,9 @@ import string
 
 import pycdlib
 from vrtManager import util
+from vrtManager.util import WATCHDOG_ACTIONS, needs_watchdog
 from vrtManager.connection import wvmConnect
-from vrtManager.storage import FILE_POOL_TYPES, rbd_source_children, wvmStorage
+from vrtManager.storage import rbd_source_children, wvmStorage
 
 # libvirt's CPU modes a new VM can have; any other value is a CPU model's name (mode custom)
 CPU_MODES = ("host-model", "host-passthrough", "maximum")
@@ -62,35 +63,11 @@ class wvmCreate(wvmConnect):
         return vol.storagePoolLookupByVolume()
 
     def clone_from_template(self, clone, template, storage=None, metadata=False, disk_owner_uid=0, disk_owner_gid=0):
+        """A copy of the template volume (its path) as the new VM's disk, in the pool storage or the template's; its path."""
         vol = self.get_volume_by_path(template)
-        stg = self.get_storage(storage) if storage else vol.storagePoolLookupByVolume()
-
-        storage_type = util.get_xml_path(stg.XMLDesc(0), "/pool/@type")
-        format = util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type")
-        if storage_type in FILE_POOL_TYPES:
-            clone += ".img"
-        else:
-            metadata = False
-        options = "<compat>1.1</compat><features><lazy_refcounts/></features>" if format == "qcow2" else ""
-        xml = f"""
-            <volume>
-                <name>{clone}</name>
-                <capacity>0</capacity>
-                <allocation>0</allocation>
-                <target>
-                    <format type='{format}'/>
-                     <permissions>
-                        <owner>{disk_owner_uid}</owner>
-                        <group>{disk_owner_gid}</group>
-                        <mode>0644</mode>
-                        <label>virt_image_t</label>
-                    </permissions>
-                    {options}
-                </target>
-            </volume>"""
-        stg.createXMLFrom(xml, vol, metadata)
-        clone_vol = stg.storageVolLookupByName(clone)
-        return clone_vol.path()
+        stg = wvmStorage(self.host, self.login, self.passwd, self.conn, storage or vol.storagePoolLookupByVolume().name())
+        name = stg.clone_name(clone, util.get_xml_path(vol.XMLDesc(0), "/volume/target/format/@type"))
+        return stg.clone_volume(vol, name, metadata=metadata, disk_owner_uid=disk_owner_uid, disk_owner_gid=disk_owner_gid)
 
     def _defineXML(self, xml):
         self.wvm.defineXML(xml)
@@ -127,10 +104,12 @@ class wvmCreate(wvmConnect):
         add_cdrom="sata",
         add_input="default",
         tpm_model=None,
+        panic_model=None,
     ):
         """
         Create VM function. firmware: BIOS, UEFI or UEFI Secure Boot, of
-        get_firmwares; tpm_model: an emulated TPM 2.0 of get_tpm_model, or none.
+        get_firmwares; tpm_model: an emulated TPM 2.0 of get_tpm_model, or none;
+        panic_model: the guest's panic device (get_panic_model), or none.
         """
         caps = self.get_capabilities(arch)
         dom_caps = self.get_dom_capabilities(arch, machine)
@@ -293,6 +272,11 @@ class wvmCreate(wvmConnect):
                    </video>"""
         if tpm_model:
             xml += f"""<tpm model='{tpm_model}'><backend type='emulator' version='2.0'/></tpm>"""
+        # on_crash restart acts on a crash the guest reports and the watchdog on a hang, once the guest arms it
+        if panic_model:
+            xml += f"""<panic model='{panic_model}'/>"""
+        if needs_watchdog(arch, machine):
+            xml += f"""<watchdog model='i6300esb' action='{WATCHDOG_ACTIONS["restart"]}'/>"""
         # q35 plugs each PCIe device (a virtio disk, a NIC) into a root port of
         # its own and libvirt makes only as many as the VM is defined with: as
         # virt-install, 14 ports, so a running VM can take more devices

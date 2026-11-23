@@ -32,3 +32,14 @@ def disk_seen(disk):
     shows it, which a form sends back; the file is not shown. Keyed: an owner
     cannot try likely paths against it."""
     return salted_hmac("instances.disk_seen", disk["path"] or "", algorithm="sha256").hexdigest()
+
+
+@register.filter
+def running_limit(disk, instance):
+    """{{ disk|running_limit:instance }}: the running VM's I/O limit of disk, (IOPS, MiB/s, set in the
+    XML), when it differs from the next start's the Disks tab shows; else None."""
+    running = instance.live_iotune.get(disk["dev"])
+    if running is None or running == (disk.get("iops", 0), disk.get("mibps", 0), disk.get("iotune_custom", False)):
+        return None
+    return running
+

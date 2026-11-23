@@ -210,6 +210,19 @@ class BackupTestCase(unittest.TestCase):
         }
         self.assertIsNone(p.backup_progress())
 
+    def test_a_domain_stopped_after_its_backup_has_no_backup_running(self):
+        # PRESERVE_SHUTDOWN_DOMAIN: libvirt stops a guest that shut down once its backup ends
+        p = proxy()
+        p.instance.isActive.return_value = False
+        self.assertIsNone(p.backup_progress())
+        self.assertIsNone(p.backup_targets())
+        p.instance.jobStats.assert_not_called()
+        p.instance.isActive.return_value = True  # stopped between the check and the read
+        p.instance.jobStats.side_effect = error(libvirt.VIR_ERR_OPERATION_INVALID)
+        p.instance.backupGetXMLDesc.side_effect = error(libvirt.VIR_ERR_OPERATION_INVALID)
+        self.assertIsNone(p.backup_progress())
+        self.assertIsNone(p.backup_targets())
+
     def test_result(self):
         p = proxy()
         backup = {"type": libvirt.VIR_DOMAIN_JOB_COMPLETED, "operation": libvirt.VIR_DOMAIN_JOB_OPERATION_BACKUP}
@@ -273,6 +286,16 @@ class CreateCloneTargetTestCase(unittest.TestCase):
         self.assertEqual(volume.findtext("target/permissions/owner"), "107")
         self.assertEqual(volume.findtext("target/permissions/group"), "108")
         self.assertEqual(flags, 0)
+        self.assertEqual(volume.findtext("target/compat"), "1.1")
+
+    def test_a_raw_volume_has_no_qcow2_features(self):
+        p = proxy()
+        p.wvm.storagePoolLookupByName.return_value = p.pool
+        p.create_clone_target({"pool": "default", "name": "copy-vdb.raw", "capacity": GIB, "format": "raw"}, 107, 107)
+        volume = etree.fromstring(p.pool.createXML.call_args.args[0])
+        self.assertEqual(volume.find("target/format").get("type"), "raw")
+        self.assertIsNone(volume.find("target/compat"))
+        self.assertIsNone(volume.find("target/features"))
 
 
 class DefineCloneTestCase(unittest.TestCase):
@@ -317,10 +340,14 @@ class DefineCloneTestCase(unittest.TestCase):
     def test_clone_instance_copies_then_defines(self):
         p = proxy()
         p.get_status = lambda: 5
-        p.pool.createXMLFrom.return_value.path.return_value = "/pool/copy-vda.qcow2"
+        p.get_wvmStorage = MagicMock()
+        storage = p.get_wvmStorage.return_value
+        storage.clone_volume.return_value = "/pool/copy-vda.qcow2"
         p.define_clone = MagicMock(return_value=UUID)
         self.assertEqual(p.clone_instance(FORM, UUID), UUID)
-        p.pool.createXMLFrom.assert_called_once()
+        p.get_wvmStorage.assert_called_once_with("default")
+        storage.clone_volume.assert_called_once_with(p.vol, "copy-vda.qcow2", metadata=False,
+                                                     disk_owner_uid=FORM["disk_owner_uid"], disk_owner_gid=FORM["disk_owner_gid"])
         p.define_clone.assert_called_once_with(FORM, UUID, {"vda": "/pool/copy-vda.qcow2"}, None)
 
     def test_clone_instance_checks_the_macs_before_copying(self):

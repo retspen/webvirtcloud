@@ -30,6 +30,17 @@ class MigrationFlagsTestCase(unittest.TestCase):
         destination().moveto(source, "vm", live=True, unsafe=False, offline=False)
         self.assertIsNone(source.instance.calls[0][1])
 
+    def test_running_only_refuses_a_vm_not_running(self):
+        for state in (3, 5):
+            with self.subTest(state=state):
+                source = FakeSource(state)
+                with self.assertRaisesRegex(util.OperationError, "not running"):
+                    destination().moveto(source, "vm", live=True, unsafe=False, offline=False, running_only=True)
+                self.assertEqual(source.instance.calls, [])
+        source = FakeSource(1)
+        destination().moveto(source, "vm", live=True, unsafe=False, offline=False, running_only=True)
+        self.assertEqual(len(source.instance.calls), 1)
+
 
 class ShutOffMigrationTestCase(unittest.TestCase):
     """libvirt's offline migration fails on some builds (RHEL-156800); a
@@ -46,7 +57,7 @@ class ShutOffMigrationTestCase(unittest.TestCase):
         destination(host).moveto(source, "vm", live=False, unsafe=False, offline=True)
         self.assertEqual(host.defined, ["<domain><name>vm</name></domain>"])
         self.assertEqual(source.instance.calls, [])
-        self.assertEqual(source.instance.undefined, libvirt.VIR_DOMAIN_UNDEFINE_KEEP_NVRAM)
+        self.assertEqual(source.instance.undefined, libvirt.VIR_DOMAIN_UNDEFINE_KEEP_NVRAM | libvirt.VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA)
 
     def test_a_tpm_without_local_state_moves(self):
         xml = "<domain><devices><tpm model='tpm-tis'><backend type='passthrough'/></tpm></devices></domain>"
@@ -213,6 +224,16 @@ class MigrationModeTestCase(unittest.TestCase):
         self.assertEqual(self.migrate(5, offline=True), ("offline", None))
         # asked while it ran, then shut down: it moves offline, the tuning options unused
         self.assertEqual(self.migrate(5, live=True, autoconverge=True, compress=True), ("offline", None))
+
+    def test_tls_encrypts_what_carries_memory_or_disks(self):
+        tls = libvirt.VIR_MIGRATE_TLS
+        for state, request, mode in ((1, {"live": True}, "live, TLS"), (1, {}, "non-live, TLS"), (3, {}, "non-live, TLS")):
+            with self.subTest(state=state, request=request):
+                got, flags = self.migrate(state, tls=True, **request)
+                self.assertEqual((got, flags & tls), (mode, tls))
+                self.assertEqual(self.migrate(state, **request)[1] & tls, 0)
+        # a shut-off VM's definition alone: no data to encrypt
+        self.assertEqual(self.migrate(5, tls=True), ("offline", None))
 
 
 FILE_DISK = "<disk type='file' device='disk'><source file='/pool/vm.qcow2'/><target dev='vda'/></disk>"

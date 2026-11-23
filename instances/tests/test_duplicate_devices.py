@@ -11,6 +11,9 @@ from django.urls import reverse
 
 from computes.models import Compute
 from instances.models import Instance
+from operations.claims import admit
+from operations.models import Claim
+from vrtManager import util
 
 PATH = "/var/lib/libvirt/images/data.qcow2"
 MAC = "52:54:00:aa:bb:cc"
@@ -51,6 +54,38 @@ class DuplicateDeviceTests(TestCase):
         self.assertEqual(self.post("add_existing_vol", form), ["data.qcow2 is already a disk of this VM"])
         self.proxy.attach_disk.assert_called_once()
 
+    @patch("instances.views.wvmStorage")
+    def test_a_volume_a_job_writes_is_not_attached(self, storage):
+        # a download holds the volume it writes: the VM would get a half-written disk; nothing is read before the claim
+        pool = storage.return_value
+        pool.get_volumes.return_value = ["data.qcow2"]
+        pool.get_volume_format_type.return_value = "qcow2"
+        pool.get_type.return_value = "dir"
+        pool.get_volume_type.return_value = "file"
+        pool.get_volume.return_value.path.return_value = PATH
+        # a copy reads it (shared): a running VM would write it meanwhile
+        admit({f"volume:{self.vm.compute_id}:default/data.qcow2": Claim.SHARED}, holder="other-node:1:1")
+        form = {"selected_storage": "default", "vols": "data.qcow2", "bus": "virtio", "cache": "default"}
+        self.assertEqual(self.post("add_existing_vol", form),
+                         ["A short operation is in progress on this resource; try again in a moment."])
+        self.proxy.attach_disk.assert_not_called()
+        pool.get_volume_format_type.assert_not_called()
+
+    @patch("instances.views.wvmStorage")
+    def test_a_backup_volume_is_not_attached(self, storage):
+        # the VM would write into the backup, and its deletion would remove the VM's disk
+        from vmbackups.models import Backup, BackupTarget, BackupTargetPool
+
+        target = BackupTarget.objects.create(name="nfs1")
+        BackupTargetPool.objects.create(target=target, compute=self.vm.compute, pool="b1", pool_uuid="u1")
+        backup = Backup.objects.create(target=target, vm_uuid="u", vm_name="vm1", compute_name="dup-c")
+        name = f"{backup.prefix}-vda.qcow2"
+        storage.return_value.get_volumes.return_value = [name]
+        form = {"selected_storage": "b1", "vols": name, "bus": "virtio", "cache": "default"}
+        self.assertEqual(self.post("add_existing_vol", form),
+                         [f"Volume {name} belongs to a backup of vm1; delete the backup on the Backups page"])
+        self.proxy.attach_disk.assert_not_called()
+
     def test_a_nic_with_the_mac_of_another_is_not_added(self):
         form = {"add-net-network": "net:default", "add-net-mac": MAC, "add-net-model": "virtio"}
         self.post("add_network", form)
@@ -61,9 +96,28 @@ class DuplicateDeviceTests(TestCase):
                          [f"The VM already has a network device with MAC {MAC.upper()}"])
         self.proxy.add_network.assert_called_once()
 
+    def test_an_iso_a_download_writes_is_not_added_or_inserted(self):
+        self.proxy.iso_location.return_value = ("isos", "/var/lib/libvirt/isos/alma.iso")
+        admit({f"volume:{self.vm.compute_id}:isos/alma.iso": Claim.EXCLUSIVE}, holder="other-node:1:1")
+        busy = ["A short operation is in progress on this resource; try again in a moment."]
+        with patch("instances.views.cdrom_bus_choices", return_value=["sata"]):
+            self.assertEqual(self.post("add_cdrom", {"bus": "sata", "media": "alma.iso"}), busy)
+        self.assertEqual(self.post("mount_iso", {"mount_iso": "sda", "media": "alma.iso"})[-1:], busy)
+        self.proxy.attach_disk.assert_not_called()
+        self.proxy.mount_iso.assert_not_called()
+
+    def test_an_iso_is_read_again_in_the_pool_claimed(self):
+        # another pool's image of that name (a download there) is not inserted under this pool's claim
+        from vrtManager.instance import wvmInstance
+
+        vm = wvmInstance.__new__(wvmInstance)
+        with patch.object(wvmInstance, "iso_location", return_value=("other", "/other/alma.iso")), \
+                self.assertRaisesMessage(util.OperationError, "no longer in pool isos"):
+            vm.iso_path_in("alma.iso", "isos")
+
     def test_an_iso_in_a_cdrom_of_the_vm_is_not_added_again(self):
         iso = "/var/lib/libvirt/isos/alma.iso"
-        self.proxy.get_iso_path.return_value = iso
+        self.proxy.iso_location.return_value = ("isos", iso)
         with patch("instances.views.cdrom_bus_choices", return_value=["sata"]):
             form = {"bus": "sata", "media": "alma.iso"}
             self.post("add_cdrom", form)

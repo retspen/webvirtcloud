@@ -1,15 +1,50 @@
+from collections import Counter
 from ipaddress import ip_address
 
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxLengthValidator, RegexValidator
 from django.db import IntegrityError, transaction
-from django.db.models import CharField, IntegerField, Model, Q, UniqueConstraint
+from django.db.models import BooleanField, CharField, DateTimeField, IntegerField, ManyToManyField, Model, Q, UniqueConstraint
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_noop
 from libvirt import libvirtError, virConnect
 
 from computes.validators import validate_gstfsd_key, validate_hostname, validate_login, validate_migration_address
+from vrtManager import util
 from vrtManager.connection import connection_manager
 from vrtManager.hostdetails import wvmHostDetails
+
+
+# a new or renamed tag's length, so its badge stays short in a list's row; the
+# column keeps 32: names made before the limit stay until renamed
+TAG_LENGTH = MaxLengthValidator(12, _("A tag has at most %(limit_value)d characters"))
+TAG_NAME = RegexValidator(r"^[a-z0-9][a-z0-9._-]*\Z",
+                          _("A tag is letters a-z, digits, dots, dashes and underscores, and begins with a letter or digit"))
+
+
+class Tag(Model):
+    """A name given to VMs and hosts, kept in lower case: one name is one tag."""
+
+    name = CharField(_("name"), max_length=32, unique=True, validators=[TAG_NAME, TAG_LENGTH])
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+    @staticmethod
+    def counts(rows):
+        """The tag list's choices for rows (VMs or hosts, their tags read):
+        [(name, how many have it)], the most used first, and how many have no tag."""
+        counts = Counter(tag.name for row in rows for tag in row.tags.all())
+        return sorted(counts.items(), key=lambda item: (-item[1], item[0])), sum(1 for row in rows if not row.tags.all())
+
+    @classmethod
+    def named(cls, names):
+        """The tags of names, those not there yet made."""
+        return [cls.objects.get_or_create(name=name)[0] for name in names]
 
 
 # what the panel connects to a compute with
@@ -34,6 +69,14 @@ class Compute(Model):
             "empty: the address the panel reaches the host at"
         ),
     )
+    migration_tls = BooleanField(
+        _("encrypt migrations (TLS)"),
+        default=False,
+        help_text=_(
+            "A VM migrating between two hosts that both have this sends its memory and disks over TLS; "
+            "each host needs QEMU's certificates in /etc/pki/qemu"
+        ),
+    )
     gstfsd_key = CharField(
         _("gstfsd key"),
         max_length=64,
@@ -50,8 +93,35 @@ class Compute(Model):
     # reaches it: one host is one compute, and a compute's VMs stay on it
     host_uuid = CharField(max_length=36, blank=True, default="", editable=False)
 
+    # in maintenance: no new VM and no migration comes to the host, none of its
+    # VMs starts there, and Balance leaves it out; Bulk Migrate empties it, and
+    # it is ready once none of its VMs runs (refuse_new_vms, refuse_start);
+    # since when: the host's bulk migrations from then on are its own
+    maintenance_since = DateTimeField(null=True, blank=True, editable=False)
+    tags = ManyToManyField(Tag, blank=True, related_name="computes", verbose_name=_("tags"))
+
     class Meta:
         constraints = [UniqueConstraint(fields=["host_uuid"], condition=~Q(host_uuid=""), name="one_compute_per_host")]
+
+    @property
+    def maintenance(self):
+        return self.maintenance_since is not None
+
+    def _in_maintenance_now(self):
+        """Read now: a page or job may hold the compute from before it went in maintenance."""
+        return Compute.objects.filter(pk=self.pk, maintenance_since__isnull=False).exists()
+
+    def refuse_new_vms(self):
+        """Refuses a VM made on or migrated to the host while it is in maintenance."""
+        if self._in_maintenance_now():
+            raise util.OperationError(gettext_noop("%(compute)s is in maintenance: no new VM or migration comes to it"),
+                                      compute=self.name)
+
+    def refuse_start(self):
+        """Refuses starting or resuming a VM of the host, or its autostart, while it is in maintenance."""
+        if self._in_maintenance_now():
+            raise util.OperationError(gettext_noop("%(compute)s is in maintenance: its VMs cannot be started there; "
+                                                   "migrate the VM to start it on another host"), compute=self.name)
 
     @property
     def migration_uri(self):

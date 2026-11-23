@@ -1,0 +1,31 @@
+{% load i18n %}{% load django_bootstrap5 %}
+<form method="post">
+    {% csrf_token %}
+    {% bootstrap_form_errors form type="non_fields" %}
+    {% bootstrap_field form.name %}
+    {% bootstrap_field form.target %}
+    {# one of the three, as Which VMs says; policy_scope.js shows its field only #}
+    <fieldset class="mb-3">
+        <legend class="form-label fs-6">{{ form.scope.label }}</legend>
+        {% bootstrap_field form.scope show_label=False wrapper_class="" %}
+    </fieldset>
+    <div data-scope="compute">{% bootstrap_field form.compute %}</div>
+    <div data-scope="instances">{% bootstrap_field form.instances %}</div>
+    <div data-scope="tag">{% bootstrap_field form.tag %}</div>
+    <div class="row g-2">
+        <div class="col-sm-6">{% blocktrans asvar zone_help %}Time zone: {{ time_zone }}{% endblocktrans %}{% bootstrap_field form.time help_text=zone_help %}</div>
+        <div class="col-sm-6">{% bootstrap_field form.full_every %}</div>
+    </div>
+    <div class="row g-2">
+        <div class="col-sm-4">{% bootstrap_field form.keep %}</div>
+        <div class="col-sm-4">{% bootstrap_field form.keep_weekly %}</div>
+        <div class="col-sm-4">{% bootstrap_field form.keep_monthly %}</div>
+    </div>
+    {% bootstrap_field form.frozen %}
+    {% bootstrap_field form.enabled %}
+    <p class="small text-body-secondary">{% trans "Each VM is backed up once a day, starting at the time; a VM that has not started within 6 hours waits for the next day. Older backups of each VM beyond those kept are deleted, a chain of incremental backups once all of it is beyond; backups taken by hand are not." %}</p>
+    <div class="d-flex justify-content-end gap-2">
+        <a class="btn btn-outline-secondary" href="{% url 'vmbackups:policies' %}">{% trans "Cancel" %}</a>
+        <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
+    </div>
+</form>

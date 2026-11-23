@@ -1,0 +1,2 @@
+{% load i18n %}{# a VM the user may power, chosen for the bulk power form (allinstances.html) #}
+{% if instance.pk in powerable %}<input class="form-check-input" type="checkbox" name="vm" value="{{ instance.pk }}" form="bulk-power" aria-label="{% blocktrans with name=instance.name %}Choose {{ name }}{% endblocktrans %}">{% endif %}

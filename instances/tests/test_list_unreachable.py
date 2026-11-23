@@ -103,7 +103,7 @@ class UnreachableListTests(TestCase):
         AppSettings.objects.filter(key="VIEW_INSTANCES_LIST_STYLE").update(value="nongrouped")
 
         # vm-b is gone from its host
-        response = self.get(reverse("instances:index"), {self.vm_a.uuid: (UP_INFO, "")})
+        response = self.get(reverse("instances:index"), {self.vm_a.uuid: (UP_INFO, "", 0)})
         self.assert_unknown(response, [self.vm_b])
         self.assertContains(response, reverse("instances:poweroff", args=[self.vm_a.id]))
 

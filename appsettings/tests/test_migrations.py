@@ -28,7 +28,7 @@ class SequenceAfterFixedIdsTestCase(TransactionTestCase):
             with connection.cursor() as cursor:
                 cursor.execute("SELECT setval(pg_get_serial_sequence('appsettings_appsettings', 'id'), 1, false)")
             login_lockout.add_settings(apps, schema_editor)
-        self.assertEqual(AppSettings.objects.filter(key__startswith="LOGIN_").count(), 2)
+        self.assertEqual(AppSettings.objects.filter(key__in=["LOGIN_FAILURE_LIMIT", "LOGIN_LOCKOUT_MINUTES"]).count(), 2)
 
 
 nic_type = importlib.import_module("appsettings.migrations.0016_nic_type_rtl8139")
@@ -129,8 +129,9 @@ class RepairNumbersTestCase(TestCase):
     def test_a_number_an_older_version_saved_goes_back_to_its_default(self):
         from appsettings.views import NUMBERS
 
-        # the same ranges as the Settings page checks
-        self.assertEqual({key: bounds[:2] for key, bounds in repair_numbers.NUMBERS.items()}, NUMBERS)
+        # the same ranges as the Settings page checks (a setting added since is not the migration's)
+        self.assertEqual({key: bounds[:2] for key, bounds in repair_numbers.NUMBERS.items()},
+                         {key: NUMBERS[key] for key in repair_numbers.NUMBERS})
         for key, value in (("LOGS_PER_PAGE", "abc"), ("WORKER_CONCURRENCY", "0"), ("LOGIN_FAILURE_LIMIT", "")):
             AppSettings.objects.filter(key=key).update(value=value)
         AppSettings.objects.filter(key="LOG_RETENTION_DAYS").update(value="90")

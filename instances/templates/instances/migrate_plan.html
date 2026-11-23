@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load common_tags %}
 {# the disks of the Migrate tab for the chosen destination: where each goes; data-refused keeps the form from being sent #}
 {% if error %}
 <div class="alert alert-warning mb-0" data-refused>{% blocktrans %}The disks could not be checked: {{ error }}{% endblocktrans %}</div>
@@ -7,7 +8,7 @@
 {% else %}
 {% for disk in disks %}
 <div{% if not forloop.first %} class="border-top pt-3 mt-3"{% endif %}>
-    <p class="mb-0"><strong>{{ disk.target }}</strong> <span class="text-body-secondary">{{ disk.capacity|filesizeformat }}</span></p>
+    <p class="mb-0"><strong>{{ disk.target }}</strong> <span class="text-body-secondary">{{ disk.capacity|binary_size }}</span></p>
     <p class="small text-body-secondary text-break mb-2">{{ disk.path }}</p>
     {% if disk.shared or not disk.refusal and disk.free_pools %}
     <label class="form-label small" for="pool-{{ disk.target }}">{% trans "On the destination" %}</label>
@@ -16,7 +17,7 @@
         {% if not disk.refusal %}
         {% for pool in pools %}
         {% if pool.name in disk.free_pools %}
-        <option value="{{ pool.name }}"{% if not disk.shared and pool.name == disk.default %} selected{% endif %}>{% blocktrans with name=pool.name free=pool.free|filesizeformat %}Copy to {{ name }} ({{ free }} free){% endblocktrans %}</option>
+        <option value="{{ pool.name }}"{% if not disk.shared and pool.name == disk.default %} selected{% endif %}>{% blocktrans with name=pool.name free=pool.free|binary_size %}Copy to {{ name }} ({{ free }} free){% endblocktrans %}</option>
         {% else %}
         <option value="{{ pool.name }}" disabled>{% blocktrans with name=pool.name %}{{ name }} has a file of this name{% endblocktrans %}</option>
         {% endif %}

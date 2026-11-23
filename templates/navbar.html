@@ -5,7 +5,7 @@
 <nav class="navbar sticky-top navbar-expand-md navbar-dark bg-primary mb-3" aria-label="Main top navbar">
   <div class="container">
     <a class="navbar-brand" href="{% url 'index' %}">WebVirtCloud</a>
-    <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar" aria-expanded="false" aria-label="Toggle navigation">
+    <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar" aria-expanded="false" aria-label="{% trans 'Menu' %}">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbar">
@@ -16,6 +16,9 @@
         {% if request.user.is_superuser %}
         <li class="nav-item {% class_active request '^/computes' %}">
             <a class="nav-link" href="{% url 'computes' %}">{% bs_icon 'pc-display' %} {% trans "Computes" %}</a>
+        </li>
+        <li class="nav-item {% class_active request '^/backups' %}">
+            <a class="nav-link" href="{% url 'vmbackups:index' %}">{% bs_icon 'archive' %} {% trans "Backups" %}</a>
         </li>
         {% endif %}
       </ul>
@@ -33,6 +36,7 @@
             <a class="dropdown-item {% view_active request 'admin:group_list' %}" href="{% url 'admin:group_list' %}">{% bs_icon 'people-fill' %} {% trans "Groups" %}</a>
             <a class="dropdown-item {% view_active request 'admin:logs' %}" href="{% url 'admin:logs' %}">{% bs_icon 'card-list' %} {% trans "Logs" %}</a>
             <a class="dropdown-item {% view_active request 'admin:tombstone_list' %}" href="{% url 'admin:tombstone_list' %}">{% bs_icon 'trash' %} {% trans "Removed VMs" %}</a>
+            <a class="dropdown-item {% view_active request 'admin:tag_list' %}" href="{% url 'admin:tag_list' %}">{% bs_icon 'tag' %} {% trans "Tags" %}</a>
             <a class="dropdown-item" href="{% url 'instances:vm_report' %}">{% bs_icon 'download' %} {% trans "VM report (.xlsx)" %}</a>
             <a class="dropdown-item {% view_active request 'appsettings' %}" href="{% url 'appsettings' %}">{% bs_icon 'gear-wide-connected' %} {% trans "Settings" %}</a>
           </div>
@@ -51,7 +55,7 @@
             <div class="dropdown-divider"></div>
             <form method="post" action="{% url 'accounts:logout' %}">
               {% csrf_token %}
-              <button type="submit" class="dropdown-item">{% bs_icon 'power' %}  {% trans "Log Out" %}</button>
+              <button type="submit" class="dropdown-item">{% bs_icon 'power' %}  {% trans "Log out" %}</button>
             </form>
           </div>
         </li>

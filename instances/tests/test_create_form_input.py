@@ -179,7 +179,7 @@ class CreateFormValuesTests(TestCase):
     def test_an_error_of_a_field_the_form_hides_is_in_its_summary(self):
         # the networks are a hidden input behind a picker
         page = self.page(networks="")
-        self.assertIn("Networks: This field is required.", self.summary(page))
+        self.assertIn("Add networks: This field is required.", self.summary(page))
 
     def test_an_architecture_without_a_firmware_choice_needs_none(self):
         # its page renders no firmware select: the machine's own firmware is used

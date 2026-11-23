@@ -28,9 +28,16 @@ class UserPagesTests(TestCase):
 
     def form_data(self, user, **changes):
         data = {"username": user.username, "is_active": "on", "role": "superuser" if user.is_superuser else "user",
-                "max_instances": "2", "max_cpus": "2", "max_memory": "2", "max_disk_size": "20", "seen": user_seen(user),
+                "max_instances": "2", "max_cpus": "2", "max_memory": "2", "max_disk_size": "20", "max_backup_size": 0, "seen": user_seen(user),
                 **changes}
         return {key: value for key, value in data.items() if value != ""}
+
+    def test_the_list_is_in_name_order(self):
+        get_user_model().objects.create_user("up-bob")
+        get_user_model().objects.create_user("up-adam")
+        users = self.client.get(reverse("admin:user_list")).context["users"]
+        self.assertTrue(users.ordered)  # SQLite keeps the name order without asking; PostgreSQL does not
+        self.assertEqual([user.username for user in users], sorted(user.username for user in users))
 
     def test_an_administrator_cannot_block_delete_or_demote_themselves(self):
         own = self.admin.pk
@@ -77,7 +84,7 @@ class UserPagesTests(TestCase):
     def test_a_refused_choice_is_said_beside_its_field(self):
         url = reverse("admin:user_update", args=[self.alice.pk])
         response = self.client.post(url, {"username": "up-alice", "is_active": "on", "groups": "99999", "user_permissions": "99999",
-                                          "role": "user", "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 1,
+                                          "role": "user", "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 1, "max_backup_size": 0,
                                           "seen": user_seen(self.alice)})
         page = html.fromstring(response.content)
         self.assertEqual(len(page.xpath("//fieldset//div[contains(@class, 'invalid-feedback')]")), 2)
@@ -99,13 +106,13 @@ class UserPagesTests(TestCase):
         page = html.fromstring(self.client.get(reverse("admin:user_update", args=[self.alice.pk])).content)
         shown = {box.get("name"): (box.get("value"), box.get("disabled") is not None) for box in page.xpath("//input[@type='number']")}
         self.assertEqual(shown, {"max_instances": ("", True), "max_cpus": ("1", False), "max_memory": ("1.5", False),
-                                 "max_disk_size": ("", True)})
+                                 "max_disk_size": ("", True), "max_backup_size": ("0", False)})
         self.assertEqual(page.xpath("//input[@checked][@data-no-limit]/@name"), ["max_instances_unlimited", "max_disk_size_unlimited"])
 
     def test_a_new_user_starts_with_the_default_quota(self):
         page = html.fromstring(self.client.get(reverse("admin:user_create")).content)
         shown = {box.get("name"): box.get("value") for box in page.xpath("//input[@type='number']")}
-        self.assertEqual(shown, {"max_instances": "2", "max_cpus": "2", "max_memory": "2", "max_disk_size": "20"})
+        self.assertEqual(shown, {"max_instances": "2", "max_cpus": "2", "max_memory": "2", "max_disk_size": "20", "max_backup_size": "0"})
         self.assertEqual(page.xpath("//input[@name='role'][@checked]/@value"), ["user"])
 
     def test_no_limit_is_kept_as_minus_one_and_gib_as_mib(self):
@@ -222,7 +229,7 @@ class SavedAsCheckedTests(TestCase):
         with self.meanwhile(take):
             response = self.client.post(reverse("admin:user_create"), {
                 "username": "sc-bob", "email": "bob@example.com", "password": "Wvc-bob-pass-9", "role": "user",
-                "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 1})
+                "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 1, "max_backup_size": 0})
         self.assertEqual(response.status_code, 200)
         self.assertFalse(get_user_model().objects.filter(username="sc-bob").exists())
 
@@ -231,7 +238,7 @@ class SavedAsCheckedTests(TestCase):
         alice = get_user_model().objects.create_user("sc-alice")
         url = reverse("admin:user_update", args=[alice.pk])
         data = {"username": "sc-alice", "is_active": "on", "role": "user", "max_instances": 1, "max_cpus": 1,
-                "max_memory": 1, "max_disk_size": 1, "seen": user_seen(alice)}
+                "max_memory": 1, "max_disk_size": 1, "max_backup_size": 0, "seen": user_seen(alice)}
         with self.meanwhile(lambda: get_user_model().objects.filter(pk=alice.pk).update(is_active=False)):
             response = self.client.post(url, data)
         self.assertRedirects(response, url, fetch_redirect_response=False)
@@ -244,7 +251,7 @@ class SavedAsCheckedTests(TestCase):
         with patch("admin.views.users_lock", side_effect=claims.Busy("users")):
             response = self.client.post(reverse("admin:user_create"), {
                 "username": "sc-carl", "password": "Wvc-carl-pass-9", "role": "user",
-                "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 1})
+                "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 1, "max_backup_size": 0})
         self.assertContains(response, "short operation")
         self.assertFalse(get_user_model().objects.filter(username="sc-carl").exists())
 

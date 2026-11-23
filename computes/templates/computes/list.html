@@ -1,20 +1,21 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load common_tags %}
 {% load static %}
 {% load bootstrap_icons %}
+{% load operations %}
 {% block title %}{% trans "Computes" %}{% endblock %}
+{% block page_heading %}{% trans "Computes" %}{% endblock page_heading %}
+{% block page_heading_extra %}
+    <input id="filter" class="form-control w-auto" type="text" placeholder="{% trans 'Search' %}" aria-label="{% trans 'Search' %}">
+    {% if computes|length > 1 %}<a href="{% url 'balance' %}" class="btn btn-outline-primary">{% trans "Balance" %}</a>{% endif %}
+    {% include 'create_comp_block.html' %}
+{% endblock page_heading_extra %}
 {% block content %}
-<div class="row">
-    <div class="col-lg-12">
-        {% include 'create_comp_block.html' %}
-        {% include 'search_block.html' %}
-        <h3 class="mb-3">{% trans "Computes" %}</h3>
-    </div>
-</div>
+<div id="job-panel" aria-live="polite"></div>
+{% include "computes/attention.html" %}
 {% if not computes %}
-    <div class="alert alert-warning shadow-sm">
-        {% bs_icon 'exclamation-triangle'%} <strong>{% trans "Warning" %}:</strong> {% trans "You don't have any computes" %}
-    </div>
+    <p class="text-center text-body-secondary py-4">{% trans "You don't have any computes" %}</p>
 {% else %}
     {# the totals of the hosts the panel reaches #}
     <div class="row row-cols-2 row-cols-lg-4 g-3 mb-4">
@@ -42,20 +43,21 @@
         <div class="col">
             <div class="card h-100"><div class="card-body">
                 <div class="small text-body-secondary">{% bs_icon 'memory' %} {% trans "Memory given" %}</div>
-                <div class="fs-4 lh-sm">{{ totals.assigned|filesizeformat }}</div>
-                <div class="small text-body-secondary">{% blocktrans with memory=totals.memory|filesizeformat %}of {{ memory }}{% endblocktrans %}</div>
+                <div class="fs-4 lh-sm">{{ totals.assigned|binary_size }}</div>
+                <div class="small text-body-secondary">{% blocktrans with memory=totals.memory|binary_size %}of {{ memory }}{% endblocktrans %}</div>
             </div></div>
         </div>
     </div>
 
+    {% include 'common/tag_filter.html' %}
     {# position-relative: the hidden status texts are positioned within it, not the page #}
     <div class="table-responsive position-relative">
         <table class="table table-hover align-middle" data-sortable>
             <thead>
                 <tr>
                     <th scope="col">{% trans "Host" %}</th>
-                    <th scope="col" data-sort-method="number">{% trans "VMs" %}</th>
-                    <th scope="col" data-sort-method="number">{% trans "vCPUs" %}</th>
+                    <th scope="col" class="d-none d-md-table-cell" data-sort-method="number">{% trans "VMs" %}</th>
+                    <th scope="col" class="d-none d-md-table-cell" data-sort-method="number">{% trans "vCPUs" %}</th>
                     <th scope="col" data-sort-method="number">{% trans "Memory" %}</th>
                     <th scope="col" data-sort-method="none"><span class="visually-hidden">{% trans "Actions" %}</span></th>
                 </tr>
@@ -63,7 +65,7 @@
             <tbody class="searchable">
             {% for compute in computes %}
                 {% with given=compute.shown_capacity %}
-                <tr{% if compute.status is not True %} class="table-warning"{% endif %}>
+                <tr data-tags="{% for tag in compute.tags.all %}{{ tag }}{% if not forloop.last %} {% endif %}{% endfor %}"{% if compute.status is not True %} class="table-warning"{% endif %}>
                     <td class="py-3">
                         <div class="d-flex flex-wrap align-items-center gap-2">
                             <a class="fw-semibold" href="{% url 'overview' compute.id %}">{{ compute.name }}</a>
@@ -72,27 +74,32 @@
                             {% else %}
                                 <span class="badge text-bg-danger">{% trans "Not connected" %}</span>
                             {% endif %}
+                            {% if compute.maintenance %}{# ready once none of its VMs runs; while that is not known, only asked for #}
+                            <span class="badge text-bg-warning">{% if compute.shown_capacity and not compute.shown_capacity.active %}{% trans "In maintenance" %}{% else %}{% trans "Maintenance requested" %}{% endif %}</span>{% endif %}
                             <span class="badge text-bg-light border">{{ compute.connection_name }}</span>
                         </div>
                         <div class="small text-body-secondary font-monospace mt-1">{{ compute.hostname }}</div>
                         {% if compute.details %}<div class="small text-body-secondary">{{ compute.details }}</div>{% endif %}
+                        {% with tags=compute.tags.all %}{% if tags %}<div class="mt-1">{% include 'common/tag_badges.html' with tags=tags|slice:":3" more=tags|slice:"3:" filter=True %}</div>{% endif %}{% endwith %}
                         {% if compute.status is not True %}
                             <div class="small text-danger">{{ compute.connection_error }}</div>
                         {% endif %}
                     </td>
                     {% if given %}
-                    <td class="py-3" data-sort="{{ given.vm_count }}">
+                    <td class="py-3 d-none d-md-table-cell" data-sort="{{ given.vm_count }}">
                         <a class="fs-4 lh-sm text-decoration-none" href="{% url 'instances' compute.id %}">{{ given.vm_count }}</a>
                         <div class="small text-body-secondary">{% blocktrans with running=given.vms.running %}{{ running }} running{% endblocktrans %}</div>
                     </td>
-                    <td class="py-3" data-sort="{{ given.ratio|stringformat:".2f" }}">
+                    <td class="py-3 d-none d-md-table-cell" data-sort="{{ given.ratio|stringformat:".2f" }}">
                         {% include "computes/capacity_vcpus.html" %}
                     </td>
                     <td class="py-3" data-sort="{{ given.memory_percent }}">
                         {% include "computes/capacity_memory.html" %}
                     </td>
                     {% else %}
-                    <td colspan="3" class="py-3 small text-body-secondary">{% if compute.status is True %}{% trans "The capacity could not be read." %}{% else %}{% trans "No capacity while the host cannot be reached." %}{% endif %}</td>
+                    {# on a phone the VM and vCPU columns are hidden: the totals above have them #}
+                    <td class="d-none d-md-table-cell"></td><td class="d-none d-md-table-cell"></td>
+                    <td class="py-3 small text-body-secondary">{% if compute.status is True %}{% trans "The capacity could not be read." %}{% else %}{% trans "No capacity while the host cannot be reached." %}{% endif %}</td>
                     {% endif %}
                     <td class="py-3 text-end">
                         {# fixed: the menu would be cut off by the table's scrolling box #}
@@ -114,9 +121,16 @@
             </tbody>
         </table>
     </div>
+    {# table_filter.js shows it while no host matches #}
+    <div id="no-match" class="text-center text-body-secondary py-4" hidden>
+        {% trans "No host matches the filters." %}
+        <button type="button" class="btn btn-link" id="clear-filters">{% trans "Clear the filters" %}</button>
+    </div>
 {% endif %}
 {% endblock content %}
 
 {% block script %}
+<script src="{% static 'js/poll.js' %}"></script>
+{% job_panel_script job_resource %}
 <script src="{% static 'js/table_filter.js' %}"></script>
 {% endblock script %}

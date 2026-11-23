@@ -41,6 +41,13 @@ def reconcile_key(compute_id):
     return f"reconcile:{compute_id}"
 
 
+def bulk_migrate_key():
+    """The bulk migrations and balances: one at a time. One waits in a worker
+    slot for its migrations; several could take every slot and leave none
+    for them. The Computes page shows them."""
+    return "bulk_migrate"
+
+
 def instance_key(uuid):
     return f"instance:{uuid}"
 
@@ -70,6 +77,20 @@ def name_key(name):
 
 def quota_key(user_id):
     return f"quota:user:{user_id}"
+
+
+def backup_target_key(target_id):
+    """A backup target: one copy into or out of it at a time."""
+    return f"backup_target:{target_id}"
+
+
+def backup_key(uuid):
+    return f"backup:{uuid}"
+
+
+def verify_key(uuid):
+    """A backup being verified: one verification at a time writes what it found on it."""
+    return f"verify:{uuid}"
 
 
 @cache

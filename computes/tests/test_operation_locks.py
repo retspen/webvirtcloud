@@ -138,9 +138,13 @@ class ComputeConcurrencyTestCase(TransactionTestCase):
         compute.status = True
 
         claims.admit({claims.compute_key(compute.id): Claim.EXCLUSIVE}, holder="other")
-        refresh_instance_database(compute)
+        self.assertIsNone(refresh_instance_database(compute))  # not synchronized: the caller may try again
         self.assertEqual(Instance.objects.filter(compute=compute).count(), 1)
         mock_proxy.wvm.listAllDomains.assert_called_once()  # the pre-check's read; no reconcile
+        Claim.objects.all().delete()
+        self.assertIs(refresh_instance_database(compute), True)  # synchronized
+        self.assertEqual(Instance.objects.filter(compute=compute).count(), 0)
+        self.assertIs(refresh_instance_database(compute), True)  # already matching
 
     def _reconcile_compute(self, name, domains):
         """A compute whose database differs from libvirt (a VM libvirt no

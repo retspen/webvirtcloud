@@ -8,13 +8,14 @@ from uuid import uuid4
 
 from django.db import transaction
 from django.core.exceptions import PermissionDenied
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_noop
 from django.utils.translation import gettext_noop as _
 from libvirt import (VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE, VIR_DOMAIN_JOB_NONE, VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL,
-                     VIR_DOMAIN_SHUTOFF, VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_MANAGED_SAVE,
+                     VIR_DOMAIN_RUNNING, VIR_DOMAIN_SHUTOFF, VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA, VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_MANAGED_SAVE,
                      VIR_DOMAIN_UNDEFINE_NVRAM, VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA, VIR_DOMAIN_XML_INACTIVE,
                      VIR_ERR_NO_DOMAIN, VIR_ERR_NO_STORAGE_VOL, libvirtError)
 from lxml import etree
@@ -71,6 +72,14 @@ def _vm_plan(params):
 
 
 MOVED = _("The VM moved to another compute after the job was queued")
+
+
+def unprotected(instance):
+    """instance, unless it is protected: not deleted nor restored over."""
+    if instance.protected:
+        raise util.OperationError(_("%(vm)s is protected: a superuser turns its protection off on its Settings tab "
+                                    "first"), vm=instance.name)
+    return instance
 
 
 def _checked_proxy(op):
@@ -239,6 +248,7 @@ def _finish_clone(op, clone, warning):
         if clone.get("memory"):
             proxy.resize_mem(clone["memory"], clone["memory"])
         if clone.get("start"):
+            c.refuse_start()  # put in maintenance while the disks were copied: the clone stays off
             proxy.start()
     except libvirtError as err:
         notes += say(_("The clone is made, but not as asked: %(error)s"), error=err)
@@ -419,8 +429,11 @@ class CreateSnapshot(Kind):
 
     def validate(self, user, params):
         check_snapshot_name(params["name"])
+        proxy = _proxy(_authorized(user, params["instance"]))
+        if params["external"]:  # what it reads before taking one, refused before it is queued
+            proxy.check_external_snapshot(params["name"])
         # recovery counts a listed snapshot as taken by the job
-        if params["name"] in _proxy(_authorized(user, params["instance"])).instance.snapshotListNames(0):
+        elif params["name"] in proxy.instance.snapshotListNames(0):
             raise util.OperationError(_("A snapshot named %(name)s already exists"), name=params["name"])
 
     def plan(self, user, params):
@@ -494,6 +507,18 @@ def _revert_quota(user, instance, proxy, params):
                                   quota=utils.quota_message(quota), name=params["name"])
 
 
+def _revert_start(instance, proxy, params):
+    """A revert to a snapshot of the VM running or paused (with its memory)
+    starts a shut-off VM, and one of it running resumes a paused VM: not on
+    a host in maintenance (Compute.refuse_start). A disk-only one
+    ("disk-snapshot") keeps the VM as it is."""
+    snapshot = proxy._snapshot(params["name"], params["external"])
+    state = util.get_xml_path(snapshot.getXMLDesc(0), "/domainsnapshot/state")
+    status = proxy.get_status()
+    if status == 5 and state in ("running", "paused") or status == 3 and state == "running":
+        instance.compute.refuse_start()
+
+
 @register
 class RevertSnapshot(Kind):
     name = "snapshot.revert"
@@ -507,7 +532,7 @@ class RevertSnapshot(Kind):
     def validate(self, user, params):
         instance = _authorized(user, params["instance"])
         proxy = _proxy(instance)
-        proxy._snapshot(params["name"], params["external"])
+        _revert_start(instance, proxy, params)
         _revert_quota(user, instance, proxy, params)
 
     def plan(self, user, params):
@@ -528,8 +553,10 @@ class RevertSnapshot(Kind):
             proxy.check_external_revert(op.params["name"])
         else:
             proxy.check_internal_revert()
+        instance = _instance(op.params["instance"])
+        _revert_start(instance, proxy, op.params)  # put in maintenance meanwhile, or the VM shut off
         # again: a resize while it was queued may have used the quota
-        _revert_quota(op.user, _instance(op.params["instance"]), proxy, op.params)
+        _revert_quota(op.user, instance, proxy, op.params)
         # a revert gives the VM the host devices it had then: not one given since to another VM
         has_hostdevs, definitions = _snapshot_definitions(proxy, op.params)
         if has_hostdevs:
@@ -605,6 +632,7 @@ class CloneInstance(Kind):
 
     def plan(self, user, params):
         instance = _clonable(user, params["instance"])
+        instance.compute.refuse_new_vms()  # the clone is made on the VM's host
         # the source once a request: a running VM's NICs read its guest agent, which may take its whole timeout
         with instance.proxy.cached_reads():
             data, quota = clone_data(user, instance, params["fields"])
@@ -624,6 +652,7 @@ class CloneInstance(Kind):
         instance = _clonable(op.user, op.params["instance"])
         if instance.compute_id != op.intent["compute"]:
             raise util.OperationError(MOVED)
+        instance.compute.refuse_new_vms()
         # a VM found on a host since the job was queued may have taken the name
         if Instance.objects.filter(name=op.intent["name"]).exists():
             raise util.OperationError(_("Instance '%(clone_name)s' already exists!"), clone_name=op.intent["name"])
@@ -904,6 +933,7 @@ class CreateInstance(Kind):
             raise PermissionDenied
         data = params
         c = get_object_or_404(Compute, pk=data["compute"])
+        c.refuse_new_vms()
         conn = wvmCreate(c.hostname, c.login, c.password, c.type)
         cdrom_buses = [bus for bus in conn.get_disk_bus_types(data["arch"], data["machine"]) if bus in CDROM_BUSES]
         if data["name"] in conn.get_instances():
@@ -940,7 +970,17 @@ class CreateInstance(Kind):
 
     def plan(self, user, params):
         compute = Compute.objects.get(pk=params["compute"])
-        return Plan(claims=vm_claims(compute, params["name"]), resource=claims.compute_key(compute.pk),
+        keys = vm_claims(compute, params["name"])
+        # the volumes it is made from: not while a download writes them; a writable one
+        # exclusive, as an attach holds it, a template or an image in a CD-ROM shared
+        if params["template"]:
+            keys[claims.volume_key(compute.pk, params["template_pool"], params["template"])] = Claim.SHARED
+        for image, (device, _bus) in zip(filter(None, params["images"].split(",")), params["devices"]):
+            pool, _sep, name = image.partition("/")
+            key = claims.volume_key(compute.pk, pool, name)
+            if keys.get(key) != Claim.EXCLUSIVE:  # one given twice keeps its writable claim
+                keys[key] = Claim.SHARED if device == "cdrom" else Claim.EXCLUSIVE
+        return Plan(claims=keys, resource=claims.compute_key(compute.pk),
                     label=f"{compute.name}/{params['name']}",
                     intent={"compute": compute.pk, "uuid": str(uuid4()), "name": params["name"]})
 
@@ -951,6 +991,7 @@ class CreateInstance(Kind):
         if Instance.objects.filter(name__exact=op.params["name"]).exists():
             raise util.OperationError(_("There is an instance with same name. Remove it and try again!"))
         c = Compute.objects.get(pk=op.params["compute"])
+        c.refuse_new_vms()  # put in maintenance since the job was queued
         conn = wvmCreate(c.hostname, c.login, c.password, c.type)
         if op.params["name"] in conn.get_instances():
             raise util.OperationError(_("A virtual machine with this name already exists"))
@@ -1033,6 +1074,7 @@ class CreateInstance(Kind):
                 add_cdrom=data["add_cdrom"],
                 add_input=data["add_input"],
                 tpm_model=conn.get_tpm_model(data["arch"], data["machine"]) if data["tpm"] else None,
+                panic_model=conn.get_panic_model(data["arch"], data["machine"]),
             )
         except Exception as err:
             # a definition whose answer was lost may have gone through: then, or
@@ -1075,15 +1117,17 @@ class CreateInstance(Kind):
         return _log(op, state, "create")
 
 
-MIGRATE_OPTIONS = ("live", "unsafe", "offline", "autoconverge", "compress", "delete_source")
+MIGRATE_OPTIONS = ("live", "unsafe", "offline", "autoconverge", "compress", "delete_source", "running_only")
 
 
 def migration_target(instance, target_pk):
     """The destination; refused when the VM is already there, also under
-    another record of its host, or it cannot be reached."""
+    another record of its host, it is in maintenance, or it cannot be
+    reached."""
     target = Compute.objects.get(pk=target_pk)
     if target.pk == instance.compute_id:
         raise util.OperationError(_("The instance is already on %(compute)s"), compute=target.name)
+    target.refuse_new_vms()
     if not target.status:
         raise util.OperationError(_("%(compute)s is not reachable"), compute=target.name)
     if target.proxy.host_uuid() == instance.proxy.host_uuid():
@@ -1165,7 +1209,9 @@ class MigrateInstance(Kind):
 
     def normalize(self, raw):
         # disk_pools: {target: pool of the destination} of the disks to copy there
+        # source: the host a bulk migration takes the VM from; one that left it since is refused
         return {"instance": int(raw["instance"]), "target": int(raw["target"]),
+                "source": int(raw["source"]) if raw.get("source") else None,
                 "disk_pools": {str(k): str(v) for k, v in (raw.get("disk_pools") or {}).items() if v},
                 **{k: bool(raw.get(k)) for k in MIGRATE_OPTIONS}}
 
@@ -1176,9 +1222,14 @@ class MigrateInstance(Kind):
 
     def plan(self, user, params):
         instance = _instance(params["instance"])
+        if params["source"] not in (None, instance.compute_id):
+            raise util.OperationError(MOVED)
         keys = vm_claims(Compute.objects.get(pk=params["target"]), instance.name)
-        keys.update({claims.compute_key(instance.compute_id): Claim.SHARED,
-                     claims.reconcile_key(instance.compute_id): Claim.EXCLUSIVE,
+        # migrations share the hosts' VM sets, so a host's VMs migrate several at once;
+        # creates, clones, deletes and the VM list reconcile still wait for them
+        keys.update({claims.reconcile_key(params["target"]): Claim.SHARED,
+                     claims.compute_key(instance.compute_id): Claim.SHARED,
+                     claims.reconcile_key(instance.compute_id): Claim.SHARED,
                      claims.instance_key(instance.uuid): Claim.EXCLUSIVE})
         if params["disk_pools"]:
             # a copy takes its file's name in the chosen pool; the source file may go
@@ -1439,7 +1490,7 @@ class DeleteInstance(Kind):
                 "delete_nvram": bool(raw.get("delete_nvram"))}
 
     def validate(self, user, params):
-        _deletable(user, params["instance"])
+        unprotected(_deletable(user, params["instance"]))
 
     def plan(self, user, params):
         instance = _instance(params["instance"])
@@ -1450,7 +1501,7 @@ class DeleteInstance(Kind):
                     intent={"compute": instance.compute_id, "uuid": instance.uuid, "name": instance.name})
 
     def precheck(self, op, ctx):
-        if _deletable(op.user, op.params["instance"]).compute_id != op.intent["compute"]:
+        if unprotected(_deletable(op.user, op.params["instance"])).compute_id != op.intent["compute"]:
             raise util.OperationError(MOVED)
 
     def run(self, op, ctx):
@@ -1467,7 +1518,8 @@ class DeleteInstance(Kind):
         if proxy.instance.isActive():
             proxy.force_shutdown()
         # snapshot metadata goes with the domain; internal snapshot data stays in kept disk images
-        flags = VIR_DOMAIN_UNDEFINE_MANAGED_SAVE | VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA
+        flags = (VIR_DOMAIN_UNDEFINE_MANAGED_SAVE | VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA
+                 | VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA)  # backup checkpoints go with the VM
         flags |= VIR_DOMAIN_UNDEFINE_NVRAM if op.params["delete_nvram"] else VIR_DOMAIN_UNDEFINE_KEEP_NVRAM
         proxy.delete(flags)
         return _removed(op)
@@ -1479,3 +1531,132 @@ class DeleteInstance(Kind):
 
     def log_entry(self, op, state):
         return _log(op, state, "delete")
+
+
+# the power actions the VM list's chosen VMs take, by the name its form sends: their job kind
+POWER = {"start": "instance.start", "shutdown": "instance.shutdown", "force_off": "instance.force_off"}
+
+
+def _powerable(user, pk):
+    """The page's rule (_power_instance): an owner or a superuser, and not a VM an administrator paused."""
+    from instances.views import _power_instance
+
+    if user is None or not user.is_active:
+        raise PermissionDenied
+    try:
+        return _power_instance(user, pk)
+    except Http404:  # gone, or no longer the user's
+        raise PermissionDenied from None
+
+
+class _Power(Kind):
+    """Starts, shuts down or forces off one VM chosen on the VM list: a job of
+    its own, so each VM is held, checked when it runs, scheduled and recovered
+    on its own, and has its own log row. A kind for each action, which its
+    label names on the Jobs page."""
+
+    action = ""  # its log row's words
+
+    def normalize(self, raw):
+        return {"instance": int(raw["instance"])}
+
+    def validate(self, user, params):
+        # the owner only: whether an administrator paused it is read by the worker, not in the request
+        from instances.views import get_instance
+
+        get_instance(user, params["instance"], perm_type="power")
+
+    def plan(self, user, params):
+        return _vm_plan(params)
+
+    def precheck(self, op, ctx):
+        if _powerable(op.user, op.params["instance"]).compute_id != op.intent["compute"]:
+            raise util.OperationError(MOVED)
+
+    def check(self, instance):
+        """Refuses, before anything changes, a VM the action does not apply to."""
+        raise NotImplementedError
+
+    def power(self, proxy):
+        raise NotImplementedError
+
+    def done(self, dom):
+        """Whether the VM, its domain or None when its host has none, is as the action leaves it, for recovery."""
+        raise NotImplementedError
+
+    def run(self, op, ctx):
+        instance = _instance(op.params["instance"])
+        self.check(instance)
+        ctx.record_intent(powering=True)  # libvirt is asked from here: recovery reads what it did
+        self.power(instance.proxy)
+        return {}
+
+    # recovery's word when the VM is not as the action leaves it
+    not_done = gettext_noop("The VM was not powered")
+
+    def reconcile(self, op):
+        if not op.intent.get("powering"):
+            return Outcome(Operation.FAILED, error=say(self.not_done))
+        if self.done(_domain(op.intent["compute"], op.intent["uuid"])):
+            return Outcome(Operation.SUCCEEDED)
+        return Outcome(Operation.FAILED, error=say(self.not_done))
+
+    def log_entry(self, op, state):
+        return _log(op, state, self.action)
+
+
+@register
+class StartVM(_Power):
+    name = "instance.start"
+    label = gettext_noop("Start")
+    action = "power on"
+
+    def check(self, instance):  # the start button's checks
+        if instance.is_template:
+            raise util.OperationError(gettext_noop("Templates cannot be started."))
+        if instance.proxy.get_status() != 5:
+            raise util.OperationError(gettext_noop("The VM is not shut off"))
+        instance.proxy.check_start_hostdevs()
+        instance.compute.refuse_start()
+
+    def power(self, proxy):
+        proxy.start()
+
+    def done(self, dom):  # running: not a guest that crashed while starting
+        return dom is not None and dom.state()[0] == VIR_DOMAIN_RUNNING
+
+
+@register
+class ShutdownVM(_Power):
+    name = "instance.shutdown"
+    label = gettext_noop("Shut down")
+    action = "power off"
+
+    def check(self, instance):
+        if instance.proxy.get_status() != 1:
+            raise util.OperationError(gettext_noop("The VM is not running"))
+
+    not_done = gettext_noop("The VM was still running when the job was checked: its guest may still shut it down")
+
+    def power(self, proxy):
+        proxy.shutdown()
+
+    def done(self, dom):  # shut off, or gone: a transient VM is removed as it stops
+        return dom is None or not dom.isActive()
+
+
+@register
+class ForceOffVM(_Power):
+    name = "instance.force_off"
+    label = gettext_noop("Force off")
+    action = "force off"
+
+    def check(self, instance):
+        if instance.proxy.get_status() == 5:
+            raise util.OperationError(gettext_noop("The VM is already shut off"))
+
+    def power(self, proxy):
+        proxy.force_shutdown()
+
+    def done(self, dom):  # shut off, or gone: a transient VM is removed as it stops
+        return dom is None or not dom.isActive()

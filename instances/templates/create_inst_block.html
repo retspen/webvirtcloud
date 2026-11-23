@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load common_tags %}
 {% load bootstrap_icons %}
 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#AddInstance">
     <span aria-hidden="true">{% bs_icon 'plus-lg' %}</span> {% trans "New VM" %}
@@ -16,6 +17,13 @@
                 <div class="text-body-secondary mb-3">{% trans "Choose the host the VM runs on." %}</div>
                 <div class="list-group">
                     {% for compute in reachable_computes %}
+                    {% if compute.maintenance %}
+                    <div class="list-group-item py-3" aria-disabled="true">
+                        <span class="fw-semibold text-body-secondary">{{ compute.name }}</span>
+                        <span class="badge text-bg-warning ms-2">{% trans "Maintenance" %}</span>{# requested or ready: no new VM comes either way #}
+                        <div class="small text-body-secondary">{% trans "No new VM comes to a host in maintenance." %}</div>
+                    </div>
+                    {% else %}
                     <a class="list-group-item list-group-item-action py-3" href="{% url 'instances:create_instance_select_type' compute.id %}">
                         <div class="row g-2 align-items-center">
                             <div class="col-12 col-md-3 fw-semibold">{{ compute.name }}</div>
@@ -30,19 +38,20 @@
                                 </div>
                             </div>
                             <div class="col-6 col-md-4">
-                                <div class="small text-body-secondary">{% trans "Memory" %} · {{ compute.ram_size|filesizeformat }}</div>
+                                <div class="small text-body-secondary">{% trans "Memory" %} · {{ compute.ram_size|binary_size }}</div>
                                 <div class="d-flex align-items-center gap-2">
                                     <div class="progress flex-grow-1" role="progressbar" aria-label="{% blocktrans with name=compute.name %}Memory usage of {{ name }}{% endblocktrans %}"
                                          aria-valuenow="{{ compute.ram_usage }}" aria-valuemin="0" aria-valuemax="100">
                                         <div class="progress-bar" style="width: {{ compute.ram_usage }}%"></div>
                                     </div>
-                                    <small>{{ compute.ram_usage }}%</small>
+                                    <small>{{ compute.ram_usage|percent }}</small>
                                 </div>
                             </div>
                             <div class="col-md-1 d-none d-md-block text-end" aria-hidden="true">{% bs_icon 'chevron-right' %}</div>
                             <div class="col-12 col-md-8 offset-md-3 small text-body-secondary compute-capacity" data-url="{% url 'compute_capacity' compute.id %}"></div>
                         </div>
                     </a>
+                    {% endif %}
                     {% empty %}
                     {% url 'computes' as computes_url %}
                     {% if computes %}

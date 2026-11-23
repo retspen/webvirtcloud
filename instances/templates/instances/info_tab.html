@@ -1,21 +1,34 @@
 {% load i18n %}
 <div class="tab-pane" id="osinfo" role="tabpanel">
-    <h3 class="mb-3">{% trans "Guest Info" %}</h3>
+    <h3 class="mb-3">{% trans "Guest info" %}</h3>
     <div id="osinfo-error" class="alert alert-warning d-none" role="alert" data-silent="{% trans 'The guest agent did not answer' %}"></div>
     <dl class="mx-3 row">
-        <dt class="col-3">{% trans "Hostname" %}</dt>
-        <dd class="col-9" id="oshostname"></dd>
-        <dt class="col-3">{% trans "OS Name" %}</dt>
-        <dd class="col-9" id="osname"></dd>  
-        <dt class="col-3">{% trans "OS Pretty-Name" %}</dt>
-        <dd class="col-9" id="osprettyname"></dd>
-        <dt class="col-3">{% trans "Version" %}</dt>
-        <dd class="col-9" id="osversion"></dd>
-        <dt class="col-3">{% trans "Kernel Release" %}</dt>
-        <dd class="col-9" id="oskernelrelease"></dd>
-        <dt class="col-3">{% trans "Kernel Version" %}</dt>
-        <dd class="col-9" id="oskernelversion"></dd>
-        <dt class="col-3">{% trans "Timezone / Offset" %}</dt>
-        <dd class="col-9" id="ostimezone"></dd>  
+        <dt class="col-5 col-sm-3">{% trans "Hostname" %}</dt>
+        <dd class="col-7 col-sm-9 text-break" id="oshostname"></dd>
+        <dt class="col-5 col-sm-3">{% trans "OS name" %}</dt>
+        <dd class="col-7 col-sm-9 text-break" id="osname"></dd>  
+        <dt class="col-5 col-sm-3">{% trans "OS pretty name" %}</dt>
+        <dd class="col-7 col-sm-9 text-break" id="osprettyname"></dd>
+        <dt class="col-5 col-sm-3">{% trans "Version" %}</dt>
+        <dd class="col-7 col-sm-9 text-break" id="osversion"></dd>
+        <dt class="col-5 col-sm-3">{% trans "Kernel release" %}</dt>
+        <dd class="col-7 col-sm-9 text-break" id="oskernelrelease"></dd>
+        <dt class="col-5 col-sm-3">{% trans "Kernel version" %}</dt>
+        <dd class="col-7 col-sm-9 text-break" id="oskernelversion"></dd>
+        <dt class="col-5 col-sm-3">{% trans "Time zone / offset" %}</dt>
+        <dd class="col-7 col-sm-9 text-break" id="ostimezone"></dd>  
     </dl>
+    {# instance_page.js fills and shows the table when the agent gives file systems with their usage, else the note #}
+    <p class="small text-body-secondary mx-3" id="osfilesystems-unread" hidden>{% trans "The guest agent did not tell its file systems' usage." %}</p>
+    <div class="table-responsive mx-3"><table class="table table-sm align-middle" id="osfilesystems" hidden>
+        <caption class="caption-top">{% trans "File systems" %}</caption>
+        <thead>
+        <tr>
+            <th scope="col">{% trans "Mount point" %}</th>
+            <th scope="col">{% trans "Type" %}</th>
+            <th scope="col">{% trans "Used" %}</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table></div>
 </div>

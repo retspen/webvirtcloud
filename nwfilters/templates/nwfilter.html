@@ -89,13 +89,14 @@
         </div>
         {% if rules %}
         <div class="table-responsive position-relative">
+            {# on a phone: no rule number, and the priority under the action #}
             <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
-                        <th scope="col">#</th>
+                        <th scope="col" class="d-none d-md-table-cell">#</th>
                         <th scope="col">{% trans "Action" %}</th>
                         <th scope="col">{% trans "Direction" %}</th>
-                        <th scope="col">{% trans "Priority" %}</th>
+                        <th scope="col" class="d-none d-md-table-cell">{% trans "Priority" %}</th>
                         <th scope="col">{% trans "Matches" %}</th>
                         <th scope="col"><span class="visually-hidden">{% trans "Actions" %}</span></th>
                     </tr>
@@ -103,7 +104,7 @@
                 <tbody>
                 {% for rule in rules %}
                     <tr>
-                        <th scope="row">{{ forloop.counter }}</th>
+                        <th scope="row" class="d-none d-md-table-cell">{{ forloop.counter }}</th>
                         <td>
                             {% if rule.action == "accept" %}<span class="badge bg-success-subtle text-success-emphasis">{% trans "Accept" %}</span>
                             {% elif rule.action == "drop" %}<span class="badge bg-danger-subtle text-danger-emphasis">{% trans "Drop" context "network filter rule" %}</span>
@@ -111,9 +112,10 @@
                             {% elif rule.action == "return" %}<span class="badge text-bg-light border">{% trans "Return" context "network filter rule" %}</span>
                             {% elif rule.action == "continue" %}<span class="badge text-bg-light border">{% trans "Continue" context "network filter rule" %}</span>
                             {% else %}<span class="badge text-bg-light border">{{ rule.action }}</span>{% endif %}
+                            <div class="small text-body-secondary d-md-none">{% trans "Priority" %} {% if rule.priority is not None %}{{ rule.priority }}{% else %}500{% endif %}</div>
                         </td>
-                        <td class="text-nowrap">{% if rule.direction == "in" %}{% trans "To the VM" %}{% elif rule.direction == "out" %}{% trans "From the VM" %}{% elif rule.direction == "inout" %}{% trans "Both ways" %}{% else %}{{ rule.direction }}{% endif %}</td>
-                        <td>{% if rule.priority is not None %}{{ rule.priority }}{% else %}500{% endif %}</td>
+                        <td>{% if rule.direction == "in" %}{% trans "To the VM" %}{% elif rule.direction == "out" %}{% trans "From the VM" %}{% elif rule.direction == "inout" %}{% trans "Both ways" %}{% else %}{{ rule.direction }}{% endif %}</td>
+                        <td class="d-none d-md-table-cell">{% if rule.priority is not None %}{{ rule.priority }}{% else %}500{% endif %}</td>
                         <td class="small">
                             {% for protocol in rule.protocols %}
                             <div><span class="badge text-bg-light border">{{ protocol.name }}</span>{% for attribute, value in protocol.attributes %} <span class="font-monospace">{{ attribute }}={{ value }}</span>{% endfor %}</div>

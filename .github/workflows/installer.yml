@@ -1,0 +1,69 @@
+name: Installer
+
+# install.sh on each supported distribution, and update.sh from the last
+# release on two (dev/test-installer.sh): on each
+# push to master (the panel it installs changed), on a pull request that
+# changes the installer or what it installs, and weekly, as the
+# distributions' packages change under it
+on:
+  push:
+    branches: [master]
+  pull_request:
+    paths:
+      - install.sh
+      - webvirtcloud.sh
+      - conf/**
+      - update.sh
+      - dev/test-installer.sh
+      - .github/workflows/installer.yml
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    name: ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - ubuntu:22.04
+          - ubuntu:24.04
+          - ubuntu:26.04
+          - debian:12
+          - debian:13
+          - almalinux:10
+          - opensuse/leap:15.6
+          - opensuse/leap:16.0
+          - openeuler/openeuler:24.03-lts
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install and check the panel
+        run: dev/test-installer.sh "${{ matrix.image }}"
+
+  # update.sh from the last release, as an operator runs it
+  update:
+    name: ${{ matrix.image }} from v4.3.0
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - debian:13
+          - almalinux:10
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # the release's commit
+
+      - name: Install v4.3.0, update to this commit and check the panel
+        run: dev/test-installer.sh "${{ matrix.image }}" v4.3.0

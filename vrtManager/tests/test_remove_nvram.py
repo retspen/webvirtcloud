@@ -3,6 +3,7 @@ source when it is in libvirt's per-host NVRAM directory and the destination
 does not share that directory; a VM later created on the source with the same
 name would otherwise start with the old UEFI variables."""
 
+import threading
 from unittest import TestCase
 from unittest.mock import MagicMock
 
@@ -130,3 +131,24 @@ class RemoveNvramTestCase(TestCase):
         conn = connect([], transient)
         self.assertFalse(conn.remove_nvram(PATH, local_destination()))
         transient.destroy.assert_called_once_with()
+
+
+class NvramPoolTests(TestCase):
+    def test_a_second_use_waits_until_the_first_destroyed_its_transient_pool(self):
+        conn = object.__new__(wvmConnect)
+        conn.wvm = MagicMock()
+        conn.pool_at = MagicMock(return_value=None)  # no pool on NVRAM_DIR: each use makes a transient one
+        transient = conn.wvm.storagePoolCreateXML.return_value
+        seen = []
+
+        def second():
+            with conn._nvram_pool():
+                seen.append(transient.destroy.call_count)
+
+        with conn._nvram_pool():
+            other = threading.Thread(target=second)
+            other.start()
+            other.join(0.2)
+            self.assertEqual(seen, [])  # still waiting
+        other.join(5)
+        self.assertEqual((seen, transient.destroy.call_count), ([1], 2))

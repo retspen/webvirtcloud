@@ -7,11 +7,12 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 from django.utils import timezone
-from computes.models import ENDPOINT, Compute
+from computes.models import ENDPOINT, Compute, Tag
 from instances.models import Instance, InstanceTombstone
 from logs.audit import write
 from operations import claims
 from operations.models import Claim
+from vmbackups.models import Backup, BackupPolicy, BackupRun
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +87,16 @@ def _log(inst, what):
 
 
 def move_ownership(source, target):
-    """Give target the owners and template flag of source; a user's rights are merged."""
+    """Give target the owners, tags, template and protected flags, backups and schedules of source; a user's rights
+    are merged."""
+    target.tags.add(*source.tags.all())
+    Backup.objects.filter(instance=source).update(instance=target)
+    for policy in source.backup_policies.all():
+        policy.instances.add(target)
+    taken = set(BackupRun.objects.filter(instance=target).values_list("policy_id", "day"))
+    for run in BackupRun.objects.filter(instance=source):  # a schedule's run of the day: not taken twice
+        if (run.policy_id, run.day) not in taken:
+            BackupRun.objects.filter(pk=run.pk).update(instance=target)
     for ui in UserInstance.objects.filter(instance=source):
         existing = UserInstance.objects.filter(instance=target, user=ui.user).first()
         if existing is None:
@@ -97,9 +107,11 @@ def move_ownership(source, target):
             if getattr(ui, flag):
                 setattr(existing, flag, True)
         existing.save()
-    if source.is_template and not target.is_template:
-        target.is_template = True
-        target.save(update_fields=["is_template"])
+    flags = [flag for flag in ("is_template", "protected") if getattr(source, flag) and not getattr(target, flag)]
+    for flag in flags:
+        setattr(target, flag, True)
+    if flags:
+        target.save(update_fields=flags)
 
 
 def forget(inst):
@@ -122,12 +134,16 @@ def _bury(inst):
         {"user": ui.user_id, "is_change": ui.is_change, "is_delete": ui.is_delete, "is_vnc": ui.is_vnc}
         for ui in UserInstance.objects.filter(instance=inst)
     ]
-    if owners or inst.is_template:
-        InstanceTombstone.objects.create(uuid=inst.uuid, name=inst.name, host=inst.compute.name,
-                                         is_template=inst.is_template, owners=owners)
-        _log(inst, "owners kept on the Removed VMs page")
+    tombstone = InstanceTombstone(uuid=inst.uuid, name=inst.name, host=inst.compute.name, is_template=inst.is_template,
+                                  protected=inst.protected, owners=owners,
+                                  tags=list(inst.tags.values_list("name", flat=True)),
+                                  policies=list(inst.backup_policies.values_list("pk", flat=True)),
+                                  backups=list(inst.backups.values_list("pk", flat=True)))
+    if tombstone.keeps_anything():
+        tombstone.save()
+        _log(inst, "kept on the Removed VMs page")
     else:
-        _log(inst, "left the panel (no owners)")
+        _log(inst, "left the panel (nothing to keep)")
 
 
 def _restore(inst):
@@ -144,11 +160,14 @@ def _restore(inst):
                 is_delete=owner["is_delete"],
                 is_vnc=owner["is_vnc"],
             )
-    if tombstone.is_template:
-        inst.is_template = True
-        inst.save(update_fields=["is_template"])
+    inst.tags.set(Tag.objects.filter(name__in=tombstone.tags))
+    # not a schedule that chooses its VMs by compute or tag since: it chooses this one, or not, by itself
+    inst.backup_policies.set(BackupPolicy.objects.filter(pk__in=tombstone.policies, compute=None, tag=None))
+    Backup.objects.filter(pk__in=tombstone.backups, instance__isnull=True).update(instance=inst)
+    inst.is_template, inst.protected = tombstone.is_template, tombstone.protected
+    inst.save(update_fields=["is_template", "protected"])
     InstanceTombstone.objects.filter(uuid=inst.uuid).delete()
-    _log(inst, "owners restored")
+    _log(inst, "restored from the Removed VMs page")
 
 
 def _host_domains(compute):
@@ -173,6 +192,8 @@ def refresh_instance_database(compute):
         UserInstance permission relationships (matched by UUID).
       - If libvirt is unreachable (connection/network error), the database is left
         untouched to avoid false deletions.
+    True when the database matches the host's VMs afterwards; None when it was
+    not synchronized (host not answering, busy or changed meanwhile).
     """
     compute_pk = getattr(compute, "pk", getattr(compute, "id", None))
     if not compute_pk:
@@ -191,7 +212,7 @@ def refresh_instance_database(compute):
     cutoff = timezone.now() - timedelta(days=retention)
     if (dict(Instance.objects.filter(compute_id=compute_pk).values_list("uuid", "name")) == host_domains
             and not InstanceTombstone.objects.filter(removed__lt=cutoff).exists()):
-        return
+        return True
 
     try:
         # The compute shared: VM operations and jobs on it go on; changes of
@@ -249,6 +270,7 @@ def refresh_instance_database(compute):
                         )
                         if created and not Instance.objects.filter(uuid=uuid).exclude(compute=compute).exists():
                             _restore(inst)
+        return True
     except claims.Busy:
         logger.debug("Compute %s is busy; not synchronized now", compute_pk)
         return

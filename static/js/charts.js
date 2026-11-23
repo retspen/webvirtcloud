@@ -6,11 +6,20 @@
 var CHART_POINTS = 10;
 // the pixels a tick's label needs from the next one
 var TICK_ROOM = 60;
+// a reading as the page's language writes it (a decimal comma in Turkish), one decimal at most;
+// no thousands separator, as the panel's own pages
+var PAGE_LANGUAGE = document.documentElement.lang || undefined;
+var formatNumber = new Intl.NumberFormat(PAGE_LANGUAGE, {maximumFractionDigits: 1, useGrouping: false}).format;
+// a percentage as the language writes it: 13% in English, %13 in Turkish
+function formatPercent(value) {
+    return new Intl.NumberFormat(PAGE_LANGUAGE, {style: "percent", maximumFractionDigits: 1}).format(value / 100);
+}
 
 (function () {
     var style = getComputedStyle(document.body);
     Chart.defaults.color = style.getPropertyValue("--bs-body-color").trim();
     Chart.defaults.borderColor = style.getPropertyValue("--bs-border-color").trim();
+    Chart.defaults.locale = PAGE_LANGUAGE;  // the tooltips' numbers
 })();
 
 // labels: one per line. options: max (the y axis top), tooltip(context, text)
@@ -21,6 +30,10 @@ function lineChart(canvas, unit, labels, options) {
         return style.getPropertyValue(name).trim();
     });
     options = options || {};
+    // a reading with its unit: a percentage as the language writes it
+    function withUnit(value, text) {
+        return unit === "%" ? formatPercent(value) : text + " " + unit;
+    }
     return new Chart(canvas, {
         type: "line",
         data: {
@@ -58,7 +71,10 @@ function lineChart(canvas, unit, labels, options) {
                         },
                     },
                 },
-                y: {min: 0, max: options.max, ticks: {callback: function (value) { return value + " " + unit; }}},
+                // the axis as Chart.js writes it (its precision, the page language), with the unit
+                y: {min: 0, max: options.max, ticks: {callback: function (value) {
+                    return withUnit(value, Chart.Ticks.formatters.numeric.apply(this, arguments));
+                }}},
             },
             plugins: {
                 legend: {display: labels.length > 1},
@@ -68,7 +84,7 @@ function lineChart(canvas, unit, labels, options) {
                             return items.length ? labelAt(items[0].chart, items[0].parsed.x) : "";
                         },
                         label: function (context) {
-                            var text = context.dataset.label + ": " + context.formattedValue + " " + unit;
+                            var text = context.dataset.label + ": " + withUnit(context.parsed.y, context.formattedValue);
                             return options.tooltip ? options.tooltip(context, text) : text;
                         },
                     },

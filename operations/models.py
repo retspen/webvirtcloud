@@ -35,6 +35,8 @@ class Operation(models.Model):
     client_ip = models.GenericIPAddressField(null=True)  # of the submission, for the job's Logs rows
     submission_key = models.CharField(max_length=64)
     resource = models.CharField(max_length=255, db_index=True)  # the page that shows the job
+    # the job that started this one (a bulk migration's migrations): its page shows that one only
+    parent = models.ForeignKey("self", null=True, on_delete=models.SET_NULL, related_name="children")
     resource_label = models.CharField(max_length=255)
     state = models.CharField(max_length=16, choices=STATES, default=QUEUED, db_index=True)
     params = models.JSONField(default=dict)
@@ -77,7 +79,7 @@ class Claim(models.Model):
     EXCLUSIVE = "exclusive"
 
     operation = models.ForeignKey(Operation, null=True, on_delete=models.CASCADE, related_name="claims")
-    resource = models.CharField(max_length=255, db_index=True)
+    resource = models.TextField(db_index=True)  # a volume's key holds its pool's and file's names
     mode = models.CharField(max_length=9, choices=[(SHARED, SHARED), (EXCLUSIVE, EXCLUSIVE)])
     holder = models.CharField(max_length=128, blank=True)  # transient: host:pid:thread
     expires_at = models.DateTimeField(null=True)  # transient only
@@ -136,3 +138,17 @@ def fenced(holder):
         if not WorkerLease.objects.select_for_update().filter(name="worker", holder=holder).exists():
             raise LeaseLost(holder)
         yield
+
+
+class Alert(models.Model):
+    """A notice for the operator (operations.alerts), sent by the worker's periodic pass: by mail to the alert
+    addresses and as a POST to the alert webhook of the Settings page."""
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    subject = models.JSONField()  # messages (operations.utils.say)
+    text = models.JSONField()
+    mailed = models.BooleanField(default=False)
+    posted = models.BooleanField(default=False)
+    sent_at = models.DateTimeField(null=True)  # every channel set took it
+    tries = models.PositiveSmallIntegerField(default=0)
+    error = models.TextField(blank=True)  # the last try's

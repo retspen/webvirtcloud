@@ -72,6 +72,24 @@ class PageTests(TestCase):
             with self.subTest(page=name):
                 self.assertEqual({i: n for i, n in ids.items() if n > 1}, {})
 
+    def test_every_page_has_one_main_heading_and_no_empty_one(self):
+        # screen readers go to a page's h1; an empty heading is read as nothing. Not
+        # pages of the panel: a tab's fragment, the cloud-init data source, the API docs
+        parts = {"instances:host_devices", "ds_openstack_index", "schema-redoc", "schema-swagger-ui"}
+        for name, page in self.pages():
+            if name in parts:
+                continue
+            headings = page.xpath("//h1|//h2|//h3|//h4|//h5|//h6")
+            with self.subTest(page=name):
+                self.assertEqual(len(page.xpath("//h1")), 1)
+                # a dialog title is filled in when the dialog opens
+                self.assertEqual([h.tag for h in headings if not h.text_content().strip() and "modal-title" not in h.get("class", "")], [])
+
+    def test_an_error_page_has_one_main_heading(self):
+        self.client.force_login(get_user_model().objects.create_superuser("err", "err@example.com", "pw"))
+        page = html.fromstring(self.client.get("/no-such-page/").content)
+        self.assertEqual([h.text_content().strip() != "" for h in page.xpath("//h1")], [True])
+
     def test_every_table_scrolls_in_its_own_box(self):
         # a wide table scrolls inside .table-responsive instead of widening the page on a phone
         for name, page in self.pages():

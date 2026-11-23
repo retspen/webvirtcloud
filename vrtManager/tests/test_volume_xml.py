@@ -47,6 +47,7 @@ class TemplateCopyTests(SimpleTestCase):
         with patch("vrtManager.connection.connection_manager.get_connection") as get:
             template = get.return_value.storageVolLookupByPath.return_value
             template.XMLDesc.return_value = f"<volume><target><format type='{fmt}'/></target></volume>"
+            template.info.return_value = [0, 1 << 30, 0]
             pool = get.return_value.storagePoolLookupByName.return_value
             pool.XMLDesc.return_value = f"<pool type='{pool_type}'/>"
             wvmCreate("host", "login", "pw", 1).clone_from_template("vm", "/t/base", "pool1", True)
@@ -57,8 +58,22 @@ class TemplateCopyTests(SimpleTestCase):
         for pool_type in ("dir", "fs", "netfs"):
             with self.subTest(pool_type):
                 volume, flags = self.copied(pool_type, "qcow2")
-                self.assertEqual((volume.findtext("name"), flags), ("vm.img", True))
+                self.assertEqual((volume.findtext("name"), flags), ("vm.qcow2", True))
                 self.assertIsNotNone(volume.find("target/features/lazy_refcounts"))
+
+    def test_a_raw_file_copy_takes_no_metadata_preallocation(self):
+        volume, flags = self.copied("dir", "raw")
+        self.assertEqual((volume.findtext("name"), flags), ("vm.img", False))
+        self.assertIsNone(volume.find("target/compat"))
+
+    def test_other_pools_take_a_raw_copy(self):
+        for pool_type in ("logical", "rbd"):
+            with self.subTest(pool_type):
+                volume, flags = self.copied(pool_type, "qcow2")
+                self.assertEqual((volume.findtext("name"), volume.find("target/format").get("type"), flags),
+                                 ("vm", "raw", False))
+                self.assertEqual(volume.findtext("allocation"), str(1 << 30))
+                self.assertIsNone(volume.find("target/compat"))
 
     def test_only_a_qcow2_copy_takes_its_options(self):
         for fmt in ("raw", "qcow"):

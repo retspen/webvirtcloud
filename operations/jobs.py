@@ -19,7 +19,7 @@ from logs.audit import write
 from vrtManager.util import OperationError
 from webvirtcloud.log_context import request_ip
 
-from . import claims, utils
+from . import alerts, claims, utils
 from .models import Claim, LeaseLost, Operation, fenced
 
 logger = logging.getLogger(__name__)
@@ -68,6 +68,16 @@ def label_of(name):
 def register(cls):
     KINDS[cls.name] = cls()
     return cls
+
+
+PERIODIC = []
+
+
+def register_periodic(fn):
+    """A task of an app (its jobs.py) that the worker runs about once a
+    minute, apart from the jobs: one pass of all such tasks at a time."""
+    PERIODIC.append(fn)
+    return fn
 
 
 class Kind:
@@ -154,7 +164,7 @@ def _existing(user, key, kind_name, params):
     return op
 
 
-def submit(kind_name, user, raw_params, submission_key):
+def submit(kind_name, user, raw_params, submission_key, parent=None):
     if not KEY_RE.fullmatch(submission_key or ""):
         raise OperationError(gettext_noop("The form has no valid submission key; reload the page"))
     kind = get_kind(kind_name)
@@ -175,7 +185,7 @@ def submit(kind_name, user, raw_params, submission_key):
         raise
     op = Operation(
         kind=kind.name, user=user, username=user.username, submission_key=submission_key,
-        resource=plan.resource, resource_label=plan.label[:255], params=params, intent=plan.intent,
+        resource=plan.resource, resource_label=plan.label[:255], params=params, intent=plan.intent, parent=parent,
         time_limit=kind.time_limit, client_ip=_client_ip(),
     )
     if kind.runs_in_request:
@@ -253,9 +263,31 @@ def finish(op, outcome, *, worker=None):
         if (entry := _entry(op, outcome.state)) is not None:
             _log(op.username, *entry, {Operation.SUCCEEDED: True, Operation.FAILED: False}.get(outcome.state),
                  op.client_ip)
+        _alert(op, outcome)
     logger.info("job %s %s: %s", op.pk, op.kind, outcome.state)
     op.refresh_from_db()
     return True
+
+
+# kinds whose failure the operator is told of (operations.alerts); every kind's uncertain end too
+ALERTED_FAILURES = ("backup.create", "backup.verify")
+
+
+def _alert(op, outcome):
+    # the kind's label a message: translated when the notice is sent
+    job = utils.say(gettext_noop("%(kind)s: %(resource)s"), kind=utils.say(label_of(op.kind)), resource=op.resource_label) \
+        if op.resource_label else utils.say(label_of(op.kind))
+    # stored messages, each kept, or text as it is
+    error = [m if isinstance(m, dict) and "text" in m else utils.say(utils.safe_text(m))[0]
+             for m in (outcome.error if isinstance(outcome.error, list) else [outcome.error] if outcome.error else [])] \
+        or utils.say(gettext_noop("No reason was given"))
+    if outcome.state == Operation.UNCERTAIN:
+        alerts.alert(utils.say(gettext_noop("Job ended uncertain: %(job)s"), job=job),
+                     utils.say(gettext_noop("Job #%(id)s (%(job)s) ended uncertain; it keeps what it holds until a "
+                                            "superuser resolves it on its page. %(error)s"), id=op.pk, job=job, error=error))
+    elif outcome.state == Operation.FAILED and op.kind in ALERTED_FAILURES:
+        alerts.alert(utils.say(gettext_noop("Job failed: %(job)s"), job=job),
+                     utils.say(gettext_noop("Job #%(id)s (%(job)s) failed: %(error)s"), id=op.pk, job=job, error=error))
 
 
 def resolve(op_id, user, outcome_state, note):
@@ -296,3 +328,6 @@ def take_remembered(request, resource):
     if taken:  # untouched otherwise: no session write on every page view
         request.session["operations_shown"] = [e for e in entries if e["resource"] != resource]
     return taken
+
+
+register_periodic(alerts.send)

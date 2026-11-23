@@ -58,8 +58,8 @@ class MigrateJobTestCase(TransactionTestCase):
         op = self.queue(live_migrate="true")
         self.assertEqual(set(Claim.objects.values_list("resource", "mode")), {
             (f"instance:{UUID}", "exclusive"), ("name:mig-vm", "exclusive"),
-            (f"compute:{self.source.pk}", "shared"), (f"reconcile:{self.source.pk}", "exclusive"),
-            (f"compute:{self.dest.pk}", "shared"), (f"reconcile:{self.dest.pk}", "exclusive")})
+            (f"compute:{self.source.pk}", "shared"), (f"reconcile:{self.source.pk}", "shared"),
+            (f"compute:{self.dest.pk}", "shared"), (f"reconcile:{self.dest.pk}", "shared")})
         self.dest_conn.moveto.assert_not_called()  # nothing ran in the request
         ctx = self.start(op)
         get_kind(op.kind).precheck(op, ctx)
@@ -204,8 +204,8 @@ class MigrateJobTestCase(TransactionTestCase):
         self.assertEqual(dest.migration_plan.call_args.args[1:], ("<domain/>", "<domain/>"))
         self.assertEqual(Instance.proxy.instance.XMLDesc.call_args_list[-1].args, (VIR_DOMAIN_XML_INACTIVE,))
         # the pool on the disk's directory is chosen; one that has a file of the name cannot be
-        self.assertIn('<option value="default" selected>Copy to default (8.0\xa0GB free)</option>', page)
-        self.assertIn('<option value="fast">Copy to fast (8.0\xa0GB free)</option>', page)
+        self.assertIn('<option value="default" selected>Copy to default (8\xa0GiB free)</option>', page)
+        self.assertIn('<option value="fast">Copy to fast (8\xa0GiB free)</option>', page)
         self.assertIn('<option value="fast" disabled>fast has a file of this name</option>', page)
         self.assertIn("Cannot be copied: an image is not copied; eject it first", page)
         self.assertEqual(page.count("Another disk of the VM has this file name: copy them to different pools."), 1)
@@ -281,6 +281,23 @@ class MigrateJobTestCase(TransactionTestCase):
                 get_kind(op.kind).precheck(op, ctx)
                 get_kind(op.kind).run(op, ctx)
                 self.assertEqual(self.dest_conn.moveto.call_args.kwargs["uri"], uri)
+                Operation.objects.all().delete()
+                Claim.objects.all().delete()
+
+    def test_tls_only_when_both_hosts_encrypt_migrations(self):
+        for source_tls, dest_tls, key in ((True, False, "key-mig00021"), (True, True, "key-mig00022")):
+            with self.subTest(source=source_tls, dest=dest_tls):
+                Compute.objects.filter(pk=self.source.pk).update(migration_tls=source_tls)
+                Compute.objects.filter(pk=self.dest.pk).update(migration_tls=dest_tls)
+                self.vm.compute = self.source  # back where the last one moved it from
+                self.vm.save()
+                self.client.post(reverse("instances:migrate", args=[self.vm.pk]),
+                                 {"compute_id": self.dest.pk, "submission_key": key, "live_migrate": "true"})
+                op = Operation.objects.latest("created_at")
+                ctx = self.start(op)
+                get_kind(op.kind).precheck(op, ctx)
+                get_kind(op.kind).run(op, ctx)
+                self.assertEqual(self.dest_conn.moveto.call_args.kwargs["tls"], source_tls and dest_tls)
                 Operation.objects.all().delete()
                 Claim.objects.all().delete()
 

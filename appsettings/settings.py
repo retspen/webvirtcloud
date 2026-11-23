@@ -1,4 +1,4 @@
-from django.db import DatabaseError
+from django.db import Error as DatabaseError
 
 from .models import AppSettings
 

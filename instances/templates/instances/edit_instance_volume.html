@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load common_tags %}
 {% if request.user.is_superuser %}
     <button href="#editvol{{ id }}" type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal">{% trans "Edit" %}</button>
 
@@ -8,7 +9,7 @@
                 <div class="modal-header align-items-start">
                     <div>
                         <h5 class="modal-title" id="editInstanceVolumeLabel{{ id }}">{% blocktrans with dev=disk.dev %}Edit {{ dev }}{% endblocktrans %}</h5>
-                        <p class="small text-body-secondary mb-0 mt-1">{{ disk.bus }} · {{ disk.format|default:"—" }} · {{ disk.size|filesizeformat }}</p>
+                        <p class="small text-body-secondary mb-0 mt-1">{{ disk.bus }} · {{ disk.format|default:"—" }} · {{ disk.size|binary_size }}</p>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
                 </div>

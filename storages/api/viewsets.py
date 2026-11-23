@@ -10,9 +10,11 @@ from django.utils.translation import gettext as _
 from drf_spectacular.utils import extend_schema, inline_serializer
 from libvirt import libvirtError
 from logs.audit import audit, failed
+from operations import claims
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from vmbackups.utils import pool_stop_claims, refuse_backup_volume
 from vrtManager.storage import wvmStorage, wvmStorages
 from webvirtcloud.serializers import ErrorSerializer, StatusSerializer
 
@@ -92,7 +94,9 @@ class StorageViewSet(viewsets.ViewSet):
         conn = wvmStorage(
             compute.hostname, compute.login, compute.password, compute.type, pk
         )
-        with audit(request, compute, f"Storage pool {pk}", "stop"):
+        # not while a job (a download, a copy) works in it
+        with claims.hold(pool_stop_claims(compute, pk)), \
+                audit(request, compute, f"Storage pool {pk}", "stop"):
             ret = conn.stop()
         return Response({"status": "Pool stop command send: " + str(ret)})
 
@@ -208,6 +212,7 @@ class VolumeViewSet(viewsets.ViewSet):
         subject, action = f"Storage pool {storage_pk}", f"delete volume {pk}"
         if conn.is_active():
             with audit(request, compute, subject, action):
+                refuse_backup_volume(compute, storage_pk, pk)
                 conn.check_unused_elsewhere(pk, lambda paths: paths_used_on_other_computes(compute, paths))
                 # no VM operation attaches it between the check and the delete
                 with libvirt_compute_lock(compute):

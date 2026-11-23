@@ -1,5 +1,6 @@
 from django.utils.translation import gettext_noop
 import contextlib
+import errno
 import io
 import logging
 import os
@@ -188,11 +189,20 @@ request_finished.connect(_request_finished, dispatch_uid="vrtManager.connection.
 
 # libvirt's per-host directory of the VMs' UEFI variables (NVRAM)
 NVRAM_DIR = "/var/lib/libvirt/qemu/nvram"
+# libvirt's per-host directory of the emulated TPMs' state: <vm uuid>/tpm2/
+SWTPM_DIR = "/var/lib/libvirt/swtpm"
 # the files and devices of a definition's disks that may grow from others; a
 # raw one does not
 UNREAD_DISKS = etree.XPath("devices/disk[@device='disk'][not(driver/@type='raw')]/source/@file|"
                            "devices/disk[@device='disk'][not(driver/@type='raw')]/source/@dev")
 
+
+# One use of NVRAM_DIR's pool at a time (_nvram_pool), on every host: a copy
+# holds two hosts' pools, and locks per host taken by migrations both ways
+# could deadlock. Reentrant, as that copy takes it twice.
+# A lock of the process is enough: every user (migration, clone, backup and
+# their recoveries) runs in the worker, the one process that runs jobs.
+NVRAM_LOCK = threading.RLock()
 
 class wvmConnection(object):
     """
@@ -1041,7 +1051,13 @@ class wvmConnect(object):
     @contextlib.contextmanager
     def _nvram_pool(self):
         """An active, refreshed pool on NVRAM_DIR: libvirt reads and deletes
-        files only as volumes of a pool. A transient one when none exists."""
+        files only as volumes of a pool. A transient one when none exists,
+        destroyed after: one use at a time (NVRAM_LOCK), as another would
+        take that pool for the host's and lose it midway."""
+        with NVRAM_LOCK:
+            yield from self._nvram_pool_unlocked()
+
+    def _nvram_pool_unlocked(self):
         pool = self.pool_at(NVRAM_DIR)
         if pool is not None:
             pool.refresh(0)
@@ -1059,16 +1075,47 @@ class wvmConnect(object):
             with contextlib.suppress(libvirtError):
                 pool.destroy()
 
-    def upload_volume(self, pool, name, data):
+    @contextlib.contextmanager
+    def _tpm_pool(self, vm_uuid, build=False):
+        """An active, refreshed pool on the TPM 2.0 state directory of the VM
+        vm_uuid, destroyed after; None when the directory does not exist (the
+        VM never started) and build is false; build makes it. Used only by
+        the worker's jobs that hold the VM: the pool a stopped worker left on
+        the directory is taken, as libvirt refuses a second one."""
+        path = f"{SWTPM_DIR}/{vm_uuid}/tpm2"
+        pool = self.pool_at(path)
+        if pool is not None:
+            pool.refresh(0)
+        else:
+            try:
+                pool = self.wvm.storagePoolCreateXML(
+                    f"<pool type='dir'><name>webvirtcloud-tpm-{uuid.uuid4().hex[:8]}</name>"
+                    f"<target><path>{path}</path></target></pool>",
+                    libvirt.VIR_STORAGE_POOL_CREATE_WITH_BUILD if build else 0,
+                )
+            except libvirtError as err:
+                if build or err.get_error_code() != libvirt.VIR_ERR_SYSTEM_ERROR or err.get_int1() != errno.ENOENT:
+                    raise
+                yield None
+                return
+        try:
+            yield pool
+        finally:
+            with contextlib.suppress(libvirtError):
+                pool.destroy()
+
+    def upload_volume(self, pool, name, data, owner=None, mode="0644"):
         """A new raw volume in pool holding data, written through a libvirt
-        stream, which every connection type carries. A failed write leaves
-        no volume."""
+        stream, which every connection type carries; owner: (uid, gid) of
+        its file, else libvirt's (root). A failed write leaves no volume."""
+        permissions = (f"<permissions><owner>{owner[0]}</owner><group>{owner[1]}</group><mode>{mode}</mode></permissions>"
+                       if owner else "")
         stream = self.wvm.newStream(0)
         vol = None
         try:
             vol = pool.createXML(
                 f"<volume><name>{util.xml_escape(name)}</name><capacity>{len(data)}</capacity>"
-                "<target><format type='raw'/></target></volume>",
+                f"<target><format type='raw'/>{permissions}</target></volume>",
                 0,
             )
             vol.upload(stream, 0, len(data), 0)
@@ -1082,6 +1129,21 @@ class wvmConnect(object):
                 vol.delete(0)
             raise
         return vol
+
+    def download_volume(self, vol):
+        """A volume's bytes, read through a libvirt stream. For small files
+        (NVRAM, a backup's definition and manifest): held in memory."""
+        chunks = []
+        stream = self.wvm.newStream(0)
+        try:
+            vol.download(stream, 0, 0, 0)
+            stream.recvAll(lambda _stream, data, out: out.append(data), chunks)
+            stream.finish()
+        except Exception:
+            with contextlib.suppress(libvirtError):
+                stream.abort()
+            raise
+        return b"".join(chunks)
 
     @staticmethod
     def _find_volume(pool, name):
@@ -1111,14 +1173,15 @@ class wvmConnect(object):
         return instances
 
     def get_domain_states(self):
-        """{uuid: [name, state]} of every domain, in one call."""
-        return {dom.UUIDString(): [dom.name(), stats["state.state"]]
+        """{uuid: [name, state, reason]} of every domain, in one call."""
+        return {dom.UUIDString(): [dom.name(), stats["state.state"], stats["state.reason"]]
                 for dom, stats in self.wvm.getAllDomainStats(libvirt.VIR_DOMAIN_STATS_STATE)}
 
     def get_domain_rows(self, uuids=None):
-        """{uuid: (info, title)} of every domain, or of those in uuids, as the
-        VM lists show them: info in virDomainGetInfo's shape (state, max
-        memory KiB, memory KiB, vCPUs), the states in one call and the rest
+        """{uuid: (info, title, reason)} of every domain, or of those in uuids,
+        as the VM lists show them: info in virDomainGetInfo's shape (state, max
+        memory KiB, memory KiB, vCPUs), reason the state's (virDomainGetState),
+        the states in one call and the rest
         from each domain's live XML, which the title needs anyway. A domain
         gone meanwhile is left out."""
         rows = {}
@@ -1132,7 +1195,7 @@ class wvmConnect(object):
             vcpu = doc.find("vcpu")
             info = [stats["state.state"], int(doc.findtext("memory")), int(doc.findtext("currentMemory")),
                     int(vcpu.get("current", vcpu.text))]
-            rows[dom.UUIDString()] = (info, doc.findtext("title") or "")
+            rows[dom.UUIDString()] = (info, doc.findtext("title") or "", stats["state.reason"])
         return rows
 
     def domain_trees(self, running_only=False):
@@ -1158,19 +1221,30 @@ class wvmConnect(object):
         return sorted(name for name, trees in self.domain_trees(running_only) if any(map(match, trees)))
 
     def paths_in_use(self, skip_uuid=None, own=()):
-        """Paths (names for network disks) a domain uses as a disk or a
-        backing file of one, in its saved state too, or as a file of its
-        snapshots (overlays, memory, the disks they were taken on); and the
-        backing files of volumes.
+        """The paths of path_users."""
+        return set(self.path_users(skip_uuid, own))
+
+    def path_users(self, skip_uuid=None, own=()):
+        """{path: names of the domains that use it} for the paths (names for
+        network disks) a domain uses as a disk or a backing file of one, as
+        its UEFI variables, in its saved state too, or as a file of its
+        snapshots (overlays, memory, the disks they were taken on); and,
+        with no name, the backing files of volumes.
         skip_uuid leaves out one domain, own the volumes whose backing files
         do not count. util.InUse when a disk not running has its file in an
         inactive pool: the files it is made from cannot be read."""
-        used, unread = set(), set()
+        users, unread = {}, set()
         for dom in self.wvm.listAllDomains():
             if dom.UUIDString() == skip_uuid:
                 continue
+            name = dom.name()
+
+            def use(paths):
+                for path in paths:
+                    users.setdefault(path, set()).add(name)
+
             live, config = (etree.fromstring(dom.XMLDesc(flags)) for flags in (0, libvirt.VIR_DOMAIN_XML_INACTIVE))
-            used.update(self._source_paths(live), self._source_paths(config))
+            use(self._source_paths(live) + self._source_paths(config))
             # a running disk's definition has its backing chain; the others' volumes have it
             unread.update(set(UNREAD_DISKS(config)) - (set(UNREAD_DISKS(live)) if dom.isActive() else set()))
             # a saved state starts with the disks it was saved with, detached since or not
@@ -1185,16 +1259,17 @@ class wvmConnect(object):
                     # the image went meanwhile: the VM may have started from it
                     saved = dom.XMLDesc(0)
                 saved = etree.fromstring(saved)
-                used.update(self._source_paths(saved))
+                use(self._source_paths(saved))
                 unread.update(UNREAD_DISKS(saved))
             for snap in dom.listAllSnapshots(0):
                 tree = etree.fromstring(snap.getXMLDesc(0))
-                used.update(tree.xpath("disks/disk/source/@file|memory/@file"))
+                use(tree.xpath("disks/disk/source/@file|disks/disk/source/@dev|disks/disk/source/@name|memory/@file"))
                 for saved in tree.xpath("domain|inactiveDomain"):
-                    used.update(self._source_paths(saved))
+                    use(self._source_paths(saved))
                     unread.update(UNREAD_DISKS(saved))
         # A stopped domain's XML has no backing chain; the volumes have it.
         # Any volume backed by a path keeps that path, even an unattached one.
+        built_on = {}  # a backing path: the volumes built on it
         for pool in self.wvm.listAllStoragePools():
             if not pool.isActive():
                 target = util.get_xml_path(pool.XMLDesc(0), "/pool/target/path")
@@ -1209,18 +1284,30 @@ class wvmConnect(object):
                 # only a volume removed meanwhile is skipped: one that cannot
                 # be read may still keep a backing file
                 try:
-                    if vol.path() not in own:
-                        used.update(etree.fromstring(vol.XMLDesc(0)).xpath("./backingStore/path/text()"))
+                    if (top := vol.path()) not in own:
+                        for path in etree.fromstring(vol.XMLDesc(0)).xpath("./backingStore/path/text()"):
+                            users.setdefault(path, set())
+                            built_on.setdefault(path, []).append(top)
                 except libvirtError as err:
                     if err.get_error_code() != libvirt.VIR_ERR_NO_STORAGE_VOL:
                         raise
-        return used
+        # a backing file is used by the domains of the volumes built on it, down the chain
+        changed = True
+        while changed:
+            changed = False
+            for path, tops in built_on.items():
+                names = set().union(*(users.get(top, set()) for top in tops)) - users[path]
+                if names:
+                    users[path] |= names
+                    changed = True
+        return users
 
     def _source_paths(self, domain):
         """The files, devices or network names of a domain definition's
         disks and of their backing chains ("//" reaches a running domain's
-        backingStore); a pool volume source as its volume's path."""
-        paths = []
+        backingStore), and of its UEFI variables; a pool volume source as its volume's path."""
+        paths = domain.xpath("os/nvram/text()|os/nvram/source/@file|os/nvram/source/@dev|os/nvram/source/@name|"
+                             "os/varstore/@path")
         for source in domain.xpath("devices/disk//source"):
             if source.get("pool") and source.get("volume"):
                 try:
@@ -1298,6 +1385,21 @@ class wvmConnect(object):
             return None
 
         return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=tpm_model)
+
+    def get_panic_model(self, arch, machine):
+        """The panic device a guest reports its crash through (pvpanic: Linux
+        has it built in, Windows with the virtio-win driver), for on_crash to
+        act on; None when the machine has none."""
+
+        def panic_model(ctx):
+            if not ctx.xpath("/domainCapabilities/devices/panic"):
+                # libvirt that does not tell (before 10.x): x86 has the ISA one
+                return "isa" if arch in ("x86_64", "i686") else None
+            models = ctx.xpath("/domainCapabilities/devices/panic[@supported='yes']/enum[@name='model']/value/text()")
+            # x86 ISA pvpanic, the PCI one elsewhere (aarch64), or the machine's own; hyperv needs Hyper-V enlightenments
+            return next((model for model in ("isa", "pvpanic", "pseries", "s390") if model in models), None)
+
+        return util.get_xml_path(self.get_dom_cap_xml(arch, machine), func=panic_model)
 
     def is_supports_virtio(self, arch, machine):
         if not self.is_qemu():

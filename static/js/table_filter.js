@@ -4,15 +4,19 @@
 // shows when its text contains the search, in any case: plain text, not a
 // pattern. A row with data-search is searched in that text only, not in its
 // buttons and menus. With a state list, the row's [data-state] must
-// be the chosen state too. In a grouped list a search for a group's host
+// be the chosen state too; with tag pills (#tag-pills, #tag-filter), the chosen tag
+// one of the row's data-tags (names split by spaces), or "-" none of them.
+// A tag's badge ([data-tag-filter]) chooses its pill; a row's "…"
+// ([data-show-tags]) shows its other tags. In a grouped list a search for a group's host
 // shows all of its rows, and its header row (data-group-header) shows while
 // any of its rows does. A page's #no-match shows while no row does. The
 // search is remembered for a day, per page, unless its box has data-forget.
 //
 // The instance list's state pills (#state-pills) set the state; each one's
 // [data-count-state] counts the VMs of its state the search finds (its
-// state left aside), "" all of them; a state's pill with none is hidden
-// unless chosen; the chosen state is remembered as the search is, so that a
+// state left aside, the tag not), "" all of them; a tag's pill's [data-count-tag]
+// the rows with its tag ("-" none) the search and the state find. A pill with none
+// is hidden unless chosen; the chosen state and tag are remembered as the search is, so that a
 // list the poll reloads keeps it. #filter-status tells screen readers how
 // many VMs match, collapsed hosts' VMs too.
 
@@ -22,12 +26,26 @@ function fold(text) {
     return text.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/ı/g, "i");
 }
 
+// each count (selector, its value in dataset[key]) shows how many rows counts has for
+// its value; its pill is hidden with none, unless chosen or "" (all)
+function showCounts(doc, selector, key, counts, chosen) {
+    doc.querySelectorAll(selector).forEach(function (count) {
+        var value = count.dataset[key];
+        var n = counts[value] || 0;
+        count.textContent = n;
+        count.parentElement.hidden = n === 0 && value !== "" && value !== chosen;
+    });
+}
+
 function filterTable(doc) {
     var text = fold(doc.getElementById("filter").value);
     var states = doc.getElementById("state-filter");
     var state = states ? states.value : "";
+    var tags = doc.getElementById("tag-filter");
+    var tag = tags ? tags.value : "";
     var anyShown = false;
-    var counts = {"": 0}, vms = 0, shownVms = 0;
+    // by tag name: no names of an object's own ("constructor") to start with
+    var counts = {"": 0}, tagCounts = Object.create(null), vms = 0, shownVms = 0;
     doc.querySelectorAll(".searchable").forEach(function (group) {
         var host = group.dataset.host;
         var hostMatches = host !== undefined && fold(host).includes(text);
@@ -39,8 +57,17 @@ function filterTable(doc) {
             }
             var mark = row.querySelector("[data-state]");
             var searched = row.dataset.search !== undefined ? row.dataset.search : row.textContent;
-            var found = hostMatches || fold(searched).includes(text);
-            row.hidden = !((!state || (mark && mark.dataset.state === state)) && found);
+            var rowTags = row.dataset.tags || "";
+            var tagged = !tag || (tag === "-" ? rowTags === "" : rowTags.split(" ").indexOf(tag) >= 0);
+            var searchFound = hostMatches || fold(searched).includes(text);
+            var found = searchFound && tagged;
+            var inState = !state || (mark && mark.dataset.state === state);
+            row.hidden = !(inState && found);
+            if (row.dataset.tags !== undefined && searchFound && inState) {
+                (rowTags ? rowTags.split(" ") : ["-"]).forEach(function (name) {
+                    tagCounts[name] = (tagCounts[name] || 0) + 1;
+                });
+            }
             shown = shown || !row.hidden;
             if (mark) {
                 vms += 1;
@@ -60,10 +87,15 @@ function filterTable(doc) {
     if (noMatch) {
         noMatch.hidden = anyShown;
     }
-    doc.querySelectorAll("[data-count-state]").forEach(function (count) {
-        var n = counts[count.dataset.countState] || 0;
+    showCounts(doc, "[data-count-state]", "countState", counts, state);
+    showCounts(doc, "[data-count-tag]", "countTag", tagCounts, tag);
+    // "…" of the tag pills: how many behind it the search and the state leave; with none, or once
+    // it has shown them, it is hidden
+    doc.querySelectorAll("[data-more-count]").forEach(function (count) {
+        var button = count.parentElement, others = button.nextElementSibling;
+        var n = others.querySelectorAll("[data-pill]:not([hidden])").length;
         count.textContent = n;
-        count.parentElement.hidden = n === 0 && count.dataset.countState !== "" && count.dataset.countState !== state;
+        button.hidden = !others.hidden || n === 0;
     });
     var status = doc.getElementById("filter-status");
     if (status) {
@@ -107,47 +139,101 @@ if (typeof module !== "undefined") {
             filterTable(document);
         });
     }
-    var pills = document.getElementById("state-pills");
-    function chooseState(pill) {
-        states.value = pill.dataset.pillState;
-        keep(states.value, key + "_state");
-        pills.querySelectorAll("[data-pill-state]").forEach(function (other) {
-            other.classList.toggle("active", other === pill);
-            other.setAttribute("aria-pressed", other === pill);
-        });
-        filterTable(document);
-    }
-    if (pills) {
-        var kept = "";
-        try {
-            kept = sessionStorage.getItem(key + "_state") || "";
-        } catch (e) {
-            // storage turned off: all states
+    // a row of pills (data-pill="value"): the one pressed sets its filter (a hidden
+    // input) and is remembered under which, as the search is; the value kept is chosen
+    // again, or forgotten when no pill has it any longer (a tag made again later is
+    // not chosen by itself). Gives the function that chooses a value's pill.
+    function pillRow(pills, input, which) {
+        var all = pills.querySelectorAll("[data-pill]");
+        function choose(pill) {
+            // one behind "…" (kept, or chosen by a badge): the pills behind it show
+            var others = pill.parentElement.closest("[hidden]");
+            if (others) {
+                others.hidden = false;
+                others.previousElementSibling.hidden = true;
+            }
+            input.value = pill.dataset.pill;
+            keep(input.value, which);
+            all.forEach(function (other) {
+                other.classList.toggle("active", other === pill);
+                other.setAttribute("aria-pressed", other === pill);
+            });
+            filterTable(document);
         }
-        var keptPill = kept && Array.prototype.find.call(pills.querySelectorAll("[data-pill-state]"), function (pill) {
-            return pill.dataset.pillState === kept;
-        });
-        if (keptPill) {
-            chooseState(keptPill);
+        function chooseValue(value) {
+            var pill = Array.prototype.find.call(all, function (one) { return one.dataset.pill === value; });
+            if (pill) {
+                choose(pill);
+            }
+            return pill;
         }
         pills.addEventListener("click", function (event) {
-            var pill = event.target.closest("[data-pill-state]");
+            var pill = event.target.closest("[data-pill]");
             if (pill) {
-                chooseState(pill);
+                choose(pill);
             }
         });
+        var kept = "";
+        try {
+            kept = sessionStorage.getItem(which) || "";
+        } catch (e) {
+            // storage turned off: all
+        }
+        if (kept && !chooseValue(kept)) {
+            keep("", which);
+        }
+        return chooseValue;
     }
+    var statePills = document.getElementById("state-pills");
+    var chooseState = statePills && pillRow(statePills, states, key + "_state");
+    var tagPills = document.getElementById("tag-pills");
+    var chooseTag = tagPills && pillRow(tagPills, document.getElementById("tag-filter"), key + "_tag");
+    if (!tagPills) {
+        keep("", key + "_tag");  // no row has a tag: none is kept to come back later
+    }
+    // a link may ask for one tag's rows (the Tags page: ?tag=name): only that tag then, on a
+    // list that has it. The address loses it, so the list's own reload keeps what is chosen afterwards.
+    var query = new URLSearchParams(window.location.search);
+    if (query.has("tag") && chooseTag && chooseTag(query.get("tag"))) {
+        search.value = "";
+        keep("");
+        if (chooseState) {
+            chooseState("");
+        }
+        filterTable(document);
+        query.delete("tag");
+        history.replaceState(null, "", window.location.pathname + (query.size ? "?" + query : "") + window.location.hash);
+    }
+    document.addEventListener("click", function (event) {
+        var more = event.target.closest("[data-show-tags]");
+        if (more) {
+            var others = more.nextElementSibling;
+            more.hidden = true;
+            others.hidden = false;
+            // the focus is not lost with the button: the first tag shown takes it, or the tags if they are not buttons
+            (others.querySelector("button:not([hidden])") || others).focus();
+            return;
+        }
+        var badge = event.target.closest("[data-tag-filter]");
+        if (badge && chooseTag) {
+            chooseTag(badge.dataset.tagFilter);
+        }
+    });
     var clear = document.getElementById("clear-filters");
     if (clear) {
         clear.addEventListener("click", function () {
             search.value = "";
             keep("");
-            if (pills) {
-                chooseState(pills.querySelector('[data-pill-state=""]'));
+            if (chooseTag) {
+                chooseTag("");
+            }
+            if (chooseState) {
+                chooseState("");
             } else if (states) {
                 states.value = "";
             }
             filterTable(document);
+            search.focus();  // the button hid with the message it is in
         });
     }
     filterTable(document);

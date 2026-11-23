@@ -5,6 +5,7 @@ from computes.api.viewsets import ComputeArchitecturesView, ComputeViewSet
 from networks.api.viewsets import NetworkViewSet
 from interfaces.api.viewsets import InterfaceViewSet
 from operations.api.viewsets import OperationViewSet
+from vmbackups.api import BackupViewSet
 from storages.api.viewsets import StorageViewSet, VolumeViewSet
 from instances.api.viewsets import FlavorViewSet, \
                                     InstancesViewSet, \
@@ -19,6 +20,7 @@ router.register(r'migrate', MigrateViewSet, basename='instance-migrate')
 router.register(r'flavor', FlavorViewSet, basename='instance-flavor')
 router.register(r'instances', InstancesViewSet, basename='instance')
 router.register(r'operations', OperationViewSet, basename='operation')
+router.register(r'backups', BackupViewSet, basename='backup')
 
 compute_router = routers.NestedSimpleRouter(router, r'computes', lookup='compute', use_regex_path=False)
 compute_router.register(r'instances', InstanceViewSet, basename='compute-instance')

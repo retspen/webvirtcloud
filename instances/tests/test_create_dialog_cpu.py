@@ -10,6 +10,7 @@ import unittest
 from unittest.mock import PropertyMock, patch
 
 from computes.models import Compute
+from django.utils import timezone
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -35,7 +36,7 @@ const handlers = {}, requests = [];
 const dialog = {addEventListener: (name, fn) => { handlers[name] = fn; },
                 querySelectorAll: (sel) => sel === ".cpu-usage" ? cells : cells.flatMap((c, i) => [c, lines[i]])};
 const page = {
-    document: {getElementById: () => dialog},
+    document: {documentElement: {lang: "en"}, getElementById: () => dialog},
     $: {get: (url) => {
         const r = {url, done: (f) => { r.ok = f; return r; }, fail: (f) => { r.err = f; return r; },
                    always: (f) => { r.end = f; return r; }};
@@ -144,6 +145,15 @@ class CreateDialogHostsTestCase(TestCase):
         dialog = self.dialog({"cd2"})
         self.assertEqual([e.text for e in dialog.xpath(".//a/div/div[1]")], ["cd2"])
         self.assertNotIn("No compute is reachable", dialog.text_content())
+
+    def test_a_host_in_maintenance_is_listed_but_cannot_be_chosen(self):
+        Compute.objects.filter(name="cd1").update(maintenance_since=timezone.now())
+        dialog = self.dialog({"cd1", "cd2"})
+        self.assertEqual([e.text for e in dialog.xpath(".//a/div/div[1]")], ["cd2"])
+        (item,) = dialog.xpath(".//div[@aria-disabled='true']")
+        self.assertIn("cd1", item.text_content())
+        self.assertIn("Maintenance", item.text_content())
+        self.assertNotIn("In maintenance", item.text_content())  # it may still be only requested
 
     def test_no_reachable_compute_is_said(self):
         dialog = self.dialog(set())

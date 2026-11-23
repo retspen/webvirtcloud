@@ -10,7 +10,6 @@
 {% endblock page_heading %}
 
 {% block content %}
-    {% include 'pleasewaitdialog.html' %}
     <div>
         {% include "create_steps.html" with step=2 %}
 
@@ -51,7 +50,7 @@
                     </button>
                 </h2>
                 <div class="accordion-collapse collapse{% if xml_error %} show{% endif %}" id="from-xml">
-                    <form method="post" class="accordion-body" aria-label="{% trans "Create instance from XML" %}" data-please-wait>{% csrf_token %}
+                    <form method="post" class="accordion-body" aria-label="{% trans "Create instance from XML" %}">{% csrf_token %}
                         {% if xml_error %}<div class="alert alert-danger form-errors" role="alert">{{ xml_error }}</div>{% endif %}
                         <input type="hidden" name="dom_xml" value="{{ xml }}">
                         <div class="xmlheight mb-3"><textarea id="editor" aria-label="{% trans "Domain XML" %}">{{ xml }}</textarea></div>

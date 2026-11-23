@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 from gunicorn.workers.gthread import ThreadWorker
 
-from webvirtcloud.gunicorn_worker import Worker
+from webvirtcloud.gunicorn_worker import Worker, request_progressed
 
 
 def worker():
@@ -37,6 +37,16 @@ class WorkerTestCase(unittest.TestCase):
     def test_the_worker_reports_in_while_its_requests_are_within_the_timeout(self):
         w = worker()
         w.started[1] = time.monotonic() - 599
+        with patch.object(ThreadWorker, "notify") as notify, patch("os._exit") as exit_:
+            w.notify()
+        notify.assert_called_once_with()
+        exit_.assert_not_called()
+
+    def test_a_request_that_still_sends_is_timed_from_its_last_progress(self):
+        w = worker()
+        w.started[threading.get_ident()] = time.monotonic() - 601
+        with patch("webvirtcloud.gunicorn_worker._worker", w):
+            request_progressed()
         with patch.object(ThreadWorker, "notify") as notify, patch("os._exit") as exit_:
             w.notify()
         notify.assert_called_once_with()

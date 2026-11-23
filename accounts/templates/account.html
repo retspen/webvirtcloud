@@ -3,8 +3,8 @@
 {% load i18n %}
 {% load bootstrap_icons %}
 
-{% block title %}{% trans "User Profile" %} - {{ user }}{% endblock %}
-{% block page_heading %}{% trans "User Profile" %}{% endblock page_heading %}
+{% block title %}{% trans "User profile" %} - {{ user }}{% endblock %}
+{% block page_heading %}{% trans "User profile" %}{% endblock page_heading %}
 
 {% block content %}
 <section class="card mb-4" aria-labelledby="identity-title">
@@ -19,6 +19,7 @@
                         <span class="badge text-bg-secondary">{% trans "Template editor" %}</span>
                     {% endif %}
                     {% if not user.is_active %}<span class="badge text-bg-danger">{% trans "Blocked" %}</span>{% endif %}
+                    {% if locked %}<span class="badge bg-warning text-dark">{% trans "Sign-in locked" %}</span>{% endif %}
                 </div>
                 <div class="d-flex flex-wrap align-items-center gap-2 small mt-2">
                     <span class="text-body-secondary text-break">{{ user.username }}</span>
@@ -32,6 +33,11 @@
             </div>
             <div class="col-lg-4 d-flex flex-wrap justify-content-lg-end gap-2">
                 <a href="{% url 'admin:user_update' user.id %}?next={% url 'accounts:account' user.id %}" class="btn btn-primary">{% bs_icon 'pencil' %} {% trans "Edit user" %}</a>
+                {% if locked %}
+                    <form method="post" action="{% url 'accounts:admin_unlock' user.id %}">{% csrf_token %}
+                        <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-unlock" aria-hidden="true"></i> {% trans "Unlock sign-in" %}</button>
+                    </form>
+                {% endif %}
                 {% if otp_enabled %}
                     <form method="post" action="{% url 'accounts:admin_email_otp' user.id %}">{% csrf_token %}
                         <button type="submit" class="btn btn-outline-secondary">{% bs_icon 'qr-code' %} {% trans "Email OTP QR code" %}</button>
@@ -48,8 +54,8 @@
     </div>
     <nav class="card-footer d-flex flex-wrap gap-3 small" aria-label="{% trans 'User sections' %}">
         <a href="#instances">{% trans "VMs" %} <span class="badge text-bg-light border">{{ user_insts|length }}</span></a>
-        <a href="#public-keys">{% trans "SSH Keys" %} <span class="badge text-bg-light border">{{ publickeys|length }}</span></a>
-        <a href="#apitokens">{% trans "API Tokens" %} <span class="badge text-bg-light border">{{ api_tokens|length }}</span></a>
+        <a href="#public-keys">{% trans "SSH keys" %} <span class="badge text-bg-light border">{{ publickeys|length }}</span></a>
+        <a href="#apitokens">{% trans "API tokens" %} <span class="badge text-bg-light border">{{ api_tokens|length }}</span></a>
     </nav>
 </section>
 
@@ -66,6 +72,7 @@
                     <div class="col-12 col-md-6">
                         <a class="fw-semibold text-break" href="{% url 'instances:instance' inst.instance.id %}">{{ inst.instance.name }}</a>
                         <div class="small text-body-secondary text-break">{% trans "Host" %}: {{ inst.instance.compute.name }}</div>
+                        {% include 'common/tag_badges.html' with tags=inst.instance.tags.all %}
                     </div>
                     <div class="col-12 col-md-6 d-flex flex-wrap gap-1">
                         {# the rights as the VM's Users tab names them: every owner powers the VM and opens its console #}
@@ -92,12 +99,12 @@
 </section>
 
 <section class="card mb-4" id="public-keys" aria-labelledby="public-keys-title">
-    <div class="card-header"><h2 class="h5 mb-0" id="public-keys-title">{% trans "SSH Keys" %} <span class="badge text-bg-light border">{{ publickeys|length }}</span></h2></div>
+    <div class="card-header"><h2 class="h5 mb-0" id="public-keys-title">{% trans "SSH keys" %} <span class="badge text-bg-light border">{{ publickeys|length }}</span></h2></div>
     <div class="list-group list-group-flush">{% include "ssh_key_list.html" with owner=user %}</div>
 </section>
 
 <section class="card" id="apitokens" aria-labelledby="apitokens-title">
-    <div class="card-header"><h2 class="h5 mb-0" id="apitokens-title">{% trans "API Tokens" %} <span class="badge text-bg-light border">{{ api_tokens|length }}</span></h2></div>
+    <div class="card-header"><h2 class="h5 mb-0" id="apitokens-title">{% trans "API tokens" %} <span class="badge text-bg-light border">{{ api_tokens|length }}</span></h2></div>
     <div class="list-group list-group-flush">{% include "api_token_list.html" with owner=user %}</div>
 </section>
 {% endblock content %}

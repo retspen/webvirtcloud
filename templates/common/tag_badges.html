@@ -1,0 +1,8 @@
+{% load i18n %}{% load bootstrap_icons %}
+{# tags: a VM's or host's tags (or their names), as small badges; with filter, each chooses its tag in the list's tag filter; #}
+{# more: the tags after them, behind "…" that shows them (table_filter.js) #}
+{% for tag in tags %}{% include 'common/tag_badge.html' %} {% endfor %}
+{% if more %}
+<button type="button" class="badge tag-badge text-bg-light border" data-show-tags title="{{ more|join:", " }}">…<span class="visually-hidden"> {% trans "more tags" %}</span></button>
+<span class="tag-more" hidden tabindex="-1">{% for tag in more %}{% include 'common/tag_badge.html' %} {% endfor %}</span>
+{% endif %}

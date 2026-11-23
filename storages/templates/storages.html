@@ -16,9 +16,7 @@
     </div>
 
     {% if storages is None %}{# not read: the error above says why #}{% elif not storages %}
-        <div class="alert alert-warning shadow-sm">
-            {% bs_icon 'exclamation-triangle' %} {% trans "This host has no storage pools." %}
-        </div>
+        <p class="text-center text-body-secondary py-4">{% trans "This host has no storage pools." %}</p>
     {% else %}
         {# a card per pool, as the host Overview's Hardware and Software cards #}
         <div class="row row-cols-1 row-cols-md-2 g-3 mb-4">
@@ -37,7 +35,7 @@
                     <ul class="list-group list-group-flush flex-grow-1">
                         <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                             <span class="text-body-secondary">{% trans "Type" %}</span>
-                            <span class="badge text-bg-light border">{{ pool.type|upper }}</span>
+                            <span class="badge text-bg-light border">{{ pool.type }}</span>
                         </li>
                         <li class="list-group-item py-1 d-flex justify-content-between align-items-baseline gap-3">
                             <span class="text-body-secondary">{% trans "Path" %}</span>

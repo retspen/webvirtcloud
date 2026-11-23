@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load bootstrap_icons %}
+
+{% block title %}{% trans "Backup targets" %}{% endblock %}
+
+{% block page_heading %}<a href="{% url 'vmbackups:index' %}">{% trans "Backups" %}</a> / {% trans "Backup targets" %}{% endblock page_heading %}
+
+{% block page_heading_extra %}<a class="btn btn-primary btn-sm" href="{% url 'vmbackups:target_new' %}">{% bs_icon 'plus' %} {% trans "New target" %}</a>{% endblock page_heading_extra %}
+
+{% block content %}
+    <p class="text-body-secondary">{% blocktrans %}A backup target is a directory or NFS storage pool made on the hosts. Use storage apart from the VMs' disks: a target on the same storage is lost with it.{% endblocktrans %}</p>
+
+    {% if targets %}
+    <div class="table-responsive mb-4">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr><th>{% trans "Name" %}</th><th>{% trans "Storage pools" %}</th><th class="text-end">{% trans "Backups" %}</th></tr>
+            </thead>
+            <tbody>
+            {% for target in targets %}
+                <tr>
+                    <td><a href="{% url 'vmbackups:target' target.id %}">{{ target.name }}</a></td>
+                    <td>{% for row in target.pools.all %}<span class="badge text-bg-light border me-1">{{ row.compute.name }}: {{ row.pool }}</span>{% empty %}–{% endfor %}</td>
+                    <td class="text-end">{{ target.backup_count }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p class="text-center text-body-secondary py-4">{% trans "No backup target yet." %}</p>
+    {% endif %}
+
+{% endblock %}

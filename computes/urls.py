@@ -6,7 +6,7 @@ from interfaces.views import interface, interfaces
 from networks.views import network, networks
 from nodedevs.views import nodedevs
 from nwfilters.views import nwfilter, nwfilters
-from storages.views import get_volumes, storage, storages
+from storages.views import download_volume, get_volumes, storage, storages
 
 from . import forms, views
 
@@ -28,6 +28,7 @@ def superuser_only_patterns(patterns):
 
 urlpatterns = [
     path("", views.computes, name="computes"),
+    path("balance/", views.balance, name="balance"),
     path(
         "add_tcp_host/",
         views.compute_create,
@@ -59,13 +60,16 @@ urlpatterns = [
                 path("", views.overview, name="overview"),
                 path("update/", views.compute_update, name="compute_update"),
                 path("delete/", views.compute_delete, name="compute_delete"),
+                path("maintenance/", views.maintenance, name="compute_maintenance"),
                 path("statistics", views.compute_graph, name="compute_graph"),
                 path("capacity/", views.capacity, name="compute_capacity"),
                 path("instances/", views.instances, name="instances"),
+                path("bulk-migrate/", views.bulk_migrate, name="bulk_migrate"),
                 path("nodedevs/", nodedevs, name="nodedevs"),
                 path("storages/", storages, name="storages"),
                 path("storage/<str:pool>/volumes/", get_volumes, name="volumes"),
                 path("storage/<str:pool>/", storage, name="storage"),
+                path("storage/<str:pool>/download/<str:vol>", download_volume, name="download_volume"),
                 path("networks/", networks, name="networks"),
                 path("network/<str:pool>/", network, name="network"),
                 path("interfaces/", interfaces, name="interfaces"),

@@ -236,11 +236,51 @@ class DeviceEditsTestCase(unittest.TestCase):
     def test_the_crash_action_is_restart_or_stop(self):
         p = proxy()
         self.assertEqual(p.get_on_crash(), "destroy")  # libvirt's default
-        p.set_on_crash("restart")
-        self.assertEqual(defined(p).findtext("on_crash"), "restart")
         with self.assertRaises(util.OperationError):
             p.set_on_crash("preserve")
-        p._defineXML.assert_called_once()
+        p._defineXML.assert_not_called()
+
+    def test_a_crash_action_gives_the_vm_a_panic_device_and_its_watchdog_the_action(self):
+        def crash_proxy(machine, devices):
+            p = proxy()
+            xml = f"<domain><os><type arch='x86_64' machine='{machine}'>hvm</type></os><devices>{devices}</devices></domain>"
+            p._XMLDesc = lambda flags: xml
+            p.get_panic_model = MagicMock(return_value="isa")
+            return p
+
+        # a pc machine has no watchdog of its own: it gets an i6300esb
+        p = crash_proxy("pc-i440fx-9.2", "")
+        self.assertFalse(p.has_crash_devices())
+        p.set_on_crash("destroy")
+        tree = defined(p)
+        self.assertEqual(tree.findtext("on_crash"), "destroy")
+        self.assertEqual([(d.tag, dict(d.attrib)) for d in tree.find("devices")],
+                         [("panic", {"model": "isa"}), ("watchdog", {"model": "i6300esb", "action": "poweroff"})])
+        p.get_panic_model.assert_called_once_with("x86_64", "pc-i440fx-9.2")
+
+        # q35's iTCO takes the action; a panic device there is kept, not doubled
+        p = crash_proxy("pc-q35-9.2", "<panic model='isa'/><watchdog model='itco' action='poweroff'/>")
+        self.assertTrue(p.has_crash_devices())
+        p.set_on_crash("restart")
+        tree = defined(p)
+        self.assertEqual([(d.tag, dict(d.attrib)) for d in tree.find("devices")],
+                         [("panic", {"model": "isa"}), ("watchdog", {"model": "itco", "action": "reset"})])
+        p.get_panic_model.assert_not_called()
+
+        # libvirt before 9.1 shows no iTCO on q35: a VM with a panic device but no watchdog is not ready, and gets one
+        p = crash_proxy("pc-q35-9.0", "<panic model='isa'/>")
+        self.assertFalse(p.has_crash_devices())
+        p.set_on_crash("restart")
+        self.assertEqual([(d.tag, dict(d.attrib)) for d in defined(p).find("devices")],
+                         [("panic", {"model": "isa"}), ("watchdog", {"model": "i6300esb", "action": "reset"})])
+
+        # microvm has no PCI bus: no watchdog; a host with no panic device for it: the action only
+        p = crash_proxy("microvm", "")
+        p.get_panic_model.return_value = None
+        p.set_on_crash("restart")
+        self.assertEqual((defined(p).findtext("on_crash"), list(defined(p).find("devices"))), ("restart", []))
+        p = crash_proxy("microvm", "<panic model='isa'/>")
+        self.assertTrue(p.has_crash_devices())
 
     def test_cpu_title_and_description_are_read_from_either_definition(self):
         p = proxy()

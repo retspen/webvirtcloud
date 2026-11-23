@@ -133,7 +133,8 @@ class TestCloneRollback(unittest.TestCase):
         source_vol.XMLDesc.return_value = "<volume><target><format type='qcow2'/></target></volume>"
         copy = MagicMock()
         copy.path.return_value = "/pool/copy.qcow2"
-        source_vol.storagePoolLookupByVolume.return_value.createXMLFrom.return_value = copy
+        inst.get_wvmStorage = MagicMock()
+        inst.get_wvmStorage.return_value.clone_volume.return_value = "/pool/copy.qcow2"
         inst.get_volume_by_path = MagicMock(side_effect=lambda path: copy if path == "/pool/copy.qcow2" else source_vol)
         inst._defineXML = MagicMock(side_effect=libvirt.libvirtError("bad definition"))
 

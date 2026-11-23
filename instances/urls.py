@@ -12,6 +12,9 @@ urlpatterns = [
     path("flavor/create/", views.flavor_create, name="flavor_create"),
     path("flavor/<int:pk>/delete/", views.flavor_delete, name="flavor_delete"),
     path("<int:pk>/", views.instance, name="instance"),
+    path("bulk_power/", views.bulk_power, name="bulk_power"),
+    path("bulk_tag/", views.bulk_tag, name="bulk_tag"),
+    path("bulk_snapshot/", views.bulk_snapshot, name="bulk_snapshot"),
     path("<int:pk>/poweron/", views.poweron, name="poweron"),
     path("<int:pk>/powercycle/", views.powercycle, name="powercycle"),
     path("<int:pk>/poweroff/", views.poweroff, name="poweroff"),
@@ -78,6 +81,9 @@ urlpatterns = [
     path("<int:pk>/update_console/", views.update_console, name="update_console"),
     path("<int:pk>/change_options/", views.change_options, name="change_options"),
     path("<int:pk>/set_template/", views.set_template, name="set_template"),
+    path("<int:pk>/set_protected/", views.set_protected, name="set_protected"),
+    path("<int:pk>/set_disk_limit/", views.set_disk_limit, name="set_disk_limit"),
+    path("<int:pk>/set_tags/", views.set_tags, name="set_tags"),
     path(
         "<int:pk>/getvvfile/", views.getvvfile, name="getvvfile"
     ),  # no links to this one???

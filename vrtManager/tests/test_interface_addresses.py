@@ -68,13 +68,14 @@ class InterfaceAddressesTestCase(unittest.TestCase):
 class OsInfoTestCase(unittest.TestCase):
     def test_the_os_details_are_asked_with_a_timeout(self):
         answers = {"guest-get-osinfo": {"kernel-release": "6.12"}, "guest-get-timezone": {"zone": "UTC"},
-                   "guest-get-host-name": {"host-name": "web"}}
+                   "guest-get-host-name": {"host-name": "web"}, "guest-get-fsinfo": []}
         inst = wvmInstance.__new__(wvmInstance)
         inst.instance = MagicMock()
         with patch.object(module, "qemuAgentCommand",
                           side_effect=lambda dom, cmd, timeout, flags: json.dumps(
                               {"return": answers[json.loads(cmd)["execute"]]})) as agent:
-            self.assertEqual(inst.osinfo(), {"kernel-release": "6.12", "zone": "UTC", "host-name": "web"})
+            self.assertEqual(inst.osinfo(), {"kernel-release": "6.12", "zone": "UTC", "host-name": "web",
+                                             "filesystems": []})
         self.assertEqual({c.args[2] for c in agent.call_args_list}, {10})
 
     def test_a_command_the_agent_lacks_leaves_out_only_its_details(self):
@@ -82,13 +83,38 @@ class OsInfoTestCase(unittest.TestCase):
         inst.instance = MagicMock()
 
         def agent(dom, cmd, timeout, flags):
-            if json.loads(cmd)["execute"] == "guest-get-timezone":
-                raise libvirtError("The command guest-get-timezone has not been found")
-            return json.dumps({"return": {"guest-get-osinfo": {"id": "alma"}, "guest-get-host-name": {"host-name": "web"}}[
-                json.loads(cmd)["execute"]]})
+            if json.loads(cmd)["execute"] in ("guest-get-timezone", "guest-get-fsinfo"):
+                raise libvirtError("The command has not been found")
+            # a "filesystems" of another command is not taken for guest_filesystems'
+            return json.dumps({"return": {"guest-get-osinfo": {"id": "alma", "filesystems": "x"},
+                                          "guest-get-host-name": {"host-name": "web"}}[json.loads(cmd)["execute"]]})
 
         with patch.object(module, "qemuAgentCommand", side_effect=agent):
             self.assertEqual(inst.osinfo(), {"id": "alma", "host-name": "web"})
+
+    def test_the_file_systems_with_a_size_by_mount_point(self):
+        fsinfo = [
+            {"name": "vda2", "mountpoint": "/boot", "type": "xfs", "used-bytes": 2**28, "total-bytes": 2**30},
+            {"name": "vda1", "mountpoint": "/var/lib/containers/overlay", "type": "overlay"},  # no size: left out
+            {"name": "vdb1", "mountpoint": "/data", "type": "xfs", "total-bytes": 2**30},  # no used size: left out
+            None, "/", 1,  # not entries
+            {"mountpoint": "/neg", "used-bytes": -5, "total-bytes": 100},  # garbled sizes: left out
+            {"mountpoint": "/bool", "used-bytes": True, "total-bytes": True},
+            {"mountpoint": None, "used-bytes": 1, "total-bytes": 2}, {"mountpoint": ["/x"], "used-bytes": 1, "total-bytes": 2},
+            {"mountpoint": "/srv", "type": None, "used-bytes": 92, "total-bytes": 90, "total-bytes-privileged": 100},
+            {"name": "vda1", "mountpoint": "/", "type": "xfs", "used-bytes": 3 * 2**30, "total-bytes": 10 * 2**30},
+        ]
+        inst = wvmInstance.__new__(wvmInstance)
+        inst.instance = MagicMock()
+        with patch.object(module, "qemuAgentCommand", return_value=json.dumps({"return": fsinfo})):
+            self.assertEqual(inst.guest_filesystems(), [
+                {"mountpoint": "/", "type": "xfs", "used": 3 * 2**30, "total": 10 * 2**30},
+                {"mountpoint": "/boot", "type": "xfs", "used": 2**28, "total": 2**30},
+                {"mountpoint": "/srv", "type": "", "used": 92, "total": 100},  # the whole file system's total
+            ])
+        for answer in ({"error": "x"}, 1, None):  # not a list: none
+            with patch.object(module, "qemuAgentCommand", return_value=json.dumps({"return": answer})):
+                self.assertEqual(inst.guest_filesystems(), [])
 
 
 if __name__ == "__main__":

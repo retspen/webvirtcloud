@@ -142,7 +142,7 @@ class PageControlsTestCase(PageControls, TestCase):
         self.assertEqual([a.text_content().strip() for a in admin_page.xpath(links)], ["ctl-compute", "Instances"])
         self.assertEqual([a.text_content().strip() for a in owner_page.xpath(links)], ["Instances"])
         self.assertIn("Guest agent not connected", self.last_page)
-        self.assertIn("vda 2.0\xa0GB · vdb 1.0\xa0GB", self.last_page)
+        self.assertIn("vda 2\xa0GiB · vdb 1\xa0GiB", self.last_page)
         # filled by its script once the page has loaded ("—" when it has none)
         self.assertEqual(owner_page.xpath("//dt[.='IPv4']/following-sibling::dd/@data-empty"), ["—"])
 
@@ -225,8 +225,8 @@ class PageControlsTestCase(PageControls, TestCase):
                 self.assertTrue(all(b.get("data-confirm") for b in danger))
                 if user == owner:
                     self.assertIn("An administrator can resume it.", tab.text_content())
-                if status == 5:
-                    self.assertEqual(tab.xpath(".//form/@data-please-wait"), [""])
+                if status == 5:  # Start is sent to poweron
+                    self.assertTrue(tab.xpath(".//form/@action")[0].endswith("/poweron/"))
 
     def test_a_vm_with_a_saved_state_says_so_and_can_start_without_it(self):
         owner = self.user("power_saved_owner", owner={})

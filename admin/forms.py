@@ -12,6 +12,7 @@ from django.utils.translation import gettext_lazy as _
 from accounts.forms import UniqueEmailMixin
 from accounts.models import UserAttributes, UserInstance
 from appsettings.settings import app_settings
+from computes.models import Tag
 from instances.models import Instance
 
 from .models import Permission
@@ -19,6 +20,7 @@ from .models import Permission
 
 # each permission's name in the user's language: the database keeps the English one
 PERMISSION_NAMES = {
+    "backup_instances": _("Can back up instances"),
     "change_password": _("Can change password"),
     "clone_instances": _("Can clone instances"),
     "passwordless_console": _("Can access console without password"),
@@ -28,6 +30,8 @@ PERMISSION_NAMES = {
 
 # what each permission lets a user do, shown beside its switch
 PERMISSION_HELP = {
+    "backup_instances": _("Back up the VMs they may change into targets open to VM owners, restore those backups over "
+                          "the VM or as a new VM, and delete the backups they took, within their quotas"),
     "change_password": _("Change their own password on their profile page"),
     "clone_instances": _("Clone the VMs they may change and the templates they may view, within their quota"),
     "passwordless_console": _("Open a console without the VM's console password"),
@@ -44,6 +48,16 @@ def permission_rows(field):
         rows.append((box, PERMISSION_NAMES.get(permission.codename, permission.name),
                      PERMISSION_HELP.get(permission.codename, "")))
     return rows
+
+
+class TagForm(forms.ModelForm):
+    class Meta:
+        model = Tag
+        fields = ["name"]
+        error_messages = {"name": {"unique": _("There is a tag with this name already")}}
+
+    def clean_name(self):
+        return self.cleaned_data["name"].strip().lower()
 
 
 class GroupForm(forms.ModelForm):
@@ -85,6 +99,7 @@ class UserForm(UniqueEmailMixin, forms.ModelForm):
     # one choice for is_staff and is_superuser: a superuser keeps the
     # is_staff it had (it adds nothing to every permission)
     role = forms.ChoiceField(
+        label=_("Role"),
         widget=forms.RadioSelect,
         choices=[("user", _("User")), ("template_editor", _("Template editor")), ("superuser", _("Superuser"))],
         initial="user",
@@ -136,7 +151,7 @@ class UserForm(UniqueEmailMixin, forms.ModelForm):
         return permission_rows(self["user_permissions"])
 
 class UserCreateForm(UserForm):
-    password = forms.CharField(widget=forms.PasswordInput)
+    password = forms.CharField(label=_("Password"), widget=forms.PasswordInput)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -197,7 +212,7 @@ class UserCreateForm(UserForm):
 
 
 # the quota's limits, with the unit each is entered in (memory in GiB, kept in MiB)
-QUOTA_UNITS = {"max_instances": "", "max_cpus": "", "max_memory": "GiB", "max_disk_size": "GiB"}
+QUOTA_UNITS = {"max_instances": "", "max_cpus": "", "max_memory": "GiB", "max_disk_size": "GiB", "max_backup_size": "GiB"}
 
 
 class UserAttributesForm(forms.ModelForm):
@@ -208,6 +223,7 @@ class UserAttributesForm(forms.ModelForm):
     max_cpus = forms.IntegerField(label=_("vCPUs"), min_value=0, required=False)
     max_memory = forms.DecimalField(label=_("Memory"), min_value=0, required=False)
     max_disk_size = forms.IntegerField(label=_("Disk"), min_value=0, required=False)
+    max_backup_size = forms.IntegerField(label=_("Backups"), min_value=0, required=False)
 
     class Meta:
         model = UserAttributes

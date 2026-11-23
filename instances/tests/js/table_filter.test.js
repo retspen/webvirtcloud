@@ -19,12 +19,15 @@ function group(rows, host) {
     return {dataset: host ? {host} : {}, querySelectorAll: (s) => (s === "tr, [data-search], [data-group-header]" ? rows : [])};
 }
 function page(groups, text, state, noMatch, extra = {}) {
-    // a list without a state list (state undefined) has no such element
+    // a list without a state list (state undefined) has no such element, nor one without tags a tag list
     const inputs = {filter: {value: text}, "state-filter": state === undefined ? undefined : {value: state},
+                    "tag-filter": extra.tag === undefined ? undefined : {value: extra.tag},
                     "no-match": noMatch, "filter-status": extra.status};
     return {
         getElementById: (id) => inputs[id],
-        querySelectorAll: (s) => (s === ".searchable" ? groups : s === "[data-count-state]" ? extra.counts || [] : []),
+        querySelectorAll: (s) => (s === ".searchable" ? groups : s === "[data-count-state]" ? extra.counts || []
+                                  : s === "[data-count-tag]" ? extra.tagCounts || []
+                                  : s === "[data-more-count]" ? extra.more || [] : []),
     };
 }
 const visible = (rows) => rows.filter((r) => !r.hidden).map((r) => r.textContent);
@@ -102,6 +105,60 @@ assert.strictEqual(counts[3].parentElement.hidden, false, "the chosen state stay
 filterInstances(page([group(fleet)], "no-such-vm", "Active", undefined, {counts, status}));
 assert.strictEqual(counts[0].parentElement.hidden, false, "All stays when nothing is found");
 
+// the tag list: a row shows with the chosen tag among its own (data-tags), a whole name
+const withTags = (row, tags) => Object.assign(row, {dataset: Object.assign(row.dataset, {tags})});
+const tagged = [withTags(vm("web-1", "Active", "web-1"), "prod web"), withTags(vm("db-1", "Off", "db-1"), "prod"),
+                withTags(vm("web-2", "Active", "web-2"), "")];
+filterInstances(page([group(tagged)], "", "", undefined, {tag: "prod"}));
+assert.deepStrictEqual(visible(tagged), ["web-1", "db-1"]);
+filterInstances(page([group(tagged)], "web", "", undefined, {tag: "prod"}));
+assert.deepStrictEqual(visible(tagged), ["web-1"], "the search and the tag both apply");
+filterInstances(page([group(tagged)], "", "", undefined, {tag: "pro"}));
+assert.deepStrictEqual(visible(tagged), [], "a tag is a whole name");
+filterInstances(page([group(tagged)], "", "", undefined, {tag: ""}));
+assert.deepStrictEqual(visible(tagged), ["web-1", "db-1", "web-2"], "no tag chosen: all");
+filterInstances(page([group(tagged)], "", "", undefined, {tag: "-"}));
+assert.deepStrictEqual(visible(tagged), ["web-2"], "-: the rows without a tag");
+const tagCounts = [count(""), count("Active"), count("Off")];
+filterInstances(page([group(tagged)], "", "Active", undefined, {tag: "prod", counts: tagCounts}));
+assert.deepStrictEqual(tagCounts.map((c) => c.textContent), [2, 1, 1], "the state counts follow the tag");
+// the tag pills count as the state pills: the rows the search and the state find, the tag aside; one with none hides
+const countTag = (name) => ({dataset: {countTag: name}, textContent: "", parentElement: {hidden: false}});
+const tagPillCounts = [countTag("-"), countTag("prod"), countTag("web")];
+filterInstances(page([group(tagged)], "", "Off", undefined, {tag: "web", tagCounts: tagPillCounts}));
+assert.deepStrictEqual(tagPillCounts.map((c) => c.textContent), [0, 1, 0]);
+assert.deepStrictEqual(tagPillCounts.map((c) => c.parentElement.hidden), [true, false, false], "the chosen tag stays");
+filterInstances(page([group(tagged)], "web", "", undefined, {tag: "", tagCounts: tagPillCounts}));
+assert.deepStrictEqual(tagPillCounts.map((c) => c.textContent), [1, 1, 1], "and follow the search");
+// "…" of the tag pills counts those behind it the search and the state leave, and hides with none
+{
+    const behind = [{hidden: false}, {hidden: true}];
+    const others = {hidden: true, querySelectorAll: (s) => behind.filter((p) => s !== "[data-pill]:not([hidden])" || !p.hidden)};
+    const button = {hidden: false, nextElementSibling: others};
+    const moreCount = {textContent: "", parentElement: button};
+    filterInstances(page([group(tagged)], "", "", undefined, {tag: "", more: [moreCount]}));
+    assert.deepStrictEqual([moreCount.textContent, button.hidden], [1, false]);
+    behind[0].hidden = true;
+    filterInstances(page([group(tagged)], "", "", undefined, {tag: "", more: [moreCount]}));
+    assert.deepStrictEqual([moreCount.textContent, button.hidden], [0, true]);
+    // shown once: "…" stays hidden whatever the count
+    others.hidden = false;
+    behind[0].hidden = false;
+    filterInstances(page([group(tagged)], "", "", undefined, {tag: "", more: [moreCount]}));
+    assert.strictEqual(button.hidden, true);
+}
+
+// a tag named as an object's own property ("constructor") is counted as any other
+const objectNamed = [withTags(vm("app-1", "Active", "app-1"), "constructor")];
+const constructorCount = [countTag("constructor")];
+filterInstances(page([group(objectNamed)], "", "", undefined, {tag: "", tagCounts: constructorCount}));
+assert.strictEqual(constructorCount[0].textContent, 1);
+filterInstances(page([group(objectNamed)], "nothing", "", undefined, {tag: "", tagCounts: constructorCount}));
+assert.deepStrictEqual([constructorCount[0].textContent, constructorCount[0].parentElement.hidden], [0, true]);
+const hostVms = [hostRow("host-a"), withTags(vm("web-1", "Active", "web-1"), "prod"), withTags(vm("db-1", "Active", "db-1"), "")];
+filterInstances(page([group(hostVms, "host-a")], "host-a", "", undefined, {tag: "prod"}));
+assert.deepStrictEqual(visible(hostVms), ["host-a", "web-1"], "a host's name and a tag: its VMs with the tag");
+
 // a search is without case and accents in any language: "istanbul" finds "İSTANBUL"
 const turkish = [vm("İSTANBUL-1", "Active"), vm("ankara", "Active"), vm("Şişli", "Off")];
 filterInstances(page([group(turkish)], "istanbul", ""));
@@ -109,20 +166,108 @@ assert.deepStrictEqual(visible(turkish), ["İSTANBUL-1"]);
 filterInstances(page([group(turkish)], "sisli", ""));
 assert.deepStrictEqual(visible(turkish), ["Şişli"]);
 
-// the chosen state is remembered as the search is: a list the poll reloads keeps it
-{
-    const vmModule = require("vm");
-    const fs = require("fs");
-    const stored = {"VMs_filter_state": "Off"};
-    const pill = (state) => ({dataset: {pillState: state}, classList: {toggle() {}}, setAttribute() {}});
-    const pillList = [pill(""), pill("Active"), pill("Off")];
-    const elements = {
-        filter: {value: "", hasAttribute: () => false, addEventListener() {}},
-        "state-filter": {value: "", addEventListener() {}},
-        "state-pills": {querySelectorAll: () => pillList, querySelector: () => pillList[0], addEventListener() {}},
-    };
-    const doc = {title: "VMs", getElementById: (id) => elements[id], querySelectorAll: () => []};
+// the pills: the chosen state and tag are remembered as the search is, so a list the poll reloads keeps them
+const vmModule = require("vm");
+const fs = require("fs");
+const pill = (value) => ({dataset: {pill: value}, classList: {toggle() {}}, setAttribute() {},
+                          parentElement: {closest: () => null}});
+function pillRow(values) {
+    const row = {pills: values.map(pill), querySelectorAll: () => row.pills,
+                 addEventListener: (name, fn) => { row.click = fn; }};
+    return row;
+}
+// runs table_filter.js on a page of these elements, the stored values given, at an address with
+// this query; its document click listener
+let replaced = null;
+function run(elements, stored, search = "") {
+    const listeners = {};
+    const doc = {title: "VMs", getElementById: (id) => elements[id], querySelectorAll: () => [],
+                 addEventListener: (name, fn) => { listeners[name] = fn; }};
     const storage = {getItem: (k) => stored[k] || null, setItem: (k, v) => { stored[k] = v; }, removeItem: (k) => { delete stored[k]; }};
-    vmModule.runInNewContext(fs.readFileSync(process.argv[2], "utf8"), {document: doc, sessionStorage: storage});
+    const window = {location: {search: search, pathname: "/instances/", hash: ""}};
+    const history = {replaceState: (state, title, url) => { replaced = url; }};
+    vmModule.runInNewContext(fs.readFileSync(process.argv[2], "utf8"),
+                             {document: doc, sessionStorage: storage, window: window, history: history, URLSearchParams: URLSearchParams});
+    return listeners.click;
+}
+const listPage = () => ({
+    filter: {value: "", hasAttribute: () => false, addEventListener() {}, focus() { this.focused = true; }},
+    "state-filter": {value: "", addEventListener() {}},
+    "state-pills": pillRow(["", "Active", "Off"]),
+    "tag-filter": {value: ""},
+    "tag-pills": pillRow(["", "-", "prod", "web"]),
+});
+{
+    // a link to one tag's rows (the Tags page): that tag only, and the address loses it
+    const stored = {"VMs_filter": "db", "VMs_filter_state": "Off", "VMs_filter_tag": "prod"};
+    const elements = listPage();
+    run(elements, stored, "?tag=web&page=2");
+    assert.deepStrictEqual([elements.filter.value, elements["state-filter"].value, elements["tag-filter"].value], ["", "", "web"]);
+    assert.strictEqual(stored.VMs_filter, undefined, "the search is not kept either");
+    assert.strictEqual(replaced, "/instances/?page=2", "the address keeps the rest");
+    // a tag the list does not have: nothing is changed
+    replaced = null;
+    const other = listPage();
+    const kept = {"VMs_filter": "db"};
+    run(other, kept, "?tag=gone");
+    assert.deepStrictEqual([kept.VMs_filter, replaced], ["db", null]);
+}
+{
+    const stored = {"VMs_filter_state": "Off", "VMs_filter_tag": "prod"};
+    const elements = listPage();
+    const click = run(elements, stored);
     assert.strictEqual(elements["state-filter"].value, "Off");
+    assert.strictEqual(elements["tag-filter"].value, "prod", "the chosen tag is remembered too");
+    // a tag's pill pressed
+    const tags = elements["tag-pills"];
+    tags.click({target: {closest: () => tags.pills[1]}});
+    assert.deepStrictEqual([elements["tag-filter"].value, stored["VMs_filter_tag"]], ["-", "-"]);
+    // a tag's badge chooses its pill
+    click({target: {closest: (s) => (s === "[data-tag-filter]" ? {dataset: {tagFilter: "web"}} : null)}});
+    assert.strictEqual(elements["tag-filter"].value, "web", "a badge chooses its tag");
+    assert.strictEqual(stored["VMs_filter_tag"], "web", "and it is remembered");
+    // "…" shows a VM's other tags, and the first of them takes the focus
+    let focused = null;
+    const others = {hidden: true, querySelector: (s) => (s === "button:not([hidden])" ? {focus: () => { focused = "d4"; }} : null)};
+    const ellipsis = {hidden: false, nextElementSibling: others};
+    click({target: {closest: (s) => (s === "[data-show-tags]" ? ellipsis : null)}});
+    assert.deepStrictEqual([others.hidden, ellipsis.hidden, focused], [false, true, "d4"]);
+    // tags that are not buttons (no tag pills on the page): the tags shown take it
+    const plain = {hidden: true, querySelector: () => null, focus: () => { focused = "plain"; }};
+    click({target: {closest: (s) => (s === "[data-show-tags]" ? {hidden: false, nextElementSibling: plain} : null)}});
+    assert.strictEqual(focused, "plain");
+}
+
+// "Clear the filters" hides with the message it is in: the search box takes the focus
+{
+    const elements = listPage();
+    elements["clear-filters"] = {addEventListener: (name, fn) => { elements["clear-filters"].click = fn; }};
+    run(elements, {"VMs_filter_tag": "prod"});
+    elements["clear-filters"].click();
+    assert.deepStrictEqual([elements["tag-filter"].value, elements.filter.focused], ["", true]);
+}
+
+// a pill behind "…" chosen (kept, or by a badge): the pills behind it are shown
+{
+    const elements = listPage();
+    const ellipsis = {hidden: false};
+    const others = {hidden: true, previousElementSibling: ellipsis};
+    const rare = elements["tag-pills"].pills[3];  // "web"
+    rare.parentElement = {closest: (s) => (s === "[hidden]" ? others : null)};
+    run(elements, {"VMs_filter_tag": "web"});
+    assert.deepStrictEqual([elements["tag-filter"].value, others.hidden, ellipsis.hidden], ["web", false, true]);
+}
+
+// a kept tag no pill has any longer is forgotten: made again later, it is not chosen by itself
+{
+    const stored = {"VMs_filter_tag": "gone"};
+    const elements = listPage();
+    run(elements, stored);
+    assert.deepStrictEqual([elements["tag-filter"].value, stored], ["", {}]);
+    // nor when the list has no tag left to offer (no tag pills on the page)
+    stored["VMs_filter_tag"] = "prod";
+    delete elements["tag-pills"];
+    delete elements["tag-filter"];
+    run(elements, stored);
+    assert.deepStrictEqual(stored, {});
 }

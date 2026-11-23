@@ -3,6 +3,9 @@ from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from libvirt import (
+    VIR_DOMAIN_DISK_ERROR_NO_SPACE,
+    VIR_DOMAIN_PAUSED,
+    VIR_DOMAIN_PAUSED_IOERROR,
     VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL,
     VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL,
     libvirtError,
@@ -10,6 +13,8 @@ from libvirt import (
 from operations import claims
 from operations.models import Claim
 from vrtManager.instance import PERSISTENT_XML, wvmInstance
+
+from .states import DISK_ERRORS, REASONS
 
 
 class Flavor(models.Model):
@@ -33,8 +38,11 @@ class Instance(models.Model):
     name = models.CharField(_("name"), max_length=255, db_index=True)
     uuid = models.CharField(_("uuid"), max_length=36, db_index=True)
     is_template = models.BooleanField(_("is template"), default=False)
+    # not deleted nor restored over until a superuser turns it off (instances.jobs.unprotected)
+    protected = models.BooleanField(_("protected"), default=False)
     created = models.DateTimeField(_("created"), auto_now_add=True)
     drbd = models.CharField(_("drbd"), max_length=24, default="None")
+    tags = models.ManyToManyField("computes.Tag", blank=True, related_name="instances", verbose_name=_("tags"))
 
     objects = InstanceManager()
 
@@ -77,6 +85,41 @@ class Instance(models.Model):
             return self.proxy.instance.info()
         except libvirtError:
             return None
+
+    @cached_property
+    def state_and_reason(self) -> tuple:
+        """virDomainGetState: (state, reason) of one read, as a reason means
+        something only with its own state; () if the VM cannot be read."""
+        try:
+            return tuple(self.proxy.get_state())
+        except libvirtError:
+            return ()
+
+    @cached_property
+    def state_reason(self):
+        """Why the VM stopped or paused, when a fault did it (states.REASONS);
+        else None. The lists set it from their one read of the host."""
+        return REASONS.get(self.state_and_reason)
+
+    @cached_property
+    def disk_errors(self) -> dict:
+        """{target: virDomainDiskErrorCode} of a VM a disk error paused; read
+        only then, as libvirt keeps the last error after a resume."""
+        if self.state_and_reason != (VIR_DOMAIN_PAUSED, VIR_DOMAIN_PAUSED_IOERROR):
+            return {}
+        try:
+            return self.proxy.get_disk_errors()
+        except libvirtError:
+            return {}
+
+    @property
+    def disk_error_texts(self) -> list:
+        return [DISK_ERRORS[code] % {"dev": dev} for dev, code in sorted(self.disk_errors.items()) if code in DISK_ERRORS]
+
+    @property
+    def disk_full(self) -> bool:
+        """A disk error came from a storage with no free space: freeing some is the way out."""
+        return VIR_DOMAIN_DISK_ERROR_NO_SPACE in self.disk_errors.values()
 
     @cached_property
     def status(self) -> int:
@@ -191,6 +234,14 @@ class Instance(models.Model):
         form and a clone use: on a running VM a pending change shows, and an
         edit does not post the live value back over it."""
         return self.proxy.get_disk_devices(config=True)
+
+    @cached_property
+    def live_iotune(self) -> dict:
+        """{dev: (IOPS, MiB/s, set in the XML)} of the running definition's disks (custom_iotune): the Disks
+        tab shows the next start's, the running one's too when it differs, and set_disk_limit refuses either
+        when it is set in the XML."""
+        return {disk["dev"]: (disk.get("iops", 0), disk.get("mibps", 0), disk.get("iotune_custom", False))
+                for disk in self.disks}
 
     @cached_property
     def config_vcpu(self) -> int:
@@ -325,6 +376,10 @@ class Instance(models.Model):
         return self.proxy.get_on_crash()
 
     @cached_property
+    def config_crash_devices(self) -> bool:
+        return self.proxy.has_crash_devices()
+
+    @cached_property
     def guest_agent_ready(self) -> bool:
         return self.proxy.is_agent_ready()
 
@@ -407,9 +462,9 @@ class Instance(models.Model):
 
 
 class InstanceTombstone(models.Model):
-    """Ownership of a VM that disappeared from its compute.
+    """Ownership, tags, protection, schedules and backups of a VM that disappeared from its compute.
 
-    Kept for INSTANCE_OWNERSHIP_RETENTION_DAYS so that the owners come back
+    Kept for INSTANCE_OWNERSHIP_RETENTION_DAYS so that they come back
     when the same UUID shows up again, on this or another compute.
     """
 
@@ -417,11 +472,18 @@ class InstanceTombstone(models.Model):
     name = models.CharField(max_length=255)
     host = models.CharField(max_length=64, blank=True)  # the compute's name: the compute may be deleted
     is_template = models.BooleanField(default=False)
+    protected = models.BooleanField(default=False)
     owners = models.JSONField(default=list)  # [{"user": id, "is_change": .., "is_delete": .., "is_vnc": ..}]
+    tags = models.JSONField(default=list)  # the names: a tag deleted meanwhile is not given back
+    policies = models.JSONField(default=list)  # the ids of the schedules that chose it: one deleted is not
+    backups = models.JSONField(default=list)  # the ids of its backups: not a copy's under the same UUID
     removed = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return "%s (%s)" % (self.name, self.uuid)
+
+    def keeps_anything(self):
+        return bool(self.owners or self.is_template or self.protected or self.tags or self.policies or self.backups)
 
 
 class PermissionSet(models.Model):
@@ -436,6 +498,7 @@ class PermissionSet(models.Model):
             ("passwordless_console", _("Can access console without password")),
             ("view_instances", "Can view instances"),
             ("snapshot_instances", "Can snapshot instances"),
+            ("backup_instances", "Can back up instances"),
         ]
 
         managed = False

@@ -61,7 +61,8 @@ NOT_FOUND = gettext_noop("The virtual machine is no longer in the panel.")
 DEVICES_REFUSED = gettext_noop("A host device of this virtual machine is not free on its host now; an administrator "
                                "can see why on its Host devices tab.")
 
-BOUNDS = {"WORKER_CONCURRENCY": (1, 16, 4), "JOB_RETENTION_DAYS": (1, 3650, 30), "LOG_RETENTION_DAYS": (1, 3650, 365)}
+BOUNDS = {"WORKER_CONCURRENCY": (1, 16, 4), "JOB_RETENTION_DAYS": (1, 3650, 30), "LOG_RETENTION_DAYS": (1, 3650, 365),
+          "MIGRATION_BANDWIDTH": (0, 100000, 0)}
 
 
 def safe_text(text):
@@ -191,12 +192,16 @@ def summary(op, user):
     return base
 
 
-def busy_message(busy, user):
+def busy_message(busy, user, named=True):
+    """Why busy refused user. named: with what the job in the way works on; not in a text kept where others
+    read it (an audit row, a job's error)."""
     op = busy.blocker
     if op is None:
         return _("A short operation is in progress on this resource; try again in a moment.")
     values = {"label": _(jobs.label_of(op.kind)), "state": pgettext("job state", op.state), "since": timesince(op.created_at, timezone.now())}
     if may_see(op, user):
+        if named and op.resource_label:  # which backup, VM or volume it works on: one in the way may be another
+            values["label"] = f"{values['label']} ({shown_label(op, user)})"
         return _("%(label)s is %(state)s on this resource (started by %(user)s, %(since)s ago); "
                  "see the Jobs page.") % {**values, "user": op.username}
     return _("%(label)s is %(state)s on this resource (since %(since)s).") % values
@@ -221,3 +226,8 @@ def retention_days():
 
 def log_retention_days():
     return _value("LOG_RETENTION_DAYS")
+
+
+def migration_bandwidth():
+    """MiB/s a migration may take at most; 0: no limit."""
+    return _value("MIGRATION_BANDWIDTH")

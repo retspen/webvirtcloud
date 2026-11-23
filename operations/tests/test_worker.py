@@ -74,6 +74,25 @@ class WorkerTestCase(TransactionTestCase):
             stuck.set()
             self.assertTrue(wait_for(lambda: len(passes) > 1))
 
+    def test_the_apps_periodic_tasks_run_one_pass_at_a_time_and_a_failure_stops_none(self):
+        stuck, calls = threading.Event(), []
+
+        def failing():
+            calls.append("failing")
+            raise RuntimeError("broken")
+
+        def slow():
+            calls.append("slow")
+            stuck.wait(10)
+
+        with patch("operations.worker.PERIODIC_EVERY", 0), patch("operations.jobs.PERIODIC", [failing, slow]):
+            self.start()
+            self.assertTrue(wait_for(lambda: "slow" in calls))
+            time.sleep(0.5)  # ten ticks: the pass still runs
+            self.assertEqual(calls, ["failing", "slow"])
+            stuck.set()
+            self.assertTrue(wait_for(lambda: calls.count("slow") > 1))
+
     def test_a_stuck_host_takes_half_the_slots_and_one_progress_read(self):
         fakes.STUCK[1] = threading.Event()
         stuck = [self.job(1, n) for n in range(4)]

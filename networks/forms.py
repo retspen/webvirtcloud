@@ -33,17 +33,17 @@ class AddNetPool(forms.Form):
     MODES = ("nat", "route", "none", "bridge", "macvtap")
 
     name = forms.CharField(
-        error_messages={"required": _("No pool name has been entered")},
+        label=_("Network name"), error_messages={"required": _("No pool name has been entered")},
         max_length=20
     )
     subnet = forms.CharField(label=_("IPv4 subnet"), max_length=20, required=False)
     subnet6 = forms.CharField(label=_("IPv6 subnet"), max_length=42, required=False)
-    forward = forms.ChoiceField(choices=[(mode, mode) for mode in MODES])
-    dhcp4 = forms.BooleanField(required=False)
-    enable_ipv6 = forms.BooleanField(required=False)
-    dhcp6 = forms.BooleanField(required=False)
+    forward = forms.ChoiceField(label=_("Type"), choices=[(mode, mode) for mode in MODES])
+    dhcp4 = forms.BooleanField(label=_("Give the VMs addresses from the subnet"), required=False)
+    enable_ipv6 = forms.BooleanField(label=_("IPv6 too"), required=False)
+    dhcp6 = forms.BooleanField(label=_("Give the VMs IPv6 addresses"), required=False)
     bridge_name = forms.CharField(label=_("Bridge or interface"), max_length=20, required=False)
-    openvswitch = forms.BooleanField(required=False)
+    openvswitch = forms.BooleanField(label=_("It is an Open vSwitch bridge"), required=False)
 
     def __init__(self, *args, networks=(), **kwargs):
         super().__init__(*args, **kwargs)

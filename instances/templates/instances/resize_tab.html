@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load common_tags %}
 {% load bootstrap_icons %}
 {% load vm_states %}
 <div class="tab-pane" id="resize" role="tabpanel">
@@ -83,7 +84,7 @@
                 <div class="d-flex flex-wrap align-items-center gap-2 gap-sm-3 mb-3">
                     <div class="memory-bar" aria-hidden="true"><div class="memory-bar-now" style="width: {% widthratio instance.cur_memory instance.memory 100 %}%"></div></div>
                     <span class="small">{% blocktrans with cur=instance.cur_memory max=instance.memory %}{{ cur }} MiB of {{ max }} MiB{% endblocktrans %}</span>
-                    <span class="small ms-auto text-body-secondary">{% blocktrans with total=memory_host|filesizeformat %}Host: {{ total }}{% endblocktrans %}</span>
+                    <span class="small ms-auto text-body-secondary">{% blocktrans with total=memory_host|binary_size %}Host: {{ total }}{% endblocktrans %}</span>
                 </div>
                 <form class="row g-2 align-items-end" action="{% url 'instances:resize_memory' instance.id %}" method="post">{% csrf_token %}
                     <div class="col-6 col-sm-3">
@@ -110,7 +111,7 @@
                         {% if disk.storage is None %}
                         <div class="col"><span class="small text-danger">{% trans "Error getting disk info" %}</span></div>
                         {% else %}
-                        <div class="col-7 col-sm-2 small">{% blocktrans with size=disk.size|filesizeformat %}Now {{ size }}{% endblocktrans %}</div>
+                        <div class="col-7 col-sm-2 small">{% blocktrans with size=disk.size|binary_size %}Now {{ size }}{% endblocktrans %}</div>
                         <div class="col-12 col-sm-4">
                             <div class="input-group">
                                 <input class="form-control" type="number" id="disk_size_{{ disk.dev }}" name="disk_size_{{ disk.dev }}" min="1" step="1" placeholder="{% trans "New size" %}" aria-describedby="disks-grow-help">

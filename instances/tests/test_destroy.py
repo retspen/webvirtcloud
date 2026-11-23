@@ -13,7 +13,7 @@ from instances.jobs import DeleteInstance
 from instances.models import Instance
 from instances import utils
 from instances.utils import paths_used_on_other_computes
-from libvirt import VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM, VIR_ERR_NO_STORAGE_VOL, libvirtError
+from libvirt import VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA, VIR_DOMAIN_UNDEFINE_KEEP_NVRAM, VIR_DOMAIN_UNDEFINE_NVRAM, VIR_ERR_NO_STORAGE_VOL, libvirtError
 from logs.models import Logs
 from operations.jobs import Context
 from operations.models import Claim, Operation, acquire
@@ -65,6 +65,29 @@ class DestroyOrderTestCase(TransactionTestCase):
         self.assertEqual(set(Claim.objects.values_list("resource", "mode")), {
             (f"compute:{self.instance.compute_id}", "exclusive"), (f"instance:{UUID}", "exclusive")})
         self.assertEqual(self.proxy.mock_calls, [])
+
+    def test_a_protected_vm_is_not_deleted(self):
+        Instance.objects.filter(pk=self.instance.pk).update(protected=True)
+        response = self.client.post(reverse("instances:destroy", args=[self.instance.id]),
+                                    {"submission_key": "key-destroy01"}, follow=True)
+        self.assertContains(response, "destroy-vm is protected")
+        url = f"/api/v1/computes/{self.instance.compute_id}/instances/{self.instance.id}/"
+        response = self.client.delete(url, {"submission_key": "key-api00003"}, content_type="application/json")
+        self.assertContains(response, "destroy-vm is protected", status_code=400)
+        self.assertFalse(Operation.objects.exists())
+        # protected after the delete was queued: refused before any effect
+        Instance.objects.filter(pk=self.instance.pk).update(protected=False)
+        op = self.queue()
+        Instance.objects.filter(pk=self.instance.pk).update(protected=True)
+        self.proxy.reset_mock()  # what the pages read
+        with self.assertRaisesMessage(OperationError, "destroy-vm is protected"):
+            self.run_job(op)
+        self.assertEqual(self.proxy.mock_calls, [])
+
+    def test_backup_checkpoints_go_with_the_vm(self):
+        # libvirt refuses to undefine a VM that has checkpoints without this flag
+        self.run_job(self.queue())
+        self.assertTrue(self.proxy.delete.call_args[0][0] & VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA)
 
     def test_the_nvram_goes_only_when_asked(self):
         for data, wanted, unwanted in (

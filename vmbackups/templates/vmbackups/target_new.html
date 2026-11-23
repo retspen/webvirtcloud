@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+{% load bootstrap_icons %}
+{% load django_bootstrap5 %}
+
+{% block title %}{% trans "New target" %} - {% trans "Backup targets" %}{% endblock %}
+
+{% block page_heading %}<a href="{% url 'vmbackups:targets' %}">{% trans "Backup targets" %}</a> / {% trans "New target" %}{% endblock page_heading %}
+
+{% block content %}
+    <p class="text-body-secondary">{% blocktrans %}A backup target is a directory or NFS storage pool made on the hosts. Use storage apart from the VMs' disks: a target on the same storage is lost with it.{% endblocktrans %}</p>
+    <div class="card" style="max-width: 40rem;">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {% bootstrap_form form %}
+                <div class="d-flex justify-content-end gap-2">
+                    <a class="btn btn-outline-secondary" href="{% url 'vmbackups:targets' %}">{% trans "Cancel" %}</a>
+                    <button type="submit" class="btn btn-primary">{% bs_icon 'plus' %} {% trans "Add" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+{% block script %}<script src="{% static 'vmbackups/pool_choices.js' %}"></script>{% endblock %}

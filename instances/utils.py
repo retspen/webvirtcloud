@@ -19,11 +19,13 @@ from django.utils.translation import gettext_noop
 from libvirt import libvirtError
 from logs.audit import reason, write
 from operations.models import Operation
+from operations.utils import migration_bandwidth
 from vrtManager.connection import counted_thread, other_hosts, wvmConnect
 from vrtManager.instance import wvmInstance, wvmInstances
 from vrtManager.util import ConnectionFailed, HostBusy, message, vol_dev_type
 
 from .models import Instance
+from .states import state_reason
 
 
 def can_open_console(user, instance):
@@ -218,10 +220,10 @@ def check_user_quota(user, instance, cpu, memory, disk_size):
     user_instances = UserInstance.objects.filter(user=user, instance__is_template=False).select_related(
         "instance__compute"
     )
-    # a clone counts from its job's admission until its VM is recorded
+    # a clone, or a restore of a backup as a new VM, counts from its job's admission until its VM is recorded
     clones = [
         op.intent["quota"] for op in Operation.objects.filter(
-            user=user, kind="instance.clone", state__in=Operation.ACTIVE + (Operation.UNCERTAIN,))
+            user=user, kind__in=("instance.clone", "backup.restore"), state__in=Operation.ACTIVE + (Operation.UNCERTAIN,))
         if "quota" in op.intent and not Instance.objects.filter(uuid=op.intent["uuid"]).exists()
     ]
     instance += user_instances.count() + len(clones)
@@ -306,6 +308,7 @@ def migrate_instance(
     autoconverge=False,
     compress=False,
     delete_source=False,
+    running_only=False,
     disk_pools=None,
     ip=None,
     on_moved=None,
@@ -343,8 +346,11 @@ def migrate_instance(
             autoconverge,
             compress,
             uri=new_compute.migration_uri,
+            tls=source.migration_tls and new_compute.migration_tls,
+            bandwidth=migration_bandwidth(),
             pools=disk_pools,
             on_copy=on_copy,
+            running_only=running_only,
         )
     except Exception as error:
         log(f"migrate to {target}", error)
@@ -436,7 +442,8 @@ def read_list_rows(instances, computes):
         except libvirtError:
             rows[compute.pk] = {}
     for inst in instances:
-        inst.info, inst.title = rows[inst.compute_id].get(inst.uuid, (None, ""))
+        inst.info, inst.title, why = rows[inst.compute_id].get(inst.uuid, (None, "", None))
+        inst.state_reason = state_reason(inst.info[0], why) if inst.info else None
 
 
 # how long a VM list and its poll wait for a host's VMs, all hosts asked at once

@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.http import Http404
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -49,7 +50,10 @@ class OperationViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewset
             raise ValidationError({"key": "required"})
         if not visible(request.user, key):
             raise Http404
-        active = list(Operation.objects.filter(claims__resource=key, state__in=SHOWN_STATES).distinct())
+        # the page's own jobs and the jobs on its resource; a job another one started (a bulk migration's
+        # migration) shows on its own page only, the one that started it on its pages
+        active = list(Operation.objects.filter(Q(resource=key) | Q(claims__resource=key, parent__isnull=True),
+                                               state__in=SHOWN_STATES).distinct())
         mine = [op for op in active if may_see(op, request.user)]
         others = [summary(op, request.user) for op in active if not may_see(op, request.user)]
         seen = last_seen()

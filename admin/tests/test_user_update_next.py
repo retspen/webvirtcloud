@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 from admin.tests.edits import user_seen
 
-LIMITS = {"role": "user", "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 4}
+LIMITS = {"role": "user", "max_instances": 1, "max_cpus": 1, "max_memory": 1, "max_disk_size": 4, "max_backup_size": 0}
 
 
 class UserUpdateNextTests(TestCase):

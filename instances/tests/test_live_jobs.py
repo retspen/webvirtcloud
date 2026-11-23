@@ -10,6 +10,7 @@ import subprocess
 import unittest
 
 import libvirt
+from lxml import html
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TransactionTestCase
@@ -91,8 +92,8 @@ class LiveJobsTestCase(TransactionTestCase):
         op.refresh_from_db()
         self.assertEqual(DeleteExternalSnapshot().reconcile(op).state, Operation.SUCCEEDED)
 
-    def run_job(self, op):
-        worker = Worker(concurrency=1, tick=0.1, heartbeat_every=1, progress_every=1, exit_on_lost_lease=False)
+    def run_job(self, op, concurrency=1):
+        worker = Worker(concurrency=concurrency, tick=0.1, heartbeat_every=1, progress_every=1, exit_on_lost_lease=False)
         thread = fakes.start_worker(worker)
         try:
             self.assertTrue(wait_for(lambda: Operation.objects.get(pk=op.pk).state in Operation.TERMINAL, 300))
@@ -181,6 +182,26 @@ class LiveJobsTestCase(TransactionTestCase):
         self.run_job(jobs.submit("instance.migrate", self.admin, offline, "key-mig00002"))
         self.assertFalse(self.conn.lookupByUUIDString(uuid).isActive())  # defined on the source again
         self.assertEqual(Instance.objects.get(uuid=uuid).compute, self.compute)
+
+    def test_a_bulk_migration_migrates_the_chosen_vms(self):  # two at once: computes.tests.test_bulk_migrate
+        dest, dest_conn = self.second_host()
+        vms = []
+        for name, running in (("evac-run", True), ("evac-off", False)):
+            dom = livetest.define_vm(self.conn, P + name, [])
+            if running:
+                dom.create()
+            vms.append(Instance.objects.create(compute=self.compute, name=dom.name(), uuid=dom.UUIDString()))
+        local = self.vm("evac-disk")[0]  # its disk is in a pool of this host only
+        local = Instance.objects.create(compute=self.compute, name=local.name(), uuid=local.UUIDString())
+        self.client.force_login(self.admin)
+        page = html.fromstring(self.client.get(reverse("bulk_migrate", args=[self.compute.pk]) + f"?target={dest.pk}").content)
+        disabled = {int(box.get("value")): box.get("disabled") is not None for box in page.xpath("//input[@name='instance']")}
+        self.assertEqual([disabled[vm.pk] for vm in (*vms, local)], [False, False, True])  # the host's other VMs as they are
+        raw = {"compute": self.compute.pk, "parallel": 2, "moves": [[vm.pk, dest.pk] for vm in vms]}
+        self.run_job(jobs.submit("host.bulk_migrate", self.admin, raw, "key-evac0001"), concurrency=4)
+        self.assertEqual(Operation.objects.filter(kind="instance.migrate", state=Operation.SUCCEEDED).count(), 2)
+        self.assertEqual([dest_conn.lookupByUUIDString(vm.uuid).isActive() for vm in vms], [True, False])
+        self.assertEqual({vm.compute for vm in Instance.objects.filter(pk__in=[vm.pk for vm in vms])}, {dest})
 
     def test_a_disk_neither_host_shares_is_copied_there_and_back(self):
         """The test pool is a directory of each host's own: the disk is

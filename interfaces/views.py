@@ -16,7 +16,7 @@ from admin.decorators import superuser_only
 def interfaces(request, compute_id):
     """The host's interfaces, and a new one where its libvirt can define them."""
     compute = get_object_or_404(Compute, pk=compute_id)
-    ifaces_all = None  # not read: the page shows no list
+    context = {"compute": compute, "ifaces_all": None}  # not read: the page shows no list
 
     try:
         conn = wvmInterfaces(compute.hostname, compute.login, compute.password, compute.type)
@@ -35,7 +35,7 @@ def interfaces(request, compute_id):
         if_kind = request.POST.get("itype", "bridge")
 
         # the host's devices are only the create form's choices
-        netdevs, members, netdev_error = [], [], None
+        netdevs, members, ethernet_devices, netdev_error = [], [], [], None
         if changeable:
             try:
                 netdevs = conn.get_net_devices()
@@ -64,16 +64,26 @@ def interfaces(request, compute_id):
                     form.add_error(None, str(err))
                 else:
                     return HttpResponseRedirect(reverse("interface", args=[compute_id, data["name"]]))
+        context.update({
+            "ifaces_all": ifaces_all,
+            "iface_groups": iface_groups,
+            "changeable": changeable,
+            "form": form,
+            "if_kind": if_kind,
+            "members": members,
+            "ethernet_devices": ethernet_devices,
+        })
     except libvirtError as lib_err:
         messages.error(request, lib_err)
 
-    return render(request, "interfaces.html", locals())
+    return render(request, "interfaces.html", context)
 
 
 @superuser_only
 def interface(request, compute_id, iface):
     """An interface of the host; started, stopped or deleted where the host's libvirt can."""
     compute = get_object_or_404(Compute, pk=compute_id)
+    context = {"compute": compute, "iface": iface}
 
     try:
         conn = wvmInterface(compute.hostname, compute.login, compute.password, compute.type, iface)
@@ -95,6 +105,7 @@ def interface(request, compute_id, iface):
                 if "delete" in request.POST:
                     with audit(request, compute, subject, "delete"):
                         conn.delete_iface()
+                    messages.success(request, _("Interface %(iface)s deleted") % {"iface": iface})
                     return HttpResponseRedirect(reverse("interfaces", args=[compute_id]))
             except libvirtError as err:  # OperationError too: an active one, a bridge whose addresses go nowhere
                 messages.error(request, err)
@@ -104,12 +115,20 @@ def interface(request, compute_id, iface):
         info["addressing"] = [("IPv4", info["ipv4"]), ("IPv6", info["ipv6"])]
         state = conn.is_active()
         networks = networks_by_device(conn.wvm).get(iface, [])
+        vms = None  # only a bridge has VMs on it
         if info["type"] == "bridge":
             vms = conn.get_vms(networks)
             vm_ids = dict(Instance.objects.filter(compute=compute, name__in=[vm["vm"] for vm in vms]).values_list("name", "id"))
             for vm in vms:
                 vm["id"] = vm_ids.get(vm["vm"])
+        context.update({
+            "changeable": changeable,
+            "info": info,
+            "state": state,
+            "networks": networks,
+            "vms": vms,
+        })
     except libvirtError as lib_err:
         messages.error(request, lib_err)
 
-    return render(request, "interface.html", locals())
+    return render(request, "interface.html", context)

@@ -1,25 +1,40 @@
 {% extends "base.html" %}
 {% load i18n %}
 
-{% block title %}{% trans "Edit Settings" %}{% endblock title %}
+{% block title %}{% trans "Edit settings" %}{% endblock title %}
 
-{% block page_heading %}{% trans "Edit Settings" %}{% endblock page_heading %}
+{% block page_heading %}{% trans "Edit settings" %}{% endblock page_heading %}
 
 {% block style %}
 <style>
-    /* a group's card stops below the sticky navbar; the group index stays in view */
+    /* a group's card stops below the sticky navbar; the group index stays in view: beside the
+       groups, or on a narrow screen as one row under the navbar that scrolls sideways */
     .settings-group { scroll-margin-top: 5rem; }
     @media (min-width: 992px) {
         .settings-index { position: sticky; top: 5rem; }
+    }
+    @media (max-width: 991.98px) {
+        /* the column sticks: the index alone would only stick within it */
+        .settings-index-column {
+            position: sticky;
+            top: var(--navbar-height, 4rem);
+            z-index: 1000;
+            background: var(--bs-body-bg);
+            padding-block: .5rem;
+        }
+        /* the padding keeps a link's focus ring inside the scrolling row */
+        .settings-index .nav { flex-wrap: nowrap; overflow-x: auto; white-space: nowrap; padding: .25rem; }
+        /* below the navbar and the index, whose height the theme and a scrollbar set */
+        .settings-group { scroll-margin-top: calc(var(--navbar-height, 4rem) + 6rem); }
     }
 </style>
 {% endblock style %}
 
 {% block content %}
 <div class="row g-4">
-    <div class="col-lg-3">
+    <div class="col-lg-3 settings-index-column">
         <nav class="settings-index" aria-label="{% trans 'Settings groups' %}">
-            <div class="nav nav-pills flex-wrap flex-lg-column gap-1">
+            <div class="nav nav-pills flex-lg-column gap-1">
                 <a class="nav-link" href="#appearance">{% trans "Appearance" %}</a>
                 {% for title, settings in groups %}
                     <a class="nav-link" href="#{{ title|slugify }}">{% trans title %}</a>
@@ -86,7 +101,7 @@
                                    min="{{ setting.bounds.0 }}" max="{{ setting.bounds.1 }}" step="1" required aria-describedby="help-{{ setting.key }}">
                         {% else %}
                             <input id="setting-{{ setting.key }}" class="form-control" type="text" name="{{ setting.key }}" value="{{ setting.value }}"
-                                   maxlength="25" aria-describedby="help-{{ setting.key }}">
+                                   maxlength="255" aria-describedby="help-{{ setting.key }}">
                         {% endif %}
                     {% endif %}
                         <input type="hidden" name="was-{{ setting.key }}" value="{{ setting.value }}">
@@ -94,8 +109,12 @@
                     </div>
                 {% endfor %}
                 </div>
-                <div class="border-top mt-3 pt-3 text-end">
+                <div class="border-top mt-3 pt-3 d-flex flex-wrap justify-content-end gap-2">
+                    {# Save first: Enter in a field saves #}
                     <button type="submit" class="btn btn-primary">{% blocktrans %}Save {{ group_title }}{% endblocktrans %}</button>
+                    {% if title == "Alerts" %}{# to the addresses and webhook saved #}
+                    <button type="submit" name="test_alert" value="1" class="btn btn-outline-secondary order-first" formnovalidate>{% trans "Send a test alert" %}</button>
+                    {% endif %}
                 </div>
             </form>
         </section>

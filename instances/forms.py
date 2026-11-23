@@ -126,35 +126,35 @@ class ConsoleForm(forms.Form):
 class NewVMForm(forms.Form):
     """The new VM form (create_instance_w2.html); the API takes CreateInstanceSerializer."""
 
-    name = forms.CharField(max_length=64)
+    name = forms.CharField(label=_("Name"), max_length=64)
     # empty: the machine's own, for an architecture with no firmware choice
-    firmware = forms.CharField(max_length=64, required=False)
+    firmware = forms.CharField(label=_("Firmware"), max_length=64, required=False)
     # an emulated TPM 2.0, as Windows 11 needs
-    tpm = forms.BooleanField(required=False)
-    vcpu = forms.IntegerField(min_value=1)
+    tpm = forms.BooleanField(label=_("TPM 2.0"), required=False)
+    vcpu = forms.IntegerField(label=_("vCPUs"), min_value=1)
     # a mode of libvirt's (host-model, host-passthrough, maximum) or a CPU model's name
-    vcpu_mode = forms.CharField(max_length=64)
-    disk = forms.IntegerField(required=False)
-    memory = forms.IntegerField(min_value=1)
-    networks = forms.CharField(max_length=256)
-    nwfilter = forms.CharField(max_length=256, required=False)
-    net_model = forms.CharField(max_length=256, required=False)
-    storage = forms.CharField(max_length=256, required=False)
-    template = forms.CharField(max_length=256, required=False)
-    template_pool = forms.CharField(max_length=256, required=False)
-    images = forms.CharField(max_length=256, required=False)  # existing volumes, each "pool/volume"
-    cache_mode = forms.CharField(max_length=16)
-    hdd_size = forms.IntegerField(min_value=1, required=False)
-    meta_prealloc = forms.BooleanField(required=False)
-    virtio = forms.BooleanField(required=False, initial=True)
-    qemu_ga = forms.BooleanField(required=False)
-    mac = forms.CharField(max_length=255, required=False)  # one per NIC, comma separated
-    add_cdrom = forms.CharField(max_length=16)
+    vcpu_mode = forms.CharField(label=_("CPU mode"), max_length=64)
+    disk = forms.IntegerField(label=_("Disk"), required=False)
+    memory = forms.IntegerField(label=_("Memory (MiB)"), min_value=1)
+    networks = forms.CharField(label=_("Add networks"), max_length=256)
+    nwfilter = forms.CharField(label=_("Network filter"), max_length=256, required=False)
+    net_model = forms.CharField(label=_("NIC type"), max_length=256, required=False)
+    storage = forms.CharField(label=_("Storage pool"), max_length=256, required=False)
+    template = forms.CharField(label=_("Template volume"), max_length=256, required=False)
+    template_pool = forms.CharField(label=_("Template pool"), max_length=256, required=False)
+    images = forms.CharField(label=_("Volumes"), max_length=256, required=False)  # existing volumes, each "pool/volume"
+    cache_mode = forms.CharField(label=_("Disk cache mode"), max_length=16)
+    hdd_size = forms.IntegerField(label=_("Size (GiB)"), min_value=1, required=False)
+    meta_prealloc = forms.BooleanField(label=_("Preallocate metadata (qcow2)"), required=False)
+    virtio = forms.BooleanField(label=_("VirtIO devices"), required=False, initial=True)
+    qemu_ga = forms.BooleanField(label=_("Guest agent"), required=False)
+    mac = forms.CharField(label=_("MAC address"), max_length=255, required=False)  # one per NIC, comma separated
+    add_cdrom = forms.CharField(label=_("CD-ROM"), max_length=16)
     # a NoCloud seed on a CD-ROM: the hostname and the creating user's SSH keys
-    cloud_init = forms.BooleanField(required=False)
-    add_input = forms.CharField(max_length=16)
-    video = forms.CharField(max_length=16)
-    listener_addr = forms.ChoiceField(choices=settings.QEMU_CONSOLE_LISTENER_ADDRESSES)
+    cloud_init = forms.BooleanField(label=_("Cloud-init seed"), required=False)
+    add_input = forms.CharField(label=_("Input device"), max_length=16)
+    video = forms.CharField(label=_("Video"), max_length=16)
+    listener_addr = forms.ChoiceField(label=_("Console access"), choices=settings.QEMU_CONSOLE_LISTENER_ADDRESSES)
 
     def clean_name(self):
         name = self.cleaned_data["name"]

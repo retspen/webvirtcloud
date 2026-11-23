@@ -19,27 +19,33 @@ wvc_ensure_secret_key() {
   [ -s "$key_file" ]
 }
 
-# Copy settings.py from the template only when it does not already exist, so a
-# re-run never overwrites local edits. 0 + "created" on first copy; 1 + "kept"
-# when it already exists.
-wvc_ensure_settings() {
-  local template="$1" target="$2"
-  if [ -f "$target" ]; then
+# Write <data_dir>/local_settings.py (mode 600) from stdin only when it does not
+# exist: the installation's own settings, which a re-run and updates keep.
+# 0 + "created" when written; 1 + "kept" when it already exists; 2 when it could
+# not be written (no file is left).
+wvc_ensure_local_settings() {
+  local data_dir="$1" file
+  file="$data_dir/local_settings.py"
+  if [ -f "$file" ]; then
     echo "kept"
     return 1
   fi
-  cp "$template" "$target"
+  if ! ( umask 077; cat > "$file.part" ) || ! mv "$file.part" "$file"; then
+    rm -f "$file.part"
+    return 2
+  fi
   echo "created"
   return 0
 }
 
-# Restrict modes so the secret, settings, and db are not world-readable.
+# Restrict modes so the secret, the local settings and the db are not world-readable.
 wvc_harden_modes() {
-  local settings="$1" db="$2" data_dir="$3"
-  [ -e "$settings" ] && chmod 600 "$settings"
+  local db="$1" data_dir="$2" file
   [ -e "$db" ] && chmod 600 "$db"
   [ -d "$data_dir" ] && chmod 700 "$data_dir"
-  [ -e "$data_dir/secret_key" ] && chmod 600 "$data_dir/secret_key"
+  for file in secret_key local_settings.py; do
+    [ -e "$data_dir/$file" ] && chmod 600 "$data_dir/$file"
+  done
   return 0
 }
 
