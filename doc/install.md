@@ -14,7 +14,12 @@ chmod 744 install.sh
 sudo ./install.sh
 ```
 
-The installer writes the server's names and IPs to `ALLOWED_HOSTS`. Running it again keeps `data/local_settings.py` (and its noVNC port, whatever the answer), the database, the secret key and the main nginx config, but replaces `/etc/nginx/conf.d/webvirtcloud.conf` and the systemd units; back up your own lines in the nginx config (TLS) first. Put your own service settings in `/etc/default/webvirtcloud` or in drop-ins (`systemctl edit webvirt-cloud`), which a re-run keeps.
+The installer writes the server's names and IPs to `ALLOWED_HOSTS`.
+
+Running it again:
+
+- **Replaces** `/etc/nginx/conf.d/webvirtcloud.conf` and the systemd units: back up your own lines in the nginx config (TLS) first.
+- **Keeps** `data/local_settings.py` (with its noVNC port, whatever you answer), the database, the secret key, the main nginx config, `/etc/default/webvirtcloud` and drop-ins (`systemctl edit webvirt-cloud`): put your own service settings there.
 
 ## Docker
 
@@ -186,4 +191,10 @@ sudo cat /srv/webvirtcloud/data/admin_password            # installer or manual 
 docker compose exec webvirtcloud cat data/admin_password   # Docker
 ```
 
-Sign in at `http://<server-ip>`; you must set a new password at the first login, and the file is then deleted. To choose the name or password yourself, set `ADMIN_USERNAME` and/or `ADMIN_PASSWORD` in the environment before that first `migrate`; a password you set is not written to the file and need not be changed. A lost password is reset from a root shell with `cd /srv/webvirtcloud && runuser -u www-data -- venv/bin/python3 manage.py changepassword admin` (`nginx` on RHEL / openSUSE; load `/etc/default/webvirtcloud` first if you use it, see [Environment variables](configuration.md#environment-variables); Docker: `docker compose exec -u www-data webvirtcloud venv/bin/python3 manage.py changepassword admin`).
+Sign in at `http://<server-ip>`; you must set a new password at the first login, and the file is then deleted.
+
+To choose the name or password yourself, set `ADMIN_USERNAME` and/or `ADMIN_PASSWORD` in the environment before that first `migrate`; a password you set is not written to the file and need not be changed.
+
+### Lost password
+
+[Run `manage.py`](configuration.md#running-managepy) `changepassword admin`.

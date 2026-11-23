@@ -19,7 +19,7 @@ WebVirtCloud combines three kinds of access rights:
 | Start, shut down, power cycle, force off | ✅ | ✅ | — | ❌ |
 | Open the console (noVNC or, when it is on, the serial console; `.vv` file for virt-viewer, VDI URL) | ✅ | ✅ | — | ❌ |
 | Resize CPU/memory/disk, set root password, add SSH key, change title/description | ✅ | ✅ | `is_change` | ❌ |
-| Change console settings (type, VNC password, keymap) | ✅ | ✅ | `is_change` and `is_vnc`; the listen address, and removing the password of a console that listens beyond localhost, are a superuser's; nobody's on a template | ❌ |
+| Change console settings (type, VNC password, keymap) | ✅ | ✅ | `is_change` and `is_vnc`, with [limits](#console-settings) | ❌ |
 | Snapshots | ✅ | ✅ | `is_change` and `instances.snapshot_instances` | ❌ |
 | Clone | ✅ | ✅ | `is_change` and `instances.clone_instances` (templates: viewing the template is enough) | templates only, with `instances.clone_instances` |
 | Delete the VM, with its disk files when chosen | ✅ | ✅ | `is_delete` | ❌ |
@@ -31,7 +31,15 @@ WebVirtCloud combines three kinds of access rights:
 | Verify a backup; restore one of its disks as a new volume | ✅ | ❌ | — | ❌ |
 | Backup targets and schedules | ✅ | ❌ | — | ❌ |
 
-Notes:
+## Templates
+
+A template VM is changed (resize, root password, SSH keys, title and description, snapshots) only by superusers and by staff owners with `is_change`, deleted only by superusers and staff owners with `is_delete`, and backed up only by superusers. Other owners keep view, console and power (power on and power cycle of a template are refused with a warning). Cloning a template needs only view access and `instances.clone_instances`.
+
+## Console settings
+
+The listen address, and removing the password of a console that listens beyond localhost, are a superuser's. Nobody changes the console settings of a template.
+
+## Other rules
 
 - Only superusers choose disk names and MAC addresses when cloning; for other users the server derives them.
 - `is_staff` gives no access to VMs and does not reveal console settings or VNC passwords by itself.
@@ -41,5 +49,4 @@ Notes:
 - The Jobs page shows a user the jobs they started; superusers see every job.
 - Finding VMs by IP or MAC address searches a user's own VMs; superusers and `view_instances` users search every host.
 - An API token acts with its user's rights: the API allows what the pages allow, but its backup endpoints are a superuser's.
-- A template VM is changed (resize, root password, SSH keys, title and description, snapshots) only by superusers and by staff owners with `is_change`, deleted only by superusers and staff owners with `is_delete`, and backed up only by superusers; other owners keep view, console and power (power on and power cycle of a template are refused with a warning). Cloning a template needs only view access and `instances.clone_instances`.
 - On VM pages, users without ownership or `view_instances` get **404** (the VM's existence is not revealed), and users who can see a VM but lack the right for an action get **403**. Superuser-only pages answer **403** to everyone else; the console page answers **403** both for a missing VM and for a VM the user may not open.

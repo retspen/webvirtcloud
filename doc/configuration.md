@@ -18,16 +18,27 @@
 
 The on/off variables take `1` or `0`; any other value, such as `true`, stops the panel at start with an error naming the variable.
 
-Where to set them:
+### Where to set them
 
-- **Docker:** the `environment:` list of `docker-compose.override.yml`, then `docker compose up -d`; every process in the container gets it.
-- **Installer and manual installation:** `/etc/default/webvirtcloud` (root, mode 600), one `NAME='value'` per line (single quotes: systemd and the shell then read the same value); the panel's services read it. [`data/local_settings.py`](#local-settings) does not read these names: a line `WEBVIRTCLOUD_HTTPS = 1` there does nothing; it sets the setting the variable fills, e.g. `SERIAL_CONSOLE_ENABLED = True`. Then `systemctl restart webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker`, and load the file before running `manage.py`: `set -a; . /etc/default/webvirtcloud; set +a`.
+**Docker:** the `environment:` list of `docker-compose.override.yml`; every process in the container gets it. Then:
+
+```bash
+docker compose up -d
+```
+
+**Installer and manual installation:** `/etc/default/webvirtcloud` (root, mode 600), one `NAME='value'` per line (single quotes: systemd and the shell then read the same value). Then:
+
+```bash
+systemctl restart webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
+```
+
+### Workers
 
 gunicorn runs at most 8 workers (fewer on hosts with under 4 CPUs), in Docker 4, of 4 threads each; each worker takes about 140 MB and sends at most 2 requests at a time to one compute. To change it, set `GUNICORN_CMD_ARGS=--workers N` in a drop-in of `webvirt-cloud` (`systemctl edit webvirt-cloud`: `[Service]` and `Environment="GUNICORN_CMD_ARGS=--workers N"`) or in `docker-compose.override.yml`.
 
 ## Local settings
 
-Options that are not environment variables (LDAP, `OTP_ENABLED`, `LOGIN_TRUSTED_PROXIES` or any other setting of `webvirtcloud/settings.py`) go into `data/local_settings.py`. `settings.py` runs it after its own defaults and with their names, so it sets or changes any of them, and its values win over the environment's; updates replace `settings.py` and leave this file alone. For example:
+Options that are not environment variables (LDAP, `OTP_ENABLED`, `LOGIN_TRUSTED_PROXIES` or any other setting of `webvirtcloud/settings.py`) go into `data/local_settings.py`. `settings.py` runs it after its own defaults, with their names at hand, so it sets or changes any of them (`ALLOWED_HOSTS += [...]`). Updates replace `settings.py` and leave this file alone. For example:
 
 ```python
 TIME_ZONE = "Europe/Istanbul"
@@ -35,7 +46,40 @@ ALLOWED_HOSTS += ["wvc.example.com"]
 OTP_ENABLED = True
 ```
 
-The installer writes the server's time zone, the noVNC port and its names and IPs into it. A value `settings.py` works out from another before the file runs stays as it was: with `EMAIL_HOST_USER` set here, set `DEFAULT_FROM_EMAIL` here too; the log file is set with `WEBVIRTCLOUD_LOG_FILE` in the environment. It may hold passwords (LDAP): keep it the panel user's with mode 600. After a change, `systemctl restart webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker`. Docker keeps it in the `webvirtcloud-data` volume: write it next to the compose file, then `docker compose cp local_settings.py webvirtcloud:/srv/webvirtcloud/data/` and `docker compose restart webvirtcloud` (the start makes it the panel user's).
+- It uses the names of `settings.py`, not of the environment variables: a line `WEBVIRTCLOUD_HTTPS = 1` does nothing; `SERIAL_CONSOLE_ENABLED = True` sets what `WEBVIRTCLOUD_SERIAL_CONSOLE=1` sets.
+- Its values win over the environment's.
+- A value `settings.py` derives from another is not derived again: with `EMAIL_HOST_USER` set here, set `DEFAULT_FROM_EMAIL` here too. The log file is set only with `WEBVIRTCLOUD_LOG_FILE` in the environment.
+- The installer writes the server's time zone, the noVNC port and its names and IPs into it.
+- It may hold passwords (LDAP): keep it the panel user's with mode 600.
+
+After a change, on an installer or manual installation:
+
+```bash
+systemctl restart webvirt-cloud webvirt-novncd webvirt-socketiod webvirt-worker
+```
+
+Docker keeps it in the `webvirtcloud-data` volume. Write it next to the compose file, then (the start makes it the panel user's):
+
+```bash
+docker compose cp local_settings.py webvirtcloud:/srv/webvirtcloud/data/
+docker compose restart webvirtcloud
+```
+
+## Running manage.py
+
+Installer and manual installation, from a root shell (`nginx` instead of `www-data` on RHEL / openSUSE):
+
+```bash
+cd /srv/webvirtcloud
+[ ! -f /etc/default/webvirtcloud ] || { set -a; . /etc/default/webvirtcloud; set +a; }
+runuser -u www-data -- venv/bin/python3 manage.py <command>
+```
+
+Docker, in the directory you installed from:
+
+```bash
+docker compose exec -u www-data webvirtcloud venv/bin/python3 manage.py <command>
+```
 
 ## HTTPS and reverse proxy
 
@@ -44,9 +88,13 @@ For a panel served over HTTPS:
 - set `WEBVIRTCLOUD_HTTPS=1`: session and CSRF cookies become HTTPS-only, HTTP is redirected to HTTPS (except `/datasource/`, which VMs fetch over HTTP), and HSTS is sent for one year;
 - add the HTTPS origin to `CSRF_TRUSTED_ORIGINS`, e.g. `CSRF_TRUSTED_ORIGINS=https://wvc.example.com` and `WEBVIRTCLOUD_HTTPS=1` in `/etc/default/webvirtcloud`.
 
-TLS can end at the bundled nginx or at a proxy in front of it; such a proxy must send `X-Forwarded-Proto: https`. Failed logins are counted per client address, which the bundled nginx passes in `X-Real-IP`. A proxy that replaces the bundled nginx must set `X-Real-IP` itself; one on another machine (gunicorn bound beyond 127.0.0.1) must also be in `LOGIN_TRUSTED_PROXIES` in [`data/local_settings.py`](#local-settings). With a proxy in front of the bundled nginx, configure nginx's `set_real_ip_from` / `real_ip_header` for that proxy, or all clients share its address.
+A proxy that ends TLS sends `X-Forwarded-Proto: https`.
 
-Every page is sent with `X-Frame-Options: DENY` and `Content-Security-Policy: script-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`: the panel runs only scripts it serves itself, cannot be shown in a frame, and its forms post only to its own origin.
+Failed logins are counted per client address, so the panel must see the real one, over HTTP too:
+
+- **Only the bundled nginx:** nothing more; it passes the client address in `X-Real-IP`.
+- **A proxy in front of the bundled nginx:** set nginx's `set_real_ip_from` / `real_ip_header` for that proxy, or all clients share its address.
+- **A proxy that replaces the bundled nginx:** it sets `X-Real-IP` itself. On another machine (gunicorn bound beyond 127.0.0.1), it must also be in `LOGIN_TRUSTED_PROXIES` in [`data/local_settings.py`](#local-settings).
 
 ## Cloud-init datasource
 
@@ -69,6 +117,8 @@ The QR code is mailed as a link to a page that shows it, good for one hour: the 
 ## Alerts
 
 On the Settings page (Alerts), **Alert e-mail addresses** get a mail, through the server's SMTP settings (`EMAIL_HOST` and the others, as for OTP), and **Alert webhook** a JSON POST (`subject`, `text`, `time`; Slack and Mattermost take it) when a backup job fails, a scheduled backup is not taken (not for a host in maintenance), the daily target check finds backups missing, a verification finds a backup damaged, or a job ends uncertain. The job worker sends them within a minute and tries a failed channel again for ten minutes.
+
+## Health check
 
 `/healthz`, without a login, answers 200 while the database answers and the job worker runs, 503 otherwise: point a monitor at it. The Docker image's health check reads it too.
 

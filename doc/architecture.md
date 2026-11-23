@@ -1,6 +1,10 @@
 # WebVirtCloud architecture
 
-WebVirtCloud is a web panel for libvirt hosts. libvirt is the source of truth: the panel reads a host's VMs, pools, networks and devices from libvirt when a page needs them, and its database holds what libvirt does not (users, permissions, quotas, compute connection details, jobs, the audit log, settings) and, per VM, the compute, name and UUID that permissions hang on. VMs keep running when the panel is stopped. Changes made with `virsh` or `virt-manager` (VMs added, removed or renamed) reach those VM rows the next time a VM list is read: the VM list page and both API VM lists read first the hosts whose VMs the user may see.
+WebVirtCloud is a web panel for libvirt hosts. libvirt is the source of truth; VMs keep running when the panel is stopped.
+
+- **libvirt holds** the VMs, pools, networks and devices; the panel reads them when a page needs them.
+- **The panel's database holds** what libvirt does not: users, permissions, quotas, compute connection details, jobs, the audit log, settings and, per VM, the compute, name and UUID that permissions hang on.
+- **Changes made with `virsh` or `virt-manager`** (VMs added, removed or renamed) reach the database the next time a VM list is read: the VM list page and both API VM lists read first the hosts whose VMs the user may see.
 
 ## Stack
 
@@ -14,6 +18,8 @@ WebVirtCloud is a web panel for libvirt hosts. libvirt is the source of truth: t
 | Security | `django-otp` (TOTP), `django-axes` (lockout), optional `django-auth-ldap`; CSP `script-src 'self'` |
 | Serving | nginx in front of gunicorn (gthread workers); nginx serves the static files |
 | Processes | systemd units on hosts, supervisord in the Docker image |
+
+Every page is sent with `X-Frame-Options: DENY` and `Content-Security-Policy: script-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`: the panel runs only scripts it serves itself, cannot be shown in a frame, and its forms post only to its own origin.
 
 ## Processes
 
@@ -81,11 +87,7 @@ Long operations (create, clone, migrate and delete VMs, bulk power, move disks, 
 
 ## API
 
-`/api/v1/` (session from the login form or an API token):
+`/api/v1/`, used as [REST API](api.md) describes:
 
 - `computes/`, and per compute `instances/`, `instances/create/<arch>/<machine>/`, `networks/`, `interfaces/`, `storages/` (with `volumes/`), `archs/`
 - `instances/`, `flavor/`, `migrate/`, `operations/`, `backups/`
-- the VM and compute lists (also a compute's `instances/`) take `?tag=<name>`
-- schema at `/api/schema/`, Swagger at `/swagger/`, ReDoc at `/redoc/`, all after a login
-
-VM create, migrate and delete need a `submission_key` and answer 202 with the job.
