@@ -9,7 +9,7 @@
 ![Python 3.10–3.14](https://img.shields.io/badge/python-3.10%E2%80%933.14-3776AB?logo=python&logoColor=white)
 ![Django 5.2 LTS](https://img.shields.io/badge/django-5.2%20LTS-0C4B33?logo=django&logoColor=white)
 ![QEMU/KVM](https://img.shields.io/badge/libvirt-QEMU%2FKVM-FF6600?logo=qemu&logoColor=white)
-[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-D22128?logo=apache&logoColor=white)](http://www.apache.org/licenses/LICENSE-2.0.html)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-D22128?logo=apache&logoColor=white)](LICENSE)
 
 [Quick start](#quick-start) | [Documentation](#documentation) | [Screenshots](#screenshots) | [REST API](doc/api.md)
 
@@ -146,4 +146,4 @@ Then sign in at `http://<server-ip>` as `admin` ([first login](doc/install.md#fi
 
 ## License
 
-WebVirtCloud is licensed under the [Apache Licence, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html).
+WebVirtCloud is licensed under the [Apache License, Version 2.0](LICENSE).
