@@ -66,4 +66,4 @@ jobs:
           fetch-depth: 0  # the release's commit
 
       - name: Install v4.3.0, update to this commit and check the panel
-        run: dev/test-installer.sh "${{ matrix.image }}" v4.3.0
+        run: dev/test-installer.sh "${{ matrix.image }}" cd722c6a  # v4.3.0, a tag of the fork only

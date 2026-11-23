@@ -27,7 +27,6 @@ REASONS = {
     (libvirt.VIR_DOMAIN_PAUSED, libvirt.VIR_DOMAIN_PAUSED_WATCHDOG): _("Paused by its watchdog"),
     (libvirt.VIR_DOMAIN_PAUSED, libvirt.VIR_DOMAIN_PAUSED_CRASHED): _("Paused: the guest crashed"),
     (libvirt.VIR_DOMAIN_PAUSED, libvirt.VIR_DOMAIN_PAUSED_POSTCOPY_FAILED): _("Paused: its migration failed midway"),
-    (libvirt.VIR_DOMAIN_PAUSED, libvirt.VIR_DOMAIN_PAUSED_API_ERROR): _("Paused by a libvirt error"),
     # the guest, or its QEMU process (killed on the host: out of memory)
     (libvirt.VIR_DOMAIN_SHUTOFF, libvirt.VIR_DOMAIN_SHUTOFF_CRASHED): _("Stopped: it crashed"),
     # libvirt could not take it back after restarting

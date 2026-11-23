@@ -13052,10 +13052,6 @@ msgstr "Duraklatıldı: konuk çöktü"
 msgid "Paused: its migration failed midway"
 msgstr "Duraklatıldı: taşıma yarıda başarısız oldu"
 
-#: instances/states.py:31
-msgid "Paused by a libvirt error"
-msgstr "Bir libvirt hatası nedeniyle duraklatıldı"
-
 #: instances/states.py:33
 msgid "Stopped: it crashed"
 msgstr "Durdu: çöktü"
