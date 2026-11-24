@@ -10503,25 +10503,9 @@ msgstr "要删除此计划吗？其备份将保留。"
 msgid "Delete schedule"
 msgstr "删除计划"
 
-#: vmbackups/templates/vmbackups/policy.html:26
-msgid "Runs"
-msgstr "运行记录"
-
-#: vmbackups/templates/vmbackups/policy.html:30
-msgid "Day"
-msgstr "日期"
-
-#: vmbackups/templates/vmbackups/policy.html:37
-msgid "Backup job"
-msgstr "备份作业"
-
 #: vmbackups/templates/vmbackups/policy.html:38
 msgid "Skipped"
 msgstr "已跳过"
-
-#: vmbackups/templates/vmbackups/policy.html:48
-msgid "No run yet."
-msgstr "还没有运行记录。"
 
 #: vmbackups/templates/vmbackups/policy_form.html:13
 #, python-format
@@ -12438,3 +12422,69 @@ msgstr "已满足"
 #: accounts/templates/accounts/change_password_form.html:63
 msgid "not met"
 msgstr "未满足"
+
+#: vmbackups/models.py:88 vmbackups/templates/vmbackups/policy.html:36
+msgid "Backed up"
+msgstr "已备份"
+
+#: vmbackups/models.py:88 vmbackups/templates/vmbackups/policy.html:39
+msgid "Running"
+msgstr "运行中"
+
+#: vmbackups/models.py:88
+msgctxt "backup run"
+msgid "Started"
+msgstr "已开始"
+
+#: vmbackups/templates/vmbackups/policies.html:17
+#: vmbackups/templates/vmbackups/policy.html:13
+#, python-format
+msgid "Last day"
+msgid_plural "Last %(days)s days"
+msgstr[0] "最近 %(days)s 天"
+
+#: vmbackups/templates/vmbackups/policies.html:24
+msgid "no run"
+msgstr "未运行"
+
+#: vmbackups/templates/vmbackups/policy.html:26
+#, python-format
+msgid "%(day)s, %(vm)s: %(outcome)s"
+msgstr "%(day)s，%(vm)s：%(outcome)s"
+
+#: vmbackups/templates/vmbackups/policy.html:40
+msgid "No run"
+msgstr "未运行"
+
+#: vmbackups/templates/vmbackups/policy.html:43
+msgid "The schedule has no VM."
+msgstr "该计划没有虚拟机。"
+
+#: vmbackups/templates/vmbackups/policy.html:47
+msgid "Not backed up"
+msgstr "未备份"
+
+#: vmbackups/views.py:359
+#, python-format
+msgid "%(n)s backed up"
+msgstr "%(n)s 台已备份"
+
+#: vmbackups/views.py:359
+#, python-format
+msgid "%(n)s running"
+msgstr "%(n)s 台运行中"
+
+#: vmbackups/views.py:360
+#, python-format
+msgid "%(n)s started"
+msgstr "%(n)s 台已开始"
+
+#: vmbackups/views.py:360
+#, python-format
+msgid "%(n)s failed"
+msgstr "%(n)s 台失败"
+
+#: vmbackups/views.py:361
+#, python-format
+msgid "%(n)s skipped"
+msgstr "%(n)s 台已跳过"

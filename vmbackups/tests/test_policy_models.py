@@ -6,6 +6,7 @@ from django.test import TestCase
 
 from computes.models import Compute
 from instances.models import Instance
+from operations.models import Operation
 from vmbackups.models import Backup, BackupPolicy, BackupRun, BackupTarget
 
 
@@ -23,6 +24,21 @@ class PolicyModelTests(TestCase):
         BackupRun.objects.create(policy=self.policy, instance=self.vm, day=datetime.date(2026, 11, 17))
         with self.assertRaises(IntegrityError):
             BackupRun.objects.create(policy=self.policy, instance=self.vm, day=datetime.date(2026, 11, 17))
+
+    def test_a_run_comes_to_what_its_job_did(self):
+        def outcome(state, job_state=None):
+            job = job_state and Operation.objects.create(kind="backup.create", username="pm_admin", submission_key=job_state,
+                                                         resource="r", state=job_state)
+            return BackupRun(policy=self.policy, instance=self.vm, state=state, operation=job).outcome
+
+        self.assertEqual(outcome(BackupRun.SKIPPED), BackupRun.SKIPPED)
+        self.assertEqual(outcome(BackupRun.FAILED), BackupRun.FAILED)
+        self.assertEqual(outcome(BackupRun.SUBMITTED, Operation.SUCCEEDED), BackupRun.SUCCEEDED)
+        self.assertEqual(outcome(BackupRun.SUBMITTED, Operation.QUEUED), BackupRun.RUNNING)
+        self.assertEqual(outcome(BackupRun.SUBMITTED, Operation.RUNNING), BackupRun.RUNNING)
+        for job_state in (Operation.FAILED, Operation.CANCELLED, Operation.UNCERTAIN):  # no backup came of it
+            self.assertEqual(outcome(BackupRun.SUBMITTED, job_state), BackupRun.FAILED)
+        self.assertEqual(outcome(BackupRun.SUBMITTED), BackupRun.STARTED)  # its job is gone from the job history
 
     def test_a_deleted_policy_keeps_its_backups(self):
         backup = Backup.objects.create(target=self.target, instance=self.vm, vm_uuid=self.vm.uuid, vm_name="vm1",

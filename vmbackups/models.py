@@ -3,6 +3,8 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
 from computes.models import Compute, Tag
 from instances.models import Instance
@@ -81,6 +83,10 @@ class BackupRun(models.Model):
 
     SUBMITTED, SKIPPED, FAILED = "submitted", "skipped", "failed"
     STATES = [(SUBMITTED, "submitted"), (SKIPPED, "skipped"), (FAILED, "failed")]
+    # what came of it, its job's end included (outcome)
+    SUCCEEDED, RUNNING, STARTED = "succeeded", "running", "started"
+    OUTCOMES = {SUCCEEDED: _("Backed up"), RUNNING: _("Running"), STARTED: pgettext_lazy("backup run", "Started"), FAILED: _("Failed"),
+                SKIPPED: _("Skipped")}
 
     policy = models.ForeignKey(BackupPolicy, on_delete=models.CASCADE, related_name="runs")
     instance = models.ForeignKey(Instance, on_delete=models.CASCADE, related_name="backup_runs")
@@ -92,6 +98,25 @@ class BackupRun(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["policy", "instance", "day"], name="one_run_per_day")]
+
+    @classmethod
+    def outcome_of(cls, state, job_state):
+        """Skipped or failed; else as its job went, or started once the job is gone from the job history (None)."""
+        if state != cls.SUBMITTED:
+            return state
+        if job_state is None:
+            return cls.STARTED
+        if job_state == Operation.SUCCEEDED:
+            return cls.SUCCEEDED
+        return cls.RUNNING if job_state in Operation.ACTIVE else cls.FAILED
+
+    @property
+    def outcome(self):
+        return self.outcome_of(self.state, self.operation.state if self.operation_id else None)
+
+    @property
+    def outcome_label(self):
+        return self.OUTCOMES[self.outcome]
 
 
 UUID_IN_NAME = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
