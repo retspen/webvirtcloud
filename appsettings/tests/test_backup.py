@@ -6,11 +6,11 @@ from datetime import datetime
 import os
 import shutil
 import sqlite3
+import subprocess
 import tempfile
 from contextlib import closing
 from io import StringIO
 from pathlib import Path
-from unittest import skipUnless
 from unittest.mock import patch
 
 from django.core.management import call_command
@@ -20,8 +20,6 @@ from django.test import SimpleTestCase, override_settings
 
 from appsettings.management.commands.backup import Command
 
-
-SQLITE_ONLY = skipUnless(connection.vendor == "sqlite", "the backup copies only a sqlite database")
 
 
 class BackupTests(SimpleTestCase):
@@ -49,7 +47,8 @@ class BackupTests(SimpleTestCase):
         db.execute("CREATE TABLE computes_compute (name)")
         db.execute("INSERT INTO computes_compute VALUES ('kept')")
         db.commit()
-        name = patch.dict(connection.settings_dict, NAME=str(self.base / "db.sqlite3"))
+        # a sqlite panel also on the PostgreSQL test run; the PostgreSQL tests patch their own
+        name = patch.dict(connection.settings_dict, ENGINE="django.db.backends.sqlite3", NAME=str(self.base / "db.sqlite3"))
         name.start()
         self.addCleanup(name.stop)
 
@@ -61,7 +60,6 @@ class BackupTests(SimpleTestCase):
     def kept(self):
         return sorted(p.name for p in self.backups.iterdir() if p.name != ".lock")
 
-    @SQLITE_ONLY
     def test_a_backup_holds_the_database_keys_and_settings_for_the_panel_user_only(self):
         backup = self.backup()
         with closing(sqlite3.connect(backup / "db.sqlite3")) as db:
@@ -110,7 +108,6 @@ class BackupTests(SimpleTestCase):
             self.backup("--keep", "1")
         self.assertEqual(self.kept(), ["webvirtcloud-backup-20260101-000000"])
 
-    @SQLITE_ONLY
     def test_a_damaged_copy_fails(self):
         with patch("appsettings.management.commands.backup.sqlite3") as sqlite, \
                 self.assertRaisesRegex(CommandError, "damaged: row 3 missing from index"):
@@ -126,10 +123,34 @@ class BackupTests(SimpleTestCase):
                 self.backup()
         self.assertEqual(self.kept(), [])
 
-    def test_a_database_other_than_sqlite_is_left_out(self):
-        errors = StringIO()
-        with patch.dict(connection.settings_dict, ENGINE="django.db.backends.postgresql"):
-            call_command("backup", stdout=StringIO(), stderr=errors)
-        backup = self.backups / self.kept()[0]
-        self.assertNotIn("db.sqlite3", [p.name for p in backup.iterdir()])
-        self.assertIn("back it up with its own tools", errors.getvalue())
+    def postgresql(self):
+        return patch.dict(connection.settings_dict, ENGINE="django.db.backends.postgresql", HOST="192.0.2.10",
+                          PORT="5432", NAME="webvirtcloud", USER="webvirtcloud", PASSWORD="db password")
+
+    def test_a_postgresql_database_is_dumped_with_its_password_out_of_the_command_line(self):
+        def pg_dump(args, env, **kwargs):
+            Path(args[2].removeprefix("--file=")).write_bytes(b"PGDMP")
+            return subprocess.CompletedProcess(args, 0, "", "")
+
+        with self.postgresql(), patch("shutil.which", return_value="/usr/bin/pg_dump"), \
+                patch("subprocess.run", side_effect=pg_dump) as run:
+            backup = self.backup()
+        args, env = run.call_args.args[0], run.call_args.kwargs["env"]
+        self.assertEqual(args, ["pg_dump", "--format=custom", f"--file={backup.parent}/.{backup.name}/db.pgdump",
+                                "--host=192.0.2.10", "--port=5432", "--username=webvirtcloud", "--dbname=webvirtcloud"])
+        self.assertEqual(env["PGPASSWORD"], "db password")
+        self.assertEqual((backup / "db.pgdump").read_bytes(), b"PGDMP")
+        self.assertEqual(oct((backup / "db.pgdump").stat().st_mode & 0o777), "0o600")
+
+    def test_a_failed_dump_fails_the_backup(self):
+        failed = subprocess.CompletedProcess([], 1, "", "pg_dump: error: server version mismatch\n")
+        with self.postgresql(), patch("shutil.which", return_value="/usr/bin/pg_dump"), \
+                patch("subprocess.run", return_value=failed), self.assertRaisesRegex(CommandError, "server version mismatch"):
+            self.backup()
+        self.assertEqual(self.kept(), [])
+
+    def test_a_postgresql_database_without_pg_dump_fails_the_backup(self):
+        with self.postgresql(), patch("shutil.which", return_value=None), \
+                self.assertRaisesRegex(CommandError, "install the PostgreSQL client"):
+            self.backup()
+        self.assertEqual(self.kept(), [])

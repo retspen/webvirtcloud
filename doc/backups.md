@@ -7,7 +7,8 @@
 
 The panel backs itself up every day at 03:15 (cron in Docker; otherwise `webvirt-backup.timer`, within 10 minutes after and at the next boot if the server was off) into a new directory under `/srv/webvirtcloud/backups`, in Docker the `webvirtcloud-backups` volume, and keeps the newest 7. A backup holds:
 
-- `db.sqlite3`: a consistent copy taken while the panel runs, checked with `PRAGMA integrity_check`; with PostgreSQL it is left out, so back up that database yourself
+- `db.sqlite3`: a consistent copy taken while the panel runs, checked with `PRAGMA integrity_check`
+- `db.pgdump` instead, with PostgreSQL: a `pg_dump` of the database in its custom format. The Docker image has `pg_dump`; otherwise install the PostgreSQL client (`postgresql-client` on Debian and Ubuntu, `postgresql` on RHEL), of the server's major version or newer. Without it the backup fails
 - `secret_key`, `node_id` and `local_settings.py`
 - `ssh/`: the SSH keys of the panel's user, which the SSH computes accept
 - `pki/`: the TLS client certificates of the panel's user, which the TLS computes accept

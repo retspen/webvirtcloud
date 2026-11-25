@@ -15,8 +15,8 @@ PREFIX = "webvirtcloud-backup-"
 
 
 class Command(BaseCommand):
-    help = ("Copy the database, secret key, worker id, local settings and the SSH keys and TLS certificates of the "
-            "panel's user into a new directory in backups/, then delete all but the newest --keep backups.")
+    help = ("Copy the database (sqlite) or dump it (PostgreSQL), the secret key, worker id, local settings and the "
+            "SSH keys and TLS certificates of the panel's user into a new directory in backups/, then delete all but the newest --keep backups.")
 
     def add_arguments(self, parser):
         parser.add_argument("--keep", type=int, default=7, help="how many backups to keep (default 7)")
@@ -65,6 +65,8 @@ class Command(BaseCommand):
                 result = copy.execute("PRAGMA integrity_check").fetchone()[0]
             if result != "ok":
                 raise CommandError(f"The copy of the database is damaged: {result}")
+        elif database["ENGINE"] == "django.db.backends.postgresql":
+            self.dump_postgresql(database, to / "db.pgdump")
         else:
             self.stderr.write("The database is not sqlite and is not in the backup: back it up with its own tools.")
         # the key in use: SECRET_KEY from the environment has no data/secret_key
@@ -87,3 +89,16 @@ class Command(BaseCommand):
             commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=settings.BASE_DIR, capture_output=True, text=True)
             if commit.returncode == 0:
                 (to / "commit").write_text(commit.stdout)
+
+    @staticmethod
+    def dump_postgresql(database, to):
+        """pg_dump's own format, which pg_restore reads; a consistent state while the panel writes."""
+        if shutil.which("pg_dump") is None:
+            raise CommandError("pg_dump is not installed: install the PostgreSQL client (postgresql-client)")
+        # libpq reads the password and the connect timeout from the environment, not the command line
+        env = {**os.environ, "PGPASSWORD": database["PASSWORD"], "PGCONNECT_TIMEOUT": "10"}
+        dump = subprocess.run(["pg_dump", "--format=custom", f"--file={to}", f"--host={database['HOST']}",
+                               f"--port={database['PORT']}", f"--username={database['USER']}", f"--dbname={database['NAME']}"],
+                              env=env, capture_output=True, text=True)
+        if dump.returncode != 0:
+            raise CommandError(f"pg_dump failed: {dump.stderr.strip()}")

@@ -11,6 +11,7 @@ RUN apt-get update -qq \
         libvirt0 \
         nginx \
         openssh-client \
+        postgresql-client \
         python3 \
         supervisor \
         tzdata \
