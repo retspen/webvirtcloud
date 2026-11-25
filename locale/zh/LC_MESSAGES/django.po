@@ -12431,11 +12431,6 @@ msgstr "已备份"
 msgid "Running"
 msgstr "运行中"
 
-#: vmbackups/models.py:88
-msgctxt "backup run"
-msgid "Started"
-msgstr "已开始"
-
 #: vmbackups/templates/vmbackups/policies.html:17
 #: vmbackups/templates/vmbackups/policy.html:13
 #, python-format
@@ -12476,11 +12471,6 @@ msgstr "%(n)s 台运行中"
 
 #: vmbackups/views.py:360
 #, python-format
-msgid "%(n)s started"
-msgstr "%(n)s 台已开始"
-
-#: vmbackups/views.py:360
-#, python-format
 msgid "%(n)s failed"
 msgstr "%(n)s 台失败"
 
@@ -12488,3 +12478,7 @@ msgstr "%(n)s 台失败"
 #, python-format
 msgid "%(n)s skipped"
 msgstr "%(n)s 台已跳过"
+
+#: vmbackups/models.py:15
+msgid "The job was cancelled"
+msgstr "作业已取消"

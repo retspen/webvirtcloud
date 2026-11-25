@@ -378,5 +378,7 @@ td .tag-more {
 .run-failed::after { content: "\00d7"; color: #fff; font-size: .75rem; font-weight: 700; line-height: 1; }
 .run-days .run-failed::after { font-size: .625rem; }
 .run-skipped { border-color: var(--bs-secondary-color); }
-.run-running, .run-started { border-color: var(--bs-info); background: linear-gradient(90deg, var(--bs-info) 50%, transparent 50%); }
+.run-running { border-color: var(--bs-info); background: linear-gradient(90deg, var(--bs-info) 50%, transparent 50%); }
 .run-none { background: var(--bs-secondary-bg); }
+/* high contrast themes would drop the marks' colours, which carry their meaning */
+@media (forced-colors: active) { .run-mark { forced-color-adjust: none; } }

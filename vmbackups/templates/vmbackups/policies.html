@@ -21,7 +21,7 @@
             {% for policy in policies %}
                 <tr>
                     <td class="text-nowrap"><a href="{% url 'vmbackups:policy' policy.id %}">{{ policy.name }}</a></td>
-                    <td class="text-nowrap"><span class="run-days">{% for day in policy.history %}<span class="run-mark run-{{ day.outcome|default:"none" }}" role="img" title="{{ day.day|date:"Y-m-d" }}: {{ day.text|default:_("no run") }}" aria-label="{{ day.day|date:"Y-m-d" }}: {{ day.text|default:_("no run") }}"></span>{% endfor %}</span></td>
+                    <td class="text-nowrap"><a class="run-days" href="{% url 'vmbackups:policy' policy.id %}">{% for day in policy.history %}<span class="run-mark run-{{ day.outcome|default:"none" }}" role="img" title="{{ day.day|date:"Y-m-d" }}: {{ day.text|default:_("no run") }}" aria-label="{{ day.day|date:"Y-m-d" }}: {{ day.text|default:_("no run") }}"></span>{% endfor %}</a></td>
                     <td>{% if policy.compute %}{% blocktrans with compute=policy.compute.name %}Every VM of {{ compute }}{% endblocktrans %}{% elif policy.tag %}{% blocktrans with tag=policy.tag.name %}VMs tagged {{ tag }}{% endblocktrans %}{% else %}{% blocktrans count counter=policy.vm_count %}{{ counter }} VM{% plural %}{{ counter }} VMs{% endblocktrans %}{% endif %}</td>
                     <td>{{ policy.target.name }}</td>
                     <td>{{ policy.time|time:"H:i" }}</td>

@@ -355,10 +355,9 @@ def restore_disk(request, uuid):
 
 HISTORY_DAYS = 14  # the days a schedule's runs are shown for
 # a day of a schedule on the list is marked as the first of these its runs came to
-WORST_FIRST = (BackupRun.FAILED, BackupRun.SKIPPED, BackupRun.RUNNING, BackupRun.STARTED, BackupRun.SUCCEEDED)
+WORST_FIRST = (BackupRun.FAILED, BackupRun.SKIPPED, BackupRun.RUNNING, BackupRun.SUCCEEDED)
 DAY_COUNTS = {BackupRun.SUCCEEDED: _("%(n)s backed up"), BackupRun.RUNNING: _("%(n)s running"),
-              BackupRun.STARTED: _("%(n)s started"), BackupRun.FAILED: _("%(n)s failed"),
-              BackupRun.SKIPPED: _("%(n)s skipped")}
+              BackupRun.FAILED: _("%(n)s failed"), BackupRun.SKIPPED: _("%(n)s skipped")}
 
 
 def history_days():

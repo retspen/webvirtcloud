@@ -51,7 +51,7 @@
             <span class="run-mark run-{{ run.outcome }}" aria-hidden="true"></span>
             <span class="text-nowrap">{{ run.day|date:"Y-m-d" }}</span>
             <a href="{% url 'instances:instance' run.instance_id %}">{{ run.instance.name }}</a>
-            <span class="text-body-secondary">{{ run.outcome_label }}{% if run.note %}: {{ run.note|words }}{% elif run.operation.error %}: {{ run.operation.error|words }}{% endif %}</span>
+            <span class="text-body-secondary">{{ run.outcome_label }}{% if run.reason %}: {{ run.reason|words }}{% endif %}</span>
             {% if run.operation_id %}<a class="ms-1" href="{% url 'operations:job' run.operation_id %}">{% trans "Job" %}</a>{% endif %}
         </li>
     {% endfor %}

@@ -13298,11 +13298,6 @@ msgstr "Yedeklendi"
 msgid "Running"
 msgstr "Çalışıyor"
 
-#: vmbackups/models.py:88
-msgctxt "backup run"
-msgid "Started"
-msgstr "Başlatıldı"
-
 #: vmbackups/templates/vmbackups/policies.html:17
 #: vmbackups/templates/vmbackups/policy.html:13
 #, python-format
@@ -13344,11 +13339,6 @@ msgstr "%(n)s çalışıyor"
 
 #: vmbackups/views.py:360
 #, python-format
-msgid "%(n)s started"
-msgstr "%(n)s başlatıldı"
-
-#: vmbackups/views.py:360
-#, python-format
 msgid "%(n)s failed"
 msgstr "%(n)s başarısız"
 
@@ -13356,3 +13346,7 @@ msgstr "%(n)s başarısız"
 #, python-format
 msgid "%(n)s skipped"
 msgstr "%(n)s atlandı"
+
+#: vmbackups/models.py:15
+msgid "The job was cancelled"
+msgstr "İş iptal edildi"

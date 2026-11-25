@@ -152,15 +152,17 @@ class PolicyPageTests(TestCase):
         self.add_run(policy, self.vm1, 1, job_state=Operation.SUCCEEDED)
         self.add_run(policy, self.vm3, 1, job_state=Operation.FAILED)
         self.add_run(policy, self.vm1, 0, job_state=Operation.RUNNING)
-        self.add_run(policy, self.vm3, 0)  # its job gone from the job history
+        self.add_run(policy, self.vm3, 0, job_state=Operation.SUCCEEDED)
         page = lxml_html.fromstring(self.client.get(reverse("vmbackups:policies")).content)
-        marks = page.xpath("//span[contains(@class, 'run-days')]/span")
+        strip = page.xpath("//a[contains(@class, 'run-days')]")  # one link to the schedule, for touch and keyboard
+        self.assertEqual(strip[0].get("href"), reverse("vmbackups:policy", args=[policy.pk]))
+        marks = strip[0].xpath("./span")
         self.assertEqual(len(marks), 14)
         yesterday = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
         self.assertEqual((marks[-2].get("class"), marks[-2].get("title")),
                          ("run-mark run-failed", f"{yesterday}: 1 failed, 1 backed up"))
         self.assertEqual(marks[-1].get("class"), "run-mark run-running")
-        self.assertTrue(marks[-1].get("title").endswith(": 1 running, 1 started"))
+        self.assertTrue(marks[-1].get("title").endswith(": 1 running, 1 backed up"))
         self.assertEqual(marks[0].get("class"), "run-mark run-none")
 
     def test_delete_keeps_the_backups(self):

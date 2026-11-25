@@ -11375,11 +11375,6 @@ msgstr "Резервну копію створено"
 msgid "Running"
 msgstr "Виконується"
 
-#: vmbackups/models.py:88
-msgctxt "backup run"
-msgid "Started"
-msgstr "Розпочато"
-
 #: vmbackups/models.py:89 vmbackups/templates/vmbackups/policy.html:38
 msgid "Skipped"
 msgstr "Пропущено"
@@ -11986,11 +11981,6 @@ msgstr "Створено резервних копій: %(n)s"
 #, python-format
 msgid "%(n)s running"
 msgstr "Виконується: %(n)s"
-
-#: vmbackups/views.py:360
-#, python-format
-msgid "%(n)s started"
-msgstr "Запущено: %(n)s"
 
 #: vmbackups/views.py:360
 #, python-format
@@ -13448,3 +13438,7 @@ msgstr "Локальний хост"
 #: webvirtcloud/settings.py:351
 msgid "All interfaces"
 msgstr "Усі інтерфейси"
+
+#: vmbackups/models.py:15
+msgid "The job was cancelled"
+msgstr "Завдання скасовано"
