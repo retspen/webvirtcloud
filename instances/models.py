@@ -43,6 +43,8 @@ class Instance(models.Model):
     created = models.DateTimeField(_("created"), auto_now_add=True)
     drbd = models.CharField(_("drbd"), max_length=24, default="None")
     tags = models.ManyToManyField("computes.Tag", blank=True, related_name="instances", verbose_name=_("tags"))
+    # "state:reason" of the fault (instances.states.REASONS) last alerted; empty without one (instances.jobs.watch_faults)
+    fault = models.CharField(max_length=16, blank=True, default="")
 
     objects = InstanceManager()
 

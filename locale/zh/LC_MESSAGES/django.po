@@ -12482,3 +12482,11 @@ msgstr "%(n)s 台已跳过"
 #: vmbackups/models.py:15
 msgid "The job was cancelled"
 msgstr "作业已取消"
+
+#: instances/jobs.py:1666
+msgid "VM fault: %(vm)s"
+msgstr "虚拟机故障：%(vm)s"
+
+#: instances/jobs.py:1667
+msgid "%(vm)s on %(host)s: %(reason)s"
+msgstr "%(host)s 上的 %(vm)s：%(reason)s"

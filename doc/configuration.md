@@ -134,7 +134,7 @@ The QR code is mailed as a link to a page that shows it, good for one hour: the 
 
 ## Alerts
 
-On the Settings page (Alerts), **Alert e-mail addresses** get a mail, through the server's SMTP settings (`EMAIL_HOST` and the others, as for OTP), and **Alert webhook** a JSON POST (`subject`, `text`, `time`; Slack and Mattermost take it) when a backup job fails, a scheduled backup is not taken (not for a host in maintenance), the daily target check finds backups missing, a verification finds a backup damaged, or a job ends uncertain. The job worker sends them within a minute and tries a failed channel again for ten minutes.
+On the Settings page (Alerts), **Alert e-mail addresses** get a mail, through the server's SMTP settings (`EMAIL_HOST` and the others, as for OTP), and **Alert webhook** a JSON POST (`subject`, `text`, `time`; Slack and Mattermost take it) when a backup job fails, a scheduled backup is not taken (not for a host in maintenance), the daily target check finds backups missing, a verification finds a backup damaged, a job ends uncertain, or a fault stops or pauses a VM (a disk error, a crash, a kernel panic: the reasons the VM page shows; once a fault, read every minute from each host, so told within two minutes). The job worker sends them within a minute and tries a failed channel again for ten minutes.
 
 ## Health check
 

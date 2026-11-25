@@ -13350,3 +13350,11 @@ msgstr "%(n)s atlandı"
 #: vmbackups/models.py:15
 msgid "The job was cancelled"
 msgstr "İş iptal edildi"
+
+#: instances/jobs.py:1666
+msgid "VM fault: %(vm)s"
+msgstr "Sanal makine arızası: %(vm)s"
+
+#: instances/jobs.py:1667
+msgid "%(vm)s on %(host)s: %(reason)s"
+msgstr "%(host)s üzerindeki %(vm)s: %(reason)s"

@@ -13442,3 +13442,11 @@ msgstr "Усі інтерфейси"
 #: vmbackups/models.py:15
 msgid "The job was cancelled"
 msgstr "Завдання скасовано"
+
+#: instances/jobs.py:1666
+msgid "VM fault: %(vm)s"
+msgstr "Збій ВМ: %(vm)s"
+
+#: instances/jobs.py:1667
+msgid "%(vm)s on %(host)s: %(reason)s"
+msgstr "ВМ %(vm)s на хості %(host)s: %(reason)s"

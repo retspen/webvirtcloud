@@ -31,10 +31,11 @@ from appsettings.settings import app_settings
 from computes.models import Compute
 from instances import addresses, utils
 from instances.models import Instance
+from instances.states import state_reason
 from logs.audit import write
-from operations import claims
+from operations import alerts, claims
 from operations.utils import REPORTED, safe_text, say
-from operations.jobs import Cancelled, Kind, Outcome, Plan, register
+from operations.jobs import Cancelled, Kind, Outcome, Plan, register, register_periodic
 from operations.models import Claim, Operation
 
 
@@ -1660,3 +1661,34 @@ class ForceOffVM(_Power):
 
     def done(self, dom):  # shut off, or gone: a transient VM is removed as it stops
         return dom is None or not dom.isActive()
+
+
+VM_FAULT = _("VM fault: %(vm)s")
+VM_FAULT_TEXT = _("%(vm)s on %(host)s: %(reason)s")
+
+
+def watch_faults():
+    """Alerts once when a fault stops or pauses a VM (instances.states.REASONS), while an alert channel is set:
+    each host's VMs read in one call, all hosts at once (utils.host_domain_states); a host that does not answer
+    is read again at the next pass. Without a channel nothing is told, nor kept as told."""
+    if not any(alerts.channels()):
+        Instance.objects.exclude(fault="").update(fault="")
+        return
+    computes = list(Compute.objects.all())
+    states = utils.host_domain_states(computes)
+    for compute in computes:
+        domains = states[compute.pk]
+        if domains is None:
+            continue
+        for vm in Instance.objects.filter(compute=compute):
+            _name, state, reason = domains.get(vm.uuid, (None, None, None))
+            why = state_reason(state, reason)
+            fault = f"{state}:{reason}" if why else ""
+            if fault == vm.fault:
+                continue
+            if why:
+                alerts.alert(say(VM_FAULT, vm=vm.name), say(VM_FAULT_TEXT, vm=vm.name, host=compute.name, reason=str(why)))
+            Instance.objects.filter(pk=vm.pk).update(fault=fault)
+
+
+register_periodic(watch_faults)
