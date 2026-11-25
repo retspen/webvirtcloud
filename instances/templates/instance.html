@@ -23,8 +23,9 @@
              {% if can_open_console and vdi_reachable %}data-vdi-url="{% url 'vdi_url' compute.id instance.name %}"{% endif %}>
         <div class="card-body p-3 d-flex flex-wrap flex-md-nowrap gap-3">
             <div class="flex-grow-1" style="min-width: 0;">
-            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                <div style="min-width: 0;">
+            {# from 576px the buttons keep the name's row: many tags wrap within the name's side #}
+            <div class="d-flex flex-wrap flex-sm-nowrap justify-content-between align-items-start gap-2">
+                <div class="flex-grow-1" style="min-width: 0;">
                     <div class="d-flex flex-wrap align-items-center gap-2">
                         <h1 class="h4 mb-0 text-break" id="vm-name">{{ instance.name }}</h1>
                         {% vm_state instance.status as state %}
@@ -35,7 +36,7 @@
                     {% if instance.title %}<p class="text-body-secondary mb-1">{{ instance.title }}</p>{% endif %}
                     {% include 'instances/host_link.html' %}
                 </div>
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 flex-shrink-0">
                     {% if instance.is_template and can_clone %}
                     <button type="button" class="btn btn-sm btn-primary" id="clone-button">{% bs_icon 'copy' %} {% trans "Clone" %}</button>
                     {% endif %}
