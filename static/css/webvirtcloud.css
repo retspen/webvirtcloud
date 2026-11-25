@@ -382,3 +382,20 @@ td .tag-more {
 .run-none { background: var(--bs-secondary-bg); }
 /* high contrast themes would drop the marks' colours, which carry their meaning */
 @media (forced-colors: active) { .run-mark { forced-color-adjust: none; } }
+
+/* the VM page's screen thumbnail (instance.html): the console's picture, a button that opens it */
+.vm-screen {
+    display: block;
+    padding: 0;
+    width: 100%;
+    max-width: 16rem;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: #000;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+}
+.vm-screen[hidden] { display: none; }
+.vm-screen img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.vm-screen:focus-visible { outline: 0; box-shadow: var(--bs-focus-ring-x, 0) var(--bs-focus-ring-y, 0) 0 var(--bs-focus-ring-width) var(--bs-focus-ring-color); }
+@media (min-width: 768px) { .vm-screen { flex: none; width: 13rem; align-self: flex-start; } }

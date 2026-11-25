@@ -2979,6 +2979,21 @@ class wvmInstance(wvmConnect):
     def abort_backup(self):
         self.instance.abortJob()
 
+    def screenshot(self):
+        """The running or paused VM's screen as libvirt gives it: (MIME type, bytes); PNG from
+        libvirt 9.x with QEMU 7.1 on, PPM before."""
+        stream = self.wvm.newStream(0)
+        try:
+            mime = self.instance.screenshot(stream, 0, 0)
+            data = bytearray()
+            stream.recvAll(lambda _stream, chunk, buffer: buffer.extend(chunk), data)
+            stream.finish()
+        except libvirtError:
+            with contextlib.suppress(libvirtError):
+                stream.abort()
+            raise
+        return mime, bytes(data)
+
     def fstrim(self):
         """Has the guest agent trim the free space of each mounted file system, waiting
         FSTRIM_TIMEOUT seconds at most: [{"path", "trimmed": bytes or None, "error": text or None}].

@@ -13406,3 +13406,7 @@ msgstr "boşaltıldı"
 #: instances/jobs.py:1701
 msgid "No file system was trimmed: %(errors)s"
 msgstr "Hiçbir dosya sistemi boşaltılmadı: %(errors)s"
+
+#: instances/templates/instance.html:98
+msgid "Screen of %(name)s"
+msgstr "%(name)s ekranı"

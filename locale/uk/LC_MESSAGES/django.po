@@ -13502,3 +13502,7 @@ msgstr "звільнено"
 #: instances/jobs.py:1701
 msgid "No file system was trimmed: %(errors)s"
 msgstr "Жодну файлову систему не звільнено: %(errors)s"
+
+#: instances/templates/instance.html:98
+msgid "Screen of %(name)s"
+msgstr "Екран ВМ %(name)s"

@@ -352,6 +352,12 @@ def _instance_page(request, pk, instance, compute):
     vdi_reachable = instance.console_type in ("vnc", "spice") and not util.is_loopback(instance.console_listener_address)
     # root's password and keys change in a shut-off VM's disk (gstfsd on the host), or through a running VM's agent
     guest_access_ready = instance.status == 5 or (instance.status == 1 and instance.guest_agent_ready)
+    # its screen beside the summary: what the console shows, so for those who may open it
+    show_screen = can_open_console and not instance.is_template and instance.status in (1, 3) \
+        and instance.console_type in ("vnc", "spice")
+    # clicked, it opens the console where the console page can: a VNC one novncd reaches
+    screen_opens_console = show_screen and instance.console_type == "vnc" and not utils.novnc_unreachable(
+        instance.compute.type, instance.proxy.get_console_socket(), instance.console_listener_address)
     # get_instance(perm_type="delete"): a template only for superusers and staff owners
     can_delete = request.user.is_superuser or bool(
         userinstance and userinstance.is_delete and (request.user.is_staff or not instance.is_template)
@@ -432,6 +438,8 @@ def _instance_page(request, pk, instance, compute):
         "can_manage_console": can_manage_console,
         "console_form": console_form,
         "can_open_console": can_open_console,
+        "show_screen": show_screen,
+        "screen_opens_console": screen_opens_console,
         "can_power": can_power,
         "can_delete": can_delete,
         "can_change": can_change,
@@ -469,6 +477,26 @@ def status(request, pk):
     instance = get_instance(request.user, pk)
     state, reason = instance.proxy.get_state()
     return JsonResponse({"status": state, "reason": reason})
+
+
+def screen(request, pk):
+    """The VM's screen as a PNG, for the users who may open its console (utils.can_open_console):
+    404 while it has none to show (not running or paused, no graphics, or a host whose libvirt
+    gives no PNG)."""
+    instance = get_instance(request.user, pk)
+    if not utils.can_open_console(request.user, instance):
+        raise PermissionDenied
+    if instance.status not in (1, 3) or instance.console_type not in ("vnc", "spice"):
+        raise Http404
+    try:
+        mime, data = instance.proxy.screenshot()
+    except libvirtError:
+        raise Http404 from None
+    if mime != "image/png":
+        raise Http404
+    response = HttpResponse(data, content_type="image/png")
+    response["Cache-Control"] = "no-store"
+    return response
 
 
 def nic_addresses(request, pk):

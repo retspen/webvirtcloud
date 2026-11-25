@@ -12532,3 +12532,7 @@ msgstr "已修剪"
 #: instances/jobs.py:1701
 msgid "No file system was trimmed: %(errors)s"
 msgstr "没有文件系统被修剪：%(errors)s"
+
+#: instances/templates/instance.html:98
+msgid "Screen of %(name)s"
+msgstr "%(name)s 的屏幕"

@@ -20,9 +20,9 @@ from libvirt import libvirtError
 from logs.audit import reason, write
 from operations.models import Operation
 from operations.utils import migration_bandwidth
-from vrtManager.connection import counted_thread, other_hosts, wvmConnect
+from vrtManager.connection import CONN_TCP, CONN_TLS, counted_thread, other_hosts, wvmConnect
 from vrtManager.instance import wvmInstance, wvmInstances
-from vrtManager.util import ConnectionFailed, HostBusy, message, vol_dev_type
+from vrtManager.util import ConnectionFailed, HostBusy, is_loopback, message, vol_dev_type
 
 from .models import Instance
 from .states import state_reason
@@ -40,6 +40,13 @@ def can_open_console(user, instance):
     if user.is_superuser:
         return True
     return UserInstance.objects.filter(instance=instance, user=user).exists()
+
+
+def novnc_unreachable(compute_type, socket, listener):
+    """Whether novncd cannot reach a VNC console: one that listens on its host's loopback or on a
+    socket only, on a host the panel reaches over TCP or TLS (SSH tunnels to it, the socket type is
+    on this host)."""
+    return compute_type in (CONN_TCP, CONN_TLS) and bool(socket or is_loopback(listener))
 
 
 def get_clone_free_names(size=10):
