@@ -381,8 +381,8 @@ td .tag-more {
 .navbar .dropdown-item svg {
     vertical-align: -.125em;
 }
-/* between a phone and a wide screen the labels of Jobs and Administration do not fit: their icons stay */
-@media (min-width: 768px) and (max-width: 991.98px) {
+/* beside the other links Jobs and Administration are icons; their names stay for screen readers and the phone menu */
+@media (min-width: 768px) {
     .navbar .nav-label {
         position: absolute;
         width: 1px;
