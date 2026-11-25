@@ -12490,3 +12490,45 @@ msgstr "虚拟机故障：%(vm)s"
 #: instances/jobs.py:1667
 msgid "%(vm)s on %(host)s: %(reason)s"
 msgstr "%(host)s 上的 %(vm)s：%(reason)s"
+
+#: instances/jobs.py:1672 instances/templates/instances/settings_tab.html:301
+msgid "Free unused space"
+msgstr "释放未使用空间"
+
+#: instances/jobs.py:1696 instances/templates/instances/settings_tab.html:301
+msgid "The guest agent is not connected"
+msgstr "客户机代理未连接"
+
+#: instances/jobs.py:1704
+msgid "The job stopped before the guest answered; trimming again is harmless"
+msgstr "作业在客户机应答前停止；再次修剪无害"
+
+#: instances/jobs.py:1710
+msgid ""
+"No disk of the running VM has the discard mode unmap: its image files keep "
+"their size. Set it in a disk's device details; it takes effect at the VM's "
+"next start."
+msgstr "运行中的虚拟机没有任何磁盘的 Discard 模式为 unmap：其镜像文件大小不变。请在磁盘的设备详情中设置；虚拟机下次启动时生效。"
+
+#: instances/templates/instances/settings_tab.html:299
+msgid "Free space the guest no longer uses in the image files."
+msgstr "释放客户机不再使用的镜像文件空间。"
+
+#: instances/templates/instances/settings_tab.html:299
+msgid ""
+"No disk has the discard mode unmap while the VM runs: trimming frees no space"
+" in its image files. Set it in a disk's device details; it takes effect at "
+"the next start."
+msgstr "虚拟机运行时没有任何磁盘的 Discard 模式为 unmap：修剪不会释放其镜像文件中的空间。请在磁盘的设备详情中设置；下次启动时生效。"
+
+#: operations/templates/operations/job.html:68
+msgid "Trimmed"
+msgstr "已修剪"
+
+#: operations/templates/operations/job.html:70
+msgid "trimmed"
+msgstr "已修剪"
+
+#: instances/jobs.py:1701
+msgid "No file system was trimmed: %(errors)s"
+msgstr "没有文件系统被修剪：%(errors)s"

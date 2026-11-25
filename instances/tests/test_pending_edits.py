@@ -178,6 +178,16 @@ class PendingEditsTestCase(TestCase):
         doc = self.page(get_pcie_slots=(None, None))
         self.assertFalse(doc.xpath("//form[@action=$a]", a=reverse("instances:add_pcie_slots", args=[self.instance.id])))
 
+    def test_the_disks_tab_frees_unused_space_of_a_running_vm_and_says_when_no_disk_passes_it_on(self):
+        url = reverse("instances:fstrim", args=[self.instance.id])
+        for discard, said in (("default", "trimming frees no space"), ("unmap", "Free space the guest no longer uses")):
+            with self.subTest(discard=discard):
+                doc = self.page(live=[{**disk("vda", "default", ""), "discard": discard}])
+                (form,) = doc.xpath("//form[@action=$a]", a=url)
+                self.assertIn(said, form.getparent().text_content())
+                self.assertTrue(form.xpath(".//input[@name='submission_key']/@value"))  # the job needs it
+        self.assertFalse(self.page(status=5).xpath("//form[@action=$a]", a=url))  # the agent of a running VM trims
+
     def test_the_clone_form_lists_the_persistent_devices(self):
         nic = {"type": "network", "mac": "52:54:10:00:00:01", "nic": "default", "state": "up", "model": "virtio",
                "ipv4": None, "ipv6": None, "filterref": "", "target": "", "inbound": [], "outbound": []}

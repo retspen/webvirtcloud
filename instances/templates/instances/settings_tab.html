@@ -293,6 +293,15 @@
                 {% endfor %}
                 </div>
                 </div>
+                {% if instance.status == 1 and request.user.is_superuser %}
+                {# the guest agent trims its file systems' free space; a disk passes it to its image only with discard unmap #}
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 small mt-3">
+                    <span class="text-body-secondary">{% if instance.discard_unmap %}{% trans "Free space the guest no longer uses in the image files." %}{% else %}{% trans "No disk has the discard mode unmap while the VM runs: trimming frees no space in its image files. Set it in a disk's device details; it takes effect at the next start." %}{% endif %}</span>
+                    <form action="{% url 'instances:fstrim' instance.id %}" method="post">{% csrf_token %}{% submission_key %}
+                        <button type="submit" class="btn btn-sm btn-outline-secondary"{% if not instance.guest_agent_ready %} disabled title="{% trans "The guest agent is not connected" %}"{% endif %}>{% trans "Free unused space" %}</button>
+                    </form>
+                </div>
+                {% endif %}
                 {% if instance.pcie_slots %}
                 {# a PCIe machine gives each virtio disk and network device a slot; a running VM gets no new one #}
                 {% with total=instance.pcie_slots.0 free=instance.pcie_slots.1 next=instance.config_pcie_slots %}

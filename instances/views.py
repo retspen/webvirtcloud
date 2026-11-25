@@ -1618,6 +1618,24 @@ def add_pcie_slots(request, pk):
 
 @require_POST
 @superuser_only
+def fstrim(request, pk):
+    """Queue a trim of the running VM's file systems (instance.fstrim): the job panel shows it."""
+    get_instance(request.user, pk)
+    try:
+        op = jobs.submit("instance.fstrim", request.user, {"instance": pk}, request.POST.get("submission_key", ""))
+    except claims.Busy as busy:
+        messages.error(request, busy_message(busy, request.user))
+    except jobs.SubmissionConflict as err:
+        messages.error(request, str(err))
+    except libvirtError as err:
+        messages.error(request, error_text(request, err))
+    else:
+        jobs.remember_job(request, op)
+    return _back(request, pk, "disks")
+
+
+@require_POST
+@superuser_only
 @serialize_instance_mutation
 def add_existing_vol(request, pk):
     instance = get_instance(request.user, pk, perm_type="change")

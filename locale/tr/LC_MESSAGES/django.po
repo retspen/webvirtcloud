@@ -13358,3 +13358,51 @@ msgstr "Sanal makine arızası: %(vm)s"
 #: instances/jobs.py:1667
 msgid "%(vm)s on %(host)s: %(reason)s"
 msgstr "%(host)s üzerindeki %(vm)s: %(reason)s"
+
+#: instances/jobs.py:1672 instances/templates/instances/settings_tab.html:301
+msgid "Free unused space"
+msgstr "Kullanılmayan alanı boşalt"
+
+#: instances/jobs.py:1696 instances/templates/instances/settings_tab.html:301
+msgid "The guest agent is not connected"
+msgstr "Konuk ajanı bağlı değil"
+
+#: instances/jobs.py:1704
+msgid "The job stopped before the guest answered; trimming again is harmless"
+msgstr "İş, konuk yanıt vermeden durdu; yeniden boşaltmanın zararı yok"
+
+#: instances/jobs.py:1710
+msgid ""
+"No disk of the running VM has the discard mode unmap: its image files keep "
+"their size. Set it in a disk's device details; it takes effect at the VM's "
+"next start."
+msgstr ""
+"Çalışan sanal makinenin hiçbir diskinde diskard modu unmap değil: imaj "
+"dosyaları boyutunu korur. Bunu bir diskin aygıt ayrıntılarından ayarlayın; "
+"sanal makinenin bir sonraki başlatılışında geçerli olur."
+
+#: instances/templates/instances/settings_tab.html:299
+msgid "Free space the guest no longer uses in the image files."
+msgstr "Konuğun artık kullanmadığı alanı imaj dosyalarında boşaltır."
+
+#: instances/templates/instances/settings_tab.html:299
+msgid ""
+"No disk has the discard mode unmap while the VM runs: trimming frees no space"
+" in its image files. Set it in a disk's device details; it takes effect at "
+"the next start."
+msgstr ""
+"Sanal makine çalışırken hiçbir diskin diskard modu unmap değil: boşaltma imaj"
+" dosyalarında yer açmaz. Bunu bir diskin aygıt ayrıntılarından ayarlayın; bir"
+" sonraki başlatılışta geçerli olur."
+
+#: operations/templates/operations/job.html:68
+msgid "Trimmed"
+msgstr "Boşaltılan"
+
+#: operations/templates/operations/job.html:70
+msgid "trimmed"
+msgstr "boşaltıldı"
+
+#: instances/jobs.py:1701
+msgid "No file system was trimmed: %(errors)s"
+msgstr "Hiçbir dosya sistemi boşaltılmadı: %(errors)s"

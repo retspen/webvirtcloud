@@ -1663,6 +1663,59 @@ class ForceOffVM(_Power):
         return dom is None or not dom.isActive()
 
 
+@register
+class TrimVM(Kind):
+    """Has a running VM's guest agent trim the free space of its file systems (guest-fstrim): a disk whose
+    discard mode is unmap passes it on, and its image file shrinks. Trimming again is harmless."""
+
+    name = "instance.fstrim"
+    label = gettext_noop("Free unused space")
+    time_limit = 1800  # the agent's wait (FSTRIM_TIMEOUT): over time is only noted
+
+    def normalize(self, raw):
+        return {"instance": int(raw["instance"])}
+
+    def validate(self, user, params):
+        if not user.is_superuser:  # as the Disks tab's other superuser controls
+            raise PermissionDenied
+
+    def plan(self, user, params):
+        return _vm_plan(params)
+
+    def precheck(self, op, ctx):
+        if op.user is None or not (op.user.is_active and op.user.is_superuser):  # still, when it runs
+            raise PermissionDenied
+        if _instance(op.params["instance"]).compute_id != op.intent["compute"]:
+            raise util.OperationError(MOVED)
+
+    def run(self, op, ctx):
+        instance = _instance(op.params["instance"])
+        proxy = instance.proxy
+        if proxy.get_status() != 1:
+            raise util.OperationError(gettext_noop("The VM is not running"))
+        if not proxy.is_agent_ready():
+            raise util.OperationError(gettext_noop("The guest agent is not connected"))
+        ctx.record_intent(trimming=True)  # the guest is asked from here
+        trimmed = proxy.fstrim()
+        if trimmed and all(fs["error"] for fs in trimmed):  # the guest refused every file system
+            raise util.OperationError(gettext_noop("No file system was trimmed: %(errors)s"),
+                                      errors="; ".join(f"{fs['path']}: {fs['error']}" for fs in trimmed))
+        result = {"trimmed": trimmed}
+        if not instance.discard_unmap:
+            result["warning"] = say(NO_DISCARD)
+        return result
+
+    def reconcile(self, op):
+        return Outcome(Operation.FAILED, error=say(gettext_noop(
+            "The job stopped before the guest answered; trimming again is harmless")))
+
+    def log_entry(self, op, state):
+        return _log(op, state, "free unused space")
+
+
+NO_DISCARD = _("No disk of the running VM has the discard mode unmap: its image files keep their size. Set it in "
+               "a disk's device details; it takes effect at the VM's next start.")
+
 VM_FAULT = _("VM fault: %(vm)s")
 VM_FAULT_TEXT = _("%(vm)s on %(host)s: %(reason)s")
 

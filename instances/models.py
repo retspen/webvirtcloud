@@ -79,6 +79,11 @@ class Instance(models.Model):
     def disks(self) -> list[dict]:
         return self.proxy.get_disk_devices()
 
+    @property
+    def discard_unmap(self) -> bool:
+        """Whether a disk of the running definition passes the guest's trim to its image (discard unmap)."""
+        return any(disk.get("discard") == "unmap" for disk in self.disks)
+
     @cached_property
     def info(self) -> list | None:
         """virDomainGetInfo, read once: state, max memory KiB, memory KiB, vCPUs, CPU time.

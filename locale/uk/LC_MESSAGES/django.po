@@ -13450,3 +13450,55 @@ msgstr "Збій ВМ: %(vm)s"
 #: instances/jobs.py:1667
 msgid "%(vm)s on %(host)s: %(reason)s"
 msgstr "ВМ %(vm)s на хості %(host)s: %(reason)s"
+
+#: instances/jobs.py:1672 instances/templates/instances/settings_tab.html:301
+msgid "Free unused space"
+msgstr "Звільнити невикористаний простір"
+
+#: instances/jobs.py:1696 instances/templates/instances/settings_tab.html:301
+msgid "The guest agent is not connected"
+msgstr "Гостьовий агент не під’єднано"
+
+#: instances/jobs.py:1704
+msgid "The job stopped before the guest answered; trimming again is harmless"
+msgstr ""
+"Завдання зупинилося до відповіді гостьової системи; повторне звільнення нічим"
+" не шкодить"
+
+#: instances/jobs.py:1710
+msgid ""
+"No disk of the running VM has the discard mode unmap: its image files keep "
+"their size. Set it in a disk's device details; it takes effect at the VM's "
+"next start."
+msgstr ""
+"Жоден диск запущеної ВМ не має режиму discard unmap: файли образів зберігають"
+" свій розмір. Задайте його у відомостях про пристрій диска; він набуде "
+"чинності під час наступного запуску ВМ."
+
+#: instances/templates/instances/settings_tab.html:299
+msgid "Free space the guest no longer uses in the image files."
+msgstr ""
+"Звільняє у файлах образів простір, який гостьова система більше не "
+"використовує."
+
+#: instances/templates/instances/settings_tab.html:299
+msgid ""
+"No disk has the discard mode unmap while the VM runs: trimming frees no space"
+" in its image files. Set it in a disk's device details; it takes effect at "
+"the next start."
+msgstr ""
+"Поки ВМ працює, жоден диск не має режиму discard unmap: звільнення не зменшує"
+" файли образів. Задайте його у відомостях про пристрій диска; він набуде "
+"чинності під час наступного запуску."
+
+#: operations/templates/operations/job.html:68
+msgid "Trimmed"
+msgstr "Звільнено"
+
+#: operations/templates/operations/job.html:70
+msgid "trimmed"
+msgstr "звільнено"
+
+#: instances/jobs.py:1701
+msgid "No file system was trimmed: %(errors)s"
+msgstr "Жодну файлову систему не звільнено: %(errors)s"
