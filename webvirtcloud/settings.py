@@ -237,6 +237,7 @@ LANGUAGES = [
     ("en", "English"),
     ("tr", "Türkçe"),
     ("zh-hans", "简体中文"),
+    ("uk", "Українська"),
 ]
 
 # the installer writes the server's zone; Docker takes TZ (Django sets the process's TZ from this)

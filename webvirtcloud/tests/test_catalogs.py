@@ -9,7 +9,7 @@ from django.conf import settings
 from django.test import SimpleTestCase
 from django.utils import translation
 
-CATALOG_DIRS = {"tr": "tr", "zh-hans": "zh"}
+CATALOG_DIRS = {"tr": "tr", "zh-hans": "zh", "uk": "uk"}
 
 
 class CatalogTests(SimpleTestCase):
