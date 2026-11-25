@@ -92,17 +92,20 @@
             </div>
             {% if show_screen %}
             {# the VM's screen, read by instance_page.js every few seconds and shown once one has come; opens the console where it can #}
+            {# its caption: whether the picture follows the VM (a suspended one's stays), and that a click opens the console #}
             {% if screen_opens_console %}
             <button type="button" class="vm-screen" id="vm-screen" hidden data-url="{% url 'console' compute.id instance.uuid %}"
-                    data-window="console-{{ instance.uuid }}" data-screen-url="{% url 'instances:screen' instance.id %}"
-                    title="{% trans "Open console" %}">
-                <img alt="{% blocktrans with name=instance.name %}Screen of {{ name }}{% endblocktrans %}">
-            </button>
+                    data-window="console-{{ instance.uuid }}" data-screen-url="{% url 'instances:screen' instance.id %}">
             {% else %}
             <div class="vm-screen" id="vm-screen" hidden data-screen-url="{% url 'instances:screen' instance.id %}">
-                <img alt="{% blocktrans with name=instance.name %}Screen of {{ name }}{% endblocktrans %}">
-            </div>
             {% endif %}
+                <span class="vm-screen-frame"><img alt="{% blocktrans with name=instance.name %}Screen of {{ name }}{% endblocktrans %}"></span>
+                <span class="vm-screen-caption">
+                    {% if instance.status == 3 %}<span class="vm-screen-state">{% bs_icon 'pause-fill' %} {% trans "Suspended" %}</span>
+                    {% else %}<span class="vm-screen-state"><span class="vm-screen-live" aria-hidden="true"></span> {% trans "Live" context "screen" %}</span>{% endif %}
+                    {% if screen_opens_console %}<span class="vm-screen-open">{% trans "Open console" %}</span>{% endif %}
+                </span>
+            {% if screen_opens_console %}</button>{% else %}</div>{% endif %}
             {% endif %}
         </div>
         <div class="card-footer p-1">

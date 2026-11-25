@@ -197,12 +197,16 @@ class PendingEditsTestCase(TestCase):
             (element,) = self.page(status=status, **reachable).xpath(screen)
             # shown once its script has read a frame; a button that opens the console
             self.assertEqual((element.tag, element.get("hidden"), element.get("data-screen-url")), ("button", "", url))
+        caption = "normalize-space(//*[@id='vm-screen']/*[@class='vm-screen-caption'])"
+        self.assertEqual(self.page(status=1, **reachable).xpath(caption), "Live Open console")
+        self.assertEqual(self.page(status=3, **reachable).xpath(caption), "Suspended Open console")  # its last picture
         self.assertFalse(self.page(status=5, **reachable).xpath(screen))
         # a console the panel cannot open (loopback VNC on a TCP host, SPICE): the screen alone, not a button
         for console in ({**reachable, "get_console_listener_addr": ("127.0.0.1", "127.0.0.1")},
                         {**reachable, "get_console_type": ("spice", "spice")}):
             (element,) = self.page(**console).xpath(screen)
             self.assertEqual((element.tag, element.get("data-window")), ("div", None))
+            self.assertNotIn("Open console", element.text_content())
 
     def test_the_clone_form_lists_the_persistent_devices(self):
         nic = {"type": "network", "mac": "52:54:10:00:00:01", "nic": "default", "state": "up", "model": "virtio",

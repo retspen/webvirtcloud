@@ -13410,3 +13410,8 @@ msgstr "Hiçbir dosya sistemi boşaltılmadı: %(errors)s"
 #: instances/templates/instance.html:98
 msgid "Screen of %(name)s"
 msgstr "%(name)s ekranı"
+
+#: instances/templates/instance.html:105
+msgctxt "screen"
+msgid "Live"
+msgstr "Canlı"

@@ -13506,3 +13506,8 @@ msgstr "Жодну файлову систему не звільнено: %(erro
 #: instances/templates/instance.html:98
 msgid "Screen of %(name)s"
 msgstr "Екран ВМ %(name)s"
+
+#: instances/templates/instance.html:105
+msgctxt "screen"
+msgid "Live"
+msgstr "Наживо"

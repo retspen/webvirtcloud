@@ -383,19 +383,43 @@ td .tag-more {
 /* high contrast themes would drop the marks' colours, which carry their meaning */
 @media (forced-colors: active) { .run-mark { forced-color-adjust: none; } }
 
-/* the VM page's screen thumbnail (instance.html): the console's picture, a button that opens it */
+/* the VM page's screen thumbnail (instance.html): the picture at its own shape, a caption under it
+   (live or suspended, and "Open console" when it is a button); on phones a small picture beside the caption */
 .vm-screen {
-    display: block;
-    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
     width: 100%;
-    max-width: 16rem;
-    aspect-ratio: 4 / 3;
+    padding: 0;
+    color: var(--bs-body-color);
+    text-align: start;
+    background: none;
+    border: 0;
+}
+.vm-screen[hidden] { display: none; }
+.vm-screen-frame {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 6.5rem;
+    max-height: 5rem;
     overflow: hidden;
-    background: #000;
+    background: var(--bs-tertiary-bg);
     border: 1px solid var(--bs-border-color);
     border-radius: var(--bs-border-radius);
 }
-.vm-screen[hidden] { display: none; }
-.vm-screen img { display: block; width: 100%; height: 100%; object-fit: contain; }
-.vm-screen:focus-visible { outline: 0; box-shadow: var(--bs-focus-ring-x, 0) var(--bs-focus-ring-y, 0) 0 var(--bs-focus-ring-width) var(--bs-focus-ring-color); }
-@media (min-width: 768px) { .vm-screen { flex: none; width: 13rem; align-self: flex-start; } }
+.vm-screen-frame img { display: block; max-width: 100%; max-height: 5rem; height: auto; }
+.vm-screen-caption { display: flex; flex-direction: column; gap: .125rem; font-size: .875em; line-height: 1.3; }
+.vm-screen-state { color: var(--bs-secondary-color); }
+.vm-screen-live { display: inline-block; width: .5rem; height: .5rem; border-radius: 50%; background: var(--bs-success); vertical-align: .05em; }
+.vm-screen-open { color: var(--bs-link-color); }
+button.vm-screen:hover .vm-screen-open { text-decoration: underline; }
+button.vm-screen:hover .vm-screen-frame { border-color: var(--bs-link-color); }
+.vm-screen:focus-visible { outline: 0; border-radius: var(--bs-border-radius); box-shadow: 0 0 0 var(--bs-focus-ring-width) var(--bs-focus-ring-color); }
+@media (min-width: 768px) {
+    .vm-screen { flex: none; flex-direction: column; align-items: stretch; gap: .375rem; width: 13rem; align-self: flex-start; }
+    .vm-screen-frame { width: 100%; max-height: 10rem; }
+    .vm-screen-frame img { max-height: 10rem; }
+    .vm-screen-caption { flex-direction: row; justify-content: space-between; gap: .5rem; }
+}

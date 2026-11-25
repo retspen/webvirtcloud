@@ -12536,3 +12536,8 @@ msgstr "没有文件系统被修剪：%(errors)s"
 #: instances/templates/instance.html:98
 msgid "Screen of %(name)s"
 msgstr "%(name)s 的屏幕"
+
+#: instances/templates/instance.html:105
+msgctxt "screen"
+msgid "Live"
+msgstr "实时"
