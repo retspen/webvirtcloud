@@ -12541,3 +12541,8 @@ msgstr "%(name)s 的屏幕"
 msgctxt "screen"
 msgid "Live"
 msgstr "实时"
+
+#: templates/navbar.html:35
+msgid "%(n)s job not finished"
+msgid_plural "%(n)s jobs not finished"
+msgstr[0] "%(n)s 个任务未完成"

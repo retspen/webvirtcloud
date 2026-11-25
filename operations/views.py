@@ -24,19 +24,15 @@ from .models import Operation, last_seen, worker_gone
 from .utils import said, words
 
 
-def _visible(user):
-    return Operation.objects.all() if user.is_superuser else Operation.objects.filter(user=user)
-
-
 def _get(user, pk):
     try:
-        return _visible(user).get(pk=pk)
+        return Operation.visible_to(user).get(pk=pk)
     except Operation.DoesNotExist:
         raise Http404 from None
 
 
 def jobs(request):
-    qs = _visible(request.user)
+    qs = Operation.visible_to(request.user)
     if request.user.is_superuser:
         # the host and the user as typed: the start of the host, any part of the name
         if compute := request.GET.get("compute"):
@@ -54,7 +50,7 @@ def jobs(request):
     seen = last_seen()
     # a job the worker has to start, run or stop, not one a request runs (job_panel.js uses the same rule)
     unavailable = (worker_gone(seen)
-                   and _visible(request.user).filter(state__in=Operation.ACTIVE)
+                   and Operation.visible_to(request.user).filter(state__in=Operation.ACTIVE)
                    .exclude(worker=Operation.REQUEST).exists())
     return render(request, "operations/jobs.html",
                   {"page": page, "rows": rows, "worker_last_seen": seen, "worker_unavailable": unavailable,

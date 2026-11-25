@@ -77,6 +77,12 @@ def wrap_at_slash(label):
     return format_html_join(mark_safe("/<wbr>"), '<span class="text-nowrap">{}</span>', ((part,) for part in label.split("/")))
 
 
+@register.simple_tag
+def active_job_count(user):
+    """How many of the jobs the user sees are queued, running or cancelling: the menu's Jobs badge."""
+    return Operation.visible_to(user).filter(state__in=Operation.ACTIVE).count()
+
+
 @register.inclusion_tag("operations/job_panel_script.html", takes_context=True)
 def job_panel_script(context, resource):
     """The job panel's script for the page of resource."""

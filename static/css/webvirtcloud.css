@@ -349,6 +349,50 @@ td .tag-more {
     height: 0.85em;
 }
 
+/* the menu: its links in the full light of the theme's navbar, an icon beside each label; the page's own
+   section underlined (on a phone, a bar at its side) and bolder */
+.navbar-dark {
+    --bs-navbar-color: #fff;
+    --bs-navbar-hover-color: #fff;
+    --bs-navbar-active-color: #fff;
+}
+.navbar .nav-link {
+    display: flex;
+    align-items: center;
+    gap: .375rem;
+}
+.navbar .nav-link svg {
+    flex: none;
+}
+.navbar .nav-link.active {
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 currentColor;
+    padding-left: .75rem;
+}
+@media (min-width: 768px) {
+    .navbar .nav-link.active {
+        box-shadow: inset 0 -2px 0 currentColor;
+        padding-left: var(--bs-navbar-nav-link-padding-x);
+    }
+    .navbar .nav-link:hover:not(.active) {
+        box-shadow: inset 0 -2px 0 rgba(255, 255, 255, .45);
+    }
+}
+.navbar .dropdown-item svg {
+    vertical-align: -.125em;
+}
+/* between a phone and a wide screen the labels of Jobs and Administration do not fit: their icons stay */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .navbar .nav-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+    }
+}
+
 /* "Skip to content" brings #main up below the sticky navbar, not behind it */
 #main {
     scroll-margin-top: 5rem;
