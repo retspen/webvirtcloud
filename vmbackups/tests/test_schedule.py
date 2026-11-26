@@ -156,11 +156,11 @@ class ScheduleTests(TransactionTestCase):
 
     def test_the_window_is_checked_again_after_the_host_answered(self):
         self.pass_at(at(2026, 11, 17, 7, 59))
-        # the host answers the checks only after the window ended
-        self.proxy.backup_plan.side_effect = lambda: patch_now.start() or {
-            "definition": "<domain/>", "disks": [], "nvram": None, "left_out": []}
-        patch_now = patch("django.utils.timezone.now", return_value=at(2026, 11, 17, 8, 30))
-        self.addCleanup(patch.stopall)
+        def answer_late():  # the host answers the checks only after the window ended
+            timezone.now.return_value = at(2026, 11, 17, 8, 30)  # the clock started() set
+            return {"definition": "<domain/>", "disks": [], "nvram": None, "left_out": []}
+
+        self.proxy.backup_plan.side_effect = answer_late
         with self.assertRaisesMessage(OperationError, "window ended"):
             self.started(at(2026, 11, 17, 7, 59, 30), self.creates()[0])
         self.assertFalse(Backup.objects.exists())

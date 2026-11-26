@@ -130,8 +130,13 @@ class Worker:
         except BlockingIOError:
             logger.error("Another worker runs on this host; exiting")
             return 1
-        signal.signal(signal.SIGTERM, lambda *_: self.stopping.set())
-        signal.signal(signal.SIGINT, lambda *_: self.stopping.set())
+        # a signal runs its handler in this thread, which may be inside stopping.wait() holding the
+        # event's lock: set from a thread of its own, the event waits for that lock instead of deadlocking
+        def stop(*_):
+            threading.Thread(target=self.stopping.set, daemon=True).start()
+
+        signal.signal(signal.SIGTERM, stop)
+        signal.signal(signal.SIGINT, stop)
         status = 0
         try:
             while not acquire(self.identity, self.host):

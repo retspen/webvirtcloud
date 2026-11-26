@@ -14,13 +14,14 @@
     <div class="table-responsive mb-4">
         <table class="table table-hover align-middle">
             <thead>
-                <tr><th>{% trans "Name" %}</th><th>{% trans "VMs" %}</th><th>{% trans "Target" %}</th><th>{% trans "Daily at" %}</th>
+                <tr><th>{% trans "Name" %}</th><th>{% blocktrans count days=days|length %}Last day{% plural %}Last {{ days }} days{% endblocktrans %}</th><th>{% trans "VMs" %}</th><th>{% trans "Target" %}</th><th>{% trans "Daily at" %}</th>
                     <th class="text-end">{% trans "Backups kept" %}</th><th>{% trans "Full backup" %}</th><th>{% trans "State" %}</th></tr>
             </thead>
             <tbody>
             {% for policy in policies %}
                 <tr>
-                    <td><a href="{% url 'vmbackups:policy' policy.id %}">{{ policy.name }}</a></td>
+                    <td class="text-nowrap"><a href="{% url 'vmbackups:policy' policy.id %}">{{ policy.name }}</a></td>
+                    <td class="text-nowrap"><a class="run-days" href="{% url 'vmbackups:policy' policy.id %}">{% for day in policy.history %}<span class="run-mark run-{{ day.outcome|default:"none" }}" role="img" title="{{ day.day|date:"Y-m-d" }}: {{ day.text|default:_("no run") }}" aria-label="{{ day.day|date:"Y-m-d" }}: {{ day.text|default:_("no run") }}"></span>{% endfor %}</a></td>
                     <td>{% if policy.compute %}{% blocktrans with compute=policy.compute.name %}Every VM of {{ compute }}{% endblocktrans %}{% elif policy.tag %}{% blocktrans with tag=policy.tag.name %}VMs tagged {{ tag }}{% endblocktrans %}{% else %}{% blocktrans count counter=policy.vm_count %}{{ counter }} VM{% plural %}{{ counter }} VMs{% endblocktrans %}{% endif %}</td>
                     <td>{{ policy.target.name }}</td>
                     <td>{{ policy.time|time:"H:i" }}</td>

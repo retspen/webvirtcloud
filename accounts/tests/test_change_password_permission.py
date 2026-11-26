@@ -44,7 +44,7 @@ class ChangePasswordPermissionTestCase(TestCase):
         self.assertContains(page, f'href="{reverse("accounts:profile")}">Cancel')
         UserAttributes.objects.create(user=user, must_change_password=True)
         page = self.client.get(reverse("accounts:change_password"))
-        self.assertContains(page, "Choose a new password before you go on.")
+        self.assertContains(page, "Replace it to continue.")
         self.assertNotContains(page, f'href="{reverse("accounts:profile")}">Cancel')
 
     def test_a_user_without_a_local_password_cannot_change_it(self):

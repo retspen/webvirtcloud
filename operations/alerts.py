@@ -1,7 +1,8 @@
-"""Notices for the operator: a backup that failed, was not taken, is missing or damaged, and a job that ended
-uncertain. alert() queues one in the caller's transaction, so a failed send never holds up the change it tells
-of; send(), a periodic task of the worker, mails it to the Settings page's alert addresses and POSTs it as JSON
-to its alert webhook, trying again at the next passes."""
+"""Notices for the operator: a backup that failed, was not taken, is missing or damaged, a job that ended
+uncertain, and a VM a fault stopped or paused (instances.jobs.watch_faults). alert() queues one in the
+caller's transaction, so a failed send never holds up the change it tells of; send(), a periodic task of the
+worker, mails it to the Settings page's alert addresses and POSTs it as JSON to its alert webhook, trying again
+at the next passes."""
 
 import json
 import logging

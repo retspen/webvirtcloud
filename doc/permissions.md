@@ -24,7 +24,7 @@ WebVirtCloud combines three kinds of access rights:
 | Clone | ✅ | ✅ | `is_change` and `instances.clone_instances` (templates: viewing the template is enough) | templates only, with `instances.clone_instances` |
 | Delete the VM, with its disk files when chosen | ✅ | ✅ | `is_delete` | ❌ |
 | Disks and media (add, attach, edit, detach, delete volumes; CD-ROM/ISO) | ✅ | ❌ | — | ❌ |
-| Network interfaces, host devices (PCI/USB), boot options, vCPU hotplug, autostart, guest agent, video, RNG, TPM, crash and hang action, disk I/O limits, suspend/resume, migrate, disk moves, protection, raw XML, owners | ✅ | ❌ | — | ❌ |
+| Network interfaces, host devices (PCI/USB), boot options, vCPU hotplug, autostart, guest agent, video, RNG, TPM, crash and hang action, disk I/O limits, free unused space (fstrim), suspend/resume, migrate, disk moves, protection, raw XML, owners | ✅ | ❌ | — | ❌ |
 | Set tags (owners and `view_instances` see them) | ✅ | ❌ | — | ❌ |
 | Backups: back up (within the backup quota), restore over the VM or as a new VM (within the VM quota), into and from targets open to VM owners | ✅ | ✅ | `is_change` and `instances.backup_instances` | ❌ |
 | Delete a backup one took by hand (not a schedule's) on a target open to VM owners | ✅ | ✅ | `instances.backup_instances` (ownership not needed) | ❌ |

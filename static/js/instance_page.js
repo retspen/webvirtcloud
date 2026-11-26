@@ -20,6 +20,25 @@
         if (element) element.addEventListener(event, handler);
     }
 
+    // the VM's screen: read now and every 10 s while the page is in view, one read at a time; a frame
+    // replaces the shown one once it has fully come, and the screen is hidden while there is none
+    var screen = document.getElementById("vm-screen");
+    if (screen) {
+        var shown = screen.querySelector("img");
+        var reading = false;
+        var read_screen = function () {
+            if (reading || document.hidden) return;
+            reading = true;
+            var frame = new Image();
+            frame.alt = shown.alt;
+            frame.onload = function () { shown.replaceWith(frame); shown = frame; screen.hidden = false; reading = false; };
+            frame.onerror = function () { screen.hidden = true; reading = false; };
+            frame.src = screen.dataset.screenUrl + "?t=" + Date.now();
+        };
+        read_screen();
+        setInterval(read_screen, 10000);
+    }
+
     // the guest OS details, read through the guest agent
     function load_osinfo() {
         var error = $('#osinfo-error');

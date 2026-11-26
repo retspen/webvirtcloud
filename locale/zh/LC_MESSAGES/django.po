@@ -274,14 +274,6 @@ msgstr "从用户移除"
 msgid "No VMs."
 msgstr "没有虚拟机。"
 
-#: accounts/templates/accounts/change_password_form.html:20
-msgid "Choose a new password before you go on."
-msgstr "请先设置新密码再继续。"
-
-#: accounts/templates/accounts/change_password_form.html:20
-msgid "You stay signed in here; your other sessions end."
-msgstr "您在此处保持登录；您的其他会话将结束。"
-
 #: accounts/templates/accounts/change_password_form.html:35
 #: accounts/templates/accounts/email_otp_form.html:25
 #: admin/templates/admin/group_form.html:73
@@ -6363,8 +6355,13 @@ msgid "Stop"
 msgstr "停止"
 
 #: instances/templates/instances/settings_tab.html:1028
-msgid "A hang is noticed once the guest arms its watchdog (Linux: RuntimeWatchdogSec in systemd's system.conf). Stop keeps a VM that crashes again and again down for a look. From the next start."
-msgstr "客户机启用其看门狗后才能发现挂起（Linux：systemd 的 system.conf 中的 RuntimeWatchdogSec）。“停止”会让反复崩溃的虚拟机保持停止状态以便排查。下次启动时生效。"
+msgid ""
+"A hang is noticed once the guest arms its watchdog (Linux: RuntimeWatchdogSec"
+" in systemd's system.conf). Stop keeps a VM that crashes again and again down"
+" for a look. From the next start."
+msgstr ""
+"客户机启用其看门狗后才能发现挂起（Linux：systemd 的 system.conf 中的 "
+"RuntimeWatchdogSec）。“停止”会让反复崩溃的虚拟机保持停止状态以便排查。下次启动时生效。"
 
 #: instances/templates/instances/settings_tab.html:1030
 #, python-format
@@ -10506,25 +10503,9 @@ msgstr "要删除此计划吗？其备份将保留。"
 msgid "Delete schedule"
 msgstr "删除计划"
 
-#: vmbackups/templates/vmbackups/policy.html:26
-msgid "Runs"
-msgstr "运行记录"
-
-#: vmbackups/templates/vmbackups/policy.html:30
-msgid "Day"
-msgstr "日期"
-
-#: vmbackups/templates/vmbackups/policy.html:37
-msgid "Backup job"
-msgstr "备份作业"
-
 #: vmbackups/templates/vmbackups/policy.html:38
 msgid "Skipped"
 msgstr "已跳过"
-
-#: vmbackups/templates/vmbackups/policy.html:48
-msgid "No run yet."
-msgstr "还没有运行记录。"
 
 #: vmbackups/templates/vmbackups/policy_form.html:13
 #, python-format
@@ -12111,14 +12092,16 @@ msgstr "登录已锁定"
 #: accounts/templates/accounts/lockout.html:14
 #, python-format
 msgid "Too many failed sign-ins. The lock ends within %(minutes)s minute."
-msgid_plural "Too many failed sign-ins. The lock ends within %(minutes)s minutes."
+msgid_plural ""
+"Too many failed sign-ins. The lock ends within %(minutes)s minutes."
 msgstr[0] "登录失败次数过多。锁定将在 %(minutes)s 分钟内解除。"
 
 #: accounts/templates/accounts/lockout.html:20
 msgid "Back to sign in"
 msgstr "返回登录"
 
-#: accounts/templates/accounts/otp_login.html:52 accounts/templates/login.html:51
+#: accounts/templates/accounts/otp_login.html:52
+#: accounts/templates/login.html:51
 msgid "Caps Lock is on"
 msgstr "大写锁定已开启"
 
@@ -12157,8 +12140,12 @@ msgid "Invalid token. Please make sure you have entered it correctly."
 msgstr "验证码无效。请确认输入正确。"
 
 #, python-format
-msgid "Verification temporarily disabled because of %(failure_count)d failed attempt, please try again soon."
-msgid_plural "Verification temporarily disabled because of %(failure_count)d failed attempts, please try again soon."
+msgid ""
+"Verification temporarily disabled because of %(failure_count)d failed "
+"attempt, please try again soon."
+msgid_plural ""
+"Verification temporarily disabled because of %(failure_count)d failed "
+"attempts, please try again soon."
 msgstr[0] "由于 %(failure_count)d 次验证失败，验证已暂时停用，请稍后再试。"
 
 msgid "Verification of the token is currently disabled"
@@ -12265,7 +12252,9 @@ msgstr "取消 %(job)s？它将停在当前进度。"
 
 #: admin/templates/admin/user_list.html
 #, python-format
-msgid "Block %(name)s? They are signed out and their API tokens are deleted; unblocking does not bring the tokens back."
+msgid ""
+"Block %(name)s? They are signed out and their API tokens are deleted; "
+"unblocking does not bring the tokens back."
 msgstr "禁用 %(name)s？其登录将被注销，API 令牌将被删除；解除禁用不会恢复这些令牌。"
 
 #: webvirtcloud/middleware.py
@@ -12296,7 +12285,6 @@ msgstr "哪些虚拟机"
 msgid "Choose the VMs to back up"
 msgstr "请选择要备份的虚拟机"
 
-
 #: webvirtcloud/common_tags.py:29
 #, python-format
 msgid "%(percent)s%%"
@@ -12305,14 +12293,15 @@ msgstr "%(percent)s%%"
 #: operations/templates/operations/jobs.html:16
 #: operations/templatetags/operations.py:98
 #, python-format
-msgid "The job worker is not running; it was last seen %(when)s. Jobs wait until it runs again."
+msgid ""
+"The job worker is not running; it was last seen %(when)s. Jobs wait until it "
+"runs again."
 msgstr "工作进程未在运行；最后在线时间 %(when)s。任务将等待它重新运行。"
 
 #: operations/templates/operations/jobs.html:16
 #: operations/templatetags/operations.py:99
 msgid "The job worker has not run yet. Jobs wait until it runs."
 msgstr "工作进程尚未运行过。任务将等待它运行。"
-
 
 #: instances/states.py:27
 msgid "Paused by a disk error"
@@ -12365,5 +12354,195 @@ msgid "An administrator has to free space on its storage and resume it."
 msgstr "需要管理员在其存储上释放空间并恢复它。"
 
 #: instances/templates/instances/settings_tab.html:1030
-msgid "This VM cannot report a crash or a hang yet: a choice adds the devices it reports them through, from the next start."
+msgid ""
+"This VM cannot report a crash or a hang yet: a choice adds the devices it "
+"reports them through, from the next start."
 msgstr "此虚拟机尚无法报告崩溃或挂起：做出选择即会添加其报告所用的设备，下次启动时生效。"
+
+#: accounts/templates/accounts/change_password_form.html:17
+msgid "Set your own password"
+msgstr "设置您自己的密码"
+
+#: accounts/templates/accounts/change_password_form.html:20
+#, python-format
+msgid ""
+"Signed in as %(name)s with a temporary password. Replace it to continue."
+msgstr "您已使用临时密码以 %(name)s 身份登录。请更换后继续。"
+
+#: accounts/templates/accounts/change_password_form.html:22
+#, python-format
+msgid "For %(name)s. You stay signed in here; your other sessions end."
+msgstr "用户 %(name)s。您在此处保持登录；您的其他会话将结束。"
+
+#: accounts/templates/accounts/change_password_form.html:34
+msgid "Temporary password"
+msgstr "临时密码"
+
+#: accounts/templates/accounts/change_password_form.html:34
+msgid "Current password"
+msgstr "当前密码"
+
+#: accounts/templates/accounts/change_password_form.html:38
+msgid "The one you just signed in with."
+msgstr "即您刚才登录时使用的密码。"
+
+#: accounts/templates/accounts/change_password_form.html:51
+msgid "New password again"
+msgstr "再次输入新密码"
+
+#: accounts/templates/accounts/change_password_form.html:57
+msgid "8 characters or more"
+msgstr "至少 8 个字符"
+
+#: accounts/templates/accounts/change_password_form.html:58
+msgid "Not only digits"
+msgstr "不全是数字"
+
+#: accounts/templates/accounts/change_password_form.html:59
+msgid "Both entries match"
+msgstr "两次输入一致"
+
+#: accounts/templates/accounts/change_password_form.html:60
+msgid ""
+"Not like your name or e-mail, and not a common password: checked when you "
+"save"
+msgstr "与您的姓名或电子邮件不相似，且不是常见密码：保存时检查"
+
+#: accounts/templates/accounts/change_password_form.html:67
+msgid "Save and continue"
+msgstr "保存并继续"
+
+#: accounts/templates/accounts/change_password_form.html:60
+msgid "met"
+msgstr "已满足"
+
+#: accounts/templates/accounts/change_password_form.html:60
+#: accounts/templates/accounts/change_password_form.html:61
+#: accounts/templates/accounts/change_password_form.html:62
+#: accounts/templates/accounts/change_password_form.html:63
+msgid "not met"
+msgstr "未满足"
+
+#: vmbackups/models.py:88 vmbackups/templates/vmbackups/policy.html:36
+msgid "Backed up"
+msgstr "已备份"
+
+#: vmbackups/models.py:88 vmbackups/templates/vmbackups/policy.html:39
+msgid "Running"
+msgstr "运行中"
+
+#: vmbackups/templates/vmbackups/policies.html:17
+#: vmbackups/templates/vmbackups/policy.html:13
+#, python-format
+msgid "Last day"
+msgid_plural "Last %(days)s days"
+msgstr[0] "最近 %(days)s 天"
+
+#: vmbackups/templates/vmbackups/policies.html:24
+msgid "no run"
+msgstr "未运行"
+
+#: vmbackups/templates/vmbackups/policy.html:26
+#, python-format
+msgid "%(day)s, %(vm)s: %(outcome)s"
+msgstr "%(day)s，%(vm)s：%(outcome)s"
+
+#: vmbackups/templates/vmbackups/policy.html:40
+msgid "No run"
+msgstr "未运行"
+
+#: vmbackups/templates/vmbackups/policy.html:43
+msgid "The schedule has no VM."
+msgstr "该计划没有虚拟机。"
+
+#: vmbackups/templates/vmbackups/policy.html:47
+msgid "Not backed up"
+msgstr "未备份"
+
+#: vmbackups/views.py:359
+#, python-format
+msgid "%(n)s backed up"
+msgstr "%(n)s 台已备份"
+
+#: vmbackups/views.py:359
+#, python-format
+msgid "%(n)s running"
+msgstr "%(n)s 台运行中"
+
+#: vmbackups/views.py:360
+#, python-format
+msgid "%(n)s failed"
+msgstr "%(n)s 台失败"
+
+#: vmbackups/views.py:361
+#, python-format
+msgid "%(n)s skipped"
+msgstr "%(n)s 台已跳过"
+
+#: vmbackups/models.py:15
+msgid "The job was cancelled"
+msgstr "作业已取消"
+
+#: instances/jobs.py:1666
+msgid "VM fault: %(vm)s"
+msgstr "虚拟机故障：%(vm)s"
+
+#: instances/jobs.py:1667
+msgid "%(vm)s on %(host)s: %(reason)s"
+msgstr "%(host)s 上的 %(vm)s：%(reason)s"
+
+#: instances/jobs.py:1672 instances/templates/instances/settings_tab.html:301
+msgid "Free unused space"
+msgstr "释放未使用空间"
+
+#: instances/jobs.py:1696 instances/templates/instances/settings_tab.html:301
+msgid "The guest agent is not connected"
+msgstr "客户机代理未连接"
+
+#: instances/jobs.py:1704
+msgid "The job stopped before the guest answered; trimming again is harmless"
+msgstr "作业在客户机应答前停止；再次修剪无害"
+
+#: instances/jobs.py:1710
+msgid ""
+"No disk of the running VM has the discard mode unmap: its image files keep "
+"their size. Set it in a disk's device details; it takes effect at the VM's "
+"next start."
+msgstr "运行中的虚拟机没有任何磁盘的 Discard 模式为 unmap：其镜像文件大小不变。请在磁盘的设备详情中设置；虚拟机下次启动时生效。"
+
+#: instances/templates/instances/settings_tab.html:299
+msgid "Free space the guest no longer uses in the image files."
+msgstr "释放客户机不再使用的镜像文件空间。"
+
+#: instances/templates/instances/settings_tab.html:299
+msgid ""
+"No disk has the discard mode unmap while the VM runs: trimming frees no space"
+" in its image files. Set it in a disk's device details; it takes effect at "
+"the next start."
+msgstr "虚拟机运行时没有任何磁盘的 Discard 模式为 unmap：修剪不会释放其镜像文件中的空间。请在磁盘的设备详情中设置；下次启动时生效。"
+
+#: operations/templates/operations/job.html:68
+msgid "Trimmed"
+msgstr "已修剪"
+
+#: operations/templates/operations/job.html:70
+msgid "trimmed"
+msgstr "已修剪"
+
+#: instances/jobs.py:1701
+msgid "No file system was trimmed: %(errors)s"
+msgstr "没有文件系统被修剪：%(errors)s"
+
+#: instances/templates/instance.html:98
+msgid "Screen of %(name)s"
+msgstr "%(name)s 的屏幕"
+
+#: instances/templates/instance.html:105
+msgctxt "screen"
+msgid "Live"
+msgstr "实时"
+
+#: templates/navbar.html:35
+msgid "%(n)s job not finished"
+msgid_plural "%(n)s jobs not finished"
+msgstr[0] "%(n)s 个任务未完成"

@@ -6,6 +6,7 @@ from django.test import TestCase
 
 from computes.models import Compute
 from instances.models import Instance
+from operations.models import Operation
 from vmbackups.models import Backup, BackupPolicy, BackupRun, BackupTarget
 
 
@@ -23,6 +24,46 @@ class PolicyModelTests(TestCase):
         BackupRun.objects.create(policy=self.policy, instance=self.vm, day=datetime.date(2026, 11, 17))
         with self.assertRaises(IntegrityError):
             BackupRun.objects.create(policy=self.policy, instance=self.vm, day=datetime.date(2026, 11, 17))
+
+    def test_a_run_comes_to_what_its_job_did(self):
+        def outcome(state, job_state=None):
+            job = job_state and Operation.objects.create(kind="backup.create", username="pm_admin", submission_key=job_state,
+                                                         resource="r", state=job_state)
+            return BackupRun(policy=self.policy, instance=self.vm, state=state, operation=job).outcome
+
+        self.assertEqual(outcome(BackupRun.SKIPPED), BackupRun.SKIPPED)
+        self.assertEqual(outcome(BackupRun.FAILED), BackupRun.FAILED)
+        self.assertEqual(outcome(BackupRun.SUBMITTED, Operation.SUCCEEDED), BackupRun.SUCCEEDED)
+        self.assertEqual(outcome(BackupRun.SUBMITTED, Operation.QUEUED), BackupRun.RUNNING)
+        self.assertEqual(outcome(BackupRun.SUBMITTED, Operation.RUNNING), BackupRun.RUNNING)
+        for job_state in (Operation.FAILED, Operation.CANCELLED, Operation.UNCERTAIN):  # no backup came of it
+            self.assertEqual(outcome(BackupRun.SUBMITTED, job_state), BackupRun.FAILED)
+
+    def test_a_run_keeps_what_its_job_came_to_when_the_job_history_drops_the_job(self):
+        from django.utils import timezone
+
+        from operations.utils import say
+        from operations.worker import housekeeping
+
+        old = timezone.now() - datetime.timedelta(days=400)
+        runs = {}
+        for n, (job_state, error) in enumerate([(Operation.SUCCEEDED, []), (Operation.FAILED, say("Disk %(d)s gone", d="vda")),
+                                                (Operation.CANCELLED, [])]):
+            job = Operation.objects.create(kind="backup.create", username="pm_admin", submission_key=str(n), resource="r",
+                                           state=job_state, error=error, finished_at=old)
+            vm = Instance.objects.create(compute=self.compute, name=f"k{n}", uuid=f"61616161-0000-4000-8000-00000000010{n}")
+            runs[job_state] = BackupRun.objects.create(policy=self.policy, instance=vm, day=datetime.date(2026, 11, 17),
+                                                       state=BackupRun.SUBMITTED, operation=job)
+        self.assertEqual(runs[Operation.CANCELLED].reason, say("The job was cancelled"))  # a job cancelled without an error
+        housekeeping()
+        self.assertFalse(Operation.objects.exists())
+        for run in runs.values():
+            run.refresh_from_db()
+        self.assertEqual((runs[Operation.SUCCEEDED].outcome, runs[Operation.SUCCEEDED].note), (BackupRun.SUCCEEDED, []))
+        self.assertEqual((runs[Operation.FAILED].outcome, runs[Operation.FAILED].reason),
+                         (BackupRun.FAILED, say("Disk %(d)s gone", d="vda")))
+        self.assertEqual((runs[Operation.CANCELLED].outcome, runs[Operation.CANCELLED].reason),
+                         (BackupRun.FAILED, say("The job was cancelled")))
 
     def test_a_deleted_policy_keeps_its_backups(self):
         backup = Backup.objects.create(target=self.target, instance=self.vm, vm_uuid=self.vm.uuid, vm_name="vm1",

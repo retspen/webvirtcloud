@@ -12,6 +12,7 @@ from computes.models import Compute, Tag
 from instances.models import Instance
 from instances.tests.test_page_controls import PageControls
 from logs.models import Logs
+from operations.models import Operation
 from operations.utils import say
 from vmbackups.models import Backup, BackupPolicy, BackupRun, BackupTarget, BackupTargetPool
 
@@ -118,6 +119,51 @@ class PolicyPageTests(TestCase):
         page = self.client.get(reverse("vmbackups:policies"))
         self.assertContains(page, "Backup schedule nightly is saved.")
         self.assertContains(page, "3 + 4 weekly + 6 monthly")
+
+    def add_run(self, policy, vm, days_ago, state=BackupRun.SUBMITTED, job_state=None, note=(), job_error=()):
+        day = datetime.date.today() - datetime.timedelta(days=days_ago)
+        job = job_state and Operation.objects.create(kind="backup.create", username="pp_admin", submission_key=f"{vm.pk}-{day}",
+                                                     resource="r", state=job_state, error=list(job_error))
+        return BackupRun.objects.create(policy=policy, instance=vm, day=day, state=state, operation=job, note=list(note))
+
+    def test_the_runs_of_the_last_14_days(self):
+        policy = self.schedule()
+        self.add_run(policy, self.vm1, 0, job_state=Operation.SUCCEEDED)
+        failed = self.add_run(policy, self.vm1, 1, job_state=Operation.FAILED, job_error=say("The guest agent did not answer"))
+        self.add_run(policy, self.vm1, 2, BackupRun.SKIPPED, note=say("The host was in maintenance"))
+        self.add_run(policy, self.vm1, 14, BackupRun.FAILED)  # before the 14 days
+        self.add_run(policy, self.vm1, -1, BackupRun.FAILED)  # after them: the time zone moved west
+        self.add_run(policy, self.vm3, 3, job_state=Operation.SUCCEEDED)  # a VM the schedule no longer backs up
+        page = lxml_html.fromstring(self.client.get(reverse("vmbackups:policy", args=[policy.pk])).content)
+        rows = page.xpath("//table[contains(@class, 'run-grid')]/tbody/tr")
+        self.assertEqual([row.xpath("string(th)") for row in rows], ["vm1", "vm3"])
+        marks = [mark.get("class").split()[1] for mark in rows[0].xpath(".//*[contains(@class, 'run-mark')]")]
+        self.assertEqual(marks, ["run-none"] * 11 + ["run-skipped", "run-failed", "run-succeeded"])
+        self.assertEqual(rows[0].xpath(".//a[contains(@class, 'run-failed')]/@href"),
+                         [reverse("operations:job", args=[failed.operation_id])])
+        problems = [" ".join(item.text_content().split()) for item in page.xpath("//ul[@id='run-problems']/li")]
+        self.assertEqual(len(problems), 2)
+        self.assertIn("vm1 Failed: The guest agent did not answer", problems[0])
+        self.assertIn("vm1 Skipped: The host was in maintenance", problems[1])
+
+    def test_the_list_marks_a_day_by_its_worst_run(self):
+        policy = self.schedule()
+        policy.instances.add(self.vm3)
+        self.add_run(policy, self.vm1, 1, job_state=Operation.SUCCEEDED)
+        self.add_run(policy, self.vm3, 1, job_state=Operation.FAILED)
+        self.add_run(policy, self.vm1, 0, job_state=Operation.RUNNING)
+        self.add_run(policy, self.vm3, 0, job_state=Operation.SUCCEEDED)
+        page = lxml_html.fromstring(self.client.get(reverse("vmbackups:policies")).content)
+        strip = page.xpath("//a[contains(@class, 'run-days')]")  # one link to the schedule, for touch and keyboard
+        self.assertEqual(strip[0].get("href"), reverse("vmbackups:policy", args=[policy.pk]))
+        marks = strip[0].xpath("./span")
+        self.assertEqual(len(marks), 14)
+        yesterday = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+        self.assertEqual((marks[-2].get("class"), marks[-2].get("title")),
+                         ("run-mark run-failed", f"{yesterday}: 1 failed, 1 backed up"))
+        self.assertEqual(marks[-1].get("class"), "run-mark run-running")
+        self.assertTrue(marks[-1].get("title").endswith(": 1 running, 1 backed up"))
+        self.assertEqual(marks[0].get("class"), "run-mark run-none")
 
     def test_delete_keeps_the_backups(self):
         policy = self.schedule()

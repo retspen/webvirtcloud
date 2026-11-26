@@ -11,12 +11,10 @@ from django.conf import settings
 from django.shortcuts import redirect, render
 from django.utils.translation import gettext_lazy as _
 from instances.models import Instance
-from instances.utils import can_open_console
+from instances.utils import can_open_console, novnc_unreachable
 from libvirt import libvirtError
 from operations.utils import safe_text
-from vrtManager.connection import CONN_TCP, CONN_TLS
 from vrtManager.instance import wvmInstance
-from vrtManager.util import is_loopback
 from webvirtcloud.middleware import error_text
 
 logger = logging.getLogger(__name__)
@@ -68,9 +66,8 @@ def console(request, compute_id, uuid):
         running = conn.instance.isActive()
         # novncd reaches a console that listens on its host's loopback only
         # through SSH (or on this host); the running VM's listener, as novncd sees it
-        unreachable = instance.compute.type in (CONN_TCP, CONN_TLS) and bool(
-            conn.get_console_socket() or is_loopback(conn.get_console_listener_addr())
-        )
+        unreachable = novnc_unreachable(instance.compute.type, conn.get_console_socket(),
+                                        conn.get_console_listener_addr())
     except libvirtError as err:
         # the host or the VM could not be read: the page says that, not to check the console settings
         logger.warning("Console of %s on %s: %s", instance.name, instance.compute.name, safe_text(err))

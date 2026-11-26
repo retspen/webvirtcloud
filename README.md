@@ -83,7 +83,7 @@ flowchart TB
 <li>VMs created, renamed or deleted with <code>virsh</code> or <code>virt-manager</code> are picked up on their own</li>
 <li>Tags, protected VMs, search by IP or MAC address and a VM report as an Excel file</li>
 <li>Alerts by e-mail or webhook, and a health check URL</li>
-<li>English, Turkish and Simplified Chinese</li>
+<li>English, Turkish, Simplified Chinese and Ukrainian</li>
 </ul>
 </td>
 </tr>

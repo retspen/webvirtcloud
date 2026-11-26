@@ -1,7 +1,10 @@
 """Changes to a user's own account, VM ownership, OTP mails and SSH keys write rows on the Logs page."""
 
+import tempfile
+from pathlib import Path
+
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from accounts.models import UserAttributes
@@ -38,8 +41,10 @@ class OwnAccountRowTests(TestCase):
     def test_the_first_login_password_change(self):
         self.bob.user_permissions.clear()
         UserAttributes.objects.update_or_create(user=self.bob, defaults={"must_change_password": True})
-        self.client.post(reverse("accounts:change_password"), {
-            "old_password": "Bob-pass-2026", "new_password1": "Bob-new-pass-1", "new_password2": "Bob-new-pass-1"})
+        # the last forced change deletes data/admin_password: not this checkout's
+        with tempfile.TemporaryDirectory() as base, override_settings(BASE_DIR=Path(base)):
+            self.client.post(reverse("accounts:change_password"), {
+                "old_password": "Bob-pass-2026", "new_password1": "Bob-new-pass-1", "new_password2": "Bob-new-pass-1"})
         self.assertEqual(rows(), [("User bob: change password", True)])
 
 

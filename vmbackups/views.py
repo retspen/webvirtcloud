@@ -1,3 +1,5 @@
+import datetime
+from collections import Counter
 from urllib.parse import urlencode
 
 from django.contrib import messages
@@ -33,7 +35,7 @@ from vrtManager.util import OperationError
 
 from .forms import PolicyForm, RestoreDiskForm, RestoreForm, TargetForm, TargetPoolForm
 from .jobs import _over_names, _over_plan, _proxy, _vm_pool
-from .models import Backup, BackupPolicy, BackupTarget
+from .models import Backup, BackupPolicy, BackupRun, BackupTarget
 from .utils import inside_vm_pool, pending_deletes
 
 
@@ -351,11 +353,38 @@ def restore_disk(request, uuid):
     return render(request, "vmbackups/restore_disk.html", {"backup": backup, "form": form})
 
 
+HISTORY_DAYS = 14  # the days a schedule's runs are shown for
+# a day of a schedule on the list is marked as the first of these its runs came to
+WORST_FIRST = (BackupRun.FAILED, BackupRun.SKIPPED, BackupRun.RUNNING, BackupRun.SUCCEEDED)
+DAY_COUNTS = {BackupRun.SUCCEEDED: _("%(n)s backed up"), BackupRun.RUNNING: _("%(n)s running"),
+              BackupRun.FAILED: _("%(n)s failed"), BackupRun.SKIPPED: _("%(n)s skipped")}
+
+
+def history_days():
+    """The local days of the run history, the oldest first."""
+    today = timezone.localdate()
+    return [today - datetime.timedelta(days=n) for n in range(HISTORY_DAYS - 1, -1, -1)]
+
+
 @superuser_only
 def policies(request):
-    """The backup schedules."""
+    """The backup schedules, each with what its runs of each day came to."""
+    days = history_days()
+    counts = {}  # (schedule id, day) -> Counter of outcomes
+    runs = (BackupRun.objects.filter(day__range=(days[0], days[-1])).order_by()
+            .values_list("policy_id", "day", "state", "operation__state").annotate(n=Count("id")))
+    for policy_id, day, state, job_state, n in runs:
+        counts.setdefault((policy_id, day), Counter())[BackupRun.outcome_of(state, job_state)] += n
     rows = BackupPolicy.objects.select_related("target", "compute", "tag", "owner").annotate(vm_count=Count("instances"))
-    return render(request, "vmbackups/policies.html", {"policies": rows.order_by("name")})
+    rows = list(rows.order_by("name"))
+    for policy in rows:
+        policy.history = []
+        for day in days:
+            day_counts = counts.get((policy.pk, day), Counter())
+            worst = next((outcome for outcome in WORST_FIRST if day_counts[outcome]), None)
+            text = ", ".join(str(DAY_COUNTS[o] % {"n": day_counts[o]}) for o in WORST_FIRST if day_counts[o])
+            policy.history.append({"day": day, "outcome": worst, "text": text})
+    return render(request, "vmbackups/policies.html", {"policies": rows, "days": days})
 
 
 @superuser_only
@@ -391,6 +420,13 @@ def policy(request, policy_id):
             form.save_m2m()
         messages.success(request, _("Backup schedule %(name)s is saved.") % {"name": policy.name})
         return redirect("vmbackups:policies")
-    runs = policy.runs.select_related("instance", "operation").order_by("-day", "instance__name")[:200]
-    return render(request, "vmbackups/policy.html", {"policy": policy, "form": form, "runs": runs,
-                                                     "time_zone": settings.TIME_ZONE})
+    days = history_days()
+    runs = list(policy.runs.filter(day__range=(days[0], days[-1])).select_related("instance", "operation"))
+    cells = {vm: {} for vm in policy.vms()}  # its VMs now, and those it ran for in these days
+    for run in runs:
+        cells.setdefault(run.instance, {})[run.day] = run
+    grid = [(vm, [vm_runs.get(day) for day in days]) for vm, vm_runs in sorted(cells.items(), key=lambda i: i[0].name)]
+    problems = sorted((run for run in runs if run.outcome in (BackupRun.FAILED, BackupRun.SKIPPED)),
+                      key=lambda run: (run.day, run.instance.name), reverse=True)
+    return render(request, "vmbackups/policy.html", {"policy": policy, "form": form, "days": days, "grid": grid,
+                                                     "problems": problems, "time_zone": settings.TIME_ZONE})

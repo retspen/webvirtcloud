@@ -103,6 +103,7 @@ USAGE_MAX_WINDOW = 30
 USAGE_STATS = VIR_DOMAIN_STATS_CPU_TOTAL | VIR_DOMAIN_STATS_BLOCK | VIR_DOMAIN_STATS_INTERFACE
 # seconds the guest agent has to set a password or add a key
 AGENT_TIMEOUT = 10
+FSTRIM_TIMEOUT = 1800  # a guest trims each file system's free space: minutes on a large one
 # libvirt's values; bindings built against older libvirt (Ubuntu 24.04's) lack
 # the names, and the code comes from the host's libvirtd
 VIR_ERR_AGENT_COMMAND_TIMEOUT = 112
@@ -719,14 +720,14 @@ def disk_source(disk):
             tuple(tuple(sorted(host.attrib.items())) for host in source.findall("host")))
 
 
-def agent_command(dom, command, arguments=None):
-    """The answer of one guest agent command that waits AGENT_TIMEOUT seconds
+def agent_command(dom, command, arguments=None, timeout=AGENT_TIMEOUT):
+    """The answer of one guest agent command that waits timeout seconds
     at most: libvirt's own calls for it wait for a hung agent indefinitely,
     and the domain's agent timeout is shared by every agent call."""
     request = {"execute": command}
     if arguments is not None:
         request["arguments"] = arguments
-    return json.loads(qemuAgentCommand(dom, json.dumps(request), AGENT_TIMEOUT, 0))["return"]
+    return json.loads(qemuAgentCommand(dom, json.dumps(request), timeout, 0))["return"]
 
 
 def agent_interfaces(dom):
@@ -2977,6 +2978,32 @@ class wvmInstance(wvmConnect):
 
     def abort_backup(self):
         self.instance.abortJob()
+
+    def screenshot(self):
+        """The running or paused VM's screen as libvirt gives it: (MIME type, bytes); PNG from
+        libvirt 9.x with QEMU 7.1 on, PPM before."""
+        stream = self.wvm.newStream(0)
+        try:
+            mime = self.instance.screenshot(stream, 0, 0)
+            data = bytearray()
+            stream.recvAll(lambda _stream, chunk, buffer: buffer.extend(chunk), data)
+            stream.finish()
+        except libvirtError:
+            with contextlib.suppress(libvirtError):
+                stream.abort()
+            raise
+        return mime, bytes(data)
+
+    def fstrim(self):
+        """Has the guest agent trim the free space of each mounted file system, waiting
+        FSTRIM_TIMEOUT seconds at most: [{"path", "trimmed": bytes or None, "error": text or None}].
+        The image files shrink only for disks whose discard mode is unmap."""
+        self.ping_agent()
+        answer = agent_command(self.instance, "guest-fstrim", timeout=FSTRIM_TIMEOUT)
+        paths = answer.get("paths") if isinstance(answer, dict) else None
+        return [{"path": str(p["path"]), "trimmed": p.get("trimmed") if type(p.get("trimmed")) is int else None,
+                 "error": str(p["error"]) if p.get("error") else None}
+                for p in paths or [] if isinstance(p, dict) and p.get("path")]
 
     def ping_agent(self):
         """A frozen or dead agent fails here in AGENT_TIMEOUT seconds. The

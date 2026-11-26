@@ -70,7 +70,7 @@ From a root shell:
 
 ## Restore and rollback
 
-Restoring puts back the database as it was at the backup; changes made since are lost. Migrations are not reversed. This covers sqlite; restore a PostgreSQL database from your own backup before rolling back the code. Set `b` to the backup directory to restore. To restore the database without rolling back the code, leave out the `build` line and every line that takes another file from `$b`: the commit, `local-migrations.tar`, `settings.py` and `local_settings.py`, the nginx config and `/etc/default/webvirtcloud`.
+Restoring puts back the database as it was at the backup; changes made since are lost. Migrations are not reversed. With PostgreSQL, restore the database from the backup's `db.pgdump` before rolling back the code, as in [Restoring a PostgreSQL database](#restoring-a-postgresql-database), and leave out the line below that restores `db.sqlite3`. Set `b` to the backup directory to restore. To restore the database without rolling back the code, leave out the `build` line and every line that takes another file from `$b`: the commit, `local-migrations.tar`, `settings.py` and `local_settings.py`, the nginx config and `/etc/default/webvirtcloud`.
 
 Docker, in the directory you installed from:
 
@@ -123,9 +123,19 @@ nginx -t && systemctl reload nginx && systemctl start webvirt-cloud webvirt-novn
 
 A version from before v3.0.0 has no worker: `systemctl disable --now webvirt-worker`. A rollback keeps the systemd units, and drops what a stopped `update.sh` kept to go on with (`data/.update-backup`). A rollback leaves the clone on a detached HEAD at the restored commit; `update.sh` records that commit before it switches back to `master`.
 
+### Restoring a PostgreSQL database
+
+With the panel stopped, from a shell with the PostgreSQL client and the `WEBVIRTCLOUD_DB_*` values the panel uses. The first command empties the database, also of tables a later version added:
+
+```bash
+export PGPASSWORD="$WEBVIRTCLOUD_DB_PASSWORD" &&
+psql -h "$WEBVIRTCLOUD_DB_HOST" -U webvirtcloud -d webvirtcloud -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public" &&
+pg_restore --no-owner -h "$WEBVIRTCLOUD_DB_HOST" -U webvirtcloud -d webvirtcloud "$b/db.pgdump"
+```
+
 ## Moving to a new machine
 
-A [backup](backups.md) moves the panel to a new machine, or back onto lost volumes: the database, the secret key (signed-in users stay signed in), the worker's id and the SSH keys and TLS certificates the computes accept. Install the panel there first, the same version or a newer one, then copy the backup directory over and set `b` to it. The backup does not hold `docker-compose.override.yml`, the nginx config or `/etc/default/webvirtcloud`: bring your own lines over yourself. Users sign in with their passwords from the backup; the new installation's `data/admin_password` no longer applies. The backup's `secret_key` is the key in use, also one set as `SECRET_KEY` in the environment. With PostgreSQL, restore that database yourself and leave out the line below that restores `db.sqlite3` (the backup has none), and stop the old panel before the new one starts: both would run the jobs of the one database.
+A [backup](backups.md) moves the panel to a new machine, or back onto lost volumes: the database, the secret key (signed-in users stay signed in), the worker's id and the SSH keys and TLS certificates the computes accept. Install the panel there first, the same version or a newer one, then copy the backup directory over and set `b` to it. The backup does not hold `docker-compose.override.yml`, the nginx config or `/etc/default/webvirtcloud`: bring your own lines over yourself. Users sign in with their passwords from the backup; the new installation's `data/admin_password` no longer applies. The backup's `secret_key` is the key in use, also one set as `SECRET_KEY` in the environment. With PostgreSQL, restore the backup's `db.pgdump` as in [Restoring a PostgreSQL database](#restoring-a-postgresql-database) and leave out the line below that restores `db.sqlite3` (the backup has none); stop the old panel before the new one starts: both would run the jobs of the one database.
 
 Docker, in the directory you installed from:
 

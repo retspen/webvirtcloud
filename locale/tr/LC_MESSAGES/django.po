@@ -279,14 +279,6 @@ msgstr "Kullanıcıdan kaldır"
 msgid "No VMs."
 msgstr "Sanal makine yok."
 
-#: accounts/templates/accounts/change_password_form.html:20
-msgid "Choose a new password before you go on."
-msgstr "Devam etmeden önce yeni bir parola seçin."
-
-#: accounts/templates/accounts/change_password_form.html:20
-msgid "You stay signed in here; your other sessions end."
-msgstr "Burada oturumunuz açık kalır; diğer oturumlarınız kapanır."
-
 #: accounts/templates/accounts/change_password_form.html:35
 #: accounts/templates/accounts/email_otp_form.html:25
 #: admin/templates/admin/group_form.html:73
@@ -693,8 +685,14 @@ msgid "Can view instances"
 msgstr "Sanal makineleri görebilir"
 
 #: admin/forms.py:33
-msgid "Back up the VMs they may change into targets open to VM owners, restore those backups over the VM or as a new VM, and delete the backups they took, within their quotas"
-msgstr "Değiştirebildiği sanal makineleri sanal makine sahiplerine açık hedeflere yedekleme, bu yedekleri sanal makinenin üzerine ya da yeni bir sanal makine olarak geri yükleme ve kendi aldığı yedekleri silme; kotaları içinde"
+msgid ""
+"Back up the VMs they may change into targets open to VM owners, restore those"
+" backups over the VM or as a new VM, and delete the backups they took, within"
+" their quotas"
+msgstr ""
+"Değiştirebildiği sanal makineleri sanal makine sahiplerine açık hedeflere "
+"yedekleme, bu yedekleri sanal makinenin üzerine ya da yeni bir sanal makine "
+"olarak geri yükleme ve kendi aldığı yedekleri silme; kotaları içinde"
 
 #: admin/forms.py:35
 msgid "Change their own password on their profile page"
@@ -2269,8 +2267,13 @@ msgid "encrypt migrations (TLS)"
 msgstr "taşımaları şifrele (TLS)"
 
 #: computes/models.py:76
-msgid "A VM migrating between two hosts that both have this sends its memory and disks over TLS; each host needs QEMU's certificates in /etc/pki/qemu"
-msgstr "İki sunucuda da bu seçiliyse aralarında taşınan sanal makine, belleğini ve disklerini TLS ile gönderir; her sunucuda /etc/pki/qemu içinde QEMU sertifikaları gerekir"
+msgid ""
+"A VM migrating between two hosts that both have this sends its memory and "
+"disks over TLS; each host needs QEMU's certificates in /etc/pki/qemu"
+msgstr ""
+"İki sunucuda da bu seçiliyse aralarında taşınan sanal makine, belleğini ve "
+"disklerini TLS ile gönderir; her sunucuda /etc/pki/qemu içinde QEMU "
+"sertifikaları gerekir"
 
 #: computes/models.py:81 computes/templates/computes/form.html:42
 msgid "gstfsd key"
@@ -2311,16 +2314,25 @@ msgstr "Bu sunucu zaten %(name)s olarak ekli"
 
 #: computes/models.py:253
 #, python-format
-msgid "The panel cannot reach the host to tell that its VMs are there: %(error)s"
-msgstr "Panel sunucuya ulaşamadığı için sanal makinelerinin orada olduğunu doğrulayamıyor: %(error)s"
+msgid ""
+"The panel cannot reach the host to tell that its VMs are there: %(error)s"
+msgstr ""
+"Panel sunucuya ulaşamadığı için sanal makinelerinin orada olduğunu "
+"doğrulayamıyor: %(error)s"
 
 #: computes/models.py:260
-msgid "The host its VMs are on is not known yet: change the connection when the panel has reached the host at its current one"
-msgstr "Sanal makinelerinin bulunduğu sunucu henüz bilinmiyor: bağlantıyı, panel sunucuya mevcut bağlantısından ulaştıktan sonra değiştirin"
+msgid ""
+"The host its VMs are on is not known yet: change the connection when the "
+"panel has reached the host at its current one"
+msgstr ""
+"Sanal makinelerinin bulunduğu sunucu henüz bilinmiyor: bağlantıyı, panel "
+"sunucuya mevcut bağlantısından ulaştıktan sonra değiştirin"
 
 #: computes/models.py:263
 msgid "This is another host than the one its VMs are on: add it as a new host"
-msgstr "Bu, sanal makinelerinin bulunduğu sunucudan başka bir sunucu: yeni bir sunucu olarak ekleyin"
+msgstr ""
+"Bu, sanal makinelerinin bulunduğu sunucudan başka bir sunucu: yeni bir sunucu"
+" olarak ekleyin"
 
 #: computes/reach.py:60
 msgid ""
@@ -4871,7 +4883,9 @@ msgstr "%(label)s: %(vcpu)s vCPU, %(memory)s MiB, yeni %(disk)s GiB disk"
 
 #: instances/templates/create_presets.html:13
 msgid "A preset fills vCPUs, memory and a new disk of its size."
-msgstr "Hazır boyut; vCPU, bellek ve kendi boyutunda yeni bir disk alanlarını doldurur."
+msgstr ""
+"Hazır boyut; vCPU, bellek ve kendi boyutunda yeni bir disk alanlarını "
+"doldurur."
 
 #: instances/templates/create_presets.html:15
 msgid "No flavors yet."
@@ -5159,8 +5173,12 @@ msgstr ""
 
 #: instances/templates/instances/destroy_instance_form.html:13
 #: instances/templates/instances/destroy_tab.html:9
-msgid "This VM is protected: an administrator turns its protection off on the Settings tab first."
-msgstr "Bu sanal makine korumalı: önce bir yönetici Ayarlar sekmesinde korumasını kapatmalı."
+msgid ""
+"This VM is protected: an administrator turns its protection off on the "
+"Settings tab first."
+msgstr ""
+"Bu sanal makine korumalı: önce bir yönetici Ayarlar sekmesinde korumasını "
+"kapatmalı."
 
 #: instances/templates/instances/destroy_instance_form.html:18
 msgid "What should happen to the files?"
@@ -6728,8 +6746,14 @@ msgid "Stop"
 msgstr "Durdur"
 
 #: instances/templates/instances/settings_tab.html:1028
-msgid "A hang is noticed once the guest arms its watchdog (Linux: RuntimeWatchdogSec in systemd's system.conf). Stop keeps a VM that crashes again and again down for a look. From the next start."
-msgstr "Donma, konuk sistem watchdog'unu kurduğunda fark edilir (Linux: systemd'nin system.conf dosyasında RuntimeWatchdogSec). Durdur, tekrar tekrar çöken bir sanal makineyi incelemek için kapalı tutar. Sonraki başlatmadan itibaren."
+msgid ""
+"A hang is noticed once the guest arms its watchdog (Linux: RuntimeWatchdogSec"
+" in systemd's system.conf). Stop keeps a VM that crashes again and again down"
+" for a look. From the next start."
+msgstr ""
+"Donma, konuk sistem watchdog'unu kurduğunda fark edilir (Linux: systemd'nin "
+"system.conf dosyasında RuntimeWatchdogSec). Durdur, tekrar tekrar çöken bir "
+"sanal makineyi incelemek için kapalı tutar. Sonraki başlatmadan itibaren."
 
 #: instances/templates/instances/settings_tab.html:1030
 #, python-format
@@ -7147,8 +7171,11 @@ msgstr ""
 
 #: instances/views.py:274
 #, python-format
-msgid "Guest agents not read (a paused VM, no answer in time, or an error): %(n)s"
-msgstr "Okunamayan konuk ajanları (duraklatılmış sanal makine, zamanında yanıt yok ya da hata): %(n)s"
+msgid ""
+"Guest agents not read (a paused VM, no answer in time, or an error): %(n)s"
+msgstr ""
+"Okunamayan konuk ajanları (duraklatılmış sanal makine, zamanında yanıt yok ya"
+" da hata): %(n)s"
 
 #: instances/views.py:276
 #, python-format
@@ -9772,8 +9799,12 @@ msgid "Volume name"
 msgstr "Birim adı"
 
 #: storages/templates/create_stg_vol_block.html:98
-msgid "Empty: the file's name in the address. An ISO keeps its .iso ending, or VMs do not list it as media."
-msgstr "Boş bırakılırsa: adresteki dosyanın adı. ISO dosyasının adı .iso ile bitmeli; yoksa sanal makineler onu ortam olarak listelemez."
+msgid ""
+"Empty: the file's name in the address. An ISO keeps its .iso ending, or VMs "
+"do not list it as media."
+msgstr ""
+"Boş bırakılırsa: adresteki dosyanın adı. ISO dosyasının adı .iso ile bitmeli;"
+" yoksa sanal makineler onu ortam olarak listelemez."
 
 #: storages/templates/create_stg_vol_block.html:103
 #: storages/templates/storage.html:176
@@ -10486,8 +10517,12 @@ msgid ""
 msgstr "Ayrıca yedeği olan en yeni N ayın her birinin en yeni yedeği; 0: yok"
 
 #: vmbackups/forms.py:102
-msgid "1: every backup is full. Above 1, the backups between copy only what changed (running VMs with qcow2 disks)."
-msgstr "1: her yedek tamdır. 1'den büyükse aradaki yedekler yalnızca değişenleri kopyalar (qcow2 diskli, çalışan sanal makineler)."
+msgid ""
+"1: every backup is full. Above 1, the backups between copy only what changed "
+"(running VMs with qcow2 disks)."
+msgstr ""
+"1: her yedek tamdır. 1'den büyükse aradaki yedekler yalnızca değişenleri "
+"kopyalar (qcow2 diskli, çalışan sanal makineler)."
 
 #: vmbackups/forms.py:119 vmbackups/jobs.py:115
 #, python-format
@@ -10767,25 +10802,38 @@ msgstr "Üzerine yedek geri yüklemek için sanal makineyi kapatın"
 
 #: vmbackups/jobs.py:1177
 msgid "The VM has snapshots; delete them to restore a backup over it"
-msgstr "Sanal makinenin anlık görüntüleri var; üzerine yedek geri yüklemek için onları silin"
+msgstr ""
+"Sanal makinenin anlık görüntüleri var; üzerine yedek geri yüklemek için "
+"onları silin"
 
 #: vmbackups/jobs.py:1182
 #, python-format
-msgid "The VM's disks (%(now)s) are not the backup's (%(then)s); restore it as a new VM or one disk"
-msgstr "Sanal makinenin diskleri (%(now)s) yedeğinkiler (%(then)s) değil; yeni bir sanal makine olarak ya da tek disk olarak geri yükleyin"
+msgid ""
+"The VM's disks (%(now)s) are not the backup's (%(then)s); restore it as a new"
+" VM or one disk"
+msgstr ""
+"Sanal makinenin diskleri (%(now)s) yedeğinkiler (%(then)s) değil; yeni bir "
+"sanal makine olarak ya da tek disk olarak geri yükleyin"
 
 #: vmbackups/jobs.py:1186
 #, python-format
-msgid "The backup's disk %(dev)s is larger than the VM's now; restore it as a new VM"
-msgstr "Yedeğin %(dev)s diski sanal makinenin şimdiki diskinden büyük; yeni bir sanal makine olarak geri yükleyin"
+msgid ""
+"The backup's disk %(dev)s is larger than the VM's now; restore it as a new VM"
+msgstr ""
+"Yedeğin %(dev)s diski sanal makinenin şimdiki diskinden büyük; yeni bir sanal"
+" makine olarak geri yükleyin"
 
 #: vmbackups/jobs.py:1189
 msgid "The VM's UEFI firmware changed since the backup; restore it as a new VM"
-msgstr "Sanal makinenin UEFI donanım yazılımı yedekten sonra değişti; yeni bir sanal makine olarak geri yükleyin"
+msgstr ""
+"Sanal makinenin UEFI donanım yazılımı yedekten sonra değişti; yeni bir sanal "
+"makine olarak geri yükleyin"
 
 #: vmbackups/jobs.py:1191
 msgid "The VM's TPM changed since the backup; restore it as a new VM"
-msgstr "Sanal makinenin TPM'i yedekten sonra değişti; yeni bir sanal makine olarak geri yükleyin"
+msgstr ""
+"Sanal makinenin TPM'i yedekten sonra değişti; yeni bir sanal makine olarak "
+"geri yükleyin"
 
 #: vmbackups/jobs.py:1222
 msgid "Restore backup over the VM"
@@ -10793,7 +10841,9 @@ msgstr "Yedeği sanal makinenin üzerine geri yükle"
 
 #: vmbackups/jobs.py:1235
 msgid "The backup's VM is no longer in the panel; restore it as a new VM"
-msgstr "Yedeğin sanal makinesi artık panelde yok; yeni bir sanal makine olarak geri yükleyin"
+msgstr ""
+"Yedeğin sanal makinesi artık panelde yok; yeni bir sanal makine olarak geri "
+"yükleyin"
 
 #: vmbackups/jobs.py:1266
 msgid "The VM's disks changed after the job was queued"
@@ -10801,19 +10851,28 @@ msgstr "İş kuyruğa alındıktan sonra sanal makinenin diskleri değişti"
 
 #: vmbackups/jobs.py:1300
 msgid "The VM changed while its backup was copied; it keeps its disks"
-msgstr "Yedeği kopyalanırken sanal makine değişti; sanal makine disklerini koruyor"
+msgstr ""
+"Yedeği kopyalanırken sanal makine değişti; sanal makine disklerini koruyor"
 
 #: vmbackups/jobs.py:1303
 msgid "Replacing the VM's disks"
 msgstr "Sanal makinenin diskleri değiştiriliyor"
 
 #: vmbackups/jobs.py:1363
-msgid "The VM moved to another compute; check its disks and the restore's copies, then resolve this job"
-msgstr "Sanal makine başka bir sunucuya taşındı; disklerini ve geri yüklemenin kopyalarını denetleyin, sonra bu işi çözümleyin"
+msgid ""
+"The VM moved to another compute; check its disks and the restore's copies, "
+"then resolve this job"
+msgstr ""
+"Sanal makine başka bir sunucuya taşındı; disklerini ve geri yüklemenin "
+"kopyalarını denetleyin, sonra bu işi çözümleyin"
 
 #: vmbackups/jobs.py:1376
-msgid "The VM was started while its disks were being replaced; check its disks, then resolve this job"
-msgstr "Sanal makinenin diskleri değiştirilirken sanal makine başlatıldı; disklerini denetleyin, sonra bu işi çözümleyin"
+msgid ""
+"The VM was started while its disks were being replaced; check its disks, then"
+" resolve this job"
+msgstr ""
+"Sanal makinenin diskleri değiştirilirken sanal makine başlatıldı; disklerini "
+"denetleyin, sonra bu işi çözümleyin"
 
 #: vmbackups/jobs.py:1394
 msgid "The VM keeps its disks; the restore's copies were removed"
@@ -10955,8 +11014,12 @@ msgstr "Doğrula"
 
 #: vmbackups/templates/vmbackups/delete_form.html:16
 #, python-format
-msgid "Delete the backup of %(vm)s taken %(time)s? Its files are removed from %(target)s; this cannot be undone."
-msgstr "%(vm)s sanal makinesinin %(time)s tarihli yedeği silinsin mi? Dosyaları %(target)s hedefinden kaldırılır; bu geri alınamaz."
+msgid ""
+"Delete the backup of %(vm)s taken %(time)s? Its files are removed from "
+"%(target)s; this cannot be undone."
+msgstr ""
+"%(vm)s sanal makinesinin %(time)s tarihli yedeği silinsin mi? Dosyaları "
+"%(target)s hedefinden kaldırılır; bu geri alınamaz."
 
 #: vmbackups/templates/vmbackups/index.html:13
 #: vmbackups/templates/vmbackups/target.html:7
@@ -11088,8 +11151,12 @@ msgid "No backup schedule yet."
 msgstr "Henüz yedekleme zamanlaması yok."
 
 #: vmbackups/templates/vmbackups/policies.html:36
-msgid "A schedule backs chosen VMs, or every VM of a compute, up every day and keeps the newest."
-msgstr "Bir zamanlama, seçilen sanal makineleri ya da bir sunucunun bütün sanal makinelerini her gün yedekler ve en yenilerini tutar."
+msgid ""
+"A schedule backs chosen VMs, or every VM of a compute, up every day and keeps"
+" the newest."
+msgstr ""
+"Bir zamanlama, seçilen sanal makineleri ya da bir sunucunun bütün sanal "
+"makinelerini her gün yedekler ve en yenilerini tutar."
 
 #: vmbackups/templates/vmbackups/policy.html:13
 #, python-format
@@ -11104,25 +11171,9 @@ msgstr "Bu zamanlama silinsin mi? Yedekleri tutulur."
 msgid "Delete schedule"
 msgstr "Zamanlamayı sil"
 
-#: vmbackups/templates/vmbackups/policy.html:26
-msgid "Runs"
-msgstr "Çalışmalar"
-
-#: vmbackups/templates/vmbackups/policy.html:30
-msgid "Day"
-msgstr "Gün"
-
-#: vmbackups/templates/vmbackups/policy.html:37
-msgid "Backup job"
-msgstr "Yedekleme işi"
-
 #: vmbackups/templates/vmbackups/policy.html:38
 msgid "Skipped"
 msgstr "Atlandı"
-
-#: vmbackups/templates/vmbackups/policy.html:48
-msgid "No run yet."
-msgstr "Henüz çalışma yok."
 
 #: vmbackups/templates/vmbackups/policy_form.html:13
 #, python-format
@@ -11130,8 +11181,16 @@ msgid "Time zone: %(time_zone)s"
 msgstr "Saat dilimi: %(time_zone)s"
 
 #: vmbackups/templates/vmbackups/policy_form.html:23
-msgid "Each VM is backed up once a day, starting at the time; a VM that has not started within 6 hours waits for the next day. Older backups of each VM beyond those kept are deleted, a chain of incremental backups once all of it is beyond; backups taken by hand are not."
-msgstr "Her sanal makine günde bir kez, belirtilen saatte başlayarak yedeklenir; 6 saat içinde başlamayan sanal makine ertesi günü bekler. Her sanal makinenin tutulanların dışında kalan eski yedekleri silinir; artımlı yedek zinciri ise tamamı bunların dışına çıkınca silinir. Elle alınan yedekler silinmez."
+msgid ""
+"Each VM is backed up once a day, starting at the time; a VM that has not "
+"started within 6 hours waits for the next day. Older backups of each VM "
+"beyond those kept are deleted, a chain of incremental backups once all of it "
+"is beyond; backups taken by hand are not."
+msgstr ""
+"Her sanal makine günde bir kez, belirtilen saatte başlayarak yedeklenir; 6 "
+"saat içinde başlamayan sanal makine ertesi günü bekler. Her sanal makinenin "
+"tutulanların dışında kalan eski yedekleri silinir; artımlı yedek zinciri ise "
+"tamamı bunların dışına çıkınca silinir. Elle alınan yedekler silinmez."
 
 #: vmbackups/templates/vmbackups/restore.html:12
 #, python-format
@@ -11144,8 +11203,12 @@ msgstr ""
 
 #: vmbackups/templates/vmbackups/restore.html:18
 #, python-format
-msgid "On %(compute)s, in storage pool %(pool)s: the VM's host and the pool of its first disk."
-msgstr "%(compute)s üzerinde, %(pool)s depolama havuzunda: sanal makinenin sunucusu ve ilk diskinin havuzu."
+msgid ""
+"On %(compute)s, in storage pool %(pool)s: the VM's host and the pool of its "
+"first disk."
+msgstr ""
+"%(compute)s üzerinde, %(pool)s depolama havuzunda: sanal makinenin sunucusu "
+"ve ilk diskinin havuzu."
 
 #: vmbackups/templates/vmbackups/restore_disk.html:7
 #: vmbackups/templates/vmbackups/restore_disk.html:9
@@ -11154,8 +11217,12 @@ msgstr "Tek disk geri yükle"
 
 #: vmbackups/templates/vmbackups/restore_disk.html:12
 #, python-format
-msgid "A disk of the backup of %(vm)s taken %(time)s, in %(target)s, is copied as a new volume, attached to no VM."
-msgstr "%(vm)s sanal makinesinin %(time)s tarihli, %(target)s içindeki yedeğinden bir disk, hiçbir sanal makineye bağlanmadan yeni bir birim olarak kopyalanır."
+msgid ""
+"A disk of the backup of %(vm)s taken %(time)s, in %(target)s, is copied as a "
+"new volume, attached to no VM."
+msgstr ""
+"%(vm)s sanal makinesinin %(time)s tarihli, %(target)s içindeki yedeğinden bir"
+" disk, hiçbir sanal makineye bağlanmadan yeni bir birim olarak kopyalanır."
 
 #: vmbackups/templates/vmbackups/restore_over.html:6
 #: vmbackups/templates/vmbackups/restore_over.html:8
@@ -11165,8 +11232,15 @@ msgstr "Sanal makinenin üzerine geri yükle"
 
 #: vmbackups/templates/vmbackups/restore_over.html:11
 #, python-format
-msgid "The backup of %(vm)s taken %(time)s, in %(target)s, is restored over the VM: its disks are copied as new volumes and the VM is switched to them. Its settings, MAC addresses and UUID stay."
-msgstr "%(vm)s sanal makinesinin %(time)s tarihli, %(target)s içindeki yedeği sanal makinenin üzerine geri yüklenir: diskleri yeni birimler olarak kopyalanır ve sanal makine bunlara geçirilir. Ayarları, MAC adresleri ve UUID'si aynı kalır."
+msgid ""
+"The backup of %(vm)s taken %(time)s, in %(target)s, is restored over the VM: "
+"its disks are copied as new volumes and the VM is switched to them. Its "
+"settings, MAC addresses and UUID stay."
+msgstr ""
+"%(vm)s sanal makinesinin %(time)s tarihli, %(target)s içindeki yedeği sanal "
+"makinenin üzerine geri yüklenir: diskleri yeni birimler olarak kopyalanır ve "
+"sanal makine bunlara geçirilir. Ayarları, MAC adresleri ve UUID'si aynı "
+"kalır."
 
 #: vmbackups/templates/vmbackups/restore_over.html:19
 msgid "After the restore"
@@ -11177,8 +11251,11 @@ msgid "The old volumes stay in their pools until you delete them."
 msgstr "Eski birimler siz silene kadar havuzlarında kalır."
 
 #: vmbackups/templates/vmbackups/restore_over.html:28
-msgid "The disks the VM runs from now are deleted once it is switched to the new ones."
-msgstr "Sanal makine yeni disklere geçirilince şu an çalıştığı diskler silinir."
+msgid ""
+"The disks the VM runs from now are deleted once it is switched to the new "
+"ones."
+msgstr ""
+"Sanal makine yeni disklere geçirilince şu an çalıştığı diskler silinir."
 
 #: vmbackups/templates/vmbackups/restore_over.html:29
 msgid "The UEFI variables return to the backup's."
@@ -11190,8 +11267,12 @@ msgstr "TPM durumu yedekteki haline döner."
 
 #: vmbackups/templates/vmbackups/restore_over.html:35
 #, python-format
-msgid "Restore the backup over %(vm)s? What the VM wrote since the backup is no longer on the disks it runs from."
-msgstr "Yedek %(vm)s üzerine geri yüklensin mi? Sanal makinenin yedekten sonra yazdıkları, çalışacağı disklerde artık olmaz."
+msgid ""
+"Restore the backup over %(vm)s? What the VM wrote since the backup is no "
+"longer on the disks it runs from."
+msgstr ""
+"Yedek %(vm)s üzerine geri yüklensin mi? Sanal makinenin yedekten sonra "
+"yazdıkları, çalışacağı disklerde artık olmaz."
 
 #: vmbackups/templates/vmbackups/state.html:1
 msgid "Its deletion did not end; delete it again"
@@ -11346,8 +11427,11 @@ msgstr ""
 "%(pool)s depolama havuzu %(target)s yedek hedefidir; önce hedeften çıkarın"
 
 #: vmbackups/utils.py:84
-msgid "No backup target open to VM owners has a storage pool on this VM's host."
-msgstr "Sanal makine sahiplerine açık hiçbir yedek hedefinin bu sanal makinenin sunucusunda depolama havuzu yok."
+msgid ""
+"No backup target open to VM owners has a storage pool on this VM's host."
+msgstr ""
+"Sanal makine sahiplerine açık hiçbir yedek hedefinin bu sanal makinenin "
+"sunucusunda depolama havuzu yok."
 
 #: vmbackups/utils.py:85
 msgid "No backup target has a storage pool on this VM's host."
@@ -11381,7 +11465,9 @@ msgstr ""
 #: vmbackups/views.py:155
 #, python-format
 msgid "VM owners with the backup permission may now use %(target)s."
-msgstr "Yedekleme izni olan sanal makine sahipleri artık %(target)s hedefini kullanabilir."
+msgstr ""
+"Yedekleme izni olan sanal makine sahipleri artık %(target)s hedefini "
+"kullanabilir."
 
 #: vmbackups/views.py:156
 #, python-format
@@ -11643,13 +11729,18 @@ msgstr "Hedef sunucuda sanal makinenin şu ağları yok: %(names)s"
 
 #: vrtManager/instance.py:231
 #, python-format
-msgid "The destination host does not have these network filters of the VM: %(names)s"
+msgid ""
+"The destination host does not have these network filters of the VM: %(names)s"
 msgstr "Hedef sunucuda sanal makinenin şu ağ filtreleri yok: %(names)s"
 
 #: vrtManager/instance.py:234
 #, python-format
-msgid "These network filters of the VM have other rules on the destination host: %(names)s"
-msgstr "Sanal makinenin şu ağ filtrelerinin hedef sunucudaki kuralları farklı: %(names)s"
+msgid ""
+"These network filters of the VM have other rules on the destination host: "
+"%(names)s"
+msgstr ""
+"Sanal makinenin şu ağ filtrelerinin hedef sunucudaki kuralları farklı: "
+"%(names)s"
 
 #: vrtManager/instance.py:237
 #, python-format
@@ -11901,8 +11992,12 @@ msgstr "Sanal makinede ekran kartı yok"
 
 #: vrtManager/instance.py:1977
 #, python-format
-msgid "The VM's CPU topology has %(count)s vCPUs: change it in the XML editor to set another maximum"
-msgstr "Sanal makinenin CPU topolojisi %(count)s vCPU içeriyor: başka bir en fazla değer için onu XML düzenleyicide değiştirin"
+msgid ""
+"The VM's CPU topology has %(count)s vCPUs: change it in the XML editor to set"
+" another maximum"
+msgstr ""
+"Sanal makinenin CPU topolojisi %(count)s vCPU içeriyor: başka bir en fazla "
+"değer için onu XML düzenleyicide değiştirin"
 
 #: vrtManager/instance.py:2003
 #, python-format
@@ -12311,8 +12406,12 @@ msgstr ""
 
 #: vrtManager/interface.py:314
 #, python-format
-msgid "Interface %(iface)s is in use by the running VMs %(vms)s; shut them down or move their network cards first"
-msgstr "%(iface)s arabirimini çalışan %(vms)s sanal makineleri kullanıyor; önce onları kapatın ya da ağ kartlarını başka yere taşıyın"
+msgid ""
+"Interface %(iface)s is in use by the running VMs %(vms)s; shut them down or "
+"move their network cards first"
+msgstr ""
+"%(iface)s arabirimini çalışan %(vms)s sanal makineleri kullanıyor; önce "
+"onları kapatın ya da ağ kartlarını başka yere taşıyın"
 
 #: vrtManager/interface.py:332 vrtManager/virtsecrets.py:118
 #, python-format
@@ -12831,15 +12930,21 @@ msgstr "Oturum açma kilitlendi"
 #: accounts/templates/accounts/lockout.html:14
 #, python-format
 msgid "Too many failed sign-ins. The lock ends within %(minutes)s minute."
-msgid_plural "Too many failed sign-ins. The lock ends within %(minutes)s minutes."
-msgstr[0] "Çok fazla başarısız oturum açma denemesi. Kilit en geç %(minutes)s dakika içinde kalkar."
-msgstr[1] "Çok fazla başarısız oturum açma denemesi. Kilit en geç %(minutes)s dakika içinde kalkar."
+msgid_plural ""
+"Too many failed sign-ins. The lock ends within %(minutes)s minutes."
+msgstr[0] ""
+"Çok fazla başarısız oturum açma denemesi. Kilit en geç %(minutes)s dakika "
+"içinde kalkar."
+msgstr[1] ""
+"Çok fazla başarısız oturum açma denemesi. Kilit en geç %(minutes)s dakika "
+"içinde kalkar."
 
 #: accounts/templates/accounts/lockout.html:20
 msgid "Back to sign in"
 msgstr "Oturum açmaya dön"
 
-#: accounts/templates/accounts/otp_login.html:52 accounts/templates/login.html:51
+#: accounts/templates/accounts/otp_login.html:52
+#: accounts/templates/login.html:51
 msgid "Caps Lock is on"
 msgstr "Caps Lock açık"
 
@@ -12851,7 +12956,9 @@ msgstr "Oturum açma duyurusu"
 msgid ""
 "Shown above the sign-in form, e.g. planned maintenance or a terms-of-use "
 "line; empty: none"
-msgstr "Oturum açma formunun üstünde gösterilir; örneğin planlı bakım ya da kullanım koşulları satırı; boş: yok"
+msgstr ""
+"Oturum açma formunun üstünde gösterilir; örneğin planlı bakım ya da kullanım "
+"koşulları satırı; boş: yok"
 
 #: accounts/templates/account.html:38
 msgid "Unlock sign-in"
@@ -12868,7 +12975,9 @@ msgstr "Oturum süresi (saat)"
 
 #: appsettings/migrations/0030_login_session_hours.py:6
 msgid "How long a sign-in lasts; a change applies from the next sign-in"
-msgstr "Bir oturum ne kadar açık kalır; değişiklik bir sonraki oturum açmadan itibaren geçerlidir"
+msgstr ""
+"Bir oturum ne kadar açık kalır; değişiklik bir sonraki oturum açmadan "
+"itibaren geçerlidir"
 
 #. django-otp's sign-in errors, shown on the OTP sign-in page
 msgid "Please enter your OTP token."
@@ -12878,10 +12987,18 @@ msgid "Invalid token. Please make sure you have entered it correctly."
 msgstr "Geçersiz kod. Lütfen doğru girdiğinizden emin olun."
 
 #, python-format
-msgid "Verification temporarily disabled because of %(failure_count)d failed attempt, please try again soon."
-msgid_plural "Verification temporarily disabled because of %(failure_count)d failed attempts, please try again soon."
-msgstr[0] "%(failure_count)d başarısız deneme nedeniyle doğrulama geçici olarak kapatıldı; lütfen biraz sonra tekrar deneyin."
-msgstr[1] "%(failure_count)d başarısız deneme nedeniyle doğrulama geçici olarak kapatıldı; lütfen biraz sonra tekrar deneyin."
+msgid ""
+"Verification temporarily disabled because of %(failure_count)d failed "
+"attempt, please try again soon."
+msgid_plural ""
+"Verification temporarily disabled because of %(failure_count)d failed "
+"attempts, please try again soon."
+msgstr[0] ""
+"%(failure_count)d başarısız deneme nedeniyle doğrulama geçici olarak "
+"kapatıldı; lütfen biraz sonra tekrar deneyin."
+msgstr[1] ""
+"%(failure_count)d başarısız deneme nedeniyle doğrulama geçici olarak "
+"kapatıldı; lütfen biraz sonra tekrar deneyin."
 
 msgid "Verification of the token is currently disabled"
 msgstr "Kod doğrulaması şu anda kapalı"
@@ -12987,12 +13104,18 @@ msgstr "%(job)s iptal edilsin mi? Olduğu yerde durur."
 
 #: admin/templates/admin/user_list.html
 #, python-format
-msgid "Block %(name)s? They are signed out and their API tokens are deleted; unblocking does not bring the tokens back."
-msgstr "%(name)s engellensin mi? Oturumları kapatılır ve API anahtarları silinir; engeli kaldırmak anahtarları geri getirmez."
+msgid ""
+"Block %(name)s? They are signed out and their API tokens are deleted; "
+"unblocking does not bring the tokens back."
+msgstr ""
+"%(name)s engellensin mi? Oturumları kapatılır ve API anahtarları silinir; "
+"engeli kaldırmak anahtarları geri getirmez."
 
 #: webvirtcloud/middleware.py
 msgid "You were signed out, so it was not done: sign in and do it again."
-msgstr "Oturumunuz kapanmıştı, bu yüzden işlem yapılmadı: giriş yapıp yeniden deneyin."
+msgstr ""
+"Oturumunuz kapanmıştı, bu yüzden işlem yapılmadı: giriş yapıp yeniden "
+"deneyin."
 
 #: templates/base.html
 msgid "You were signed out: this page is no longer updated."
@@ -13018,7 +13141,6 @@ msgstr "Hangi sanal makineler"
 msgid "Choose the VMs to back up"
 msgstr "Yedeklenecek sanal makineleri seçin"
 
-
 #: webvirtcloud/common_tags.py:29
 #, python-format
 msgid "%(percent)s%%"
@@ -13027,14 +13149,17 @@ msgstr "%%%(percent)s"
 #: operations/templates/operations/jobs.html:16
 #: operations/templatetags/operations.py:98
 #, python-format
-msgid "The job worker is not running; it was last seen %(when)s. Jobs wait until it runs again."
-msgstr "İş işleyicisi çalışmıyor; en son %(when)s görüldü. İşler o yeniden çalışana kadar bekler."
+msgid ""
+"The job worker is not running; it was last seen %(when)s. Jobs wait until it "
+"runs again."
+msgstr ""
+"İş işleyicisi çalışmıyor; en son %(when)s görüldü. İşler o yeniden çalışana "
+"kadar bekler."
 
 #: operations/templates/operations/jobs.html:16
 #: operations/templatetags/operations.py:99
 msgid "The job worker has not run yet. Jobs wait until it runs."
 msgstr "İş işleyicisi henüz hiç çalışmadı. İşler o çalışana kadar bekler."
-
 
 #: instances/states.py:27
 msgid "Paused by a disk error"
@@ -13084,8 +13209,215 @@ msgstr "Depolamasında yer açın, ardından sanal makineyi devam ettirin."
 
 #: instances/templates/instance.html:55
 msgid "An administrator has to free space on its storage and resume it."
-msgstr "Bir yöneticinin depolamasında yer açıp sanal makineyi devam ettirmesi gerekir."
+msgstr ""
+"Bir yöneticinin depolamasında yer açıp sanal makineyi devam ettirmesi "
+"gerekir."
 
 #: instances/templates/instances/settings_tab.html:1030
-msgid "This VM cannot report a crash or a hang yet: a choice adds the devices it reports them through, from the next start."
-msgstr "Bu sanal makine henüz çöktüğünü ya da donduğunu bildiremiyor: bir seçim, bildirdiği aygıtları sonraki başlatmadan itibaren ekler."
+msgid ""
+"This VM cannot report a crash or a hang yet: a choice adds the devices it "
+"reports them through, from the next start."
+msgstr ""
+"Bu sanal makine henüz çöktüğünü ya da donduğunu bildiremiyor: bir seçim, "
+"bildirdiği aygıtları sonraki başlatmadan itibaren ekler."
+
+#: accounts/templates/accounts/change_password_form.html:17
+msgid "Set your own password"
+msgstr "Kendi parolanızı belirleyin"
+
+#: accounts/templates/accounts/change_password_form.html:20
+#, python-format
+msgid ""
+"Signed in as %(name)s with a temporary password. Replace it to continue."
+msgstr ""
+"%(name)s olarak geçici bir parolayla oturum açtınız. Devam etmek için onu "
+"değiştirin."
+
+#: accounts/templates/accounts/change_password_form.html:22
+#, python-format
+msgid "For %(name)s. You stay signed in here; your other sessions end."
+msgstr ""
+"%(name)s için. Burada oturumunuz açık kalır; diğer oturumlarınız kapanır."
+
+#: accounts/templates/accounts/change_password_form.html:34
+msgid "Temporary password"
+msgstr "Geçici parola"
+
+#: accounts/templates/accounts/change_password_form.html:34
+msgid "Current password"
+msgstr "Mevcut parola"
+
+#: accounts/templates/accounts/change_password_form.html:38
+msgid "The one you just signed in with."
+msgstr "Az önce oturum açarken kullandığınız parola."
+
+#: accounts/templates/accounts/change_password_form.html:51
+msgid "New password again"
+msgstr "Yeni parola (tekrar)"
+
+#: accounts/templates/accounts/change_password_form.html:57
+msgid "8 characters or more"
+msgstr "En az 8 karakter"
+
+#: accounts/templates/accounts/change_password_form.html:58
+msgid "Not only digits"
+msgstr "Yalnızca rakamlardan oluşmuyor"
+
+#: accounts/templates/accounts/change_password_form.html:59
+msgid "Both entries match"
+msgstr "İki giriş aynı"
+
+#: accounts/templates/accounts/change_password_form.html:60
+msgid ""
+"Not like your name or e-mail, and not a common password: checked when you "
+"save"
+msgstr ""
+"Adınıza veya e-postanıza benzemiyor ve yaygın bir parola değil: "
+"kaydettiğinizde denetlenir"
+
+#: accounts/templates/accounts/change_password_form.html:67
+msgid "Save and continue"
+msgstr "Kaydet ve devam et"
+
+#: accounts/templates/accounts/change_password_form.html:60
+msgid "met"
+msgstr "sağlandı"
+
+#: accounts/templates/accounts/change_password_form.html:60
+#: accounts/templates/accounts/change_password_form.html:61
+#: accounts/templates/accounts/change_password_form.html:62
+#: accounts/templates/accounts/change_password_form.html:63
+msgid "not met"
+msgstr "sağlanmadı"
+
+#: vmbackups/models.py:88 vmbackups/templates/vmbackups/policy.html:36
+msgid "Backed up"
+msgstr "Yedeklendi"
+
+#: vmbackups/models.py:88 vmbackups/templates/vmbackups/policy.html:39
+msgid "Running"
+msgstr "Çalışıyor"
+
+#: vmbackups/templates/vmbackups/policies.html:17
+#: vmbackups/templates/vmbackups/policy.html:13
+#, python-format
+msgid "Last day"
+msgid_plural "Last %(days)s days"
+msgstr[0] "Son gün"
+msgstr[1] "Son %(days)s gün"
+
+#: vmbackups/templates/vmbackups/policies.html:24
+msgid "no run"
+msgstr "çalışma yok"
+
+#: vmbackups/templates/vmbackups/policy.html:26
+#, python-format
+msgid "%(day)s, %(vm)s: %(outcome)s"
+msgstr "%(day)s, %(vm)s: %(outcome)s"
+
+#: vmbackups/templates/vmbackups/policy.html:40
+msgid "No run"
+msgstr "Çalışma yok"
+
+#: vmbackups/templates/vmbackups/policy.html:43
+msgid "The schedule has no VM."
+msgstr "Zamanlamada sanal makine yok."
+
+#: vmbackups/templates/vmbackups/policy.html:47
+msgid "Not backed up"
+msgstr "Yedeklenmedi"
+
+#: vmbackups/views.py:359
+#, python-format
+msgid "%(n)s backed up"
+msgstr "%(n)s yedeklendi"
+
+#: vmbackups/views.py:359
+#, python-format
+msgid "%(n)s running"
+msgstr "%(n)s çalışıyor"
+
+#: vmbackups/views.py:360
+#, python-format
+msgid "%(n)s failed"
+msgstr "%(n)s başarısız"
+
+#: vmbackups/views.py:361
+#, python-format
+msgid "%(n)s skipped"
+msgstr "%(n)s atlandı"
+
+#: vmbackups/models.py:15
+msgid "The job was cancelled"
+msgstr "İş iptal edildi"
+
+#: instances/jobs.py:1666
+msgid "VM fault: %(vm)s"
+msgstr "Sanal makine arızası: %(vm)s"
+
+#: instances/jobs.py:1667
+msgid "%(vm)s on %(host)s: %(reason)s"
+msgstr "%(host)s üzerindeki %(vm)s: %(reason)s"
+
+#: instances/jobs.py:1672 instances/templates/instances/settings_tab.html:301
+msgid "Free unused space"
+msgstr "Kullanılmayan alanı boşalt"
+
+#: instances/jobs.py:1696 instances/templates/instances/settings_tab.html:301
+msgid "The guest agent is not connected"
+msgstr "Konuk ajanı bağlı değil"
+
+#: instances/jobs.py:1704
+msgid "The job stopped before the guest answered; trimming again is harmless"
+msgstr "İş, konuk yanıt vermeden durdu; yeniden boşaltmanın zararı yok"
+
+#: instances/jobs.py:1710
+msgid ""
+"No disk of the running VM has the discard mode unmap: its image files keep "
+"their size. Set it in a disk's device details; it takes effect at the VM's "
+"next start."
+msgstr ""
+"Çalışan sanal makinenin hiçbir diskinde diskard modu unmap değil: imaj "
+"dosyaları boyutunu korur. Bunu bir diskin aygıt ayrıntılarından ayarlayın; "
+"sanal makinenin bir sonraki başlatılışında geçerli olur."
+
+#: instances/templates/instances/settings_tab.html:299
+msgid "Free space the guest no longer uses in the image files."
+msgstr "Konuğun artık kullanmadığı alanı imaj dosyalarında boşaltır."
+
+#: instances/templates/instances/settings_tab.html:299
+msgid ""
+"No disk has the discard mode unmap while the VM runs: trimming frees no space"
+" in its image files. Set it in a disk's device details; it takes effect at "
+"the next start."
+msgstr ""
+"Sanal makine çalışırken hiçbir diskin diskard modu unmap değil: boşaltma imaj"
+" dosyalarında yer açmaz. Bunu bir diskin aygıt ayrıntılarından ayarlayın; bir"
+" sonraki başlatılışta geçerli olur."
+
+#: operations/templates/operations/job.html:68
+msgid "Trimmed"
+msgstr "Boşaltılan"
+
+#: operations/templates/operations/job.html:70
+msgid "trimmed"
+msgstr "boşaltıldı"
+
+#: instances/jobs.py:1701
+msgid "No file system was trimmed: %(errors)s"
+msgstr "Hiçbir dosya sistemi boşaltılmadı: %(errors)s"
+
+#: instances/templates/instance.html:98
+msgid "Screen of %(name)s"
+msgstr "%(name)s ekranı"
+
+#: instances/templates/instance.html:105
+msgctxt "screen"
+msgid "Live"
+msgstr "Canlı"
+
+#: templates/navbar.html:35
+msgid "%(n)s job not finished"
+msgid_plural "%(n)s jobs not finished"
+msgstr[0] "Bitmemiş %(n)s iş"
+msgstr[1] "Bitmemiş %(n)s iş"

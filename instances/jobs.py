@@ -31,10 +31,11 @@ from appsettings.settings import app_settings
 from computes.models import Compute
 from instances import addresses, utils
 from instances.models import Instance
+from instances.states import state_reason
 from logs.audit import write
-from operations import claims
+from operations import alerts, claims
 from operations.utils import REPORTED, safe_text, say
-from operations.jobs import Cancelled, Kind, Outcome, Plan, register
+from operations.jobs import Cancelled, Kind, Outcome, Plan, register, register_periodic
 from operations.models import Claim, Operation
 
 
@@ -1660,3 +1661,87 @@ class ForceOffVM(_Power):
 
     def done(self, dom):  # shut off, or gone: a transient VM is removed as it stops
         return dom is None or not dom.isActive()
+
+
+@register
+class TrimVM(Kind):
+    """Has a running VM's guest agent trim the free space of its file systems (guest-fstrim): a disk whose
+    discard mode is unmap passes it on, and its image file shrinks. Trimming again is harmless."""
+
+    name = "instance.fstrim"
+    label = gettext_noop("Free unused space")
+    time_limit = 1800  # the agent's wait (FSTRIM_TIMEOUT): over time is only noted
+
+    def normalize(self, raw):
+        return {"instance": int(raw["instance"])}
+
+    def validate(self, user, params):
+        if not user.is_superuser:  # as the Disks tab's other superuser controls
+            raise PermissionDenied
+
+    def plan(self, user, params):
+        return _vm_plan(params)
+
+    def precheck(self, op, ctx):
+        if op.user is None or not (op.user.is_active and op.user.is_superuser):  # still, when it runs
+            raise PermissionDenied
+        if _instance(op.params["instance"]).compute_id != op.intent["compute"]:
+            raise util.OperationError(MOVED)
+
+    def run(self, op, ctx):
+        instance = _instance(op.params["instance"])
+        proxy = instance.proxy
+        if proxy.get_status() != 1:
+            raise util.OperationError(gettext_noop("The VM is not running"))
+        if not proxy.is_agent_ready():
+            raise util.OperationError(gettext_noop("The guest agent is not connected"))
+        ctx.record_intent(trimming=True)  # the guest is asked from here
+        trimmed = proxy.fstrim()
+        if trimmed and all(fs["error"] for fs in trimmed):  # the guest refused every file system
+            raise util.OperationError(gettext_noop("No file system was trimmed: %(errors)s"),
+                                      errors="; ".join(f"{fs['path']}: {fs['error']}" for fs in trimmed))
+        result = {"trimmed": trimmed}
+        if not instance.discard_unmap:
+            result["warning"] = say(NO_DISCARD)
+        return result
+
+    def reconcile(self, op):
+        return Outcome(Operation.FAILED, error=say(gettext_noop(
+            "The job stopped before the guest answered; trimming again is harmless")))
+
+    def log_entry(self, op, state):
+        return _log(op, state, "free unused space")
+
+
+NO_DISCARD = _("No disk of the running VM has the discard mode unmap: its image files keep their size. Set it in "
+               "a disk's device details; it takes effect at the VM's next start.")
+
+VM_FAULT = _("VM fault: %(vm)s")
+VM_FAULT_TEXT = _("%(vm)s on %(host)s: %(reason)s")
+
+
+def watch_faults():
+    """Alerts once when a fault stops or pauses a VM (instances.states.REASONS), while an alert channel is set:
+    each host's VMs read in one call, all hosts at once (utils.host_domain_states); a host that does not answer
+    is read again at the next pass. Without a channel nothing is told, nor kept as told."""
+    if not any(alerts.channels()):
+        Instance.objects.exclude(fault="").update(fault="")
+        return
+    computes = list(Compute.objects.all())
+    states = utils.host_domain_states(computes)
+    for compute in computes:
+        domains = states[compute.pk]
+        if domains is None:
+            continue
+        for vm in Instance.objects.filter(compute=compute):
+            _name, state, reason = domains.get(vm.uuid, (None, None, None))
+            why = state_reason(state, reason)
+            fault = f"{state}:{reason}" if why else ""
+            if fault == vm.fault:
+                continue
+            if why:
+                alerts.alert(say(VM_FAULT, vm=vm.name), say(VM_FAULT_TEXT, vm=vm.name, host=compute.name, reason=str(why)))
+            Instance.objects.filter(pk=vm.pk).update(fault=fault)
+
+
+register_periodic(watch_faults)

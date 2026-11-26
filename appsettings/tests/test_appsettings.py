@@ -31,7 +31,7 @@ class AppSettingsTestCase(TestCase):
         page = self.client.get(reverse("appsettings")).content.decode()
         choice = page[page.index('<select id="language"'):]
         choice = choice[:choice.index("</select>")]
-        self.assertEqual(re.findall(r'<option value="([^"]+)"', choice), ["en", "tr", "zh-hans"])
+        self.assertEqual(re.findall(r'<option value="([^"]+)"', choice), ["en", "tr", "zh-hans", "uk"])
 
     def test_the_page_answers_in_the_users_language(self):
         response = self.client.post(reverse("appsettings"), {}, HTTP_ACCEPT_LANGUAGE="tr", follow=True)

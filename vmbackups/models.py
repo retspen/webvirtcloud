@@ -3,11 +3,16 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_noop
 
 from computes.models import Compute, Tag
 from instances.models import Instance
 from operations.models import Operation
 from vrtManager.backup import backup_prefix
+
+
+JOB_CANCELLED = gettext_noop("The job was cancelled")
 
 
 class BackupTarget(models.Model):
@@ -79,8 +84,11 @@ class BackupPolicy(models.Model):
 class BackupRun(models.Model):
     """A schedule's backup of one VM on one day: what it submitted, or why not."""
 
-    SUBMITTED, SKIPPED, FAILED = "submitted", "skipped", "failed"
-    STATES = [(SUBMITTED, "submitted"), (SKIPPED, "skipped"), (FAILED, "failed")]
+    SUBMITTED, SKIPPED, FAILED, SUCCEEDED = "submitted", "skipped", "failed", "succeeded"
+    # succeeded and failed also once its job has ended and the job history drops the job (keep_job_end)
+    STATES = [(SUBMITTED, "submitted"), (SKIPPED, "skipped"), (FAILED, "failed"), (SUCCEEDED, "succeeded")]
+    RUNNING = "running"  # what came of it, its job's end included (outcome)
+    OUTCOMES = {SUCCEEDED: _("Backed up"), RUNNING: _("Running"), FAILED: _("Failed"), SKIPPED: _("Skipped")}
 
     policy = models.ForeignKey(BackupPolicy, on_delete=models.CASCADE, related_name="runs")
     instance = models.ForeignKey(Instance, on_delete=models.CASCADE, related_name="backup_runs")
@@ -92,6 +100,42 @@ class BackupRun(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["policy", "instance", "day"], name="one_run_per_day")]
+
+    @classmethod
+    def outcome_of(cls, state, job_state):
+        """Its state; a submitted run's as its job goes."""
+        if state != cls.SUBMITTED:
+            return state
+        if job_state == Operation.SUCCEEDED:
+            return cls.SUCCEEDED
+        return cls.RUNNING if job_state in Operation.ACTIVE else cls.FAILED
+
+    @property
+    def outcome(self):
+        return self.outcome_of(self.state, self.operation.state if self.operation_id else None)
+
+    @property
+    def outcome_label(self):
+        return self.OUTCOMES[self.outcome]
+
+    @property
+    def reason(self):
+        """Why it did not back up: its note, else its job's error."""
+        if self.note or not self.operation_id:
+            return self.note
+        if self.operation.state == Operation.CANCELLED and not self.operation.error:
+            from operations.utils import say  # operations.utils imports the models
+
+            return say(JOB_CANCELLED)
+        return self.operation.error
+
+    @classmethod
+    def keep_job_end(cls, job):
+        """Its runs keep what the job came to, which is gone with the job."""
+        for run in cls.objects.filter(operation=job, state=cls.SUBMITTED).select_related("operation"):
+            run.state = cls.SUCCEEDED if job.state == Operation.SUCCEEDED else cls.FAILED
+            run.note = run.reason
+            run.save(update_fields=["state", "note"])
 
 
 UUID_IN_NAME = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")

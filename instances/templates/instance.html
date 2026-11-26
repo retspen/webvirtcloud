@@ -21,9 +21,11 @@
              data-opens-on="{% if instance.is_template and can_clone %}#clone{% endif %}"
              data-random-mac-url="{% url 'instances:random_mac_address' %}"
              {% if can_open_console and vdi_reachable %}data-vdi-url="{% url 'vdi_url' compute.id instance.name %}"{% endif %}>
-        <div class="card-body p-3">
-            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                <div style="min-width: 0;">
+        <div class="card-body p-3 d-flex flex-wrap flex-md-nowrap gap-3">
+            <div class="flex-grow-1" style="min-width: 0;">
+            {# from 576px the buttons keep the name's row: many tags wrap within the name's side #}
+            <div class="d-flex flex-wrap flex-sm-nowrap justify-content-between align-items-start gap-2">
+                <div class="flex-grow-1" style="min-width: 0;">
                     <div class="d-flex flex-wrap align-items-center gap-2">
                         <h1 class="h4 mb-0 text-break" id="vm-name">{{ instance.name }}</h1>
                         {% vm_state instance.status as state %}
@@ -34,7 +36,7 @@
                     {% if instance.title %}<p class="text-body-secondary mb-1">{{ instance.title }}</p>{% endif %}
                     {% include 'instances/host_link.html' %}
                 </div>
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 flex-shrink-0">
                     {% if instance.is_template and can_clone %}
                     <button type="button" class="btn btn-sm btn-primary" id="clone-button">{% bs_icon 'copy' %} {% trans "Clone" %}</button>
                     {% endif %}
@@ -88,6 +90,24 @@
                 </div>
                 {% endif %}
             </dl>
+            </div>
+            {% if show_screen %}
+            {# the VM's screen, read by instance_page.js every few seconds and shown once one has come; opens the console where it can #}
+            {# its caption: whether the picture follows the VM (a suspended one's stays), and that a click opens the console #}
+            {% if screen_opens_console %}
+            <button type="button" class="vm-screen" id="vm-screen" hidden data-url="{% url 'console' compute.id instance.uuid %}"
+                    data-window="console-{{ instance.uuid }}" data-screen-url="{% url 'instances:screen' instance.id %}">
+            {% else %}
+            <div class="vm-screen" id="vm-screen" hidden data-screen-url="{% url 'instances:screen' instance.id %}">
+            {% endif %}
+                <span class="vm-screen-frame"><img alt="{% blocktrans with name=instance.name %}Screen of {{ name }}{% endblocktrans %}"></span>
+                <span class="vm-screen-caption">
+                    {% if instance.status == 3 %}<span class="vm-screen-state">{% bs_icon 'pause-fill' %} {% trans "Suspended" %}</span>
+                    {% else %}<span class="vm-screen-state"><span class="vm-screen-live" aria-hidden="true"></span> {% trans "Live" context "screen" %}</span>{% endif %}
+                    {% if screen_opens_console %}<span class="vm-screen-open">{% trans "Open console" %}</span>{% endif %}
+                </span>
+            {% if screen_opens_console %}</button>{% else %}</div>{% endif %}
+            {% endif %}
         </div>
         <div class="card-footer p-1">
             {# p-1 inside the scroller keeps the focus ring from being clipped #}

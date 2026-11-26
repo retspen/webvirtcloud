@@ -21,7 +21,7 @@
         </div>
         <div class="small text-body-secondary mt-1">{% trans "User" %}: {{ job.username }}</div>
     </div>
-    {% if job.phase or op.progress_total or job.cancellable or job.error or job.result.open or job.result.links or job.result.warning or job.result.left_behind or job.resolution %}
+    {% if job.phase or op.progress_total or job.cancellable or job.error or job.result.open or job.result.links or job.result.warning or job.result.left_behind or job.result.trimmed or job.resolution %}
         <div class="card-body pb-0">
             {% if job.phase or job.cancellable %}
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
@@ -63,6 +63,12 @@
             {% endif %}
             {% if job.result.warning %}
                 <div class="alert alert-warning text-break" role="alert">{{ job.result.warning }}</div>
+            {% endif %}
+            {% if job.result.trimmed %}
+                <h2 class="h6">{% trans "Trimmed" %}</h2>
+                <ul class="list-unstyled mb-3">
+                    {% for fs in job.result.trimmed %}<li class="text-break"><code>{{ fs.path }}</code> {% if fs.error %}{{ fs.error }}{% elif fs.trimmed is None %}{% trans "trimmed" %}{% else %}{{ fs.trimmed|binary_size }}{% endif %}</li>{% endfor %}
+                </ul>
             {% endif %}
             {% if job.result.left_behind %}
                 <h2 class="h6">{% trans "Left behind" %}</h2>

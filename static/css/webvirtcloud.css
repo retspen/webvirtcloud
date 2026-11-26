@@ -349,7 +349,121 @@ td .tag-more {
     height: 0.85em;
 }
 
+/* the menu: its links in the full light of the theme's navbar, an icon beside each label; the page's own
+   section underlined (on a phone, a bar at its side) and bolder */
+.navbar-dark {
+    --bs-navbar-color: #fff;
+    --bs-navbar-hover-color: #fff;
+    --bs-navbar-active-color: #fff;
+}
+.navbar .nav-link {
+    display: flex;
+    align-items: center;
+    gap: .375rem;
+}
+.navbar .nav-link svg {
+    flex: none;
+}
+.navbar .nav-link.active {
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 currentColor;
+    padding-left: .75rem;
+}
+@media (min-width: 768px) {
+    .navbar .nav-link.active {
+        box-shadow: inset 0 -2px 0 currentColor;
+        padding-left: var(--bs-navbar-nav-link-padding-x);
+    }
+    .navbar .nav-link:hover:not(.active) {
+        box-shadow: inset 0 -2px 0 rgba(255, 255, 255, .45);
+    }
+}
+.navbar .dropdown-item svg {
+    vertical-align: -.125em;
+}
+/* beside the other links Jobs and Administration are icons; their names stay for screen readers and the phone menu */
+@media (min-width: 768px) {
+    .navbar .nav-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+    }
+}
+
 /* "Skip to content" brings #main up below the sticky navbar, not behind it */
 #main {
     scroll-margin-top: 5rem;
+}
+
+/* a backup schedule's runs, a mark a day: filled backed up, crossed failed, hollow skipped, half running */
+.run-days { display: inline-flex; gap: 2px; }
+.run-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: .75rem;
+    height: .75rem;
+    border: 2px solid transparent;
+    border-radius: 3px;
+    vertical-align: middle;
+    text-decoration: none;
+}
+.run-grid .run-mark { width: 1.125rem; height: 1.125rem; }
+.run-grid td, .run-grid th { padding: 2px; }
+.run-grid-vm { max-width: 14rem; padding-right: .75rem !important; position: sticky; left: 0; background: var(--bs-body-bg); }
+/* the grid scrolls on a phone starting at its newest day, at the right */
+.run-grid-scroll { overflow-x: auto; direction: rtl; width: fit-content; max-width: 100%; }
+.run-grid-scroll > table { direction: ltr; }
+.run-succeeded { background: var(--bs-success); }
+.run-failed { background: var(--bs-danger); }
+.run-failed::after { content: "\00d7"; color: #fff; font-size: .75rem; font-weight: 700; line-height: 1; }
+.run-days .run-failed::after { font-size: .625rem; }
+.run-skipped { border-color: var(--bs-secondary-color); }
+.run-running { border-color: var(--bs-info); background: linear-gradient(90deg, var(--bs-info) 50%, transparent 50%); }
+.run-none { background: var(--bs-secondary-bg); }
+/* high contrast themes would drop the marks' colours, which carry their meaning */
+@media (forced-colors: active) { .run-mark { forced-color-adjust: none; } }
+
+/* the VM page's screen thumbnail (instance.html): the picture at its own shape, a caption under it
+   (live or suspended, and "Open console" when it is a button); on phones a small picture beside the caption */
+.vm-screen {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    width: 100%;
+    padding: 0;
+    color: var(--bs-body-color);
+    text-align: start;
+    background: none;
+    border: 0;
+}
+.vm-screen[hidden] { display: none; }
+.vm-screen-frame {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 6.5rem;
+    max-height: 5rem;
+    overflow: hidden;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+}
+.vm-screen-frame img { display: block; max-width: 100%; max-height: 5rem; height: auto; }
+.vm-screen-caption { display: flex; flex-direction: column; gap: .125rem; font-size: .875em; line-height: 1.3; }
+.vm-screen-state { color: var(--bs-secondary-color); }
+.vm-screen-live { display: inline-block; width: .5rem; height: .5rem; border-radius: 50%; background: var(--bs-success); vertical-align: .05em; }
+.vm-screen-open { color: var(--bs-link-color); }
+button.vm-screen:hover .vm-screen-open { text-decoration: underline; }
+button.vm-screen:hover .vm-screen-frame { border-color: var(--bs-link-color); }
+.vm-screen:focus-visible { outline: 0; border-radius: var(--bs-border-radius); box-shadow: 0 0 0 var(--bs-focus-ring-width) var(--bs-focus-ring-color); }
+@media (min-width: 768px) {
+    .vm-screen { flex: none; flex-direction: column; align-items: stretch; gap: .375rem; width: 13rem; align-self: flex-start; }
+    .vm-screen-frame { width: 100%; max-height: 10rem; }
+    .vm-screen-frame img { max-height: 10rem; }
+    .vm-screen-caption { flex-direction: row; justify-content: space-between; gap: .5rem; }
 }

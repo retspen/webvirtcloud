@@ -43,6 +43,8 @@ class Instance(models.Model):
     created = models.DateTimeField(_("created"), auto_now_add=True)
     drbd = models.CharField(_("drbd"), max_length=24, default="None")
     tags = models.ManyToManyField("computes.Tag", blank=True, related_name="instances", verbose_name=_("tags"))
+    # "state:reason" of the fault (instances.states.REASONS) last alerted; empty without one (instances.jobs.watch_faults)
+    fault = models.CharField(max_length=16, blank=True, default="")
 
     objects = InstanceManager()
 
@@ -76,6 +78,11 @@ class Instance(models.Model):
     @cached_property
     def disks(self) -> list[dict]:
         return self.proxy.get_disk_devices()
+
+    @property
+    def discard_unmap(self) -> bool:
+        """Whether a disk of the running definition passes the guest's trim to its image (discard unmap)."""
+        return any(disk.get("discard") == "unmap" for disk in self.disks)
 
     @cached_property
     def info(self) -> list | None:

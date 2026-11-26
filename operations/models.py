@@ -66,6 +66,11 @@ class Operation(models.Model):
         ordering = ["-created_at"]
         constraints = [models.UniqueConstraint(fields=["user", "submission_key"], name="unique_submission")]
 
+    @classmethod
+    def visible_to(cls, user):
+        """The jobs a user sees: all for a superuser, their own for others."""
+        return cls.objects.all() if user.is_superuser else cls.objects.filter(user=user)
+
     def __str__(self):
         return f"{self.kind} {self.id}"
 

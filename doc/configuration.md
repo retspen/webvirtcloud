@@ -108,6 +108,24 @@ datasource:
 
 Without the network: tick **Cloud-init seed** (Advanced) when creating a VM. The VM gets a CD-ROM with its hostname and your SSH keys (a NoCloud seed, `cidata-<uuid>.iso` in the disk's directory pool), which the image's cloud-init reads at first boot; it is deleted with the VM's disks.
 
+### A template for the seed
+
+Distribution cloud images (`GenericCloud`, `genericcloud`) come with cloud-init. A template installed from an ISO needs it once:
+
+1. Start a VM on the template disk and install cloud-init in it: `dnf install -y cloud-init` or `apt install -y cloud-init`.
+2. Remove what makes it this machine and shut it down:
+
+   ```sh
+   cloud-init clean --logs --seed
+   truncate -s 0 /etc/machine-id
+   poweroff
+   ```
+
+   Empty `/etc/machine-id`, do not delete it: without the file a Debian 12 clone gets no DHCP address (`cloud-init clean --machine-id` deletes it there).
+3. Turn on **Settings > Options > Use as a template**, so the VM is not started again.
+
+Create VMs with **Clone from template**, this VM's disk as **Template volume** and **Cloud-init seed** ticked. At first boot a VM takes its name as hostname and gets new SSH host keys and a new machine-id; your keys go to the image's default user (`default_user` in `/etc/cloud/cloud.cfg`, for example `almalinux` or `debian`), and `cloud-init status` says `done`. The seed sets no password and no static address: the network comes up with DHCP. A copy made on the VM's **Clone** tab gets no seed.
+
 ## Two-factor login (OTP)
 
 Set `OTP_ENABLED = True` in [`data/local_settings.py`](#local-settings) to ask for a one-time code at login. It is per user: a user without a confirmed device signs in with the password alone.
@@ -116,7 +134,7 @@ The QR code is mailed as a link to a page that shows it, good for one hour: the 
 
 ## Alerts
 
-On the Settings page (Alerts), **Alert e-mail addresses** get a mail, through the server's SMTP settings (`EMAIL_HOST` and the others, as for OTP), and **Alert webhook** a JSON POST (`subject`, `text`, `time`; Slack and Mattermost take it) when a backup job fails, a scheduled backup is not taken (not for a host in maintenance), the daily target check finds backups missing, a verification finds a backup damaged, or a job ends uncertain. The job worker sends them within a minute and tries a failed channel again for ten minutes.
+On the Settings page (Alerts), **Alert e-mail addresses** get a mail, through the server's SMTP settings (`EMAIL_HOST` and the others, as for OTP), and **Alert webhook** a JSON POST (`subject`, `text`, `time`; Slack and Mattermost take it) when a backup job fails, a scheduled backup is not taken (not for a host in maintenance), the daily target check finds backups missing, a verification finds a backup damaged, a job ends uncertain, or a fault stops or pauses a VM (a disk error, a crash, a kernel panic: the reasons the VM page shows; once a fault, read every minute from each host, so told within two minutes). The job worker sends them within a minute and tries a failed channel again for ten minutes.
 
 ## Health check
 

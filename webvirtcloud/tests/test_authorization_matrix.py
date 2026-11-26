@@ -105,6 +105,7 @@ POWER_AND_CONSOLE = {
     "compute-instance-powercycle",
     "compute-instance-forceoff",
     "instances:getvvfile",
+    "instances:screen",
     # vdi_url is also allowed for owners, but answers 404 here because the
     # test compute is unreachable; see the console rule tests.
 }
